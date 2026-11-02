@@ -1,0 +1,29 @@
+# Contributing
+
+Thanks for looking. This is a small app with strong opinions about correctness; `AGENTS.md` holds the invariants and is the
+first thing to read. The short version:
+
+- **Branch → PR → squash merge.** Nothing lands on `main` directly. The PR title is a Conventional Commit
+  (`feat:`, `fix:`, `docs:`, `chore:`, `ci:`, `refactor:`, `perf:`, `test:`); two checks enforce it, on the title and on each commit.
+- **Reconciliation must stay clean.** Every envelope's transactions sum to its Spent. A change that breaks that is wrong, however
+  nice the chart.
+- **Raw exports are facts.** Never edit `transactions`/`budget_items`; change the mapping or rules and rebuild.
+- **No colours outside the theme.** `app.css` and the page use contract tokens only (`docs/BRANDING.md`).
+- **No household data in the repo.** Fixtures are synthetic. `.env` is ignored. If you paste a build log into an issue, scrub it.
+
+## Running it locally
+
+```sh
+python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
+docker run -d --name ledger-pg -e POSTGRES_PASSWORD=ledger -e POSTGRES_USER=ledger -e POSTGRES_DB=ledger -p 5432:5432 postgres:16-alpine
+export DATABASE_URL=postgresql://ledger:ledger@localhost:5432/ledger AUTH_DISABLED=true SESSION_SECRET=$(openssl rand -hex 32)
+uvicorn app.main:app --reload --port 8010
+```
+
+Open <http://localhost:8010>, load exports on **Close a month** (or `python -m pipeline.import_exports <dir>`).
+
+## Releases
+
+Automatic. Merging a `feat:` or `fix:` PR makes release-please open a `chore(main): release x.y.z` PR with the changelog;
+merging *that* tags the version, publishes the GitHub Release and the `x.y.z` / `x.y` / `x` image tags. `latest` follows every
+merge to `main`. You never write a tag or a changelog by hand.
