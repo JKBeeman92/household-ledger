@@ -27,3 +27,12 @@ it on the Settings page.
 A new month arrives as two CSVs. Upload them on **Close a month**. If the build log says UNMAPPED, add the item on the Settings
 page (reuse existing canonical names), rebuild, then press **Generate review**. The pipeline's standing rules and targets live in
 the database, not in prompts — read them there.
+
+## Commits, releases, images
+- **Conventional Commits**, enforced on PR commits and the PR title: `feat:`, `fix:`, `perf:`, `refactor:`, `docs:`, `chore:`, `ci:`,
+  `build:`, `test:`. A breaking change is `feat!:` or a `BREAKING CHANGE:` footer. PRs are squash-merged, so the PR title is what
+  release-please reads.
+- **Releases are automatic.** release-please keeps a `chore(main): release x.y.z` PR open on `main`; merging it tags `vx.y.z`, writes
+  `CHANGELOG.md`, bumps `version.txt`. `feat` bumps minor, `fix` bumps patch (while < 1.0, a breaking change bumps minor).
+- **Images**: every push to `main` publishes `ghcr.io/jkbeeman92/household-ledger:latest` and `:sha-<short>`; a release additionally
+  publishes `:x.y.z`, `:x.y`, `:x`. Deployments that want stability pin `:x`; `:latest` follows `main`.

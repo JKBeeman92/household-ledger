@@ -1,14 +1,35 @@
-name: build image
+# One workflow, two jobs:
+#   release — release-please reads Conventional Commits on main, keeps a "chore(main): release x.y.z" PR open with the
+#             CHANGELOG, and when that PR is merged creates the vX.Y.Z tag and GitHub Release.
+#   image   — builds the container on every push to main (tag `latest` + short sha) and, when a release was just cut,
+#             also tags it with the semver (x.y.z, x.y, x). PRs get a build without a push, as a check.
+name: build
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   pull_request:
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
   packages: write
 jobs:
+  release:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      released: ${{ steps.rp.outputs.release_created }}
+      tag: ${{ steps.rp.outputs.tag_name }}
+      version: ${{ steps.rp.outputs.version }}
+    steps:
+      - id: rp
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
   image:
+    needs: [release]
+    if: always() && (github.event_name == 'pull_request' || needs.release.result == 'success')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,9 +46,11 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/household-ledger
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}}
-            type=sha
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
+            type=sha,enable=${{ github.event_name == 'push' }}
+            type=raw,value=${{ needs.release.outputs.version }},enable=${{ needs.release.outputs.released == 'true' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.release.outputs.tag }},enable=${{ needs.release.outputs.released == 'true' }}
+            type=semver,pattern={{major}},value=${{ needs.release.outputs.tag }},enable=${{ needs.release.outputs.released == 'true' }}
       - uses: docker/build-push-action@v6
         with:
           context: .
