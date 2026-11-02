@@ -1,0 +1,38 @@
+# Household Ledger — run from the published image. Copy .env.example to .env first.
+# Upgrades: `docker compose pull && docker compose up -d` (or let Watchtower/your updater do it): the schema applies itself on start.
+services:
+  ledger:
+    image: ghcr.io/jkbeeman92/household-ledger:latest
+    container_name: ledger
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://ledger:${POSTGRES_PASSWORD}@ledger-db:5432/ledger
+      BRAND_DIR: /data/brand
+      SEED_DIR: /data/seed
+      IMPORT_DIR: /data/import
+    ports:
+      - "8010:8010"
+    volumes:
+      - ${LEDGER_DATA:-./data}/brand:/data/brand:ro   # optional: theme.css, mark.svg, images, custom.css
+      - ${LEDGER_DATA:-./data}/import:/data/import:ro # optional: drop EveryDollar exports here; new/changed files load on every start
+      - ${LEDGER_DATA:-./data}/seed:/data/seed:ro     # optional, first boot only: item_mapping.csv, goals.json, events.json, rules.json, review.json, household.json
+    depends_on:
+      ledger-db:
+        condition: service_healthy
+
+  ledger-db:
+    image: postgres:16-alpine
+    container_name: ledger-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ledger
+      POSTGRES_USER: ledger
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ${LEDGER_DATA:-./data}/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ledger -d ledger"]
+      interval: 10s
+      timeout: 5s
+      retries: 10

@@ -1,0 +1,141 @@
+#!/usr/bin/env python3 -I
+"""Build the canonical ledger from staged EveryDollar exports + item_mapping.csv + cpi_u.csv."""
+import csv, os, re, json, collections
+from decimal import Decimal as D
+
+def norm(x): return re.sub(r"\s+"," ",(x or "").replace(" "," ")).strip()
+rx = re.compile(r"^[0-9a-f]+-(\d\d)-(\d{4})-EveryDollar-Transactions\.csv$")
+
+# ---- reference tables ----
+mapping = {norm(r["Item"]): r for r in csv.DictReader(open("item_mapping.csv", newline=""))}
+cpi = {r["month"]: float(r["cpi"]) for r in csv.DictReader(open("cpi_u.csv"))}
+# ---- rules (configurable; rules.json in the working dir overrides these defaults) ----
+RULES = {
+  "cpi_base_month": None,              # default: latest month in cpi_u.csv
+  "people": [],                        # earners/payers, e.g. ["A", "B"]
+  "income_by_person": {},              # person -> list of CanonicalItem names that are their income
+  "payer_prefix_by_person": {},        # person -> item-name prefixes that mark their personal spending
+  "payer_items_by_person": {},         # person -> explicit item names
+  "employers": [],                     # [{"match": regex on merchant, "name": "Employer"}]
+  "employer_before": None,             # {"month": "YYYY-MM", "name": "..."}: paychecks before this month with no merchant
+  "debt_plug_until": None,             # "YYYY-MM": debt "Interest" rows up to here are balancing plugs, not payments
+  "transfer_item_words": None,         # extra item-name words that mark a transfer (regex), or None for the defaults
+  "offbudget_since": None,             # "YYYY-MM": count unpaired off-budget outflows from here (exclusions table)
+  "merchant_rules": [                  # [regex, display name]; household extras go in rules.json and are tried first
+    [r"^(amzn|amazon)", "Amazon"], [r"^wal-?mart|^wm supercenter", "Walmart"], [r"^sams ?club", "Sam's Club"], [r"^costco", "Costco"],
+    [r"^target", "Target"], [r"home depot", "Home Depot"], [r"walgreens", "Walgreens"], [r"^cvs", "CVS"], [r"starbucks", "Starbucks"],
+    [r"chipotle", "Chipotle"], [r"chick.?fil", "Chick-fil-A"], [r"taco bell", "Taco Bell"], [r"wholefds|whole foods", "Whole Foods"],
+    [r"spotify", "Spotify"], [r"netflix", "Netflix"], [r"hulu", "Hulu"], [r"microsoft|xbox", "Microsoft"], [r"venmo", "Venmo"],
+    [r"zelle|quickpay", "Zelle"], [r"^shell", "Shell"], [r"chevron", "Chevron"], [r"irs|us treas", "IRS"], [r"turbotax|intuit", "TurboTax"],
+  ],
+}
+if os.path.exists("rules.json"):
+    _r = json.load(open("rules.json"))
+    if _r.get("merchant_rules"): _r["merchant_rules"] = list(_r["merchant_rules"]) + RULES["merchant_rules"]
+    RULES.update({k: v for k, v in _r.items() if v is not None})
+CPI_BASE_MONTH = RULES["cpi_base_month"] or max(cpi); CPI_BASE = cpi[CPI_BASE_MONTH]
+
+def employer(bm, merchant):
+    m = merchant.lower()
+    for e in RULES["employers"]:
+        if re.search(e["match"], m): return e["name"]
+    eb = RULES.get("employer_before")
+    if eb and bm <= eb["month"]: return eb["name"]
+    return ""
+
+ITEM_WORDS = RULES.get("transfer_item_words") or (r"long ?term(?: savings)?|vacation|holiday|hygiene|grocery|date|health|gifts?|house misc|utilities|mobile|"
+              r"technology|emergency|renters?(?: insurance)?|life insurance|every ?dollar(?: plus)?|meds?|xbox|tax slush|"
+              r"disability|clothing|car repair|office|audible|gym|slush|savings|checking|budget")
+TRANSFER_RX = re.compile(
+    r"^(transfer|rebalance|fund rebalance|fund transfer|find transfer|redistribution|office redistribution|"
+    r"end of year rebalance|long term transfer|xbox transfer|house misc transfer|from vacation|from long ?term|"
+    r"holiday|technology|car repair|long term|maintenance|tax slush|"
+    r"transfer(?:ring)? (?:to|from) (?:" + ITEM_WORDS + r")\b.*)$", re.I)
+
+def is_transfer_merchant(m):
+    m = norm(m).lower()
+    return bool(TRANSFER_RX.match(m))
+
+def merchant_norm(m):
+    s = norm(m)
+    s = re.sub(r"^(paypal|pp\*?|tst\*?|sq\*?|sp\s{1,2})\s*", "", s, flags=re.I)
+    s = re.sub(r"\b(direct dep|dir dep|payroll|web pmts|autopay|debit card purchase|purchase)\b.*$", "", s, flags=re.I)
+    s = re.sub(r"[#*].*$", "", s)
+    s = re.sub(r"\b[a-z]*\d+[a-z0-9]*\b", "", s, flags=re.I)         # store codes / confirmation numbers
+    s = re.sub(r"\b(az|mo|ks|ca|il|wy|mt|sd|ia)\b$", "", s.strip(), flags=re.I)  # trailing state
+    s = re.sub(r"\s+", " ", s).strip(" -.,")
+    for pat, name in RULES["merchant_rules"]:
+        if re.search(pat, s, flags=re.I): return name
+    return s.title() if s else ""
+
+# ---- load ----
+rows = []
+for fn in sorted(os.listdir("txns")):
+    m = rx.match(fn)
+    if not m: continue
+    bm = f"{m.group(2)}-{m.group(1)}"
+    with open(os.path.join("txns", fn), newline="", encoding="utf-8-sig") as f:
+        for i, r in enumerate(csv.DictReader(f)):
+            rows.append({"BudgetMonth": bm, "SourceFile": fn, "SourceRow": i+2,
+                         "Group": norm(r["Group"]), "Item": norm(r["Item"]), "Type": r["Type"],
+                         "Date": r["Date"], "Merchant": norm(r["Merchant"]), "Amount": D(r["Amount"]), "Note": r.get("Note","")})
+
+excluded = collections.Counter()
+out = []
+for r in rows:
+    mp = mapping.get(r["Item"])
+    if mp is None: raise SystemExit(f"unmapped item: {r['Item']!r}")
+    flow = mp["Flow"]
+    if flow == "exclude": excluded[r["Item"]] += 1; continue
+    mm, dd, yy = r["Date"].split("/")
+    cal = f"{yy}-{mm}"
+    amt = float(r["Amount"])
+    is_plug = (flow == "plug") or (r["Group"] == "Debt" and flow == "debt" and amt > 0 and r["BudgetMonth"] <= (RULES["debt_plug_until"] or "0000-00"))
+    # merchant == item name only counts as a transfer when it is an inflow (carry-forward/rebalance into a fund);
+    # 2018 hand-typed outflows ("Rent"/"Rent", "Spotify"/"Spotify") are real bills.
+    is_transfer = (flow == "transfer") or is_transfer_merchant(r["Merchant"]) or \
+                  (norm(r["Merchant"]).lower() == r["Item"].lower() and amt > 0 and r["Group"] != "Income")
+    ci = mp["CanonicalItem"]
+    if flow == "verify" and ci.startswith("Slush"): flow, is_transfer = "transfer", True; ci = "Transfer"
+    earner = ""
+    if flow == "income":
+        earner = next((p for p, items in RULES["income_by_person"].items() if ci in items), "Household")
+    payer = ""
+    if flow in ("expense","debt"):
+        payer = next((p for p, pre in RULES["payer_prefix_by_person"].items() if ci.startswith(tuple(pre))), None) \
+             or next((p for p, items in RULES["payer_items_by_person"].items() if ci in items), None) or "Household"
+    emp = employer(r["BudgetMonth"], r["Merchant"]) if ci == "Paycheck" else ""
+    c = cpi.get(cal) or cpi.get(r["BudgetMonth"]) or CPI_BASE
+    out.append({
+        "BudgetMonth": r["BudgetMonth"], "CalendarMonth": cal, "Date": f"{yy}-{mm}-{dd}",
+        "Group": r["Group"], "Item": r["Item"], "Type": r["Type"],
+        "CanonicalItem": ci, "Category": mp["Category"], "Flow": flow,
+        "Merchant": r["Merchant"], "MerchantNorm": merchant_norm(r["Merchant"]),
+        "Amount": f"{amt:.2f}", "AmountReal": f"{amt * CPI_BASE / c:.2f}",
+        "Earner": earner, "Payer": payer, "Employer": emp,
+        "IsTransfer": int(is_transfer), "IsPlug": int(is_plug), "InTotals": int(not (is_transfer or is_plug or flow in ("verify",))),
+        "HasNote": int(bool(r["Note"].strip())), "Note": r["Note"].replace("\n"," / "),
+        "SourceFile": r["SourceFile"], "SourceRow": r["SourceRow"],
+    })
+
+# ---- pair transfers (same budget month, |amount| equal, opposite sign, different item, both flagged or one flagged) ----
+by = collections.defaultdict(list)
+for i, o in enumerate(out):
+    if o["IsTransfer"]: by[(o["BudgetMonth"], abs(float(o["Amount"])))].append(i)
+pair_id = 0
+for k, idxs in by.items():
+    pos = [i for i in idxs if float(out[i]["Amount"]) > 0]; neg = [i for i in idxs if float(out[i]["Amount"]) < 0]
+    for a, b in zip(pos, neg):
+        pair_id += 1; out[a]["TransferPair"] = out[b]["TransferPair"] = pair_id
+for o in out: o.setdefault("TransferPair", "")
+
+cols = ["BudgetMonth","CalendarMonth","Date","Group","Item","Type","CanonicalItem","Category","Flow","Merchant","MerchantNorm",
+        "Amount","AmountReal","Earner","Payer","Employer","IsTransfer","IsPlug","TransferPair","InTotals","HasNote","Note","SourceFile","SourceRow"]
+with open("ledger.csv","w",newline="") as f:
+    w = csv.DictWriter(f, fieldnames=cols); w.writeheader(); w.writerows(out)
+
+json.dump(dict(excluded), open("excluded.json", "w"))
+print(f"rows in: {len(rows)}  excluded: {dict(excluded)}  rows out: {len(out)}")
+print(f"transfers: {sum(o['IsTransfer'] for o in out)}  paired: {sum(1 for o in out if o['TransferPair'])}  plugs: {sum(o['IsPlug'] for o in out)}")
+print(f"in totals: {sum(o['InTotals'] for o in out)}  CPI base {CPI_BASE_MONTH}={CPI_BASE}")
+flows = collections.Counter(o["Flow"] for o in out); print("flows:", dict(flows))

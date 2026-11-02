@@ -1,0 +1,55 @@
+/* app.css — maps the dashboard page's token names onto the brand contract tokens and lays out the shell.
+   The contract (--surface-*, --ink*, --accent*, --series-*, fonts, spacing) is defined by /brand/theme.css — the shipped default,
+   or whatever theme.css sits in BRAND_DIR. Nothing in here names a colour. See docs/BRANDING.md. */
+
+:root {
+  --color-bg: var(--surface-100); --color-panel: var(--surface-200); --color-fg: var(--ink); --color-fg-muted: var(--ink-muted);
+  --color-border-line: var(--line); --color-ok: var(--success); --color-warn: var(--warning); --color-bad: var(--danger);
+  --cds-radius: var(--radius-md, 6px);
+  --cds-pad-xs: var(--space-1, 4px); --cds-pad-sm: var(--space-2, 8px); --cds-pad-md: var(--space-3, 12px); --cds-pad-lg: var(--space-4, 16px); --cds-pad-xl: var(--space-6, 24px);
+  --cds-gap-xs: var(--space-1, 4px); --cds-gap-sm: var(--space-2, 8px); --cds-gap-md: var(--space-4, 16px); --cds-gap-lg: var(--space-6, 24px); --cds-gap-xl: var(--space-8, 32px);
+  --cds-font-size-caption: 13px; --cds-font-size-body: 16px; --cds-font-size-heading: 18px; --cds-font-size-title: 26px; --cds-font-weight-medium: 600;
+  --cds-chart-grid: var(--chart-grid); --cds-chart-axis: var(--chart-axis); --cds-chart-reference: var(--chart-reference); --cds-chart-muted: var(--series-8);
+  --cds-surface-popover: var(--surface-300); --cds-border: var(--line-strong); --cds-shadow-popover: var(--shadow-md); --cds-text-secondary: var(--ink-muted);
+  --cds-dur-slow: .3s; --cds-ease-out: ease-out;
+  --font-anthropic-sans: var(--font-sans); --font-anthropic-serif: var(--font-display); --font-mono-ui: var(--font-mono);
+  --brand0: var(--accent); --brand1: var(--accent-2);
+  color-scheme: dark;
+}
+:root[data-theme="light"] { color-scheme: light; }
+
+html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); font-family: var(--font-sans); font-size: var(--cds-font-size-body); line-height: 1.45; }
+a { color: var(--accent); }
+.shell { max-width: 1280px; margin: 0 auto; padding-block: var(--space-4) var(--space-12); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.topbar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) 0 var(--space-4); border-bottom: 1px solid var(--line); margin-bottom: var(--space-6); }
+.topbar .wordmark { font-family: var(--font-display); font-weight: 600; letter-spacing: .03em; font-size: 18px; color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: var(--space-2); }
+.topbar .wordmark img { width: 26px; height: 26px; }
+.topbar nav { display: flex; gap: var(--space-2); margin-left: auto; flex-wrap: wrap; }
+.topbar nav a, .btn { font: inherit; font-size: 14px; text-decoration: none; color: var(--ink-muted); border: 1px solid var(--line-strong); border-radius: var(--radius-md); padding: 6px 12px; background: var(--surface-200); cursor: pointer; }
+.topbar nav a:hover, .btn:hover { color: var(--ink); background: var(--surface-300); }
+.topbar nav a[aria-current="page"] { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+.btn.primary { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+.btn.primary:hover { background: var(--accent-hover); }
+.btn:focus-visible, .topbar nav a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.muted { color: var(--ink-muted); }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.panel { background: var(--surface-200); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-6); }
+.panel h2 { font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: .03em; margin: 0 0 var(--space-3); }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2); margin: 0 0 var(--space-1); }
+label { display: block; font-weight: 600; margin-bottom: var(--space-1); }
+input[type=file], input[type=text], input[type=number], textarea, select { font: inherit; color: var(--ink); background: var(--surface-300); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); width: 100%; box-sizing: border-box; }
+textarea.json { font-family: var(--font-mono); font-size: 13px; min-height: 22rem; }
+.flash { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border-left: 3px solid var(--info); background: var(--surface-200); margin-bottom: var(--space-4); }
+.flash.ok { border-left-color: var(--success); } .flash.bad { border-left-color: var(--danger); }
+.row { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); }
+table.plain { border-collapse: collapse; width: 100%; font-size: 14px; }
+table.plain th, table.plain td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+table.plain th { color: var(--ink-muted); font-weight: 600; }
+.login { min-height: 100vh; display: grid; place-items: center; background: var(--login-overlay), var(--login-backdrop) center/cover no-repeat; background-color: var(--surface-100); }
+.login .card { background: var(--surface-200); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); padding: var(--space-8); max-width: 26rem; text-align: center; box-shadow: var(--shadow-glow); }
+.login .card img { width: 64px; height: 64px; }
+.login h1 { font-family: var(--font-display); font-weight: 600; letter-spacing: .03em; margin: var(--space-3) 0 var(--space-2); }
+.foot { color: var(--ink-faint); font-size: 13px; margin-top: var(--space-12); border-top: 1px solid var(--line); padding-top: var(--space-3); }
+/* theme toggle shows the mode you would switch TO */
+#theme-toggle .sun { display: inline; } #theme-toggle .moon { display: none; }
+:root[data-theme="light"] #theme-toggle .sun { display: none; } :root[data-theme="light"] #theme-toggle .moon { display: inline; }

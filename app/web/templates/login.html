@@ -1,0 +1,6 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Sign in · {{ household.title }}</title>
+<link rel="icon" href="/brand/mark.svg"><link rel="stylesheet" href="/brand/theme.css"><link rel="stylesheet" href="/static/app.css"><link rel="stylesheet" href="/brand/custom.css"></head>
+<body><div class="login"><div class="card"><img src="/brand/mark.svg" alt=""><h1>{{ household.title }}</h1>
+<p class="muted">{{ household.name }}. Sign in with the household identity provider to continue.</p>
+{% if error %}<p class="flash bad">{{ error }}</p>{% endif %}
+<p><a class="btn primary" href="/auth/start?next={{ next|urlencode }}">Sign in</a></p></div></div></body></html>

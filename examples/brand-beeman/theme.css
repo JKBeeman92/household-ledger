@@ -1,0 +1,95 @@
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400&display=swap");
+/* Beeman — generated from tokens.json by gen_exports.py. Do not edit. */
+/* Dark (Night) is the default; set data-theme="light" on <html> for Mist. */
+:root {
+  --surface-000: #061111;
+  --surface-100: #0b1919;
+  --surface-200: #132a29;
+  --surface-300: #1b3e3f;
+  --line: #243c3c;
+  --line-strong: #5a7675;
+  --ink: #e4ebe6;
+  --ink-muted: #9db3aa;
+  --ink-faint: #7a9b9c;
+  --pine: #43a06e;
+  --pine-hover: #5fb888;
+  --pine-soft: #10281f;
+  --on-pine: #061111;
+  --glow: #a9fdda;
+  --bronze: #d9b48a;
+  --bronze-deep: #a67c4e;
+  --on-bronze: #1a120a;
+  --stone: #8aa894;
+  --slate: #4a5e60;
+  --iron: #2e3a3b;
+  --moon: #f6e3c7;
+  --on-moon: #0b1919;
+  --success: #7fcfa0;
+  --warning: #e0b35a;
+  --danger: #de6f5d;
+  --info: #7fb8bd;
+  --on-status: #061111;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
+  --shadow-md: 0 6px 20px rgba(0,0,0,0.55);
+  --shadow-glow: 0 0 0 1px rgba(169,253,218,0.35), 0 0 24px rgba(169,253,218,0.25);
+  --font-display: "Cinzel", "Trajan Pro", Georgia, serif;
+  --font-sans: "Source Sans 3", "Source Sans Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-full: 999px;
+}
+
+:root[data-theme="light"] {
+  --surface-000: #fbf9f4;
+  --surface-100: #f3f1ea;
+  --surface-200: #e6eae6;
+  --surface-300: #d6ddd8;
+  --line: #c9d3cd;
+  --line-strong: #6e8886;
+  --ink: #0b1919;
+  --ink-muted: #44605f;
+  --ink-faint: #4f6b6a;
+  --pine: #27704a;
+  --pine-hover: #236845;
+  --pine-soft: #e2f0e7;
+  --on-pine: #fbf9f4;
+  --glow: #1f8a5f;
+  --bronze: #8a5f2e;
+  --bronze-deep: #6b4720;
+  --on-bronze: #fbf9f4;
+  --stone: #51695b;
+  --slate: #3f5254;
+  --iron: #243031;
+  --moon: #f6e3c7;
+  --on-moon: #0b1919;
+  --success: #1f6b43;
+  --warning: #8a5f1e;
+  --danger: #b03a28;
+  --info: #2f6f75;
+  --on-status: #fbf9f4;
+  --shadow-sm: 0 1px 2px rgba(11,25,25,0.12);
+  --shadow-md: 0 6px 20px rgba(11,25,25,0.14);
+  --shadow-glow: 0 0 0 1px rgba(31,138,95,0.45), 0 0 18px rgba(31,138,95,0.2);
+}
+
+/* ---- Household Ledger brand contract (see docs/BRANDING.md). Maps Beeman tokens onto the names the app reads. ---- */
+:root, :root[data-theme="light"] {
+  --accent: var(--pine); --accent-hover: var(--pine-hover); --accent-soft: var(--pine-soft); --on-accent: var(--on-pine);
+  --accent-2: var(--bronze); --accent-2-deep: var(--bronze-deep); --on-accent-2: var(--on-bronze);
+  --focus: var(--glow);
+  --series-1: var(--pine); --series-2: var(--bronze); --series-3: var(--info); --series-4: var(--glow);
+  --series-5: var(--stone); --series-6: var(--moon); --series-7: var(--bronze-deep); --series-8: var(--slate);
+  --chart-grid: var(--slate); --chart-axis: var(--line-strong); --chart-reference: var(--bronze);
+  --login-backdrop: url('/brand/moonlit-valley.png'); --login-overlay: linear-gradient(rgba(6,17,17,.72), rgba(6,17,17,.86));
+  --font-import: url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400&display=swap');
+}

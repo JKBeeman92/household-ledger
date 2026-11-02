@@ -1,0 +1,29 @@
+# AGENTS.md — working in this repo
+
+Household Ledger is a FastAPI + Postgres app around a small, file-based budget pipeline. Read this before changing anything.
+
+## Invariants
+- **Raw exports are facts; everything else is derived.** Never edit rows in `transactions`/`budget_items`; fix the mapping or
+  rules and rebuild. `ledger` and `datasets` are truncated and rewritten on every rebuild.
+- **Budget month, not calendar month**, everywhere.
+- **Reconciliation must stay clean**: Σ transactions per envelope == BudgetItems Spent. A change that breaks this is wrong.
+- `pipeline/*.py` must keep working as standalone scripts on a folder of CSVs (`python -I build_ledger.py` etc.). They read
+  `item_mapping.csv`, `cpi_u.csv`, `events.json`, `rules.json` from the working directory and know nothing about the DB.
+- The dashboard page (`app/web/templates/dashboard.html`) talks to data only through `dash.data()/calc()/draw()` from
+  `dash-shim.js`. Add a dataset by emitting it from `make_datasets.py`; the shim exposes every row of `datasets` automatically.
+- Colours come from the brand contract tokens (`docs/BRANDING.md`). Never type a hex colour into `app.css` or the page.
+- No secrets in the repo. `.env` is ignored; `.env.example` holds placeholders only.
+
+## Adding a household-specific rule
+Put it in `rules.json` (and the `RULES` dict defaults in `build_ledger.py`) rather than in code, so other households can change
+it on the Settings page.
+
+## Checking a change
+1. `uvicorn app.main:app --reload` with `AUTH_DISABLED=true` against a local Postgres.
+2. `python -m pipeline.import_exports <dir>` on a set of exports; it exits non-zero if reconciliation fails.
+3. Open the page in light and dark; no console errors; every tab draws.
+
+## Month-to-month operation (what a session is usually for)
+A new month arrives as two CSVs. Upload them on **Close a month**. If the build log says UNMAPPED, add the item on the Settings
+page (reuse existing canonical names), rebuild, then press **Generate review**. The pipeline's standing rules and targets live in
+the database, not in prompts — read them there.

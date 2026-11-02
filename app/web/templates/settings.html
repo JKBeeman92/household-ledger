@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Settings · {{ household.title }}{% endblock %}
+{% block content %}
+<p class="eyebrow">Configuration</p>
+<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Settings</h1>
+<p class="muted" style="max-width:70ch">Everything the pipeline decides from is here, as data. Edit, save, then <strong>Rebuild</strong> on the Close-a-month page so the ledger and charts reflect it. Each editor validates its format before saving.</p>
+<div class="row" style="margin-top:var(--space-4)">
+  {% for ed in editors %}
+  <form class="panel" method="post" action="/settings/{{ ed.key }}">
+    <h2>{{ ed.title }}</h2>
+    <p class="muted">{{ ed.help }}</p>
+    <textarea class="json" name="body" spellcheck="false">{{ ed.body }}</textarea>
+    <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save {{ ed.title|lower }}</button></p>
+  </form>
+  {% endfor %}
+</div>
+{% endblock %}
