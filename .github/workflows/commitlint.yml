@@ -22,4 +22,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          types: feat fix perf refactor docs chore ci build test style revert
+          types: |
+            feat
+            fix
+            perf
+            refactor
+            docs
+            chore
+            ci
+            build
+            test
+            style
+            revert
