@@ -19,16 +19,53 @@ SAMPLE = ROOT / "examples" / "sample-household"
 TABLES = "source_files, transactions, budget_items, item_mapping, cpi, goals, life_events, ledger, datasets, reviews, build_log, settings"
 
 
+def csrf_token_of(c) -> str | None:
+    """The CSRF token in a TestClient's session cookie, minted by a harmless page render if the session has none yet."""
+    import base64, json
+    for attempt in (0, 1):
+        raw = c.cookies.get("session")
+        if raw:
+            try:
+                tok = json.loads(base64.b64decode(raw.split(".")[0] + "=="))
+            except Exception:  # noqa: BLE001
+                tok = {}
+            if tok.get("csrf_token"):
+                return tok["csrf_token"]
+        if attempt == 0:
+            c.get("/upload")
+    return None
+
+
+def make_client(*, csrf: bool):
+    """A TestClient; with csrf=True it adds the session's X-CSRF-Token to every unsafe request, so tests need not know about CSRF."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    class Client(TestClient):
+        def request(self, method, url, **kw):
+            if csrf and method.upper() not in ("GET", "HEAD", "OPTIONS"):
+                hdrs = dict(kw.get("headers") or {})
+                if not any(k.lower() == "x-csrf-token" for k in hdrs) and (tok := csrf_token_of(self)):
+                    hdrs["X-CSRF-Token"] = tok
+                kw["headers"] = hdrs
+            return super().request(method, url, **kw)
+    return Client(app, follow_redirects=False)
+
+
 @pytest.fixture(scope="session")
 def client():
     if not os.environ.get("DATABASE_URL"):
         pytest.skip("DATABASE_URL not set: database tests need a Postgres database to reset")
-    from fastapi.testclient import TestClient
-    from app.main import app
-    with TestClient(app, follow_redirects=False) as c:
+    with make_client(csrf=True) as c:
         yield c
     from app import db
     db.pool.close()
+
+
+@pytest.fixture
+def raw_client(client):
+    """A client that sends no CSRF token (own cookie jar), for testing the protection itself. Depends on `client` so the app is running."""
+    yield make_client(csrf=False)   # no `with`: the app's lifespan is already running under `client`
 
 
 @pytest.fixture
