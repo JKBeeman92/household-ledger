@@ -26,6 +26,7 @@ addEventListener('DOMContentLoaded', () => {
   </p>
   <ul id="build-problems" class="muted" style="margin:0;padding-left:var(--space-6)">{% for p in build.problems or [] %}<li>Reconciliation: {{ p }}</li>{% endfor %}</ul>
 </div>
+{% include "_findings.html" %}
 <div class="row" style="margin-top:var(--space-4)">
   <form class="panel" method="post" action="/upload" enctype="multipart/form-data">{{ csrf_field(request) }}
     <h2>1 · Upload the two EveryDollar exports</h2>

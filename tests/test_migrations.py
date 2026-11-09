@@ -58,11 +58,11 @@ def test_out_of_order_migration_is_applied(scratch, tmp_path):
     for p in db.MIGRATIONS.glob("0001_*.sql"):   # only the baseline, so later real migrations do not change the expected lists
         (tmp_path / p.name).write_text(p.read_text())
     (tmp_path / "0022_second_breakfast.sql").write_text("CREATE TABLE second_breakfast (id INT);")
-    assert db.migrate(scratch, tmp_path) == ["0001_baseline.sql", "0022_second_breakfast.sql"]
+    assert db.migrate(scratch, tmp_path) == sorted(p.name for p in tmp_path.glob("*.sql"))
     (tmp_path / "0010_elevenses.sql").write_text("CREATE TABLE elevenses (id INT);")
     assert db.migrate(scratch, tmp_path) == ["0010_elevenses.sql"]
     assert db.migrate(scratch, tmp_path) == []
-    assert {r[0] for r in q(scratch, "SELECT filename FROM schema_migrations")} == {"0001_baseline.sql", "0010_elevenses.sql", "0022_second_breakfast.sql"}
+    assert {r[0] for r in q(scratch, "SELECT filename FROM schema_migrations")} == {p.name for p in tmp_path.glob("*.sql")}
 
 
 def test_broken_migration_fails_loudly_and_is_not_recorded(scratch, tmp_path):

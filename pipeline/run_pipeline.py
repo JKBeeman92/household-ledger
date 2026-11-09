@@ -97,6 +97,31 @@ def reconcile(conn: psycopg.Connection, budget_month: str | None = None) -> dict
     return {"counts": counts, "problems": bad, "clean": not bad}
 
 
+def unmapped_items(conn: psycopg.Connection) -> list[dict]:
+    """Items in the raw exports that have no mapping row, or only the placeholder category UNMAPPED, worst (most rows) first."""
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute("SELECT item, category FROM item_mapping")
+        mapped = {r["item"]: r["category"] for r in cur.fetchall()}
+        cur.execute("""SELECT item, MIN(grp) AS grp, array_agg(DISTINCT budget_month ORDER BY budget_month) AS months, SUM(n)::int AS n, SUM(amt) AS amount FROM (
+                         SELECT item, grp, budget_month, COUNT(*) AS n, SUM(amount) AS amt FROM transactions GROUP BY 1,2,3
+                         UNION ALL SELECT item, grp, budget_month, 0, 0 FROM budget_items) u GROUP BY item""")
+        found: dict[str, dict] = {}
+        for r in cur.fetchall():
+            k = norm(r["item"])
+            if mapped.get(k, "UNMAPPED") != "UNMAPPED":
+                continue
+            f = found.setdefault(k, {"item": k, "group": r["grp"], "months": set(), "rows": 0, "amount": 0.0})
+            f["months"].update(r["months"]); f["rows"] += r["n"]; f["amount"] += float(r["amount"])
+    out = [dict(f, months=sorted(f["months"]), amount=round(f["amount"], 2)) for f in found.values()]
+    return sorted(out, key=lambda f: (-f["rows"], f["item"]))
+
+
+def save_findings(conn: psycopg.Connection, build_id: int, findings: dict) -> None:
+    with conn.cursor(row_factory=tuple_row) as cur:
+        cur.execute("UPDATE build_log SET findings=%s::jsonb WHERE id=%s", (json.dumps(findings), build_id))
+    conn.commit()
+
+
 # ---------------------------------------------------------------- rebuild
 def export_for_pipeline(conn: psycopg.Connection, wd: Path) -> None:
     (wd / "txns").mkdir(parents=True, exist_ok=True)
@@ -229,6 +254,8 @@ def _rebuild(conn: psycopg.Connection) -> dict:
     wd = Path(tempfile.mkdtemp(prefix="ledger-build-"))
     try:
         rec = reconcile(conn)
+        # recorded before the scripts run: an unmapped item makes build_ledger.py exit, and that is when the list matters most
+        save_findings(conn, bid, {"unmapped": unmapped_items(conn), "reconciliation": dict(rec, problems=rec["problems"][:200])})
         export_for_pipeline(conn, wd)
         log = run_scripts(wd)
         counts = load_outputs(conn, wd)

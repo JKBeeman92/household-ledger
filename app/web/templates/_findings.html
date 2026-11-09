@@ -1,0 +1,32 @@
+{# Close-a-month: what the last build found. Needs `findings` (routes/findings.py latest_findings). #}
+{% set un = findings.unmapped %}{% set rec = findings.reconciliation %}
+<div class="panel" id="findings-panel" style="margin-top:var(--space-4)">
+  <h2>Unmapped items</h2>
+  {% if findings.build_id is none %}<p class="muted">Nothing to report until the first build finishes.</p>
+  {% elif not un %}<p class="muted" id="unmapped-none">Every item in the last build has a mapping.</p>
+  {% else %}
+  <p class="muted" id="unmapped-intro" style="border-left:3px solid var(--danger);padding-left:var(--space-3)">{{ un|length }} item{{ '' if un|length == 1 else 's' }} in the exports {{ 'has' if un|length == 1 else 'have' }} no mapping, so the ledger could not be built. Give each a category and flow (reuse existing names) and the mapping is extended and rebuilt. Items left blank stay unmapped.</p>
+  <form method="post" action="/upload/map" id="unmapped-form">{{ csrf_field(request) }}
+    <datalist id="map-categories">{% for c in findings.categories %}<option value="{{ c }}">{% endfor %}</datalist>
+    <table class="plain"><thead><tr><th>Item</th><th>Months</th><th>Rows</th><th>Canonical item</th><th>Category</th><th>Flow</th></tr></thead><tbody>
+    {% for u in un %}<tr>
+      <td>{{ u.item }}<input type="hidden" name="item" value="{{ u['item'] }}"><div class="muted">{{ u.group }}</div></td>
+      <td class="mono">{{ u.months[0] }}{% if u.months|length > 1 %} … {{ u.months[-1] }}{% endif %}</td>
+      <td class="mono">{{ u.rows }}</td>
+      <td><input name="canonical" value="{{ u['item'] }}" aria-label="Canonical item for {{ u['item'] }}"></td>
+      <td><input name="category" list="map-categories" aria-label="Category for {{ u['item'] }}"></td>
+      <td><select name="flow" aria-label="Flow for {{ u['item'] }}">{% for f in findings.flows %}<option {% if f == 'expense' %}selected{% endif %}>{{ f }}</option>{% endfor %}</select></td>
+    </tr>{% endfor %}</tbody></table>
+    <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit" {% if build.state == 'running' %}disabled title="A rebuild is running"{% endif %}>Add to mapping and rebuild</button></p>
+  </form>
+  {% endif %}
+  <h2 style="margin-top:var(--space-5)">Reconciliation</h2>
+  {% if findings.build_id is none %}<p class="muted">Nothing to report until the first build finishes.</p>
+  {% elif rec.clean %}<p class="muted" id="recon-clean">Every envelope's transactions sum to its Spent ({{ rec.counts.get('OK', 0) }} envelopes checked).</p>
+  {% else %}
+  <p class="muted" id="recon-bad" style="border-left:3px solid var(--danger);padding-left:var(--space-3)">{{ rec.problems|length }} envelope{{ '' if rec.problems|length == 1 else 's' }} do not reconcile. Fix or re-upload the month's exports; the dashboard's Method tab lists them too.</p>
+  <table class="plain"><thead><tr><th>Month</th><th>Envelope</th><th>Σ transactions</th><th>Spent</th><th>Status</th></tr></thead><tbody>
+  {% for p in rec.problems %}<tr><td class="mono">{{ p.budget_month }}</td><td>{{ p.item }}</td><td class="mono">{{ '%.2f'|format(p.txn_sum) if p.txn_sum is not none else '—' }}</td><td class="mono">{{ '%.2f'|format(p.spent) if p.spent is not none else '—' }}</td><td>{{ p.status }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% endif %}
+</div>
