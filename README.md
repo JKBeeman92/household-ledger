@@ -140,9 +140,6 @@ Layout: `app/` (FastAPI, templates, static), `pipeline/` (the scripts and the se
 
 ## Privacy
 
-This is financial data. Keep it behind SSO, keep the database on an encrypted volume, and back it up (`pg_dump` of the `ledger`
-database is the whole state; the brand directory is the only other thing worth keeping). The container runs as a non-root user and
-makes exactly one kind of outbound call, to the review provider you configured, and only when you press Generate review.
 This is financial data. Keep it behind SSO, keep the database on an encrypted volume, and back it up (see [Backups](#backups): the `ledger`
 database plus the `seed/`, `brand/` and `import/` directories are the whole state). The container runs as a non-root user and
 makes exactly one outbound call, to the Anthropic API, and only when you press Generate review.
