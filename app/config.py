@@ -36,7 +36,8 @@ class Settings:
     review_max_tokens: int = int(os.environ.get("REVIEW_MAX_TOKENS", "2500"))
     seed_dir: str = os.environ.get("SEED_DIR", "")                  # household seed files (mapping, goals, rules…) read on first boot
     import_dir: str = os.environ.get("IMPORT_DIR", "")              # exports here are bulk-loaded at every start (new/changed files only)
-    i_know_auth_is_off: bool = _bool("I_KNOW_AUTH_IS_OFF", False)   # allows AUTH_DISABLED=true on a non-localhost BASE_URL
+    i_know_auth_is_off: bool = _bool("I_KNOW_AUTH_IS_OFF", False)   # allows AUTH_DISABLED=true on a non-localhost BASE_URL or in the image
+    in_container: bool = _bool("LEDGER_IN_CONTAINER", False)        # set by the Dockerfile: the image listens on 0.0.0.0
     session_max_age: int = int(os.environ.get("SESSION_MAX_AGE", str(12 * 3600)))       # seconds from sign-in; never extended
     group_recheck_seconds: int = int(os.environ.get("GROUP_RECHECK_SECONDS", "300"))    # how soon a removed group member is locked out
     # extra Content-Security-Policy sources (space-separated) for a BRAND_DIR theme; defaults cover the shipped themes' Google Fonts
@@ -62,6 +63,8 @@ class Settings:
             host = urlparse(self.base_url).hostname or ""
             if host not in {"localhost", "127.0.0.1", "::1"} and not self.i_know_auth_is_off:
                 problems.append(f"AUTH_DISABLED=true with BASE_URL host '{host}' would expose the ledger to anyone who can reach it; use localhost or set I_KNOW_AUTH_IS_OFF=1")
+            elif self.in_container and not self.i_know_auth_is_off:
+                problems.append("AUTH_DISABLED=true in the container image (which listens on 0.0.0.0) would expose the ledger to anyone who can reach its port; set I_KNOW_AUTH_IS_OFF=1 if that is really intended")
             return problems
         if len(self.session_secret) < 32:
             problems.append("SESSION_SECRET must be set (32+ random characters)")
