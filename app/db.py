@@ -7,7 +7,7 @@ from psycopg_pool import ConnectionPool
 from psycopg.rows import dict_row
 
 from .config import settings
-from pipeline.run_pipeline import seed_reference_tables, import_dir, HERE as PIPELINE_DIR
+from pipeline.run_pipeline import seed_reference_tables, import_dir, BuildBusy, HERE as PIPELINE_DIR
 
 log = logging.getLogger("ledger")
 ROOT = Path(__file__).resolve().parent.parent
@@ -64,8 +64,21 @@ def init() -> None:
             conn.execute("INSERT INTO settings (key, value) VALUES ('household', %s)", (json.dumps(hh),))
         conn.commit()
         if settings.import_dir:
-            res = import_dir(conn, Path(settings.import_dir))
-            log.info("import dir %s: %s", settings.import_dir, res)
+            last_build_id = conn.execute("SELECT coalesce(max(id), 0) m FROM build_log").fetchone()["m"]
+            try:
+                res = import_dir(conn, Path(settings.import_dir))
+                log.info("import dir %s: %s", settings.import_dir, res)
+            except BuildBusy:
+                log.warning("import dir %s: another rebuild is running; start-up import skipped", settings.import_dir)
+            except Exception as e:  # noqa: BLE001  a bad import must never stop the app from starting
+                log.error("import dir %s failed: %s", settings.import_dir, str(e)[:800])
+                try:
+                    conn.rollback()
+                    if conn.execute("SELECT 1 FROM build_log WHERE id > %s", (last_build_id,)).fetchone() is None:  # rebuild() records its own failures
+                        conn.execute("INSERT INTO build_log (finished_at, ok, summary, detail) VALUES (now(), false, %s, %s)", (f"start-up import failed: {str(e)[:450]}", str(e)))
+                    conn.commit()
+                except Exception:  # noqa: BLE001
+                    log.exception("could not record the failed start-up import in build_log")
 
 
 def get_setting(conn, key: str, default=None):

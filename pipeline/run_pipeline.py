@@ -187,8 +187,42 @@ def load_outputs(conn: psycopg.Connection, wd: Path) -> dict:
     return counts
 
 
-def rebuild(conn: psycopg.Connection) -> dict:
+BUILD_LOCK = (0x6C65, 0x6264)  # advisory lock (two int4 keys) held, on the building connection, for the whole of a rebuild
+
+
+class BuildBusy(RuntimeError):
+    """Another rebuild holds the lock (this process or another one)."""
+
+
+def build_running(conn: psycopg.Connection) -> bool:
+    """True while some session holds the build lock. A crashed process drops its session, and with it the lock."""
     with conn.cursor(row_factory=tuple_row) as cur:
+        cur.execute("SELECT 1 FROM pg_locks WHERE locktype='advisory' AND classid=%s AND objid=%s AND objsubid=2 AND granted", BUILD_LOCK)
+        busy = cur.fetchone() is not None
+    conn.commit()
+    return busy
+
+
+def rebuild(conn: psycopg.Connection) -> dict:
+    """Rebuild ledger and datasets. Only one rebuild runs at a time across all processes (BuildBusy otherwise)."""
+    with conn.cursor(row_factory=tuple_row) as cur:
+        cur.execute("SELECT pg_try_advisory_lock(%s, %s)", BUILD_LOCK)
+        if not cur.fetchone()[0]:
+            conn.commit()
+            raise BuildBusy("a rebuild is already running")
+    try:
+        return _rebuild(conn)
+    finally:
+        conn.rollback()
+        with conn.cursor(row_factory=tuple_row) as cur:
+            cur.execute("SELECT pg_advisory_unlock(%s, %s)", BUILD_LOCK)
+        conn.commit()
+
+
+def _rebuild(conn: psycopg.Connection) -> dict:
+    with conn.cursor(row_factory=tuple_row) as cur:
+        # holding the lock, so any row still unfinished belongs to a process that died mid-build
+        cur.execute("UPDATE build_log SET finished_at=now(), ok=false, summary='interrupted: the process stopped before this build finished' WHERE finished_at IS NULL")
         cur.execute("INSERT INTO build_log DEFAULT VALUES RETURNING id"); bid = cur.fetchone()[0]
     conn.commit()
     wd = Path(tempfile.mkdtemp(prefix="ledger-build-"))
@@ -198,8 +232,9 @@ def rebuild(conn: psycopg.Connection) -> dict:
         log = run_scripts(wd)
         counts = load_outputs(conn, wd)
         summary = f"ledger rows {counts.get('ledger')}; reconciliation {rec['counts']}; {'clean' if rec['clean'] else str(len(rec['problems'])) + ' problems'}"
+        detail = log + "".join(f"\nReconciliation: {p}" for p in rec.get("problems", []))
         with conn.cursor(row_factory=tuple_row) as cur:
-            cur.execute("UPDATE build_log SET finished_at=now(), ok=true, summary=%s, detail=%s WHERE id=%s", (summary, log, bid))
+            cur.execute("UPDATE build_log SET finished_at=now(), ok=true, summary=%s, detail=%s WHERE id=%s", (summary, detail, bid))
         conn.commit()
         return {"ok": True, "summary": summary, "reconciliation": rec, "counts": counts}
     except Exception as e:  # noqa: BLE001
