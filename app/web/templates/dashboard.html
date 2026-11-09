@@ -986,13 +986,14 @@ dash.draw('lm-items', (tb) => {
 const pct1 = dash.fmt.pct(1);
 const gTile = (name, field) => dash.draw(name, (el) => { const g = dash.data('goal_summary'); el.textContent = g.status === 'ok' && g.data[0] && g.data[0][field] != null ? pct1(g.data[0][field]) : '—'; });
 gTile('g-giving', 'giving_share'); gTile('g-joy', 'joy_share'); gTile('g-house', 'housing_share'); gTile('g-th', 'takehome_share');
+const goalPct = (key) => { const G = dash.data('goals'); const r = G.status === 'ok' ? G.data.find((x) => x.key === key) : null; const v = r ? Number(r.value) : NaN; return Number.isFinite(v) ? dash.fmt.pct(Number.isInteger(v * 100) ? 0 : 1)(v) : null; };
 const gDelta = (name, field, words, goodUp) => dash.draw(name, (el) => {
   const g = dash.data('goal_summary'); el.classList.remove('up', 'down');
   if (g.status !== 'ok' || !g.data[0] || g.data[0][field] == null) { el.textContent = '—'; return; }
   const v = g.data[0][field]; if (typeof v === 'string') { el.textContent = v; return; }
-  el.textContent = (v >= 0 ? '+' : '−') + dash.fmt.pct(1)(Math.abs(v)) + ' ' + words; el.classList.add((v >= 0) === goodUp ? 'up' : 'down');
+  el.textContent = (v >= 0 ? '+' : '−') + dash.fmt.pct(1)(Math.abs(v)) + ' ' + (typeof words === 'function' ? words() : words); el.classList.add((v >= 0) === goodUp ? 'up' : 'down');
 });
-gDelta('g-giving-d', 'giving_vs_floor', 'against the 10% floor', true); gDelta('g-joy-d', 'joy_vs_target', 'against the 10% target', true); gDelta('g-house-d', 'housing_vs_cap', 'against the 25% cap', false); gDelta('g-th-d', 'takehome_note', '', true);
+gDelta('g-giving-d', 'giving_vs_floor', () => 'against the ' + (goalPct('giving_floor') || '') + ' floor', true); gDelta('g-joy-d', 'joy_vs_target', () => 'against the ' + (goalPct('joy_target') || '') + ' target', true); gDelta('g-house-d', 'housing_vs_cap', () => 'against the ' + (goalPct('housing_cap') || '') + ' cap', false); gDelta('g-th-d', 'takehome_note', '', true);
 
 dash.draw('goal-lines', (el) => {
   const g = dash.data('goal_month'), G = dash.data('goals'); el.replaceChildren();

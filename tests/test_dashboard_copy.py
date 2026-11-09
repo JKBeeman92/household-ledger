@@ -67,3 +67,8 @@ def test_base_month_before_any_build_follows_the_pipeline_rule(client, reset_db)
         db.put_setting(conn, "rules", {}); conn.execute("INSERT INTO cpi VALUES ('2026-10', 330, 'test') ON CONFLICT DO NOTHING"); conn.commit()
         from app.web_helpers import _span
         assert _span(conn)["cpi_base_iso"] == "2026-10"
+def test_goal_captions_quote_the_households_own_goals(client, reset_db):
+    html = client.get("/").text
+    for literal in ("against the 10% floor", "against the 10% target", "against the 25% cap"):
+        assert literal not in html, literal
+    assert "goalPct('giving_floor')" in html and "goalPct('joy_target')" in html and "goalPct('housing_cap')" in html
