@@ -59,8 +59,9 @@ def _save_editor(conn, key: str, body: str) -> str:
         return f"{len(rows)} CPI months"
     data = json.loads(body)
     if key == "goals":
+        seen = {r["key"]: r["confirmed_at"] for r in conn.execute("SELECT key, confirmed_at FROM goals").fetchall()}   # editing the list must not forget confirmations
         conn.execute("DELETE FROM goals")
-        conn.cursor().executemany("INSERT INTO goals (key,value,unit,label,note) VALUES (%s,%s,%s,%s,%s)", [(g["key"], g.get("value"), g.get("unit", ""), g["label"], g.get("note", "")) for g in data])
+        conn.cursor().executemany("INSERT INTO goals (key,value,unit,label,note,confirmed_at) VALUES (%s,%s,%s,%s,%s,%s)", [(g["key"], g.get("value"), g.get("unit", ""), g["label"], g.get("note", ""), seen.get(g["key"])) for g in data])
         return f"{len(data)} goals"
     if key == "events":
         conn.execute("DELETE FROM life_events")

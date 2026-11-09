@@ -160,8 +160,8 @@ def export_for_pipeline(conn: psycopg.Connection, wd: Path) -> None:
         with open(wd / "cpi_u.csv", "w", newline="") as out:
             w = csv.writer(out); w.writerow(["month", "cpi", "source"])
             for r in cur: w.writerow([r["month"], f"{r['cpi']:.3f}", r["source"]])
-        cur.execute("SELECT key, value, unit, label, note FROM goals ORDER BY key")
-        goals = [dict(r, value=float(r["value"]) if r["value"] is not None else None) for r in cur]
+        cur.execute("SELECT key, value, unit, label, note, confirmed_at FROM goals ORDER BY key")
+        goals = [dict(r, value=float(r["value"]) if r["value"] is not None else None, confirmed_at=r["confirmed_at"].isoformat() if r["confirmed_at"] else None) for r in cur]
         cur.execute("SELECT month m, label FROM life_events ORDER BY month, label")
         with open(wd / "events.json", "w") as out:
             json.dump([dict(r) for r in cur], out)
