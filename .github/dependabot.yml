@@ -4,8 +4,16 @@ updates:
     directory: /
     schedule: { interval: weekly, day: monday }
     commit-message: { prefix: "chore(deps)" }
+    # 0.x packages treat a minor bump as breaking, so their minor bumps are not grouped: they get their own PR. Patches of them
+    # still group together, and stable (>=1.0) packages keep one weekly minor+patch PR. Keep the two pattern lists in step when a 0.x dependency is added.
     groups:
-      python-minor-patch: { update-types: [minor, patch] }
+      python-0x-patch:
+        patterns: [fastapi, uvicorn, python-multipart, httpx]
+        update-types: [patch]
+      python-minor-patch:
+        patterns: ["*"]
+        exclude-patterns: [fastapi, uvicorn, python-multipart, httpx]
+        update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly, day: monday }

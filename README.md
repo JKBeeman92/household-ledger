@@ -57,6 +57,12 @@ docker compose exec ledger python -m pipeline.import_exports /data/import
 Updates: the image is published to `ghcr.io/jkbeeman92/household-ledger` on every push to `main` (and `vX.Y.Z` tags).
 `docker compose pull && docker compose up -d`, or any image-watching updater, is the whole upgrade.
 
+**Hardening.** The compose file runs the app with a read-only root filesystem, all Linux capabilities dropped and
+`no-new-privileges`; its only writable path is a 256 MB tmpfs on `/tmp` (rebuild working folder, upload spool). If you run the
+image another way, give it a writable `/tmp` or set `TMPDIR`. The app trusts `X-Forwarded-*` headers from any address by default
+(`FORWARDED_ALLOW_IPS=*`); once the port is reachable only from your reverse proxy, set it to the proxy's IP or network in `.env`
+so a client that reaches the port directly cannot spoof its address.
+
 ## Backups
 
 The database holds all the state that matters; `docker-compose.yml` has an optional `backup` service (a compose profile, so a plain

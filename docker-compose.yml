@@ -6,6 +6,13 @@ services:
     container_name: ledger
     restart: unless-stopped
     env_file: .env
+    # Hardening: the app writes only to the temp dir (rebuild working folder, upload spool), so everything else is read-only.
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
     environment:
       DATABASE_URL: postgresql://ledger:${POSTGRES_PASSWORD}@ledger-db:5432/ledger
       BRAND_DIR: /data/brand
