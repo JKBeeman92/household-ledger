@@ -82,7 +82,7 @@ def test_safe_next_keeps_local_paths():
 def test_login_redirect_encodes_next():
     from starlette.requests import Request
     from fastapi import HTTPException
-    req = Request({"type": "http", "path": "/x", "query_string": b"a=1&next=//evil", "headers": [], "session": {}})
+    req = Request({"type": "http", "method": "GET", "path": "/x", "query_string": b"a=1&next=//evil", "headers": [], "session": {}})
     with pytest.raises(HTTPException) as e:
         _anon(req)
     assert e.value.headers["Location"] == "/login?next=/x%3Fa%3D1%26next%3D//evil"

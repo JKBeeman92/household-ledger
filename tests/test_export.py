@@ -66,7 +66,8 @@ def test_empty_database_exports_are_valid(client, reset_db):
 def test_exports_require_sign_in(client, loaded, auth_on):
     for path in ("/export/ledger.csv", "/export/datasets.zip", "/export/sources.zip"):
         assert client.get(path).status_code == 307
-    assert client.post("/import/scan").status_code == 307
+    r = client.post("/import/scan")
+    assert r.status_code == 303 and r.headers["location"].startswith("/login")   # 303: the browser must not re-POST to /login
 
 
 def test_scan_import_dir(client, reset_db, monkeypatch, tmp_path):
