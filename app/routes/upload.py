@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 @router.get("/upload", response_class=HTMLResponse)
-def upload_page(request: Request, user=Depends(auth.require_user)):
+def upload_page(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         files = conn.execute("SELECT budget_month, kind, filename, row_count, uploaded_at FROM source_files ORDER BY budget_month DESC, kind").fetchall()
         months = _months(conn)
@@ -19,7 +19,7 @@ def upload_page(request: Request, user=Depends(auth.require_user)):
 
 
 @router.post("/upload")
-async def upload(request: Request, files: list[UploadFile] = File(...), user=Depends(auth.require_user)):
+async def upload(request: Request, files: list[UploadFile] = File(...), user=Depends(auth.require_editor)):
     stored, errors = [], []
     with db.pool.connection() as conn:
         for f in files:
@@ -44,7 +44,7 @@ async def upload(request: Request, files: list[UploadFile] = File(...), user=Dep
 
 
 @router.post("/rebuild")
-def rebuild_now(request: Request, user=Depends(auth.require_user)):
+def rebuild_now(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         try:
             res = rebuild(conn)
@@ -55,7 +55,7 @@ def rebuild_now(request: Request, user=Depends(auth.require_user)):
 
 
 @router.post("/review/generate")
-def review_generate(request: Request, month: str = Form(...), user=Depends(auth.require_user)):
+def review_generate(request: Request, month: str = Form(...), user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         try:
             res = review.generate(conn, month)

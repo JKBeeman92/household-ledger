@@ -4,7 +4,7 @@
 <p class="eyebrow">Month close</p>
 <h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-4)">Close a month</h1>
 <div class="row">
-  <form class="panel" method="post" action="/upload" enctype="multipart/form-data">
+  <form class="panel" method="post" action="/upload" enctype="multipart/form-data">{{ csrf_field(request) }}
     <h2>1 · Upload the two EveryDollar exports</h2>
     <p class="muted">Transactions and BudgetItems for the budget month that just ended. Filenames are read for the month; re-uploading a month replaces it. Files are reconciled on arrival (every envelope's transactions must sum to its Spent) and the ledger is rebuilt.</p>
     <label for="files">Export files</label>
@@ -14,7 +14,7 @@
   <div class="panel">
     <h2>2 · Write the month-close review</h2>
     <p class="muted">Sends the closed month's figures (planned vs spent, category gaps against plan and against the trailing twelve months, the ledger's clean totals, and the standing targets) to the model and stores the result. Nothing else leaves the server. The review appears on the dashboard's Last month tab.</p>
-    <form method="post" action="/review/generate">
+    <form method="post" action="/review/generate">{{ csrf_field(request) }}
       <label for="month">Budget month</label>
       <select id="month" name="month">{% for m in months %}<option value="{{ m }}" {% if loop.first %}selected{% endif %}>{{ m }}</option>{% endfor %}</select>
       <p style="margin-top:var(--space-4)"><button class="btn primary" type="submit" {% if not review_enabled %}disabled title="Set ANTHROPIC_API_KEY to enable"{% endif %}>Generate review</button>
@@ -29,6 +29,6 @@
   <table class="plain"><thead><tr><th>Month</th><th>Kind</th><th>File</th><th>Rows</th><th>Uploaded</th></tr></thead><tbody>
   {% for f in files %}<tr><td class="mono">{{ f.budget_month }}</td><td>{{ f.kind }}</td><td>{{ f.filename }}</td><td class="mono">{{ f.row_count }}</td><td class="mono">{{ f.uploaded_at.strftime('%Y-%m-%d') }}</td></tr>{% endfor %}
   </tbody></table></details>
-  <form method="post" action="/rebuild" style="margin-top:var(--space-3)"><button class="btn" type="submit">Rebuild without uploading</button> <span class="muted">after editing the mapping, CPI, goals, events or rules</span></form>
+  <form method="post" action="/rebuild" style="margin-top:var(--space-3)">{{ csrf_field(request) }}<button class="btn" type="submit">Rebuild without uploading</button> <span class="muted">after editing the mapping, CPI, goals, events or rules</span></form>
 </div>
 {% endblock %}

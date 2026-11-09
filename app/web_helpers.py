@@ -10,6 +10,7 @@ from . import db
 
 ROOT = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=ROOT / "web" / "templates")
+templates.env.globals["csrf_field"] = lambda request: ""   # every POST form calls this; renders the hidden token input once CSRF is enforced
 
 
 def flash(request: Request, text: str, kind: str = "ok"):
