@@ -23,6 +23,8 @@ Type and rhythm: `--font-display --font-sans --font-mono`, `--space-1 2 3 4 6 8 
 
 Fonts: `@import` them at the top of `theme.css` (Google Fonts or self-hosted files placed in `BRAND_DIR`). d3 is vendored, so the
 page itself needs no CDN; a theme that imports no web fonts makes the whole app work offline.
+The Content-Security-Policy allows Google Fonts by default; fonts, stylesheets or images from any other host must be listed in
+`CSP_FONT_SRC` / `CSP_STYLE_SRC` / `CSP_IMG_SRC` (`.env.example`), or the browser blocks them.
 
 Light/dark: the header button toggles `data-theme="light"` on `<html>` and remembers the choice in the browser; with no stored
 choice the OS preference is used. A theme must therefore define both blocks.

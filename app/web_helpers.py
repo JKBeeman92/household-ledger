@@ -8,10 +8,12 @@ from fastapi.templating import Jinja2Templates
 
 from . import db
 from .csrf import csrf_field
+from .security import csp_nonce
 
 ROOT = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=ROOT / "web" / "templates")
 templates.env.globals["csrf_field"] = csrf_field   # every POST form calls this; renders the hidden token input (app/csrf.py)
+templates.env.globals["csp_nonce"] = csp_nonce     # every inline <script> carries nonce="{{ csp_nonce(request) }}" (app/security.py)
 
 
 def flash(request: Request, text: str, kind: str = "ok"):

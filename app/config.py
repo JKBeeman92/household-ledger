@@ -31,9 +31,18 @@ class Settings:
     seed_dir: str = os.environ.get("SEED_DIR", "")                  # household seed files (mapping, goals, rules…) read on first boot
     import_dir: str = os.environ.get("IMPORT_DIR", "")              # exports here are bulk-loaded at every start (new/changed files only)
     i_know_auth_is_off: bool = _bool("I_KNOW_AUTH_IS_OFF", False)   # allows AUTH_DISABLED=true on a non-localhost BASE_URL
+    session_max_age: int = int(os.environ.get("SESSION_MAX_AGE", str(12 * 3600)))       # seconds from sign-in; never extended
+    group_recheck_seconds: int = int(os.environ.get("GROUP_RECHECK_SECONDS", "300"))    # how soon a removed group member is locked out
+    # extra Content-Security-Policy sources (space-separated) for a BRAND_DIR theme; defaults cover the shipped themes' Google Fonts
+    csp_style_src: str = os.environ.get("CSP_STYLE_SRC", "https://fonts.googleapis.com")
+    csp_font_src: str = os.environ.get("CSP_FONT_SRC", "https://fonts.gstatic.com")
+    csp_img_src: str = os.environ.get("CSP_IMG_SRC", "")
 
     def validate(self) -> list[str]:
         problems = []
+        for name in ("csp_style_src", "csp_font_src", "csp_img_src"):
+            if any(c in getattr(self, name) for c in ";,\r\n"):
+                problems.append(f"{name.upper()} must be space-separated sources (no ';' or ',')")
         if self.auth_disabled:
             host = urlparse(self.base_url).hostname or ""
             if host not in {"localhost", "127.0.0.1", "::1"} and not self.i_know_auth_is_off:
@@ -44,6 +53,8 @@ class Settings:
         for name, value in (("OIDC_ISSUER", self.oidc_issuer), ("OIDC_CLIENT_ID", self.oidc_client_id), ("OIDC_CLIENT_SECRET", self.oidc_client_secret)):
             if not value:
                 problems.append(f"{name} must be set (or AUTH_DISABLED=true for local dev)")
+        if not 0 < self.group_recheck_seconds <= self.session_max_age:
+            problems.append("GROUP_RECHECK_SECONDS must be positive and no longer than SESSION_MAX_AGE")
         if not self.allowed_groups:
             problems.append("ALLOWED_GROUPS must list at least one group: empty would admit every account the identity provider authenticates")
         return problems

@@ -25,6 +25,8 @@ Hostname `ledger.beeman.family`, host port `8010`, app directory `/volume2/ledge
    `openssl rand -hex 32`, `BASE_URL=https://ledger.beeman.family`.
 4. **Authentik.** Providers → OAuth2/OpenID, confidential, authorization code, redirect URI
    `https://ledger.beeman.family/auth/callback`, signing key set, scopes `openid email profile` + the default groups mapping.
+   Also scope `offline_access` (refresh token for the 5-minute group re-check) and redirect URI `https://ledger.beeman.family/signed-out`
+   (where Sign out lands after Authentik's end-session).
    Applications → `ledger` → that provider → policy binding to `admins`. Issuer: `https://auth.beeman.family/application/o/ledger/`.
    Client ID/secret and issuer into `.env`. Leave `ANTHROPIC_API_KEY` empty until step 8.
 5. **Deploy.** `docker compose config` (look for empty values), `docker compose up -d`.

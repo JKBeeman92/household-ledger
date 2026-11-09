@@ -388,7 +388,7 @@
   <p class="foot">Built from EveryDollar Transactions and BudgetItems exports, one pair per budget month, January 2018 through the latest month loaded. Figures are recomputed from the attached files each time the page opens; the Sources panel shows the file behind any number. Real dollars use CPI-U with {{ span.cpi_base_long }} as the base month. Refreshed on the first Sunday of each month from the newest export.</p>
 </div>
 
-<script>(() => {
+<script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- shared helpers (on window: scripts run in separate scopes) ----
 window.HL = (() => {
@@ -458,7 +458,7 @@ window.HL = (() => {
 
 })();</script>
 
-<script>(() => {
+<script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- calcs ----
 const yearsAll = ['2018','2019','2020','2021','2022','2023','2024','2025','2026'];
@@ -539,7 +539,7 @@ dash.calc('goal_summary', { inputs: ['goal_month', 'goals'], title: 'Goal ratios
 
 })();</script>
 
-<script>(() => {
+<script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- controls: dollar basis + tabs (HTML owns the text; script sets attributes only) ----
 const setBasis = (b) => dash.setParams({ dollars: b });
@@ -565,7 +565,7 @@ dash.onData(() => {
 
 })();</script>
 
-<script>(() => {
+<script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- lede + tiles ----
 const ledeDraw = (name, field, fmt) => dash.draw(name, (el) => {
@@ -589,7 +589,7 @@ for (const [sfx, calc] of [['n', 'last12'], ['r', 'last12_real']]) {
 
 })();</script>
 
-<script>(() => {
+<script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- monthly income vs outgo line chart with event markers ----
 dash.draw('monthly', (el) => {
@@ -630,7 +630,7 @@ dash.draw('monthly', (el) => {
 
 })();</script>
 
-<script>(() => {
+<script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- annual grouped bars, net bars, employer stack ----
 dash.draw('annual', (el) => {
@@ -682,7 +682,7 @@ dash.draw('employer-legend', (el) => { const g = dash.data('employer'); if (g.st
 
 })();</script>
 
-<script>(() => {
+<script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- where it went ----
 let catOrder = [];
@@ -715,7 +715,7 @@ dash.draw('item-pivot', (tb) => {
 
 })();</script>
 
-<script>(() => {
+<script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- leaks ----
 dash.draw('recurring', (tb) => {
@@ -736,7 +736,7 @@ dash.draw('exclusions', (tb) => {
 
 })();</script>
 
-<script>(() => {
+<script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- position ----
 dash.draw('yearly', (tb) => {
@@ -767,7 +767,7 @@ dash.draw('debts', (el) => {
 
 })();</script>
 
-<script>(() => {
+<script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- people ----
 let earnerOrder = [], payerOrder = [];
@@ -784,7 +784,7 @@ dash.draw('people-pivot', (tb) => {
 
 })();</script>
 
-<script>(() => {
+<script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- method ----
 dash.draw('cpi', (tb) => {
@@ -799,7 +799,7 @@ dash.draw('verify', (tb) => {
 
 })();</script>
 
-<script>(() => {
+<script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- radar: top-8 categories as spokes, one ring per year ----
 window.HLradarHidden = window.HLradarHidden || new Set();
@@ -845,7 +845,7 @@ dash.draw('radar-legend', (el) => {
 
 })();</script>
 
-<script>(() => {
+<script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- last month ----
 const lmName = () => { const g = dash.data('lm_totals'); return g.status === 'ok' && g.data[0] ? HL.fmtM(HL.parseM(g.data[0].month)) : null; };
@@ -910,7 +910,7 @@ dash.draw('lm-items', (tb) => {
 
 })();</script>
 
-<script>(() => {
+<script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- goals ----
 const pct1 = d3.format('.1%');
