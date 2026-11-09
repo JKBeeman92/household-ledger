@@ -13,7 +13,8 @@ templates = Jinja2Templates(directory=ROOT / "web" / "templates")
 
 
 def flash(request: Request, text: str, kind: str = "ok"):
-    request.session.setdefault("flashes", []).append({"text": text, "kind": kind})
+    # reassign rather than append in place: the session only persists when a key is set, so a flash added to a pending list would be lost
+    request.session["flashes"] = [*request.session.get("flashes", []), {"text": text, "kind": kind}]
 
 
 def render(request: Request, name: str, user, **ctx):
