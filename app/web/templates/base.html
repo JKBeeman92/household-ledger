@@ -39,6 +39,8 @@
     if (next === 'light') document.documentElement.setAttribute('data-theme', 'light'); else document.documentElement.removeAttribute('data-theme');
     try { localStorage.setItem('theme', next); } catch (e) {}
   });
+  // forms that need a second thought carry data-confirm (inline handlers are blocked by the CSP)
+  document.addEventListener('submit', (e) => { const m = e.target.getAttribute('data-confirm'); if (m && !confirm(m)) e.preventDefault(); });
   // honour the OS when no choice is stored
   matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => { try { if (localStorage.getItem('theme')) return; } catch (x) {} if (e.matches) document.documentElement.setAttribute('data-theme', 'light'); else document.documentElement.removeAttribute('data-theme'); });
 </script>
