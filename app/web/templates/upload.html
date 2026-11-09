@@ -39,7 +39,7 @@ addEventListener('DOMContentLoaded', () => {
   <div class="panel">
     <h2>2 · Write the month-close review</h2>
     <p class="muted">Sends the closed month's figures (planned vs spent, category gaps against plan and against the trailing twelve months, the ledger's clean totals, and the standing targets) to the model and stores the result. Nothing else leaves the server. The review appears on the dashboard's Last month tab.</p>
-    <form method="post" action="/review/generate">{{ csrf_field(request) }}
+    <form method="get" action="/reviews/confirm">
       <label for="month">Budget month</label>
       <select id="month" name="month">{% for m in months %}<option value="{{ m }}" {% if loop.first %}selected{% endif %}>{{ m }}</option>{% endfor %}</select>
       <p style="margin-top:var(--space-4)"><button class="btn primary" type="submit" {% if not review_enabled %}disabled title="Configure a review provider to enable"{% endif %}>Generate review</button>

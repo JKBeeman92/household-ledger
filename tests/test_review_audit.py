@@ -1,0 +1,86 @@
+"""Review cost guard, audit list and hand-editing. The provider is stubbed; nothing touches the network."""
+from __future__ import annotations
+import json
+
+import pytest
+
+from conftest import SAMPLE
+from app import db, review, review_providers as rp
+from test_review_providers import Resp, SECTIONS, cfg, http  # noqa: F401  (fixtures)
+
+
+@pytest.fixture
+def month(client, reset_db, cfg, http):  # noqa: F811
+    reset_db(SAMPLE)
+    client.post("/upload", files=[("files", (p.name, p.read_bytes(), "text/csv")) for p in sorted(SAMPLE.glob("*EveryDollar*.csv"))])
+    cfg(anthropic_api_key="k")
+    http[1]["v"] = Resp({"content": [{"type": "text", "text": json.dumps(SECTIONS)}]})
+    with db.pool.connection() as conn:
+        return conn.execute("SELECT max(budget_month) m FROM source_files").fetchone()["m"]
+
+
+def test_generate_form_goes_to_confirmation_and_post_needs_confirm(client, month, http):
+    assert 'action="/reviews/confirm"' in client.get("/upload").text
+    r = client.post("/review/generate", data={"month": month})
+    assert r.status_code == 303 and r.headers["location"] == f"/reviews/confirm?month={month}"
+    assert http[0] == []   # no provider call without confirmation
+
+
+def test_confirmation_shows_month_and_token_estimate_then_generates(client, month, http):
+    page = client.get(f"/reviews/confirm?month={month}").text
+    with db.pool.connection() as conn:
+        tokens = review.estimate_tokens(conn, month)
+    assert month in page and f"{tokens:,}" in page and tokens > 100 and "anthropic" in page and http[0] == []
+    assert client.post("/review/generate", data={"month": month, "confirm": "yes"}).status_code == 303
+    assert len(http[0]) == 1
+    assert "already exists" in client.get(f"/reviews/confirm?month={month}").text
+
+
+def test_confirmation_unconfigured_and_bad_month(client, month, cfg):
+    cfg(anthropic_api_key="")
+    page = client.get(f"/reviews/confirm?month={month}").text
+    assert "Not configured" in page and "disabled" in page
+    assert client.get("/reviews/confirm?month=nope").status_code == 303
+    assert "Upload that month" in client.get("/reviews/confirm?month=1999-01").text
+
+
+def test_history_lists_prompt_and_model(client, month):
+    client.post("/review/generate", data={"month": month, "confirm": "yes"})
+    page = client.get("/reviews/history").text
+    assert month in page and "anthropic" in page and "ledger_totals" in page and "Calm." in page
+
+
+def test_edit_marks_hand_edited_and_refreshes_dataset(client, month):
+    client.post("/review/generate", data={"month": month, "confirm": "yes"})
+    assert "· hand-edited" not in client.get("/reviews/history").text
+    assert "Calm." in client.get(f"/reviews/edit/{month}").text
+    r = client.post(f"/reviews/edit/{month}", data={"heading": ["The month", "Plan", ""], "text": ["Rather calm, actually.", "Trim.", ""]})
+    assert r.status_code == 303
+    with db.pool.connection() as conn:
+        row = conn.execute("SELECT sections, hand_edited_at, prompt FROM reviews WHERE month=%s", (month,)).fetchone()
+        ds = conn.execute("SELECT rows FROM datasets WHERE name='review'").fetchone()["rows"]
+    assert row["hand_edited_at"] and row["prompt"] and [s["order"] for s in row["sections"]] == [1, 2]
+    assert [d["text"] for d in ds if d["m"] == month] == ["Rather calm, actually.", "Trim."]
+    assert "· hand-edited" in client.get("/reviews/history").text
+    assert "discards your edits" in client.get(f"/reviews/confirm?month={month}").text
+    client.post("/review/generate", data={"month": month, "confirm": "yes"})   # regenerating clears the mark
+    with db.pool.connection() as conn:
+        assert conn.execute("SELECT hand_edited_at FROM reviews WHERE month=%s", (month,)).fetchone()["hand_edited_at"] is None
+
+
+def test_edit_rejects_incomplete_and_unknown(client, month):
+    client.post("/review/generate", data={"month": month, "confirm": "yes"})
+    for data in ({"heading": ["Only heading"], "text": [""]}, {"heading": [""], "text": [""]}):
+        assert "Not saved" in client.get(client.post(f"/reviews/edit/{month}", data=data).headers["location"]).text
+    with db.pool.connection() as conn:
+        assert conn.execute("SELECT hand_edited_at FROM reviews WHERE month=%s", (month,)).fetchone()["hand_edited_at"] is None
+    assert client.get("/reviews/edit/1999-01").status_code == 404
+    assert client.post("/reviews/edit/..%2Fx", data={"heading": ["a"], "text": ["b"]}).status_code == 404
+
+
+def test_audit_routes_need_editor(client, reset_db, monkeypatch):
+    from app.config import settings
+    import dataclasses, app.auth as auth
+    monkeypatch.setattr(auth, "settings", dataclasses.replace(settings, auth_disabled=False))
+    for path in ("/reviews/history", "/reviews/confirm?month=2026-01", "/reviews/edit/2026-01"):
+        assert client.get(path).status_code == 307
