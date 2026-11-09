@@ -130,12 +130,15 @@ def export_for_pipeline(conn: psycopg.Connection, wd: Path) -> None:
         cur.execute("SELECT key, value, unit, label, note FROM goals ORDER BY key")
         goals = [dict(r, value=float(r["value"]) if r["value"] is not None else None) for r in cur]
         cur.execute("SELECT month m, label FROM life_events ORDER BY month, label")
-        json.dump([dict(r) for r in cur], open(wd / "events.json", "w"))
+        with open(wd / "events.json", "w") as out:
+            json.dump([dict(r) for r in cur], out)
         cur.execute("SELECT value FROM settings WHERE key='rules'")
         row = cur.fetchone()
-    json.dump(row["value"] if row else {}, open(wd / "rules.json", "w"))
+    with open(wd / "rules.json", "w") as out:
+        json.dump(row["value"] if row else {}, out)
     (wd / "dash_data").mkdir(exist_ok=True)
-    json.dump(goals, open(wd / "dash_data" / "goals.json", "w"))
+    with open(wd / "dash_data" / "goals.json", "w") as out:
+        json.dump(goals, out)
 
 
 def run_scripts(wd: Path) -> str:
@@ -146,6 +149,11 @@ def run_scripts(wd: Path) -> str:
         if p.returncode != 0:
             raise RuntimeError("\n".join(log))
     return "\n".join(log)
+
+
+def _read(path: Path) -> str:
+    with open(path) as f:
+        return f.read()
 
 
 def load_outputs(conn: psycopg.Connection, wd: Path) -> dict:
@@ -165,7 +173,8 @@ def load_outputs(conn: psycopg.Connection, wd: Path) -> dict:
         )
         counts["ledger"] = len(rows)
         for p in sorted((wd / "dash_data").glob("*.json")):
-            data = json.load(open(p))
+            with open(p) as f:
+                data = json.load(f)
             cur.execute("INSERT INTO datasets (name, rows, row_count) VALUES (%s,%s,%s) ON CONFLICT (name) DO UPDATE SET rows=EXCLUDED.rows, row_count=EXCLUDED.row_count, built_at=now()",
                         (p.stem, json.dumps(data), len(data)))
             counts[p.stem] = len(data)
@@ -241,27 +250,34 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
     with conn.cursor(row_factory=tuple_row) as cur:
         cur.execute("SELECT count(*) FROM item_mapping")
         if cur.fetchone()[0] == 0 and (seed_dir / "item_mapping.csv").exists():
-            for r in csv.DictReader(open(seed_dir / "item_mapping.csv")):
-                cur.execute("INSERT INTO item_mapping (item,canonical_item,category,flow,note) VALUES (%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
-                            (norm(r["Item"]), r["CanonicalItem"], r["Category"], r["Flow"], r.get("Note", "")))
+            with open(seed_dir / "item_mapping.csv") as f:
+                for r in csv.DictReader(f):
+                    cur.execute("INSERT INTO item_mapping (item,canonical_item,category,flow,note) VALUES (%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+                                (norm(r["Item"]), r["CanonicalItem"], r["Category"], r["Flow"], r.get("Note", "")))
         cur.execute("SELECT count(*) FROM cpi")
         if cur.fetchone()[0] == 0 and (seed_dir / "cpi_u.csv").exists():
-            for r in csv.DictReader(open(seed_dir / "cpi_u.csv")):
-                cur.execute("INSERT INTO cpi VALUES (%s,%s,%s) ON CONFLICT DO NOTHING", (r["month"], r["cpi"], r["source"]))
+            with open(seed_dir / "cpi_u.csv") as f:
+                for r in csv.DictReader(f):
+                    cur.execute("INSERT INTO cpi VALUES (%s,%s,%s) ON CONFLICT DO NOTHING", (r["month"], r["cpi"], r["source"]))
         cur.execute("SELECT count(*) FROM goals")
         if cur.fetchone()[0] == 0 and (seed_dir / "goals.json").exists():
-            for g in json.load(open(seed_dir / "goals.json")):
+            with open(seed_dir / "goals.json") as f:
+                goals_seed = json.load(f)
+            for g in goals_seed:
                 cur.execute("INSERT INTO goals (key,value,unit,label,note) VALUES (%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING", (g["key"], g["value"], g.get("unit", ""), g["label"], g.get("note", "")))
         cur.execute("SELECT count(*) FROM life_events")
         if cur.fetchone()[0] == 0 and (seed_dir / "events.json").exists():
-            for e in json.load(open(seed_dir / "events.json")):
+            with open(seed_dir / "events.json") as f:
+                events_seed = json.load(f)
+            for e in events_seed:
                 cur.execute("INSERT INTO life_events VALUES (%s,%s) ON CONFLICT DO NOTHING", (e["m"], e["label"]))
         cur.execute("SELECT count(*) FROM settings WHERE key='rules'")
         if cur.fetchone()[0] == 0 and (seed_dir / "rules.json").exists():
-            cur.execute("INSERT INTO settings (key, value) VALUES ('rules', %s)", (open(seed_dir / "rules.json").read(),))
+            cur.execute("INSERT INTO settings (key, value) VALUES ('rules', %s)", (_read(seed_dir / "rules.json"),))
         cur.execute("SELECT count(*) FROM reviews")
         if cur.fetchone()[0] == 0 and (seed_dir / "review.json").exists():
-            rows = json.load(open(seed_dir / "review.json"))
+            with open(seed_dir / "review.json") as f:
+                rows = json.load(f)
             by: dict[str, list] = {}
             for r in rows: by.setdefault(r["m"], []).append({"order": r["order"], "heading": r["heading"], "text": r["text"]})
             for m, secs in by.items():
