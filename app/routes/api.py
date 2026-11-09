@@ -48,5 +48,6 @@ def api_status(user=Depends(auth.require_user_api)):
 @router.get("/healthz")
 def healthz():
     with db.pool.connection() as conn:
-        conn.execute("SELECT 1")
-    return {"ok": True}
+        last = conn.execute("SELECT ok FROM build_log WHERE finished_at IS NOT NULL ORDER BY id DESC LIMIT 1").fetchone()
+    # `ok` is liveness only (the Docker HEALTHCHECK restarts on non-200); a failed build shows in last_build, never in the status code.
+    return {"ok": True, "last_build": "none" if not last else "ok" if last["ok"] else "failed"}
