@@ -34,6 +34,7 @@ w("employer", [{"m":m, "employer":k, "amount":v["amount"], "n":v["n"]} for m in 
 w("debts", D["debts"])
 w("recurring", D["recurring"])
 w("events", D["events"])
+w("build_meta", [{"cpi_base_month": D["meta"]["cpi_base_month"], "cpi_base": D["meta"]["cpi_base"]}])   # the base month aggregate.py used for every *_real figure
 w("cpi", [{"month":r["month"], "cpi":float(r["cpi"]), "source":r["source"]} for r in csv.DictReader(open("cpi_u.csv"))])
 
 ex = D["exclusions"]

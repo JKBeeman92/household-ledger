@@ -42,3 +42,28 @@ def test_exclusions_dataset_is_self_describing(client, reset_db):
     assert {"excluded_item", "transfers_tagged", "plugs", "rows_in_totals", "months"} <= kinds
     assert all("(2018)" not in r["key"] and "(2022+)" not in r["key"] for r in rows)
     assert next(r for r in rows if r["kind"] == "excluded_item")["item"] == "Venmo Pass-Through"
+
+
+def test_real_dollar_base_month_is_the_one_the_pipeline_used(client, reset_db):
+    from app import db
+    upload_files(client, GOLDEN / "exports")   # budget months 2025-01..04; the golden rule names 2025-04
+    assert "Apr 2025 prices" in client.get("/").text
+    with db.pool.connection() as conn:   # no rule: the pipeline uses the latest CPI month, which is later than the latest budget month
+        db.put_setting(conn, "rules", {k: v for k, v in db.get_setting(conn, "rules").items() if k != "cpi_base_month"})
+        conn.execute("INSERT INTO cpi VALUES ('2025-10', 330, 'test')"); conn.commit()
+    client.post("/rebuild")
+    html = client.get("/").text
+    assert "Oct 2025 prices" in html and "Apr 2025 prices" not in html
+    base = client.get("/api/dataset/build_meta").json()[0]
+    assert base["cpi_base_month"] == "2025-10"
+    with db.pool.connection() as conn:   # an edit not yet built must not relabel figures that are still in the old base
+        conn.execute("INSERT INTO cpi VALUES ('2025-11', 331, 'test')"); conn.commit()
+    assert "Oct 2025 prices" in client.get("/").text
+
+
+def test_base_month_before_any_build_follows_the_pipeline_rule(client, reset_db):
+    from app import db
+    with db.pool.connection() as conn:
+        db.put_setting(conn, "rules", {}); conn.execute("INSERT INTO cpi VALUES ('2026-10', 330, 'test') ON CONFLICT DO NOTHING"); conn.commit()
+        from app.web_helpers import _span
+        assert _span(conn)["cpi_base_iso"] == "2026-10"
