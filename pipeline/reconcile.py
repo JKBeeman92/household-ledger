@@ -1,13 +1,22 @@
-import csv, re as _re
-def norm(x): return _re.sub(r'\s+',' ',x.replace('\u2006',' ')).strip(), glob, os, re, sys
-from collections import defaultdict
+#!/usr/bin/env python3 -I
+"""Reconcile raw exports: sum of transactions per (budget month, item) vs the BudgetItems "Spent" column.
+
+Standalone, like the other pipeline scripts: run it in a folder holding txns/ and summaries/ (the staged EveryDollar CSVs).
+Writes reconciliation_new_rows.csv and new_rows_with_budget_month.csv there and exits 1 if anything does not reconcile."""
+import csv, glob, os, re, sys
+from collections import defaultdict, Counter
 from decimal import Decimal as D
 
-ROOT = "/home/claude/fin"
+def norm(x): return re.sub(r"\s+", " ", (x or "").replace("\u2006", " ").replace("\xa0", " ")).strip()
+
+ROOT = os.getcwd()
 rx = re.compile(r"^[0-9a-f]+-(\d\d)-(\d{4})-EveryDollar-(Transactions|BudgetItems)\.csv$")
 
 def bm_of(fn):
     m = rx.match(os.path.basename(fn)); return f"{m.group(2)}-{m.group(1)}"
+
+if not (os.path.isdir(f"{ROOT}/txns") and os.path.isdir(f"{ROOT}/summaries")):
+    sys.exit("reconcile.py: run it in a folder containing txns/ and summaries/ (EveryDollar CSV exports)")
 
 # --- transactions with Budget Month from filename ---
 txn = []
@@ -15,7 +24,7 @@ for f in sorted(glob.glob(f"{ROOT}/txns/*.csv")):
     bm = bm_of(f)
     with open(f, newline="", encoding="utf-8-sig") as fh:
         for r in csv.DictReader(fh):
-            r["BudgetMonth"] = bm; r["SourceFile"] = os.path.basename(f)
+            r["Item"] = norm(r["Item"]); r["BudgetMonth"] = bm; r["SourceFile"] = os.path.basename(f)
             txn.append(r)
 
 # --- summaries ---
@@ -24,7 +33,7 @@ for f in sorted(glob.glob(f"{ROOT}/summaries/*.csv")):
     bm = bm_of(f)
     with open(f, newline="", encoding="utf-8-sig") as fh:
         for r in csv.DictReader(fh):
-            summ[(bm, r["Item"])] = (r["Group"], D(r["Planned"]), D(r["Spent"]))
+            summ[(bm, norm(r["Item"]))] = (r["Group"], D(r["Planned"]), D(r["Spent"]))
 
 # --- aggregate txns ---
 agg = defaultdict(lambda: [D(0), 0])
@@ -59,7 +68,6 @@ with open(newrows, "w", newline="") as fh:
     w = csv.writer(fh); w.writerow(["Group","Item","Type","Date","Merchant","Amount","BudgetMonth","SourceFile"])
     for r in txn: w.writerow([r["Group"],r["Item"],r["Type"],r["Date"],r["Merchant"],r["Amount"],r["BudgetMonth"],r["SourceFile"]])
 
-from collections import Counter
 c = Counter(s for *_, s in rows)
 print(f"txn rows: {len(txn)}  calendar-month != budget-month: {cal_mismatch}")
 print("status counts:", dict(c))
@@ -67,3 +75,6 @@ print()
 for bm, g, item, planned, spent, tsum, n, delta, status in rows:
     if status in ("MISMATCH", "NO_TXNS_BUT_SPENT", "ITEM_NOT_IN_SUMMARY"):
         print(f"{bm}  {status:20s} {g:20s} {item:34s} summary={spent!s:>10} txn={tsum!s:>10} n={n:<3} delta={delta}")
+bad = [r for r in rows if r[-1] not in ("OK", "OK_NO_ACTIVITY")]
+print(f"\n{'CLEAN' if not bad else f'{len(bad)} item(s) do not reconcile'}")
+sys.exit(1 if bad else 0)
