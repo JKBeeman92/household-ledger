@@ -53,6 +53,36 @@ docker compose exec ledger python -m pipeline.import_exports /data/import
 Updates: the image is published to `ghcr.io/jkbeeman92/household-ledger` on every push to `main` (and `vX.Y.Z` tags).
 `docker compose pull && docker compose up -d`, or any image-watching updater, is the whole upgrade.
 
+## Backups
+
+The database holds all the state that matters; `docker-compose.yml` has an optional `backup` service (a compose profile, so a plain
+`up` does not start it) that dumps it on a schedule:
+
+```sh
+mkdir -p /volume2/ledger/backups
+docker compose --profile backup up -d      # one dump now, then every BACKUP_INTERVAL_HOURS (24)
+```
+
+Dumps land in `/volume2/ledger/backups/ledger-<UTC time>.dump` (`pg_dump -Fc`, readable only by root) and dumps older than
+`BACKUP_KEEP_DAYS` (14) are deleted. Both settings are optional entries in `.env`. A failed dump is logged (`docker compose logs backup`) and
+never replaces an earlier good one. Copy that directory off the machine; a backup on the same disk is not a backup.
+
+The dump is the database only. To rebuild a household from nothing you also need the directories you maintain by hand:
+`seed/`, `brand/` and `import/` (the raw EveryDollar exports) complete the state.
+
+**Restore** into an empty database, with the app stopped:
+
+```sh
+docker compose stop ledger
+docker compose exec -T ledger-db dropdb -U ledger --force ledger
+docker compose exec -T ledger-db createdb -U ledger ledger
+docker compose exec -T ledger-db pg_restore -U ledger -d ledger --no-owner < /volume2/ledger/backups/ledger-YYYYMMDDTHHMMSSZ.dump
+docker compose start ledger
+```
+
+Without the `backup` service, the same dump by hand is
+`docker compose exec -T ledger-db pg_dump -U ledger -Fc ledger > ledger.dump`.
+
 ## Try it with the sample household
 
 `examples/sample-household/` is a synthetic household (two earners, 18 budget months, a student loan, a transfer pair, three-paycheck
@@ -110,8 +140,8 @@ Layout: `app/` (FastAPI, templates, static), `pipeline/` (the scripts and the se
 
 ## Privacy
 
-This is financial data. Keep it behind SSO, keep the database on an encrypted volume, and back it up (`pg_dump` of the `ledger`
-database is the whole state; the brand directory is the only other thing worth keeping). The container runs as a non-root user and
+This is financial data. Keep it behind SSO, keep the database on an encrypted volume, and back it up (see [Backups](#backups): the `ledger`
+database plus the `seed/`, `brand/` and `import/` directories are the whole state). The container runs as a non-root user and
 makes exactly one outbound call, to the Anthropic API, and only when you press Generate review.
 
 ## License
