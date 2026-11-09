@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Response
 
 from .. import db, auth
 from ..web_helpers import _months
+from .. import stale
 from pipeline.run_pipeline import reconcile
 
 router = APIRouter()
@@ -17,6 +18,7 @@ def render_metrics(conn) -> str:
             out.append(f"{name} {round(float(value), 3)!r}")
 
     metric("ledger_months_loaded", "Budget months with uploaded exports.", len(_months(conn)))
+    metric("ledger_months_missing", "Budget months that should be loaded by now but are not (0 = up to date).", len(stale.missing_months(_months(conn))))
     b = conn.execute("SELECT ok, EXTRACT(EPOCH FROM finished_at - started_at) AS dur, EXTRACT(EPOCH FROM finished_at) AS ts "
                      "FROM build_log WHERE finished_at IS NOT NULL ORDER BY id DESC LIMIT 1").fetchone()
     metric("ledger_last_build_ok", "1 if the last finished build succeeded, 0 if it failed; absent before any build.", None if not b else int(bool(b["ok"])))

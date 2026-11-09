@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 
 from .. import db, auth
 from ..web_helpers import _months, _format_settings
+from .. import stale
 
 router = APIRouter()
 
@@ -43,7 +44,7 @@ def api_status(user=Depends(auth.require_user_api)):
         months = _months(conn)
         last = conn.execute("SELECT started_at, finished_at, ok, summary FROM build_log ORDER BY id DESC LIMIT 1").fetchone()
         hh = db.get_setting(conn, "household", {})
-    return {**_format_settings(hh), "months": len(months), "first": months[-1] if months else None, "last": months[0] if months else None, "last_build": last}
+    return {**_format_settings(hh), "months": len(months), "first": months[-1] if months else None, "last": months[0] if months else None, "last_build": last, **stale.stale_status(months)}
 
 
 @router.get("/healthz")

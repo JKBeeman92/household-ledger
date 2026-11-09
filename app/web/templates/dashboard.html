@@ -73,6 +73,7 @@
 </style>
 
 <div id="dash-root" class="hl">
+  {% if freshness.stale %}<div class="flash warn" id="stale-banner" role="status">{{ freshness.message }}.{% if user and user.is_editor %} <a href="/upload">Close a month</a>{% endif %}</div>{% endif %}
   <p class="eyebrow">{{ household.name or 'Household' }}{% if span.has_data %} · {{ span.years }}-year audit{% endif %}</p>
   <div class="masthead">
     <img class="mark" src="/brand/mark.svg" alt="">
