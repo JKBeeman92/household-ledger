@@ -7,10 +7,11 @@ from fastapi import Request
 from fastapi.templating import Jinja2Templates
 
 from . import db
+from .csrf import csrf_field
 
 ROOT = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=ROOT / "web" / "templates")
-templates.env.globals["csrf_field"] = lambda request: ""   # every POST form calls this; renders the hidden token input once CSRF is enforced
+templates.env.globals["csrf_field"] = csrf_field   # every POST form calls this; renders the hidden token input (app/csrf.py)
 
 
 def flash(request: Request, text: str, kind: str = "ok"):
