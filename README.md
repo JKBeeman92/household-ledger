@@ -139,9 +139,16 @@ With auth on, the app refuses to start (and prints why) on a missing or short `S
 
 ## Month-close review
 
-With `ANTHROPIC_API_KEY` set, the Close-a-month page can write a review of any loaded month. It sends derived figures only
+With a review provider configured, the Close-a-month page can write a review of any loaded month. It sends derived figures only
 (planned vs spent per envelope, category totals, monthly totals, trailing-twelve averages, goals) — never transactions, merchants
 or notes — and stores both the prompt and the result so it can be audited. The review appears on the dashboard's **Last month** tab.
+
+The provider is chosen by `REVIEW_PROVIDER` (default `anthropic`, which uses `ANTHROPIC_API_KEY`): `openai` (any OpenAI-compatible
+endpoint, via `REVIEW_BASE_URL` such as `https://host/v1`, and `REVIEW_API_KEY` where the server wants one), `ollama`
+(`REVIEW_BASE_URL=http://ollama:11434`, no key, so a homelab can run it fully offline) or `gemini` (`REVIEW_API_KEY`). Every
+provider except Anthropic needs `REVIEW_MODEL`; none is guessed. The **Reviews** page overrides provider, model and base URL per
+household and has a Test connection button. The stored review records `provider:model`. Local models may need a larger
+`REVIEW_MAX_TOKENS` (default 2500); replies wrapped in markdown fences or prose are tolerated.
 
 ## Local development
 
@@ -157,7 +164,8 @@ Layout: `app/` (FastAPI, templates, static), `pipeline/` (the scripts and the se
 
 This is financial data. Keep it behind SSO, keep the database on an encrypted volume, and back it up (see [Backups](#backups): the `ledger`
 database plus the `seed/`, `brand/` and `import/` directories are the whole state). The container runs as a non-root user and
-makes exactly one outbound call, to the Anthropic API, and only when you press Generate review.
+makes outbound calls only when you ask for them: to the review provider you configured when you press Generate review, and to the
+price-index source when you press Fetch latest on the CPI page. Only derived figures are sent, never transactions.
 
 ## License
 

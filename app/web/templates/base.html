@@ -23,6 +23,7 @@
       {% if user and user.is_editor %}
       <a href="/upload" {% if active == 'upload' %}aria-current="page"{% endif %}>Close a month</a>
       <a href="/settings" {% if active == 'settings' %}aria-current="page"{% endif %}>Settings</a>
+      <a href="/reviews" {% if active == 'reviews' %}aria-current="page"{% endif %}>Reviews</a>
       {% endif %}
       <button type="button" class="btn" id="theme-toggle" aria-label="Switch between light and dark" title="Switch between light and dark"><span class="sun">☀ Light</span><span class="moon">☾ Dark</span></button>
       {% if user %}<a href="/logout" title="{{ user.email }}">Sign out</a>{% endif %}
