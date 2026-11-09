@@ -15,7 +15,7 @@ shadows the shipped default of the same name under `/brand/…`.
 ## The token contract
 
 Surfaces and text: `--surface-000 --surface-100 --surface-200 --surface-300 --line --line-strong --ink --ink-muted --ink-faint`
-Brand: `--accent --accent-hover --accent-soft --on-accent --accent-2 --accent-2-deep --on-accent-2 --focus`
+Brand: `--accent --accent-hover --accent-soft --on-accent --accent-2 --accent-2-deep --on-accent-2 --accent-2-text --focus` (`--accent-2-text` is the ochre for small text; it must reach 4.5:1 on the panel surfaces, `--accent-2` itself only 3:1; if missing, `--accent-2` is used)
 Status: `--success --warning --danger --info --on-status`
 Charts: `--series-1 … --series-8` (categorical order used by every chart), `--chart-grid --chart-axis --chart-reference`
 Login: `--login-backdrop` (an `url()`), `--login-overlay` (a gradient laid over it)
