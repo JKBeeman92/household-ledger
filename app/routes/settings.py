@@ -82,7 +82,7 @@ def _row_save(conn, kind: str, f: dict) -> tuple[dict, dict]:
             _unique_err(conn, "SELECT 1 FROM goals WHERE key=%s", (c["key"],), err, "key", "already a goal")
         if not err:
             if orig and orig != c["key"]:
-                conn.execute("DELETE FROM goals WHERE key=%s", (orig,))
+                conn.execute("UPDATE goals SET key=%s WHERE key=%s", (c["key"], orig))   # a rename keeps confirmed_at
             conn.execute("INSERT INTO goals (key,value,unit,label,note) VALUES (%s,%s,%s,%s,%s) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, unit=EXCLUDED.unit, label=EXCLUDED.label, note=EXCLUDED.note, updated_at=now()",
                          (c["key"], c["value"], c["unit"], c["label"], c["note"]))
     else:

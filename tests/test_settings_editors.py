@@ -125,3 +125,17 @@ def test_row_endpoints_need_sign_in(client, reset_db, auth_on):
     assert client.post("/settings/mapping/row", data=ROW).status_code == 401
     assert client.post("/settings/mapping/row/delete", data={"original": "x"}).status_code == 401
     assert client.get("/settings/mapping.csv").status_code == 307
+
+
+def test_renaming_a_goal_keeps_its_confirmation(client, reset_db):
+    with db.pool.connection() as conn:
+        conn.execute("DELETE FROM goals WHERE key IN ('ren_a','ren_b')")
+        conn.execute("INSERT INTO goals (key,value,unit,label,note,confirmed_at) VALUES ('ren_a',5,'usd','Ren','',now())")
+        conn.commit()
+        stamp = conn.execute("SELECT confirmed_at FROM goals WHERE key='ren_a'").fetchone()["confirmed_at"]
+    r = client.post("/settings/goals/row", data={"original": "ren_a", "key": "ren_b", "label": "Ren", "value": "6", "unit": "usd", "note": ""})
+    assert r.json()["ok"]
+    with db.pool.connection() as conn:
+        assert conn.execute("SELECT 1 FROM goals WHERE key='ren_a'").fetchone() is None
+        g = conn.execute("SELECT value, confirmed_at FROM goals WHERE key='ren_b'").fetchone()
+    assert g["confirmed_at"] == stamp and float(g["value"]) == 6
