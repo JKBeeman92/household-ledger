@@ -1,0 +1,54 @@
+BudgetMonth,CalendarMonth,Date,Group,Item,Type,CanonicalItem,Category,Flow,Merchant,MerchantNorm,Amount,AmountReal,Earner,Payer,Employer,IsTransfer,IsPlug,TransferPair,InTotals,HasNote,Note,SourceFile,SourceRow
+2025-01,2025-01,2025-01-03,Income,Rosie Paycheck,Income,Paycheck,Income,income,HOBBITON MILL PAYROLL,Hobbiton Mill,1880.00,1898.49,Rosie,,Hobbiton Mill,0,0,,1,0,,c0ffee-01-2025-EveryDollar-Transactions.csv,2
+2025-01,2025-01,2025-01-17,Income,Rosie Paycheck,Income,Paycheck,Income,income,HOBBITON MILL PAYROLL,Hobbiton Mill,1880.00,1898.49,Rosie,,Hobbiton Mill,0,0,,1,0,,c0ffee-01-2025-EveryDollar-Transactions.csv,3
+2025-01,2025-01,2025-01-10,Income,Sam Contract Income,Income,Contract Income,Income,income,Gaffer's Garden Works,Gaffer'S Garden Works,900.00,908.85,Sam,,,0,0,,1,0,,c0ffee-01-2025-EveryDollar-Transactions.csv,4
+2025-01,2025-01,2025-01-01,Housing,Rent,Expense,Rent,Housing,expense,Bywater Property Co,Bywater Property Co,-1450.00,-1464.26,,Household,,0,0,,1,0,,c0ffee-01-2025-EveryDollar-Transactions.csv,5
+2025-01,2025-01,2025-01-04,Food,Groceries,Expense,Groceries,Food,expense,BYWATER MARKET #0412,Bywater Market,-112.40,-113.51,,Household,,0,0,,1,0,,c0ffee-01-2025-EveryDollar-Transactions.csv,6
+2025-01,2025-01,2025-01-18,Food,Groceries,Expense,Groceries,Food,expense,Farmer Maggot's Farm Stand,Farmer Maggot'S Farm Stand,-64.15,-64.78,,Household,,0,0,,1,0,,c0ffee-01-2025-EveryDollar-Transactions.csv,7
+2025-01,2025-01,2025-01-12,Food,Eating Out,Expense,Eating Out,Food,expense,GREEN DRAGON INN 8812,Green Dragon Inn,-38.00,-38.37,,Household,,0,0,,1,1,birthday supper,c0ffee-01-2025-EveryDollar-Transactions.csv,8
+2025-01,2025-01,2025-01-06,Transportation,Fuel,Expense,Fuel,Transportation,expense,Shell,Shell,-41.20,-41.61,,Household,,0,0,,1,0,,c0ffee-01-2025-EveryDollar-Transactions.csv,9
+2025-01,2025-01,2025-01-09,Subscriptions,Streaming,Expense,Streaming,Subscriptions,expense,Netflix,Netflix,-15.49,-15.64,,Household,,0,0,,1,0,,c0ffee-01-2025-EveryDollar-Transactions.csv,10
+2025-01,2025-01,2025-01-14,Personal,Rosie Fun Money,Expense,Rosie Fun Money,Personal,expense,Amazon,Amazon,-26.57,-26.83,,Rosie,,0,0,,1,0,,c0ffee-01-2025-EveryDollar-Transactions.csv,11
+2025-01,2025-01,2025-01-05,Debt,Student Loan,Expense,Student Loan,Debt,debt,Lembas Loan Servicing,Lembas Loan Servicing,-275.00,-277.70,,Household,,0,0,,1,0,,c0ffee-01-2025-EveryDollar-Transactions.csv,12
+2025-01,2025-01,2025-01-31,Other,Balancing Plug,Expense,Balancing Plug,Other,plug,Balancing entry,Balancing Entry,12.34,12.46,,,,0,1,,0,0,,c0ffee-01-2025-EveryDollar-Transactions.csv,14
+2025-02,2025-02,2025-02-03,Income,Rosie Paycheck,Income,Paycheck,Income,income,HOBBITON MILL PAYROLL,Hobbiton Mill,1880.00,1890.09,Rosie,,Hobbiton Mill,0,0,,1,0,,c0ffee-02-2025-EveryDollar-Transactions.csv,2
+2025-02,2025-02,2025-02-17,Income,Rosie Paycheck,Income,Paycheck,Income,income,HOBBITON MILL PAYROLL,Hobbiton Mill,1880.00,1890.09,Rosie,,Hobbiton Mill,0,0,,1,0,,c0ffee-02-2025-EveryDollar-Transactions.csv,3
+2025-02,2025-02,2025-02-11,Income,Sam Contract Income,Income,Contract Income,Income,income,Sackville Estates,Sackville Estates,1100.00,1105.91,Sam,,,0,0,,1,0,,c0ffee-02-2025-EveryDollar-Transactions.csv,4
+2025-02,2025-02,2025-02-20,Income,Sam Contract Income,Income,Contract Income,Income,income,Transfer from Savings,Transfer From Savings,250.00,251.34,Sam,,,1,0,,0,1,"moved in from savings, not earned",c0ffee-02-2025-EveryDollar-Transactions.csv,5
+2025-02,2025-02,2025-02-01,Housing,Rent,Expense,Rent,Housing,expense,Bywater Property Co,Bywater Property Co,-1450.00,-1457.78,,Household,,0,0,,1,0,,c0ffee-02-2025-EveryDollar-Transactions.csv,6
+2025-02,2025-02,2025-02-08,Utilities,Electric,Expense,Electric,Utilities,expense,SHIRE POWER & LIGHT,Shire Power & Light,-97.80,-98.33,,Household,,0,0,,1,0,,c0ffee-02-2025-EveryDollar-Transactions.csv,7
+2025-02,2025-01,2025-01-30,Food,Groceries,Expense,Groceries,Food,expense,BYWATER MARKET #0412,Bywater Market,-23.10,-23.33,,Household,,0,0,,1,1,"dated in January, belongs to the February budget",c0ffee-02-2025-EveryDollar-Transactions.csv,8
+2025-02,2025-02,2025-02-05,Food,Groceries,Expense,Groceries,Food,expense,BYWATER MARKET #0412,Bywater Market,-120.00,-120.64,,Household,,0,0,,1,0,,c0ffee-02-2025-EveryDollar-Transactions.csv,9
+2025-02,2025-02,2025-02-19,Food,Groceries,Expense,Groceries,Food,expense,Whole Foods,Whole Foods,-71.60,-71.98,,Household,,0,0,,1,0,,c0ffee-02-2025-EveryDollar-Transactions.csv,10
+2025-02,2025-02,2025-02-14,Food,Eating Out,Expense,Eating Out,Food,expense,Green Dragon Inn,Green Dragon Inn,-52.25,-52.53,,Household,,0,0,,1,0,,c0ffee-02-2025-EveryDollar-Transactions.csv,11
+2025-02,2025-02,2025-02-07,Transportation,Fuel,Expense,Fuel,Transportation,expense,Shire Fuel Stop,Shire Fuel Stop,-38.90,-39.11,,Household,,0,0,,1,0,,c0ffee-02-2025-EveryDollar-Transactions.csv,12
+2025-02,2025-02,2025-02-09,Subscriptions,Streaming,Expense,Streaming,Subscriptions,expense,Netflix,Netflix,-15.49,-15.57,,Household,,0,0,,1,0,,c0ffee-02-2025-EveryDollar-Transactions.csv,13
+2025-02,2025-02,2025-02-22,Personal,Rosie Fun Money,Expense,Rosie Fun Money,Personal,expense,Starbucks,Starbucks,-18.75,-18.85,,Rosie,,0,0,,1,0,,c0ffee-02-2025-EveryDollar-Transactions.csv,14
+2025-02,2025-02,2025-02-05,Debt,Student Loan,Expense,Student Loan,Debt,debt,Lembas Loan Servicing,Lembas Loan Servicing,-275.00,-276.48,,Household,,0,0,,1,0,,c0ffee-02-2025-EveryDollar-Transactions.csv,15
+2025-03,2025-03,2025-03-03,Income,Rosie Paycheck,Income,Paycheck,Income,income,HOBBITON MILL PAYROLL,Hobbiton Mill,1880.00,1885.86,Rosie,,Hobbiton Mill,0,0,,1,0,,c0ffee-03-2025-EveryDollar-Transactions.csv,2
+2025-03,2025-03,2025-03-17,Income,Rosie Paycheck,Income,Paycheck,Income,income,HOBBITON MILL PAYROLL,Hobbiton Mill,1880.00,1885.86,Rosie,,Hobbiton Mill,0,0,,1,0,,c0ffee-03-2025-EveryDollar-Transactions.csv,3
+2025-03,2025-03,2025-03-31,Income,Rosie Paycheck,Income,Paycheck,Income,income,HOBBITON MILL PAYROLL,Hobbiton Mill,1880.00,1885.86,Rosie,,Hobbiton Mill,0,0,,1,1,three-paycheck month,c0ffee-03-2025-EveryDollar-Transactions.csv,4
+2025-03,2025-03,2025-03-12,Income,Sam Contract Income,Income,Contract Income,Income,income,Gaffer's Garden Works,Gaffer'S Garden Works,850.00,852.65,Sam,,,0,0,,1,0,,c0ffee-03-2025-EveryDollar-Transactions.csv,5
+2025-03,2025-03,2025-03-01,Housing,Rent,Expense,Rent,Housing,expense,Bywater Property Co,Bywater Property Co,-1450.00,-1454.52,,Household,,0,0,,1,0,,c0ffee-03-2025-EveryDollar-Transactions.csv,6
+2025-03,2025-03,2025-03-08,Utilities,Electric,Expense,Electric,Utilities,expense,SHIRE POWER & LIGHT,Shire Power & Light,-84.30,-84.56,,Household,,0,0,,1,0,,c0ffee-03-2025-EveryDollar-Transactions.csv,7
+2025-03,2025-03,2025-03-04,Food,Groceries,Expense,Groceries,Food,expense,BYWATER MARKET #0412,Bywater Market,-131.85,-132.26,,Household,,0,0,,1,0,,c0ffee-03-2025-EveryDollar-Transactions.csv,8
+2025-03,2025-03,2025-03-15,Food,Eating Out,Expense,Eating Out,Food,expense,Chipotle,Chipotle,-24.60,-24.68,,Household,,0,0,,1,0,,c0ffee-03-2025-EveryDollar-Transactions.csv,9
+2025-03,2025-03,2025-03-22,Food,Eating Out,Expense,Eating Out,Food,expense,Green Dragon Inn,Green Dragon Inn,-47.10,-47.25,,Household,,0,0,,1,0,,c0ffee-03-2025-EveryDollar-Transactions.csv,10
+2025-03,2025-03,2025-03-10,Transportation,Fuel,Expense,Fuel,Transportation,expense,Shell,Shell,-44.00,-44.14,,Household,,0,0,,1,0,,c0ffee-03-2025-EveryDollar-Transactions.csv,11
+2025-03,2025-03,2025-03-09,Subscriptions,Streaming,Expense,Streaming,Subscriptions,expense,Netflix,Netflix,-15.49,-15.54,,Household,,0,0,,1,0,,c0ffee-03-2025-EveryDollar-Transactions.csv,12
+2025-03,2025-03,2025-03-18,Savings,Holiday,Expense,Holiday,Savings,expense,Transfer,Transfer,-100.00,-100.31,,Household,,1,0,1,0,1,moved to the emergency fund,c0ffee-03-2025-EveryDollar-Transactions.csv,13
+2025-03,2025-03,2025-03-18,Savings,Emergency Fund,Expense,Emergency Fund,Savings,expense,Transfer,Transfer,100.00,100.31,,Household,,1,0,1,0,1,moved from holiday,c0ffee-03-2025-EveryDollar-Transactions.csv,14
+2025-03,2025-03,2025-03-05,Debt,Student Loan,Expense,Student Loan,Debt,debt,Lembas Loan Servicing,Lembas Loan Servicing,-275.00,-275.86,,Household,,0,0,,1,0,,c0ffee-03-2025-EveryDollar-Transactions.csv,15
+2025-04,2025-04,2025-04-03,Income,Rosie Paycheck,Income,Paycheck,Income,income,HOBBITON MILL PAYROLL,Hobbiton Mill,1880.00,1880.00,Rosie,,Hobbiton Mill,0,0,,1,0,,c0ffee-04-2025-EveryDollar-Transactions.csv,2
+2025-04,2025-04,2025-04-17,Income,Rosie Paycheck,Income,Paycheck,Income,income,HOBBITON MILL PAYROLL,Hobbiton Mill,1880.00,1880.00,Rosie,,Hobbiton Mill,0,0,,1,0,,c0ffee-04-2025-EveryDollar-Transactions.csv,3
+2025-04,2025-04,2025-04-09,Income,Sam Contract Income,Income,Contract Income,Income,income,Sackville Estates,Sackville Estates,1300.00,1300.00,Sam,,,0,0,,1,0,,c0ffee-04-2025-EveryDollar-Transactions.csv,4
+2025-04,2025-04,2025-04-01,Housing,Rent,Expense,Rent,Housing,expense,Bywater Property Co,Bywater Property Co,-1450.00,-1450.00,,Household,,0,0,,1,0,,c0ffee-04-2025-EveryDollar-Transactions.csv,5
+2025-04,2025-04,2025-04-08,Utilities,Electric,Expense,Electric,Utilities,expense,SHIRE POWER & LIGHT,Shire Power & Light,-79.95,-79.95,,Household,,0,0,,1,0,,c0ffee-04-2025-EveryDollar-Transactions.csv,6
+2025-04,2025-04,2025-04-02,Food,Groceries,Expense,Groceries,Food,expense,Farmer Maggot's Farm Stand,Farmer Maggot'S Farm Stand,-58.20,-58.20,,Household,,0,0,,1,0,,c0ffee-04-2025-EveryDollar-Transactions.csv,7
+2025-04,2025-04,2025-04-13,Food,Groceries,Expense,Groceries,Food,expense,BYWATER MARKET #0412,Bywater Market,-139.40,-139.40,,Household,,0,0,,1,0,,c0ffee-04-2025-EveryDollar-Transactions.csv,8
+2025-04,2025-04,2025-04-12,Food,Eating Out,Expense,Eating Out,Food,expense,Prancing Pony Takeaway,Prancing Pony Takeaway,-33.75,-33.75,,Household,,0,0,,1,0,,c0ffee-04-2025-EveryDollar-Transactions.csv,9
+2025-04,2025-04,2025-04-06,Transportation,Fuel,Expense,Fuel,Transportation,expense,Shire Fuel Stop,Shire Fuel Stop,-40.55,-40.55,,Household,,0,0,,1,0,,c0ffee-04-2025-EveryDollar-Transactions.csv,10
+2025-04,2025-04,2025-04-09,Subscriptions,Streaming,Expense,Streaming,Subscriptions,expense,Netflix,Netflix,-15.49,-15.49,,Household,,0,0,,1,0,,c0ffee-04-2025-EveryDollar-Transactions.csv,11
+2025-04,2025-04,2025-04-20,Personal,Rosie Fun Money,Expense,Rosie Fun Money,Personal,expense,Bywater Books,Bywater Books,-31.20,-31.20,,Rosie,,0,0,,1,0,,c0ffee-04-2025-EveryDollar-Transactions.csv,12
+2025-04,2025-04,2025-04-25,Savings,Emergency Fund,Expense,Emergency Fund,Savings,expense,Green Hills Credit Union,Green Hills Credit Union,-300.00,-300.00,,Household,,0,0,,1,0,,c0ffee-04-2025-EveryDollar-Transactions.csv,13
+2025-04,2025-04,2025-04-05,Debt,Student Loan,Expense,Student Loan,Debt,debt,Lembas Loan Servicing,Lembas Loan Servicing,-275.00,-275.00,,Household,,0,0,,1,0,,c0ffee-04-2025-EveryDollar-Transactions.csv,14

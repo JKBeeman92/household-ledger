@@ -10,6 +10,7 @@
 
 ## How I checked it
 
+- [ ] `python -m pytest -q` passes (goldens regenerated only on purpose, and the diff reviewed)
 - [ ] Ran locally against Postgres (`AUTH_DISABLED=true`) and the page draws in light and dark with no console errors
 - [ ] Pipeline change: `python -m pipeline.import_exports <fixtures>` exits 0 (reconciliation clean) and the ledger diff is the one I expected
 - [ ] Schema change: applies on an existing database, not just a fresh one
