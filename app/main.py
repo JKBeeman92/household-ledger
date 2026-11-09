@@ -62,7 +62,7 @@ def brand(path: str):
 @app.get("/login", response_class=HTMLResponse)
 def login(request: Request, next: str = "/", error: str = ""):
     if auth.current_user(request):
-        return RedirectResponse(next if next.startswith("/") else "/")
+        return RedirectResponse(auth._safe_next(next))
     return render(request, "login.html", None, next=next, error=error)
 
 
