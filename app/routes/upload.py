@@ -4,6 +4,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from ..config import settings
 from .. import db, auth, review
 from ..web_helpers import flash, render, _months
+from ..uploads import MAX_FILE_BYTES, expand_zip, is_zip, Item
+from psycopg.types.json import Jsonb
 from ..builds import build_status, run_background
 from .findings import latest_findings
 from .checklist import checklist_goals
@@ -23,28 +25,50 @@ def upload_page(request: Request, user=Depends(auth.require_editor)):
         findings = latest_findings(conn)
         checklist = checklist_goals(conn)
         review_ok = review.providers.is_configured(conn)
-    return render(request, "upload.html", user, active="upload", findings=findings, checklist=checklist, files=files, months=months, build=build, review_enabled=review_ok)
+        last = conn.execute("SELECT created_at, results FROM upload_batches ORDER BY id DESC LIMIT 1").fetchone()
+    return render(request, "upload.html", user, active="upload", findings=findings, checklist=checklist, files=files, months=months, build=build, review_enabled=review_ok, last_upload=last, max_upload_mb=settings.max_upload_mb)
+
+
+async def _read_capped(f: UploadFile) -> bytes | None:
+    data = await f.read(MAX_FILE_BYTES + 1)
+    return None if len(data) > MAX_FILE_BYTES else data
 
 
 @router.post("/upload")
 async def upload(request: Request, background: BackgroundTasks, files: list[UploadFile] = File(...), user=Depends(auth.require_editor)):
-    stored, errors = [], []
+    items: list[Item] = []
+    for f in files:
+        name = f.filename or ""
+        data = await _read_capped(f)
+        if data is None:
+            items.append(Item(name, error=f"larger than {MAX_FILE_BYTES // 2**20} MB"))
+        elif is_zip(name, data):
+            items += expand_zip(name, data)
+        else:
+            items.append(Item(name, data))
+    results, stored = [], 0
     with db.pool.connection() as conn:
-        for f in files:
-            try:
-                info = ingest(conn, f.filename, await f.read(), uploaded_by=user.get("email", ""))
-                stored.append(f"{info['budget_month']} {info['kind']} ({info['rows']} rows)")
-            except Exception as e:  # noqa: BLE001
-                conn.rollback(); errors.append(f"{f.filename}: {e}")
+        for it in items:
+            res = {"name": it.name, "source": it.source, "ok": False, "detail": it.error}
+            if it.data is not None:
+                try:
+                    info = ingest(conn, it.name, it.data, uploaded_by=user.get("email", ""))
+                    res.update(ok=True, detail=f"{info['budget_month']} {info['kind']}, {info['rows']} rows"); stored += 1
+                except Exception as e:  # noqa: BLE001
+                    conn.rollback(); res["detail"] = str(e)[:300]
+            results.append(res)
+        # per-file results live in the database: a zip of a back catalogue would overflow the ~4 KB session cookie
+        conn.execute("INSERT INTO upload_batches (uploaded_by, results) VALUES (%s, %s)", (user.get("email", ""), Jsonb(results)))
+        conn.execute("DELETE FROM upload_batches WHERE id <= (SELECT max(id) FROM upload_batches) - 20")
         conn.commit()
         if stored:
             if build_running(conn):
-                flash(request, f"Stored {', '.join(stored)}. A rebuild is already running; press Rebuild when it finishes to include these files.", "bad")
+                flash(request, f"Stored {stored} file{'s' if stored != 1 else ''}. A rebuild is already running; press Rebuild when it finishes to include them.", "bad")
             else:
                 background.add_task(run_background)
-                flash(request, f"Stored {', '.join(stored)}. Rebuilding in the background; progress is shown below.")
-    for e in errors:
-        flash(request, e, "bad")
+                flash(request, f"Stored {stored} file{'s' if stored != 1 else ''}. Rebuilding in the background; progress is shown below.")
+    if stored < len(results):
+        flash(request, f"{len(results) - stored} of {len(results)} files were not stored; see the upload result below.", "bad")
     return RedirectResponse("/upload", status_code=303)
 
 

@@ -2,6 +2,15 @@
 {% block title %}Close a month · {{ household.title }}{% endblock %}
 {% block head %}<script nonce="{{ csp_nonce(request) }}">
 addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('files'), zone = document.getElementById('dropzone'), list = document.getElementById('file-list');
+  if (input && zone) {   // without JavaScript this stays a plain file input
+    const show = () => { list.replaceChildren(...[...input.files].map(f => Object.assign(document.createElement('li'), {textContent: f.name + ' (' + Math.max(1, Math.round(f.size / 1024)) + ' KB)'}))); };
+    zone.querySelector('.dz-hint').hidden = false;
+    input.addEventListener('change', show);
+    ['dragenter', 'dragover'].forEach(t => zone.addEventListener(t, e => { e.preventDefault(); zone.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach(t => zone.addEventListener(t, e => { e.preventDefault(); zone.classList.remove('over'); }));
+    zone.addEventListener('drop', e => { if (e.dataTransfer && e.dataTransfer.files.length) { input.files = e.dataTransfer.files; show(); } });
+  }
   const panel = document.getElementById('build-panel');
   if (!panel || panel.dataset.state !== 'running') return;
   const poll = async () => {
@@ -28,12 +37,19 @@ addEventListener('DOMContentLoaded', () => {
 </div>
 {% include "_findings.html" %}
 {% include "_checklist.html" %}
+{% if last_upload %}<div class="panel" id="upload-result" style="margin-top:var(--space-4)">
+  <h2>Last upload</h2>
+  <p class="muted">{{ last_upload.created_at.strftime('%Y-%m-%d %H:%M:%S') }} · {{ last_upload.results|selectattr('ok')|list|length }} of {{ last_upload.results|length }} files stored.</p>
+  <ul class="upload-results">{% for r in last_upload.results %}<li class="{{ 'ok' if r.ok else 'bad' }}"><strong>{{ 'Stored' if r.ok else 'Rejected' }}</strong> <span class="mono">{{ r.name }}</span>{% if r.source %} <span class="muted">(from {{ r.source }})</span>{% endif %}: {{ r.detail }}</li>{% endfor %}</ul>
+</div>{% endif %}
 <div class="row" style="margin-top:var(--space-4)">
   <form class="panel" method="post" action="/upload" enctype="multipart/form-data">{{ csrf_field(request) }}
     <h2>1 · Upload the two EveryDollar exports</h2>
-    <p class="muted">Transactions and BudgetItems for the budget month that just ended. Filenames are read for the month; re-uploading a month replaces it. Files are reconciled on arrival (every envelope's transactions must sum to its Spent) and the ledger is rebuilt.</p>
+    <p class="muted">Transactions and BudgetItems for the budget month that just ended, or a <code>.zip</code> of a whole back catalogue (limit {{ max_upload_mb }} MB). Filenames are read for the month; re-uploading a month replaces it. Files are reconciled on arrival (every envelope's transactions must sum to its Spent) and the ledger is rebuilt.</p>
     <label for="files">Export files</label>
-    <input id="files" name="files" type="file" accept=".csv" multiple required>
+    <div id="dropzone" class="dropzone"><input id="files" name="files" type="file" accept=".csv,.zip" multiple required>
+      <p class="muted dz-hint" hidden>Drop CSV or zip files here, or choose them above.</p></div>
+    <ul id="file-list" class="muted file-list" aria-live="polite"></ul>
     <p style="margin-top:var(--space-4)"><button class="btn primary" type="submit" id="upload-btn" {% if build.state == 'running' %}disabled title="A rebuild is running"{% endif %}>Upload and rebuild</button></p>
   </form>
   <div class="panel">

@@ -43,6 +43,7 @@ class Settings:
     csp_style_src: str = os.environ.get("CSP_STYLE_SRC", "https://fonts.googleapis.com")
     csp_font_src: str = os.environ.get("CSP_FONT_SRC", "https://fonts.gstatic.com")
     csp_img_src: str = os.environ.get("CSP_IMG_SRC", "")
+    max_upload_mb: int = int(os.environ.get("MAX_UPLOAD_MB", "50"))   # cap on any request body (uploads, zips included)
     log_format: str = os.environ.get("LOG_FORMAT", "")             # "json" for one JSON object per line with a request id; default is readable
 
     @property
@@ -55,6 +56,8 @@ class Settings:
         for name in ("csp_style_src", "csp_font_src", "csp_img_src"):
             if any(c in getattr(self, name) for c in ";,\r\n"):
                 problems.append(f"{name.upper()} must be space-separated sources (no ';' or ',')")
+        if self.max_upload_mb < 1:
+            problems.append("MAX_UPLOAD_MB must be at least 1")
         if self.auth_disabled:
             host = urlparse(self.base_url).hostname or ""
             if host not in {"localhost", "127.0.0.1", "::1"} and not self.i_know_auth_is_off:
