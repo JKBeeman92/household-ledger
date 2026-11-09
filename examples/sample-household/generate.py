@@ -27,15 +27,15 @@ ITEMS = [
     ("Utilities", "Internet", "Internet", "Utilities", "expense", 65, ["Hobbit Hole Fibre"], (1, 1), (1.0, 1.0)),
     ("Insurance", "Renters Insurance", "Renters Insurance", "Insurance", "expense", 22, ["Brandybuck Mutual"], (1, 1), (1.0, 1.0)),
     ("Insurance", "Car Insurance", "Car Insurance", "Insurance", "expense", 118, ["Brandybuck Mutual"], (1, 1), (1.0, 1.0)),
-    ("Food", "Groceries", "Groceries", "Food", "expense", 720, ["BYWATER MARKET #0412", "Farmer Maggot's Farm Stand", "Whole Foods"], (7, 11), (0.85, 1.15)),
-    ("Food", "Eating Out", "Eating Out", "Food", "expense", 160, ["GREEN DRAGON INN 8812", "Prancing Pony Takeaway", "Chipotle"], (3, 6), (0.7, 1.4)),
-    ("Transportation", "Fuel", "Fuel", "Transportation", "expense", 140, ["Shell", "Shire Fuel Stop"], (3, 5), (0.8, 1.2)),
+    ("Food", "Groceries", "Groceries", "Food", "expense", 720, ["BYWATER MARKET #0412", "Farmer Maggot's Farm Stand", "Overhill Greengrocer"], (7, 11), (0.85, 1.15)),
+    ("Food", "Eating Out", "Eating Out", "Food", "expense", 160, ["GREEN DRAGON INN 8812", "Prancing Pony Takeaway", "Michel Delving Kitchen"], (3, 6), (0.7, 1.4)),
+    ("Transportation", "Fuel", "Fuel", "Transportation", "expense", 140, ["Frogmorton Fuel", "Shire Fuel Stop"], (3, 5), (0.8, 1.2)),
     ("Transportation", "Car Maintenance", "Car Maintenance", "Transportation", "expense", 60, ["Gamgee & Sons Garage"], (0, 1), (1.0, 3.0)),
-    ("Health", "Medicine", "Medicine", "Health", "expense", 55, ["Healing Hands Apothecary", "CVS"], (1, 2), (0.5, 1.5)),
-    ("Subscriptions", "Streaming", "Streaming", "Subscriptions", "expense", 32, ["Netflix", "Spotify"], (2, 2), (1.0, 1.0)),
-    ("Household", "Household Supplies", "Household Supplies", "Household", "expense", 85, ["Walmart", "Home Depot", "Bywater Hardware"], (1, 3), (0.7, 1.3)),
-    ("Personal", "Rosie Fun Money", "Rosie Fun Money", "Personal", "expense", 120, ["Amazon", "Starbucks", "Bywater Books"], (2, 4), (0.7, 1.2)),
-    ("Personal", "Sam Fun Money", "Sam Fun Money", "Personal", "expense", 120, ["Amazon", "Green Dragon Inn", "Bywater Seeds & Bulbs"], (2, 4), (0.7, 1.2)),
+    ("Health", "Medicine", "Medicine", "Health", "expense", 55, ["Healing Hands Apothecary", "Michel Delving Chemist"], (1, 2), (0.5, 1.5)),
+    ("Subscriptions", "Streaming", "Streaming", "Subscriptions", "expense", 32, ["Hobbiton Picture Stream", "Bywater Songbook"], (2, 2), (1.0, 1.0)),
+    ("Household", "Household Supplies", "Household Supplies", "Household", "expense", 85, ["Michel Delving Emporium", "Tuckborough Timber", "Bywater Hardware"], (1, 3), (0.7, 1.3)),
+    ("Personal", "Rosie Fun Money", "Rosie Fun Money", "Personal", "expense", 120, ["Westfarthing Mail Order", "Tea and Biscuits Cafe", "Bywater Books"], (2, 4), (0.7, 1.2)),
+    ("Personal", "Sam Fun Money", "Sam Fun Money", "Personal", "expense", 120, ["Westfarthing Mail Order", "Green Dragon Inn", "Bywater Seeds & Bulbs"], (2, 4), (0.7, 1.2)),
     ("Fun", "Date Night", "Date Night", "Fun", "expense", 100, ["Green Dragon Inn", "Hobbiton Picture House"], (0, 2), (0.6, 1.3)),
     ("Debt", "Student Loan", "Student Loan", "Debt", "debt", 275, ["Lembas Loan Servicing"], (1, 1), (1.0, 1.0)),
     ("Other", "Venmo Pass-Through", "Venmo Pass-Through", "Other", "exclude", 0, ["Venmo"], (0, 2), (1.0, 1.0)),
@@ -43,7 +43,7 @@ ITEMS = [
 FIXED_DAY = {"Rent": 1, "Internet": 6, "Renters Insurance": 9, "Car Insurance": 12, "Student Loan": 15, "Emergency Fund": 4, "Electric": 18, "Water": 21, "Charity": 5}
 SEASON = {"Electric": {12: 1.35, 1: 1.45, 2: 1.35, 7: 1.15, 8: 1.15}}
 PAIR_MONTHS = {"2025-05": 4000, "2025-11": 6000, "2026-02": 4500, "2026-05": 5000}   # cents moved Date Night -> Holiday
-EXTRA = {("2025-12", "Holiday"): (["Hobbiton Toys", "Bywater Market", "Amazon"], 38000), ("2025-12", "Charity"): (["Bywater Parish Alms"], 20000)}
+EXTRA = {("2025-12", "Holiday"): (["Hobbiton Toys", "Bywater Market", "Westfarthing Mail Order"], 38000), ("2025-12", "Charity"): (["Bywater Parish Alms"], 20000)}
 PAY_START, PAY_EVERY = date(2025, 1, 3), 14
 RENT_UP = ("2025-10", 1525)
 RAISE = ("2025-07", 1960)
