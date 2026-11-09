@@ -99,3 +99,9 @@ def test_radar_stars_come_from_the_households_own_categories():
     assert [len(x) for x in _radar_groups(cats[:4])] == [4]
     assert _radar_groups([["Food", 5], ["Fun", 0], ["Rent", -2]]) == [["Food"]]  # categories with no spending never make a spoke
     assert _radar_groups([]) == [] and _radar_groups([["Fun", 0]]) == []  # no data: no star at all
+
+
+def test_monthly_axes_label_the_month_not_just_the_year():
+    src = (ROOT / "app" / "web" / "templates" / "dashboard.html").read_text()
+    assert "utcFormat('%Y')" not in src and "m.slice(0, 4)" not in src
+    assert src.count("tickFormat(dash.fmt.month)") >= 3 and "xfmt: (m) => dash.fmt.month(HL.parseM(m))" in src

@@ -459,7 +459,7 @@ window.HL = (() => {
     svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(money).tickSize(-(W - ml - 8))).call((g) => { g.select('.domain').remove(); g.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); g.attr('font-size', null).attr('font-family', null); });
     const probeX = svg.append('text').attr('opacity', 0); let lw = 0;
     for (const v of xs) { probeX.text(opts.xfmt ? opts.xfmt(v) : v); lw = Math.max(lw, probeX.node().getComputedTextLength()); } probeX.remove();
-    const every = Math.ceil(xs.length / Math.max(1, Math.floor((W - ml) / (lw + 12))));
+    const every = Math.ceil(xs.length / Math.max(1, Math.floor((W - ml) / (lw + 28))));
     svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).tickValues(xs.filter((_, i) => i % every === 0)).tickFormat(opts.xfmt || ((d) => d)).tickSize(0)).call((g) => { g.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); g.attr('font-size', null).attr('font-family', null); edgeTicks(g, ml, W - 8); });
     const col = (i) => colors()[i % colors().length];
     const t = tip(el);
@@ -630,7 +630,7 @@ dash.draw('monthly', (el) => {
   const ml = HL.margins(svg, y.ticks(5), HL.money);
   const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
   svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
-  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 90))).tickFormat(d3.utcFormat('%Y')).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
+  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
   const line = (k) => d3.line().x((r) => x(r.d)).y((r) => y(r[k]));
   const defs = svg.append('defs'); const grad = defs.append('linearGradient').attr('id', 'hl-inc').attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 1);
@@ -703,7 +703,7 @@ let employerOrder = [];
 dash.draw('employer', (el) => {
   const g = dash.data('employer'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
   const rows = g.data.map((r) => ({ m: r.m, employer: r.employer, amount: Number(r.amount) }));
-  employerOrder = HL.stackChart(el, rows, 'm', 'employer', 'amount', { order: [...d3.rollup(rows, (v) => d3.sum(v, (r) => r.amount), (r) => r.employer)].filter((d) => d[0] !== 'Unknown').sort((a, b) => b[1] - a[1]).map((d) => d[0]).concat(rows.some((r) => r.employer === 'Unknown') ? ['Unknown'] : []), xfmt: (m) => m.slice(0, 4) });
+  employerOrder = HL.stackChart(el, rows, 'm', 'employer', 'amount', { order: [...d3.rollup(rows, (v) => d3.sum(v, (r) => r.amount), (r) => r.employer)].filter((d) => d[0] !== 'Unknown').sort((a, b) => b[1] - a[1]).map((d) => d[0]).concat(rows.some((r) => r.employer === 'Unknown') ? ['Unknown'] : []), xfmt: (m) => dash.fmt.month(HL.parseM(m)) });
 });
 dash.draw('employer-legend', (el) => { const g = dash.data('employer'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, employerOrder); });
 
@@ -786,7 +786,7 @@ dash.draw('debts', (el) => {
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
   const probe = svg.append('text').attr('opacity', 0); let ml = 0; for (const r of rows) { probe.text(r.item); ml = Math.max(ml, probe.node().getComputedTextLength()); } probe.remove(); ml = Math.ceil(ml) + 12;
   const x = d3.scaleUtc([d3.min(rows, (r) => r.d0), d3.max(rows, (r) => r.d1)], [ml, W - 70]);
-  svg.append('g').attr('transform', `translate(0,${mt - 6})`).call(d3.axisTop(x).ticks(Math.max(2, Math.floor((W - ml) / 80))).tickFormat(d3.utcFormat('%Y')).tickSize(0)).call((a) => { a.select('.domain').remove(); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 70); });
+  svg.append('g').attr('transform', `translate(0,${mt - 6})`).call(d3.axisTop(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').remove(); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 70); });
   const c = HL.colors(); const t = HL.tip(el);
   const grp = svg.append('g').selectAll('g').data(rows).join('g').attr('transform', (r, i) => `translate(0,${mt + i * rowH})`);
   grp.append('text').attr('x', ml - 8).attr('y', rowH / 2 + 4).attr('text-anchor', 'end').attr('fill', 'var(--color-fg)').text((r) => r.item);
@@ -1015,7 +1015,7 @@ dash.draw('goal-lines', (el) => {
   const ml = HL.margins(svg, y.ticks(5), dash.fmt.pct(0));
   const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
   svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(dash.fmt.pct(0)).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
-  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 90))).tickFormat(d3.utcFormat('%Y')).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
+  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
   const ref = (v, col, label) => { svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', col).attr('stroke-dasharray', '5 4').attr('stroke-opacity', .7); svg.append('text').attr('x', W - 8).attr('y', y(v) - 4).attr('text-anchor', 'end').attr('fill', col).text(label); };
   ref(gv('giving_floor'), c[0], 'giving floor'); ref(gv('giving_target'), c[0], 'giving target'); ref(gv('joy_target'), c[1], 'joy target'); ref(gv('housing_cap'), c[2], 'housing cap');
