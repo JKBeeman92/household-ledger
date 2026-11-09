@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
-from .auth import current_user, revalidate
+from .auth import current_user, revalidate, Forbidden
 from .config import settings
 from . import db, csrf
 from .security import SecurityHeaders
@@ -46,5 +46,15 @@ async def csrf_rejected(request: Request, exc: csrf.CsrfError):
         return JSONResponse({"detail": msg}, status_code=403)
     flash(request, msg, "bad")
     resp = render(request, "csrf_error.html", current_user(request))
+    resp.status_code = 403
+    return resp
+
+
+@app.exception_handler(Forbidden)
+async def forbidden(request: Request, exc: Forbidden):
+    if request.url.path.startswith("/api/") or "application/json" in request.headers.get("accept", ""):
+        return JSONResponse({"detail": exc.detail}, status_code=403)
+    csrf.token_for(request)   # a viewer's session has no form to mint one, and a later POST should read as forbidden, not as a forged form
+    resp = render(request, "forbidden.html", current_user(request), detail=exc.detail)
     resp.status_code = 403
     return resp
