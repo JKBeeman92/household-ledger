@@ -1,6 +1,7 @@
 """Helpers shared by the route modules: templates, flash messages, page rendering and budget-month queries."""
 from __future__ import annotations
 import datetime as _dt
+import re
 from pathlib import Path
 
 from fastapi import Request
@@ -21,11 +22,18 @@ def flash(request: Request, text: str, kind: str = "ok"):
     request.session["flashes"] = [*request.session.get("flashes", []), {"text": text, "kind": kind}]
 
 
+def _format_settings(household: dict) -> dict:
+    """Currency (ISO 4217) and locale (BCP 47) for the page's number formatting; bad values fall back to USD / en-US."""
+    cur, loc = str((household or {}).get("currency") or ""), str((household or {}).get("locale") or "")
+    return {"currency": cur.upper() if re.fullmatch(r"[A-Za-z]{3}", cur) else "USD",
+            "locale": loc if re.fullmatch(r"[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*", loc) else "en-US"}
+
+
 def render(request: Request, name: str, user, **ctx):
     flashes = request.session.pop("flashes", []) if hasattr(request, "session") else []
     with db.pool.connection() as conn:
         household = db.get_setting(conn, "household", {})
-    return templates.TemplateResponse(request, name, {"household": household, "user": user, "get_flashes": lambda: flashes, "theme_mode": None, **ctx})
+    return templates.TemplateResponse(request, name, {"household": household, "fmt": _format_settings(household), "user": user, "get_flashes": lambda: flashes, "theme_mode": None, **ctx})
 
 
 def _span(conn) -> dict:
