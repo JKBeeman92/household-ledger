@@ -73,12 +73,14 @@
 </style>
 
 <div id="dash-root" class="hl">
-  <p class="eyebrow">{{ household.name }} · {{ span.years }}-year audit</p>
+  <p class="eyebrow">{{ household.name or 'Household' }}{% if span.has_data %} · {{ span.years }}-year audit{% endif %}</p>
   <div class="masthead">
     <img class="mark" src="/brand/mark.svg" alt="">
-    <h1>{{ household.title }} {{ span.first_year }}–{{ span.last_year }}</h1>
+    <h1>{{ household.title or 'Household Ledger' }}{% if span.has_data %} {{ span.first_year }}{% if span.last_year != span.first_year %}–{{ span.last_year }}{% endif %}{% endif %}</h1>
   </div>
-  <p class="lede">Over the last twelve <dfn title="EveryDollar files each transaction into the month whose budget it belonged to, which is not always its calendar month. Every figure here uses the budget month.">budget months</dfn> the household took in <b data-draw="lede-income">—</b>, spent <b data-draw="lede-spend">—</b> on <dfn title="Everything that is not income, debt principal or a transfer: housing, food, giving, insurance, projects, envelope spending.">living</dfn> and <b data-draw="lede-debt">—</b> on debt, and kept <b data-draw="lede-net">—</b>. Every figure comes from the EveryDollar exports, with moves between envelopes, family-loan legs and the pass-through fund removed. Dotted terms carry a definition on hover; each card has a <em>How to read this</em> note.</p>
+  <p class="lede">Over the last twelve <dfn title="EveryDollar files each transaction into the month whose budget it belonged to, which is not always its calendar month. Every figure here uses the budget month.">budget months</dfn> the household took in <b data-draw="lede-income">—</b>, spent <b data-draw="lede-spend">—</b> on <dfn title="Everything that is not income, debt principal or a transfer: housing, food, giving, insurance, projects, envelope spending.">living</dfn> and <b data-draw="lede-debt">—</b> on debt, and kept <b data-draw="lede-net">—</b>. Every figure comes from the EveryDollar exports, with moves between envelopes and anything else your rules exclude taken out (the Method tab lists what). Dotted terms carry a definition on hover; each card has a <em>How to read this</em> note.</p>
+
+  {% if not span.has_data %}<p class="note" id="empty-state">Nothing is loaded yet, so every figure below is blank. {% if user and user.is_editor %}Add your first EveryDollar Transactions and BudgetItems exports on <a href="/upload">Close a month</a>, or load the sample household described in the README.{% else %}An editor needs to load the first EveryDollar exports.{% endif %}</p>{% endif %}
 
   <div class="controls">
     <div class="seg" role="group" aria-label="Dollar basis">
@@ -99,7 +101,7 @@
 
   <!-- ===================== OVERVIEW ===================== -->
   <section id="overview" class="page">
-    <p class="intro">Is the household gaining or losing ground, and what changed when? Start here for the shape of {{ span.years }} years.</p>
+    <p class="intro">Is the household gaining or losing ground, and what changed when? {% if span.has_data %}Start here for the shape of {{ span.years }} {{ 'year' if span.years == 1 else 'years' }}.{% endif %}</p>
     <div class="tiles basis-nominal">
       <div class="card tile"><div class="k">Income, last 12 months</div><div class="v" data-draw="t-inc-n" data-source="last12" data-field="income">—</div><div class="d" data-draw="d-inc-n" data-source="last12" data-field="income_delta">—</div></div>
       <div class="card tile"><div class="k">Living spend, last 12 months</div><div class="v" data-draw="t-sp-n" data-source="last12" data-field="spend">—</div><div class="d" data-draw="d-sp-n" data-source="last12" data-field="spend_delta">—</div></div>
@@ -115,7 +117,7 @@
 
     <div class="card">
       <h2 id="monthly-chart">Income against outgo, by budget month</h2>
-      <p class="note">Outgo is living spend plus debt payments. Income excludes inter-envelope transfers, family loans and the pass-through fund. Dotted markers are life events; hover for the label.</p>
+      <p class="note">Outgo is living spend plus debt payments. Income and outgo leave out transfers between envelopes and the other exclusions listed on the Method tab. Dotted markers are life events; hover for the label.</p>
       <details class="how"><summary>How to read this</summary><p>The gap between the income line and the dotted spend-plus-debt line is the month’s net. Months where the dotted line sits above income were funded from savings or a one-off inflow. Spikes in income are bonuses, tax refunds, stimulus or severance; spikes in spend are usually a tax bill, a trip or a project. Hover a dot along the top for the event behind a step change.</p></details>
       <div class="chart" data-draw="monthly" data-source="monthly events"></div>
       <div class="legend"><span data-c="0">Income</span><span data-c="1">Living spend</span><span data-c="2">Spend + debt</span></div>
@@ -136,15 +138,15 @@
     <div class="grid">
       <div class="card">
         <h2 id="annual-chart">By year</h2>
-        <p class="note">2026 covers January–October. Net is income minus spend minus debt payments.</p>
-      <details class="how"><summary>How to read this</summary><p>Three bars per year. When the income bar clears the other two combined, the year was positive. 2026 has ten months, so its bars are shorter than a full year would be.</p></details>
+        <p class="note">The latest year may cover only part of a year; the Months column on the Position tab says how many. Net is income minus spend minus debt payments.</p>
+      <details class="how"><summary>How to read this</summary><p>Three bars per year. When the income bar clears the other two combined, the year was positive. A year with fewer than twelve months loaded has shorter bars than a full year would.</p></details>
         <div class="chart" data-draw="annual" data-source="yearly"></div>
         <div class="legend"><span data-c="0">Income</span><span data-c="1">Living spend</span><span data-c="3">Debt payments</span></div>
       </div>
       <div class="card">
         <h2 id="employer-chart">Paycheck source, by month</h2>
-        <p class="note">Employer read from the deposit description; 2018 deposits were typed by hand and are assigned to NCM by continuity.</p>
-      <details class="how"><summary>How to read this</summary><p>Paycheck deposits by month, colored by employer. A change of color is a job change; a taller month has three paychecks or a bonus paid through payroll. 2026 U-Haul deposits arrive with the bank label “Rent Payment Received” and are assigned to U-Haul by amount and cadence.</p></details>
+        <p class="note">Employer is read from the deposit description using the employers rule in Settings; deposits it cannot place are shown as Unknown.</p>
+      <details class="how"><summary>How to read this</summary><p>Paycheck deposits by month, colored by employer. A change of color is a job change; a taller month has three paychecks or a bonus paid through payroll.</p></details>
         <div class="chart" data-draw="employer" data-source="employer"></div>
         <div class="legend" data-draw="employer-legend" data-source="employer"></div>
       </div>
@@ -245,8 +247,8 @@
     <p class="intro">Which categories carry the spending, how each has grown, and what sits inside any one of them.</p>
     <div class="card">
       <h2 id="cat-chart">Spend by category, by year</h2>
-      <p class="note">Stacked by category. Debt payments, taxes, the house down payment and savings-envelope spending are included and labelled; transfers and plugs are not.</p>
-      <details class="how"><summary>How to read this</summary><p>Each column is a year; each band a category, largest at the bottom. Housing roughly doubled with the mortgage in 2023 and is the tallest band since. Taxes appears as a single large band in 2024 because two years of tax bills were paid from one budget year.</p></details>
+      <p class="note">Stacked by category. Debt payments, taxes, large purchases and savings-envelope spending are included and labelled; transfers and plugs are not.</p>
+      <details class="how"><summary>How to read this</summary><p>Each column is a year; each band a category, largest at the bottom. A band that suddenly grows or appears marks a year when that category changed size, such as a one-off purchase or two years of one bill paid in one budget year.</p></details>
       <div class="chart" data-draw="cat-stack" data-source="cat_year"></div>
       <div class="legend" data-draw="cat-legend" data-source="cat_year"></div>
     </div>
@@ -255,7 +257,7 @@
       <p class="note">Same figures as the chart. Columns are budget years; the last column is the {{ span.years }}-year total.</p>
       <details class="how"><summary>How to read this</summary><p>Dashes mean nothing was booked to that category that year. Negative numbers are possible where refunds or inbound transfers outweighed spending in an envelope.</p></details>
       <div class="tbl"><table data-source="cat_pivot" data-row-key="category"><thead><tr>
-        <th data-field="category">Category</th><th data-field="y2018">2018</th><th data-field="y2019">2019</th><th data-field="y2020">2020</th><th data-field="y2021">2021</th><th data-field="y2022">2022</th><th data-field="y2023">2023</th><th data-field="y2024">2024</th><th data-field="y2025">2025</th><th data-field="y2026">2026</th><th data-field="total">Total</th>
+        <th data-field="category">Category</th><th data-field="total">Total</th>
       </tr></thead><tbody data-draw="cat-pivot"></tbody></table></div>
     </div>
     <div class="card">
@@ -264,7 +266,7 @@
       <details class="how"><summary>How to read this</summary><p>Items are EveryDollar envelopes after merging renamed copies (Grocery 2 and Grocery are one item). Pick a category above to change the list.</p></details>
       <div class="controls"><select class="cat-pick" aria-label="Category" data-draw="cat-pick" data-source="cat_year"></select></div>
       <div class="tbl"><table data-source="item_pivot" data-row-key="item"><thead><tr>
-        <th data-field="item">Item</th><th data-field="y2018">2018</th><th data-field="y2019">2019</th><th data-field="y2020">2020</th><th data-field="y2021">2021</th><th data-field="y2022">2022</th><th data-field="y2023">2023</th><th data-field="y2024">2024</th><th data-field="y2025">2025</th><th data-field="y2026">2026</th><th data-field="total">Total</th>
+        <th data-field="item">Item</th><th data-field="total">Total</th>
       </tr></thead><tbody data-draw="item-pivot"></tbody></table></div>
     </div>
   </section>
@@ -275,7 +277,7 @@
     <div class="card">
       <h2 id="recurring-table">Recurring costs</h2>
       <p class="note">Subscriptions, utilities and insurance. "Now" is the average over the last twelve budget months, including months with no charge, so an annual bill shows as a twelfth. Inactive rows have had no charge in the last three months.</p>
-      <details class="how"><summary>How to read this</summary><p>“Now / month” averages the last twelve budget months including months with no charge, so an annual bill like Amazon Prime shows as a twelfth of itself. Compare it with the lifetime column to see how long a cost has been running.</p></details>
+      <details class="how"><summary>How to read this</summary><p>“Now / month” averages the last twelve budget months including months with no charge, so an annual bill shows as a twelfth of itself. Compare it with the lifetime column to see how long a cost has been running.</p></details>
       <div class="tbl"><table data-source="recurring" data-row-key="item"><thead><tr>
         <th data-field="item">Item</th><th data-field="active">Active</th><th data-field="first">First</th><th data-field="last">Last</th><th data-field="monthly_now">Now / month</th><th data-field="lifetime">Lifetime</th>
       </tr></thead><tbody data-draw="recurring"></tbody></table></div>
@@ -283,8 +285,8 @@
     <div class="grid">
       <div class="card">
         <h2 id="slush-chart">Catch-all envelopes</h2>
-        <p class="note">Spending booked to envelopes that acted as slush buckets: Long Term Savings (2018–22), Taxes (which also held Steam and Amazon in 2023), Emergency Fund and the Generosity overflow. High bars mean real spending hidden under a saving label.</p>
-      <details class="how"><summary>How to read this</summary><p>EveryDollar envelopes named like savings but used like spending. Long Term Savings held bike gear, furniture, tax payments and pet care in the renting years; Taxes held Steam and Amazon in 2023. When a bar here is tall, real spending was hidden under a saving label that year.</p></details>
+        <p class="note">Spending booked to envelopes that tend to act as catch-alls: Long Term Savings, Taxes, Emergency Fund and Generosity. High bars mean real spending sitting under a saving label.</p>
+      <details class="how"><summary>How to read this</summary><p>EveryDollar envelopes named like savings can end up holding everyday spending. When a bar here is tall, real spending was hidden under a saving label that year. An empty chart means nothing was booked to these envelopes.</p></details>
         <div class="chart" data-draw="slush" data-source="slush"></div>
         <div class="legend" data-draw="slush-legend" data-source="slush"></div>
       </div>
@@ -311,14 +313,14 @@
     <div class="grid">
       <div class="card">
         <h2 id="debt-chart">Debt timeline</h2>
-        <p class="note">Each bar spans the months a debt item received payments; the label is the total paid. Student loans end August 2021; the house-era loans begin 2023.</p>
-      <details class="how"><summary>How to read this</summary><p>Bars run from first to last payment month. The two student loans end in 2019 and 2021; the house-era loans begin in 2023. Total paid includes principal and interest as EveryDollar recorded them, not the original loan balance.</p></details>
+        <p class="note">Each bar spans the months a debt item received payments; the label is the total paid.</p>
+      <details class="how"><summary>How to read this</summary><p>Bars run from first to last payment month. Total paid includes principal and interest as EveryDollar recorded them, not the original loan balance.</p></details>
         <div class="chart" data-draw="debts" data-source="debts"></div>
       </div>
       <div class="card">
         <h2 id="net-chart">Net kept, by year</h2>
         <p class="note">Income minus living spend minus debt payments. Below zero means the year was funded from savings or one-off inflows.</p>
-      <details class="how"><summary>How to read this</summary><p>Green years added to savings; red years drew on them. The 2024 bar is the one deep deficit, driven by taxes, giving and savings-envelope spending landing in the same year as lower income.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Green years added to savings; red years drew on them. A deep red bar usually means taxes, giving or savings-envelope spending landed in a year with lower income.</p></details>
         <div class="chart" data-draw="net" data-source="yearly"></div>
       </div>
     </div>
@@ -326,19 +328,19 @@
 
   <!-- ===================== PEOPLE ===================== -->
   <section id="people" class="page" hidden>
-    <p class="intro">Who earned the income and whose envelopes spent it. Income splits cleanly by person; spending mostly does not, by design.</p>
+    <p class="intro">Who earned the income and whose envelopes spent it. People and their items come from the rules in Settings; anything not assigned to a person is Household.</p>
     <div class="grid">
       <div class="card">
         <h2 id="earner-chart">Income by earner</h2>
-        <p class="note">Josh: paychecks, bonuses, severance and the 2023 401(k) cash-out. CJ: CJ Income in all its EveryDollar names. Household: refunds, interest, stimulus, investment proceeds and other inflows not tied to a person.</p>
-      <details class="how"><summary>How to read this</summary><p>Earner is assigned by item: Josh’s paychecks, bonuses, severance and 401(k) cash-out; CJ Income under its three EveryDollar names; everything else Household. Josh’s share has run above 90% in most years.</p></details>
+        <p class="note">Earner is assigned by item, using the income_by_person rule in Settings. Refunds, interest and other inflows not tied to a person are Household.</p>
+      <details class="how"><summary>How to read this</summary><p>Earner is assigned by item: the items named for each person in the income_by_person rule belong to that person, and everything else is Household. If a person is missing here, add their income items to the rule and rebuild.</p></details>
         <div class="chart" data-draw="earner" data-source="people"></div>
         <div class="legend" data-draw="earner-legend" data-source="people"></div>
       </div>
       <div class="card">
         <h2 id="payer-chart">Spend by payer</h2>
-        <p class="note">Payer is envelope ownership, the only signal EveryDollar carries: Josh and CJ discretionary envelopes versus everything shared. Expect Household to dominate.</p>
-      <details class="how"><summary>How to read this</summary><p>EveryDollar has no payer field, so payer here means envelope ownership: Josh Misc and Josh-named projects, CJ Misc and CJ-named envelopes, and the shared remainder. It answers “how much discretionary money did each person direct,” not “who tapped the card.”</p></details>
+        <p class="note">Payer is envelope ownership, the only signal EveryDollar carries: each person's discretionary envelopes versus everything shared. Expect Household to dominate.</p>
+      <details class="how"><summary>How to read this</summary><p>EveryDollar has no payer field, so payer here means envelope ownership, matched by the payer_prefix_by_person and payer_items_by_person rules, with the shared remainder as Household. It answers “how much discretionary money did each person direct,” not “who tapped the card.”</p></details>
         <div class="chart" data-draw="payer" data-source="people"></div>
         <div class="legend" data-draw="payer-legend" data-source="people"></div>
       </div>
@@ -347,8 +349,7 @@
       <h2 id="people-table">Earner and payer shares by year</h2>
       <p class="note">Shares are of that year's total income or total spend.</p>
       <div class="tbl"><table data-source="people_pivot" data-row-key="y"><thead><tr>
-        <th data-field="y">Year</th><th data-field="earn_josh">Josh earned</th><th data-field="earn_cj">CJ earned</th><th data-field="earn_hh">Household</th><th data-field="earn_cj_share">CJ share</th><th data-field="pay_josh">Josh envelopes</th><th data-field="pay_cj">CJ envelopes</th><th data-field="pay_hh">Shared</th>
-      </tr></thead><tbody data-draw="people-pivot"></tbody></table></div>
+        <th data-field="y">Year</th></tr></thead><tbody data-draw="people-pivot"></tbody></table></div>
     </div>
   </section>
 
@@ -360,17 +361,18 @@
       <h3>Budget month, not calendar month</h3>
       <p>EveryDollar files transactions into budget months, and about one row in thirteen sits in a different budget month than its calendar date. Everything here uses the budget month, so a late-January rent payment filed into February stays in February, matching what the budget showed at the time.</p>
       <h3>Nominal versus real dollars</h3>
-      <p>Nominal is what the bank saw. Real restates each month's amounts in {{ span.cpi_base_long }} dollars by multiplying by the ratio of {{ span.cpi_base_long }} CPI-U to that month's CPI-U (all urban consumers, all items, seasonally adjusted, series CPIAUCSL from FRED). A 2018 dollar buys about 26% less in 2026, so 2018 figures grow by roughly a third in real terms. Use real to compare lifestyle across years; use nominal to reconcile against statements. Two months are filled in rather than published: October 2025 (BLS skipped it during the shutdown; the midpoint of September and November is used) and October 2026 (not yet published; September's value is carried). Both are listed in the table below.</p>
+      <p>Nominal is what the bank saw. Real restates each month's amounts in {{ span.cpi_base_long }} dollars by multiplying by the ratio of {{ span.cpi_base_long }} CPI-U to that month's CPI-U (all urban consumers, all items, seasonally adjusted, series CPIAUCSL from FRED). Use real to compare lifestyle across years; use nominal to reconcile against statements. <span data-draw="cpi-note" data-source="cpi" data-base="{{ span.cpi_base_iso }}" data-first="{{ span.first_month or '' }}"></span></p>
       <h3>What was taken out</h3>
-      <p>Transfers between envelopes appear in EveryDollar as a negative row in one item and a positive row in another, so summing them inflates both income and spend. They are tagged by merchant text ("Transfer to Vacation", "Rebalance", a bare envelope name) and by amount pairing, and removed. Family loans in 2020 were booked as income coming in and debt going out; both legs are removed. The Mom & Dad Trauma Fund was tracked in this budget on the family's behalf and handed back, so it is removed entirely. In 2018 the debt items carried positive "Interest" rows that only zeroed the envelope; those are dropped so debt payments equal cash out. One inflow is still unverified and sits outside income until named: see the table below.</p>
+      <p>Transfers between envelopes appear in EveryDollar as a negative row in one item and a positive row in another, so summing them would inflate both income and spend. They are recognised by merchant text, by item name and by amount pairing, and removed. What follows is generated from the data loaded, so it lists only what this household's rules actually removed.</p>
+      <div id="method-exclusions" data-draw="method-exclusions" data-source="exclusions verify"></div>
       <h3>Item names</h3>
-      <p>EveryDollar items were renamed and recreated many times (Grocery 2, Holiday Fund 2, Identity Theft Insurance 3, three different names for the year-end bonus). All 202 original item names were mapped to canonical items and twenty categories; the mapping file lives beside the ledger and is the thing to edit if a category looks wrong.</p>
+      <p>EveryDollar items get renamed and recreated, so the same envelope can appear under several names. Each original name is mapped to a canonical item and a category; the mapping file lives beside the ledger and is the thing to edit (Settings) if a category looks wrong. <span data-draw="method-items" data-source="item_year cat_year"></span></p>
       <h3>Refreshing</h3>
-      <p>Each month the two EveryDollar exports for the closed budget month are added to the set, the ledger and these files are rebuilt, and the page redraws from them. Nothing on the page is typed in by hand, so a corrected export changes every dependent figure at once. The scheduled reminder fires on the first Sunday of the month.</p>
+      <p>Each month the two EveryDollar exports for the closed budget month are added to the set, the ledger and these files are rebuilt, and the page redraws from them. Nothing on the page is typed in by hand, so a corrected export changes every dependent figure at once.</p>
       <h3>Reading the colors</h3>
       <p>Green and red mark direction, not judgment: green is money kept or a category under its envelope, red is money drawn down or an envelope exceeded. Chart series take the brand palette in order (series 1 through 8 in the theme).</p>
       <h3>Notes</h3>
-      <p>The ledger carries every EveryDollar note, but notes are not shown on this page: the early years include medication names and people's names.</p>
+      <p>The ledger carries every EveryDollar note, but notes are not shown on this page, because they can hold private details such as medication and people's names.</p>
     </div>
     <div class="card" id="recon-card">
       <h2>Reconciliation</h2>
@@ -403,7 +405,7 @@
       </div>
     </div>
   </section>
-  <p class="foot">Built from EveryDollar Transactions and BudgetItems exports, one pair per budget month, January 2018 through the latest month loaded. Figures are recomputed from the attached files each time the page opens; the Sources panel shows the file behind any number. Real dollars use CPI-U with {{ span.cpi_base_long }} as the base month. Refreshed on the first Sunday of each month from the newest export.</p>
+  <p class="foot">Built from EveryDollar Transactions and BudgetItems exports, one pair per budget month{% if span.has_data %}, {{ span.first_month }} through {{ span.last_month }}{% endif %}. Figures are recomputed from the attached files each time the page opens; the Sources panel shows the file behind any number. Real dollars use CPI-U with {{ span.cpi_base_long }} as the base month.</p>
 </div>
 
 <script nonce="{{ csp_nonce(request) }}">(() => {
@@ -479,7 +481,6 @@ window.HL = (() => {
 <script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- calcs ----
-const yearsAll = ['2018','2019','2020','2021','2022','2023','2024','2025','2026'];
 const last12 = (monthly, sfx) => {
   const ms = [...monthly].sort((a, b) => a.m < b.m ? -1 : 1);
   const cur = ms.slice(-12), prev = ms.slice(-24, -12);
@@ -504,10 +505,11 @@ dash.calc('item_pivot', { inputs: ['item_year'], title: 'Item by year within cat
   for (const r of item_year) { const k = r.category + '|' + r.item; const o = out.get(k) || { category: r.category, item: r.item, total: 0 }; o['y' + r.y] = (o['y' + r.y] || 0) + Number(r.amount); o.total += Number(r.amount); out.set(k, o); }
   return [...out.values()].sort((a, b) => b.total - a.total);
 } });
-dash.calc('people_pivot', { inputs: ['people'], title: 'Earner and payer by year', description: 'Pivot of people: per year, income by earner and spend by payer, with CJ share of income.', fn: (people) => {
-  const by = new Map();
-  for (const r of people) { const o = by.get(r.y) || { y: r.y, earn_josh: 0, earn_cj: 0, earn_hh: 0, pay_josh: 0, pay_cj: 0, pay_hh: 0 }; const who = r.who === 'Josh' ? 'josh' : r.who === 'CJ' ? 'cj' : 'hh'; o[(r.role === 'earner' ? 'earn_' : 'pay_') + who] += Number(r.amount); by.set(r.y, o); }
-  return [...by.values()].map((o) => ({ ...o, earn_cj_share: (o.earn_josh + o.earn_cj + o.earn_hh) ? o.earn_cj / (o.earn_josh + o.earn_cj + o.earn_hh) : null })).sort((a, b) => a.y < b.y ? -1 : 1);
+window.peopleNames = (rows) => [...new Set(rows.map((r) => r.who))].filter((w) => w !== 'Household').sort();
+dash.calc('people_pivot', { inputs: ['people'], title: 'Earner and payer by year', description: 'Pivot of people: per year, income by earner (earn_<name>, earn_Household) and spend by payer (pay_<name>, pay_Household), with each person\'s share of income (share_<name>).', fn: (people) => {
+  const names = [...peopleNames(people), 'Household'], by = new Map();
+  for (const r of people) { const o = by.get(r.y) || Object.assign({ y: r.y }, ...names.flatMap((n) => [{ ['earn_' + n]: 0 }, { ['pay_' + n]: 0 }])); o[(r.role === 'earner' ? 'earn_' : 'pay_') + r.who] += Number(r.amount); by.set(r.y, o); }
+  return [...by.values()].map((o) => { const tot = names.reduce((a, n) => a + o['earn_' + n], 0); return { ...o, ...Object.fromEntries(names.filter((n) => n !== 'Household').map((n) => ['share_' + n, tot ? o['earn_' + n] / tot : null])) }; }).sort((a, b) => a.y < b.y ? -1 : 1);
 } });
 dash.calc('lm_totals', { inputs: ['budget_items'], title: 'Last month totals vs plan and trailing average', description: 'For the latest budget month: income, living spend, debt and net, actual and planned, plus the average of the twelve months before.', fn: (budget_items) => {
   const months = [...new Set(budget_items.map((r) => r.m))].sort(); const last = months[months.length - 1]; const prev = months.slice(-13, -1);
@@ -694,7 +696,7 @@ let employerOrder = [];
 dash.draw('employer', (el) => {
   const g = dash.data('employer'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
   const rows = g.data.map((r) => ({ m: r.m, employer: r.employer, amount: Number(r.amount) }));
-  employerOrder = HL.stackChart(el, rows, 'm', 'employer', 'amount', { order: ['NCM', 'Homeward', 'ExtraHop', 'Pulmonx', 'U-Haul', 'Unknown'].filter((e) => rows.some((r) => r.employer === e)), xfmt: (m) => m.slice(0, 4) });
+  employerOrder = HL.stackChart(el, rows, 'm', 'employer', 'amount', { order: [...d3.rollup(rows, (v) => d3.sum(v, (r) => r.amount), (r) => r.employer)].filter((d) => d[0] !== 'Unknown').sort((a, b) => b[1] - a[1]).map((d) => d[0]).concat(rows.some((r) => r.employer === 'Unknown') ? ['Unknown'] : []), xfmt: (m) => m.slice(0, 4) });
 });
 dash.draw('employer-legend', (el) => { const g = dash.data('employer'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, employerOrder); });
 
@@ -711,10 +713,12 @@ dash.draw('cat-stack', (el) => {
 });
 dash.draw('cat-legend', (el) => { const g = dash.data('cat_year'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, catOrder); });
 
-const yearCols = ['2018','2019','2020','2021','2022','2023','2024','2025','2026'];
+const yearHead = (tb, years) => { const tr = tb.parentElement.tHead.rows[0]; const old = [...tr.children]; tr.replaceChildren(old[0], ...years.map((y) => Object.assign(document.createElement('th'), { textContent: y })), Object.assign(document.createElement('th'), { textContent: 'Total' })); };
+const yearsOf = (rows) => [...new Set(rows.map((r) => r.y))].sort();
 dash.draw('cat-pivot', (tb) => {
   const g = dash.data('cat_pivot'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   const sfx = HL.basis() === 'real' ? '_real' : '';
+  const yearCols = yearsOf(dash.data('cat_year').data); yearHead(tb, yearCols);
   HL.fillTable(tb, g.data, [(r) => r.category, ...yearCols.map((y) => (r) => r['y' + y + sfx] ? HL.usd0(r['y' + y + sfx]) : '—'), (r) => HL.usd0(r['total' + sfx])]);
 });
 dash.draw('cat-pick', (sel) => {
@@ -727,6 +731,7 @@ dash.draw('item-pivot', (tb) => {
   const g = dash.data('item_pivot'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   const cats = Array.from(new Set(g.data.map((r) => r.category))).sort();
   const cat = dash.params().cat || (cats.includes('Groceries') ? 'Groceries' : cats[0]);
+  const yearCols = yearsOf(dash.data('item_year').data); yearHead(tb, yearCols);
   HL.fillTable(tb, g.data.filter((r) => r.category === cat), [(r) => r.item, ...yearCols.map((y) => (r) => r['y' + y] ? HL.usd0(r['y' + y]) : '—'), (r) => HL.usd0(r.total)]);
   for (const tr of tb.children) tr.dataset.key = tr.firstChild.textContent;
 });
@@ -749,7 +754,8 @@ dash.draw('slush', (el) => {
 dash.draw('slush-legend', (el) => { const g = dash.data('slush'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, slushOrder); });
 dash.draw('exclusions', (tb) => {
   const g = dash.data('exclusions'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
-  HL.fillTable(tb, g.data, [(r) => r.key, (r) => r.unit === 'usd' ? HL.usd0(Number(r.value)) : d3.format(',')(Number(r.value)) + ' ' + r.unit]);
+  const totals = ['rows_in_totals', 'rows_total', 'months'];   // rows for rules that removed nothing stay out of the table
+  HL.fillTable(tb, g.data.filter((r) => Number(r.value) !== 0 || totals.includes(r.kind)), [(r) => r.key + (r.detail ? ' (' + r.detail + ')' : ''), (r) => r.unit === 'usd' ? HL.usd0(Number(r.value)) : d3.format(',')(Number(r.value)) + ' ' + r.unit]);
 });
 
 })();</script>
@@ -790,14 +796,17 @@ dash.draw('debts', (el) => {
 // ---- people ----
 let earnerOrder = [], payerOrder = [];
 dash.draw('earner', (el) => { const g = dash.data('people'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
-  earnerOrder = HL.stackChart(el, g.data.filter((r) => r.role === 'earner').map((r) => ({ y: r.y, who: r.who, v: Number(r.amount) })), 'y', 'who', 'v', { order: ['Josh', 'CJ', 'Household'] }); });
+  earnerOrder = HL.stackChart(el, g.data.filter((r) => r.role === 'earner').map((r) => ({ y: r.y, who: r.who, v: Number(r.amount) })), 'y', 'who', 'v', { order: [...peopleNames(g.data), 'Household'] }); });
 dash.draw('earner-legend', (el) => { const g = dash.data('people'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, earnerOrder); });
 dash.draw('payer', (el) => { const g = dash.data('people'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
-  payerOrder = HL.stackChart(el, g.data.filter((r) => r.role === 'payer').map((r) => ({ y: r.y, who: r.who, v: Number(r.amount) })), 'y', 'who', 'v', { order: ['Josh', 'CJ', 'Household'] }); });
+  payerOrder = HL.stackChart(el, g.data.filter((r) => r.role === 'payer').map((r) => ({ y: r.y, who: r.who, v: Number(r.amount) })), 'y', 'who', 'v', { order: [...peopleNames(g.data), 'Household'] }); });
 dash.draw('payer-legend', (el) => { const g = dash.data('people'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, payerOrder); });
 dash.draw('people-pivot', (tb) => {
   const g = dash.data('people_pivot'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
-  HL.fillTable(tb, g.data, [(r) => r.y, (r) => HL.usd0(r.earn_josh), (r) => HL.usd0(r.earn_cj), (r) => HL.usd0(r.earn_hh), (r) => r.earn_cj_share == null ? '—' : d3.format('.1%')(r.earn_cj_share), (r) => HL.usd0(r.pay_josh), (r) => HL.usd0(r.pay_cj), (r) => HL.usd0(r.pay_hh)]);
+  const names = peopleNames(dash.data('people').data), pct = d3.format('.1%');
+  const cols = [['Year', (r) => r.y], ...names.map((n) => [n + ' earned', (r) => HL.usd0(r['earn_' + n])]), ['Household', (r) => HL.usd0(r.earn_Household)], ...names.map((n) => [n + ' share', (r) => r['share_' + n] == null ? '—' : pct(r['share_' + n])]), ...names.map((n) => [n + ' envelopes', (r) => HL.usd0(r['pay_' + n])]), ['Shared', (r) => HL.usd0(r.pay_Household)]];
+  tb.parentElement.tHead.rows[0].replaceChildren(...cols.map(([h]) => Object.assign(document.createElement('th'), { textContent: h })));
+  HL.fillTable(tb, g.data, cols.map((c) => c[1]));
 });
 
 })();</script>
@@ -805,6 +814,36 @@ dash.draw('people-pivot', (tb) => {
 <script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- method ----
+// The exclusion narrative is built from the exclusions and verify datasets, so it only mentions what this household's data and rules removed.
+dash.draw('method-exclusions', (el) => {
+  const ex = dash.data('exclusions'), vf = dash.data('verify');
+  const para = (t) => Object.assign(document.createElement('p'), { textContent: t });
+  if (ex.status !== 'ok' || !ex.data.length) { el.replaceChildren(para('Nothing is loaded yet. Once the first exports are added, this section lists any transfers, excluded items and adjustments removed from the totals.')); return; }
+  const by = (k) => ex.data.filter((r) => r.kind === k), val = (k) => by(k).reduce((a, r) => a + Number(r.value), 0), detail = (k) => (by(k)[0] || {}).detail;
+  const n = d3.format(','), usd = (v) => HL.usd0(v), rows = (v) => n(v) + (v === 1 ? ' row' : ' rows');
+  const out = [];
+  if (val('transfers_tagged')) out.push(`${rows(val('transfers_tagged'))} ${val('transfers_tagged') === 1 ? 'was' : 'were'} tagged as transfers between envelopes and removed from income and spend${val('transfers_paired') ? `; ${n(val('transfers_paired'))} of them matched into in-and-out pairs` : ''}.${val('income_transfers') ? ` ${usd(val('income_transfers'))} of that had been booked as income.` : ''}`);
+  for (const r of by('excluded_item')) out.push(`Item “${r.item}” (${rows(Number(r.value))}) is excluded entirely: it moves money through the budget without being household income or spending.`);
+  if (val('loan_in') || val('loan_out')) out.push(`Loans between family are removed on both legs: ${usd(val('loan_in'))} booked as income and ${usd(val('loan_out'))} booked as repayments, so a loan neither raises income nor counts as spending.`);
+  if (val('plugs')) out.push(`${rows(val('plugs'))} of balancing entries ${detail('plugs') ? `(${detail('plugs')}) ` : ''}${val('plugs') === 1 ? 'was' : 'were'} dropped: they only zeroed an envelope without moving cash, so debt payments equal cash out.`);
+  if (val('offbudget')) out.push(`${usd(val('offbudget'))} left the budget${detail('offbudget') ? ` ${detail('offbudget')}` : ''} as transfers with no matching row in another item. Like other transfers it is not counted as spending.`);
+  if (!out.length) out.push('Nothing needed removing: no transfers, excluded items or adjustments were found in the data loaded.');
+  if (vf.status === 'ok' && vf.data.length) out.push(`${rows(vf.data.length)} of inflow (${usd(d3.sum(vf.data, (r) => Number(r.amount)))}) ${vf.data.length === 1 ? 'is' : 'are'} booked as income but not yet identified, and sit outside income until named: see Unverified inflows below.`);
+  else out.push('No unverified inflows: every row booked as income was identified.');
+  if (val('rows_total')) out.push(`${n(val('rows_in_totals'))} of ${n(val('rows_total'))} ledger rows across ${n(val('months'))} budget ${val('months') === 1 ? 'month' : 'months'} count toward the totals.`);
+  el.replaceChildren(...out.map(para));
+});
+dash.draw('method-items', (el) => {
+  const iy = dash.data('item_year'), cy = dash.data('cat_year');
+  el.textContent = iy.status === 'ok' && iy.data.length ? `Here ${new Set(iy.data.map((r) => r.category + '|' + r.item)).size} items fall into ${new Set(cy.data.map((r) => r.category)).size} categories.` : '';
+});
+dash.draw('cpi-note', (el) => {
+  const g = dash.data('cpi'); if (g.status !== 'ok' || !g.data.length) { el.textContent = ''; return; }
+  const rows = [...g.data].sort((a, b) => a.month < b.month ? -1 : 1), base = rows.find((r) => r.month === el.dataset.base) || rows[rows.length - 1], first = rows.find((r) => r.month === el.dataset.first) || rows.find((r) => r.month >= (el.dataset.first || '')) || rows[0];
+  const filled = rows.filter((r) => !/^FRED/.test(r.source));
+  const loss = Math.round((1 - first.cpi / base.cpi) * 100);
+  el.textContent = (loss > 0 ? `A ${first.month.slice(0, 4)} dollar buys about ${loss}% less in ${base.month.slice(0, 4)}, so earlier figures grow when restated. ` : '') + (filled.length ? `${filled.length === 1 ? 'One month is' : filled.length + ' months are'} filled in rather than published (${filled.map((r) => r.month + ': ' + r.source).join('; ')}); marked in the table below.` : 'Every month uses a published value.');
+});
 dash.draw('cpi', (tb) => {
   const g = dash.data('cpi'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   HL.fillTable(tb, g.data, [(r) => r.month, (r) => d3.format('.3f')(Number(r.cpi)), (r, td) => { if (!/^FRED/.test(r.source)) td.parentElement.classList.add('filled'); return r.source; }]);
@@ -816,7 +855,8 @@ dash.draw('cpi-estimated', (el) => {
 dash.draw('verify', (tb) => {
   const g = dash.data('verify'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   HL.fillTable(tb, g.data, [(r) => r.m, (r) => r.item, (r) => r.merchant, (r) => HL.usd0(Number(r.amount))]);
-  for (const tr of tb.children) tr.dataset.key = encodeURIComponent(tr.children[0].textContent) + ',' + encodeURIComponent(tr.children[1].textContent);
+  if (!g.data.length) { const td = Object.assign(document.createElement('td'), { colSpan: 4, textContent: 'None. Every inflow booked as income has been identified.' }); const tr = document.createElement('tr'); tr.appendChild(td); tb.replaceChildren(tr); }
+  if (g.data.length) for (const tr of tb.children) tr.dataset.key = encodeURIComponent(tr.children[0].textContent) + ',' + encodeURIComponent(tr.children[1].textContent);
 });
 
 })();</script>

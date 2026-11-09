@@ -35,7 +35,8 @@ def _span(conn) -> dict:
     base = rules.get("cpi_base_month") or (r["b"] or "2026-09")
     bd = _dt.date(int(base[:4]), int(base[5:7]), 1)
     fy, ly = (int(r["a"][:4]) if r["a"] else bd.year), (int(r["b"][:4]) if r["b"] else bd.year)
-    return {"first_year": fy, "last_year": ly, "years": ly - fy + 1, "cpi_base_short": bd.strftime("%b %Y"), "cpi_base_long": bd.strftime("%B %Y")}
+    return {"first_year": fy, "last_year": ly, "years": ly - fy + 1, "cpi_base_short": bd.strftime("%b %Y"), "cpi_base_long": bd.strftime("%B %Y"),
+            "cpi_base_iso": base, "has_data": bool(r["a"]), "first_month": r["a"], "last_month": r["b"]}
 
 
 def _months(conn):
