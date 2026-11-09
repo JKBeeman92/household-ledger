@@ -4,6 +4,7 @@ The app is its own OIDC client (no proxy outpost in front): Authentik issues an 
 discovery-backed client, read the `groups` claim and admit only members of ALLOWED_GROUPS. Session is a signed cookie.
 """
 from __future__ import annotations
+from urllib.parse import quote
 from fastapi import Request, HTTPException
 from starlette.responses import RedirectResponse
 from authlib.integrations.starlette_client import OAuth
@@ -34,7 +35,7 @@ def require_user(request: Request) -> dict:
     user = current_user(request)
     if user is None:
         nxt = request.url.path + (("?" + request.url.query) if request.url.query else "")
-        raise HTTPException(status_code=307, headers={"Location": f"/login?next={nxt}"})
+        raise HTTPException(status_code=307, headers={"Location": f"/login?next={quote(nxt, safe='/')}"})
     return user
 
 
@@ -57,7 +58,8 @@ def require_editor_api(request: Request) -> dict:
 
 
 def _safe_next(nxt: str | None) -> str:
-    return nxt if nxt and nxt.startswith("/") and not nxt.startswith("//") else "/"
+    ok = nxt and nxt.startswith("/") and not nxt.startswith("//") and "\\" not in nxt and not any(ord(c) < 32 or ord(c) == 127 for c in nxt)
+    return nxt if ok else "/"
 
 
 async def start_login(request: Request, nxt: str | None) -> RedirectResponse:
@@ -73,7 +75,7 @@ async def finish_login(request: Request) -> RedirectResponse:
     if not claims:
         claims = await oauth.idp.userinfo(token=token)
     groups = set(claims.get("groups") or [])
-    if settings.allowed_groups and not (groups & set(settings.allowed_groups)):
+    if not (groups & set(settings.allowed_groups)):
         request.session.clear()
         raise HTTPException(status_code=403, detail=f"{claims.get('email', 'this account')} is not in an allowed group ({', '.join(settings.allowed_groups)})")
     request.session["user"] = {"email": claims.get("email", ""), "name": claims.get("name") or claims.get("preferred_username", ""), "groups": sorted(groups)}
