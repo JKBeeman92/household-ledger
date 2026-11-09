@@ -55,6 +55,8 @@ def pgenv(url: str, **extra) -> dict:
            "PGDATABASE": p["dbname"], "BACKUP_KEEP_DAYS": "14", "BACKUP_INTERVAL_HOURS": "24", "BACKUP_ONCE": "1", **extra}
     env["PATH"] = f"{Path(pg_bin('pg_dump')).parent}:{env['PATH']}"
     env.pop("PGPASSWORD", None)
+    if p.get("password"):   # a password-authenticated test server (CI); trust auth needs none
+        env["PGPASSWORD"] = p["password"]
     return env
 
 
@@ -76,7 +78,7 @@ def test_dump_script_writes_restorable_dump_and_prunes_old_ones(two_dbs, tmp_pat
     r = subprocess.run(["sh", "-c", script(tmp_path)], env=pgenv(src), capture_output=True, text=True, timeout=60)
     assert r.returncode == 0, r.stderr
     dumps = sorted(tmp_path.glob("ledger-*.dump"))
-    assert len(dumps) == 1 and "backup written" in r.stdout
+    assert len(dumps) == 1 and "backup written" in r.stdout, r.stderr
     assert not old.exists() and not stale_tmp.exists() and keep.exists()
     assert (dumps[0].stat().st_mode & 0o077) == 0
 
