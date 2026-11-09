@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Household",
+  "description": "Names and display settings shown in the header, page titles and login page.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "title"],
+  "properties": {
+    "name": {"type": "string", "minLength": 1, "description": "Short household name, shown in the header and footer."},
+    "title": {"type": "string", "minLength": 1, "description": "Dashboard title, shown in page titles and the dashboard heading."},
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$", "description": "ISO 4217 currency code, for example USD."},
+    "theme": {"type": "string", "minLength": 1, "description": "Brand theme name (see docs/BRANDING.md)."}
+  }
+}
