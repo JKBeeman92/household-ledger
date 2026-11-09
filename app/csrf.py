@@ -2,13 +2,16 @@
 
 The token lives in the signed session cookie. Forms render it with `{{ csrf_field(request) }}`; scripts send it as the
 `X-CSRF-Token` header. Routes need do nothing to be covered (the dependency is registered on the app), so a new POST route
-cannot forget it. Requests that carry no ambient cookie authority are exempt through `csrf_exempt` (the seam for #34's API tokens)."""
+cannot forget it. A request authenticated by a valid API token is exempt through `csrf_exempt` (#34)."""
 from __future__ import annotations
 import hmac
 import secrets
 
 from fastapi import Request
 from markupsafe import Markup
+from starlette.concurrency import run_in_threadpool
+
+from . import auth
 
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS", "TRACE"})
 FIELD = "csrf_token"
@@ -32,14 +35,15 @@ def csrf_field(request: Request) -> Markup:
 
 
 def csrf_exempt(request: Request) -> bool:
-    """The seam for #34's API tokens: True only for a request authenticated by a verified token, never by the session cookie.
-    No bearer authentication exists yet, so nothing is exempt; an `Authorization` header alone proves nothing (#9)."""
-    return False
+    """True only when the request's `Authorization: Bearer` token validates. Such a request is judged by the token alone (its session
+    cookie is ignored, app/auth.py), so there is no ambient authority to forge. An unknown, revoked or empty token is not exempt.
+    Runs in a worker thread (one indexed lookup, cached on the request for the auth dependency)."""
+    return auth.bearer(request) is not None and auth.token_user(request) is not None
 
 
 async def protect(request: Request) -> None:
     """App-level dependency: raise CsrfError on an unsafe request without the session's token."""
-    if request.method in SAFE_METHODS or csrf_exempt(request):
+    if request.method in SAFE_METHODS or await run_in_threadpool(csrf_exempt, request):
         return
     want = request.session.get(FIELD)
     got = request.headers.get(HEADER)

@@ -5,6 +5,7 @@
 <h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Settings</h1>
 <p class="muted" style="max-width:70ch">Everything the pipeline decides from is here, as data. Edit, save, then <strong>Rebuild</strong> on the Close-a-month page so the ledger and charts reflect it. Each editor validates its format before saving.</p>
 <p class="muted">The month-close review's provider and model are on the <a href="/reviews">Reviews</a> page.</p>
+<p class="muted">Tokens for scripts, monitoring and agents are on the <a href="/settings/tokens">API tokens</a> page.</p>
 <form id="csrf-form" hidden>{{ csrf_field(request) }}</form>
 <p id="rowstatus" class="rowstatus" role="status" aria-live="polite"></p>
 {% set by_key = {} %}{% for ed in editors %}{% if by_key.update({ed.key: ed}) %}{% endif %}{% endfor %}

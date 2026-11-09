@@ -10,14 +10,14 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
-from .auth import current_user, revalidate, Forbidden
+from .auth import bearer, current_user, revalidate, Forbidden
 from .config import settings
 from . import db, csrf
 from .security import SecurityHeaders
 from .uploads import UploadLimit
 from .web_helpers import ROOT, flash, render
 from .logging_setup import configure as configure_logging, RequestIdMiddleware
-from .routes import brand, auth, pages, upload, settings as settings_routes, api, build, findings, months, checklist, schemas, cpi, reviews, review_audit, review_prompt, ops, export
+from .routes import brand, auth, pages, upload, settings as settings_routes, api, build, findings, months, checklist, schemas, cpi, reviews, review_audit, review_prompt, ops, export, tokens
 
 configure_logging(settings.log_format)
 log = logging.getLogger("ledger")
@@ -42,7 +42,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_middleware(SecurityHeaders)   # CSP nonce + security headers on every response
 app.add_middleware(RequestIdMiddleware)   # outermost, so every log line and response carries the request id
 app.mount("/static", StaticFiles(directory=ROOT / "web" / "static"), name="static")
-for module in (brand, auth, pages, upload, settings_routes, api, build, findings, months, checklist, schemas, cpi, reviews, review_audit, review_prompt, ops, export):
+for module in (brand, auth, pages, upload, settings_routes, api, build, findings, months, checklist, schemas, cpi, reviews, review_audit, review_prompt, ops, export, tokens):
     app.include_router(module.router)
 
 
@@ -59,8 +59,8 @@ async def csrf_rejected(request: Request, exc: csrf.CsrfError):
 
 @app.exception_handler(Forbidden)
 async def forbidden(request: Request, exc: Forbidden):
-    if request.url.path.startswith("/api/") or "application/json" in request.headers.get("accept", ""):
-        return JSONResponse({"detail": exc.detail}, status_code=403)
+    if request.url.path.startswith("/api/") or "application/json" in request.headers.get("accept", "") or bearer(request) is not None:
+        return JSONResponse({"detail": exc.detail}, status_code=403, headers=exc.headers)
     csrf.token_for(request)   # a viewer's session has no form to mint one, and a later POST should read as forbidden, not as a forged form
     resp = render(request, "forbidden.html", current_user(request), detail=exc.detail)
     resp.status_code = 403
