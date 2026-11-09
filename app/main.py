@@ -1,5 +1,6 @@
 """Household Ledger — FastAPI app. Routes live in app/routes/: auth, pages, upload (close a month), settings editors, api, brand."""
 from __future__ import annotations
+import asyncio
 import logging
 import secrets
 from contextlib import asynccontextmanager
@@ -12,7 +13,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .auth import bearer, current_user, revalidate, Forbidden
 from .config import settings
-from . import db, csrf
+from . import db, csrf, stale
 from .security import SecurityHeaders
 from .uploads import UploadLimit
 from .web_helpers import ROOT, flash, render
@@ -24,6 +25,16 @@ configure_logging(settings.log_format)
 log = logging.getLogger("ledger")
 
 
+async def _stale_watch():
+    """Announce missing budget months (webhook event months.missing) at start and every six hours; never raises."""
+    while True:
+        try:
+            await asyncio.to_thread(stale.announce)
+        except Exception:  # noqa: BLE001
+            log.exception("stale-data check failed")
+        await asyncio.sleep(6 * 3600)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings.enforce()  # raises ConfigError listing every problem; the server exits instead of starting
@@ -32,8 +43,10 @@ async def lifespan(app: FastAPI):
         if not settings.session_secret:
             log.warning("SESSION_SECRET is empty: using a random per-process secret, so sessions reset on restart")
     db.init()
+    watch = asyncio.create_task(_stale_watch())
     async with mcp_endpoint.run():
         yield
+    watch.cancel()
     db.pool.close()
 
 

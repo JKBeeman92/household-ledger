@@ -168,3 +168,18 @@ def test_months_missing_waits_for_a_configured_hook(client, reset_db, stub):
     assert hooks.notify_missing_months(["2026-09"]) is None and stub.reqs == []
     configure(client)
     assert hooks.notify_missing_months(["2026-09"])["ok"]   # not marked as announced while nobody was listening
+
+
+def test_stale_check_announces_missing_months_from_the_loaded_files(client, reset_db, stub):
+    import datetime
+    from app import stale
+    upload_files(client, GOLDEN / "exports")
+    latest = sql("SELECT max(budget_month) m FROM source_files")[0]["m"]
+    y, mo = int(latest[:4]), int(latest[5:7])
+    two_later = datetime.date(y + (mo + 3 > 12), (mo + 2) % 12 + 1, 15)   # the 15th, three calendar months after the latest loaded one
+    configure(client)
+    stub.reqs.clear()
+    assert stale.announce(two_later)["ok"]
+    e = body(stub.reqs[-1])
+    assert e["event"] == "months.missing" and len(e["months"]) == 2 and min(e["months"]) > latest
+    assert stale.announce(two_later) is None   # each month is announced once

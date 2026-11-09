@@ -31,3 +31,12 @@ def stale_status(months: list[str], on: _dt.date | None = None) -> dict:
     names = [_NAMES[int(x[5:7]) - 1] for x in missing]
     msg = None if not names else f"{names[0]}'s exports are not loaded yet" if len(names) == 1 else f"{', '.join(names[:-1])} and {names[-1]}: exports are not loaded yet"
     return {"stale": bool(missing), "expected_month": expected_month(on), "latest_month": max(months, default=None), "months_missing": missing, "message": msg}
+
+
+def announce(on: _dt.date | None = None) -> dict | None:
+    """Tell the configured webhook about budget months that should be loaded by now. Each month is announced once (hooks keeps
+    the record); run at start and on a timer, so the first of the month is noticed without anyone opening the page."""
+    from . import db, hooks
+    with db.pool.connection() as conn:
+        months = [r["budget_month"] for r in conn.execute("SELECT DISTINCT budget_month FROM source_files").fetchall()]
+    return hooks.notify_missing_months(missing_months(months, on))
