@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-os.environ.update(AUTH_DISABLED="true", SESSION_SECRET="test-session-secret-0123456789abcdef0123", BASE_URL="http://testserver")
+os.environ.update(AUTH_DISABLED="true", SESSION_SECRET="test-session-secret-0123456789abcdef0123", BASE_URL="http://testserver", I_KNOW_AUTH_IS_OFF="1")
 for _k in ("OIDC_ISSUER", "OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET", "ANTHROPIC_API_KEY", "SEED_DIR", "IMPORT_DIR"):
     os.environ[_k] = ""
 

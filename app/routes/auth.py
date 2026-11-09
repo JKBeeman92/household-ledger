@@ -1,4 +1,5 @@
 import logging
+from urllib.parse import quote
 
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -27,10 +28,10 @@ async def auth_callback(request: Request):
     try:
         return await auth.finish_login(request)
     except HTTPException as e:
-        return RedirectResponse(f"/login?error={e.detail}", status_code=303)
+        return RedirectResponse(f"/login?error={quote(str(e.detail), safe='')}", status_code=303)
     except Exception as e:  # noqa: BLE001
         log.exception("oidc callback failed")
-        return RedirectResponse(f"/login?error=sign-in failed: {type(e).__name__}", status_code=303)
+        return RedirectResponse(f"/login?error={quote('sign-in failed: ' + type(e).__name__, safe='')}", status_code=303)
 
 
 @router.get("/logout")

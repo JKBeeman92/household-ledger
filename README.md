@@ -121,6 +121,7 @@ The app is its own OIDC client — no proxy outpost in front of it.
 3. Put the provider's client ID/secret and the issuer URL (`https://auth.example.com/application/o/ledger/`) in `.env`.
 
 `AUTH_DISABLED=true` skips all of this for local development and signs you in as `dev@localhost`. Never set it in production.
+With auth on, the app refuses to start (and prints why) on a missing or short `SESSION_SECRET`, missing OIDC settings, or empty `ALLOWED_GROUPS`; `AUTH_DISABLED=true` with a non-localhost `BASE_URL` also needs `I_KNOW_AUTH_IS_OFF=1`.
 
 ## Month-close review
 

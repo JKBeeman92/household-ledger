@@ -2,6 +2,11 @@
 from __future__ import annotations
 import os
 from dataclasses import dataclass, field
+from urllib.parse import urlparse
+
+
+class ConfigError(RuntimeError):
+    pass
 
 
 def _bool(name: str, default: bool = False) -> bool:
@@ -25,14 +30,29 @@ class Settings:
     review_model: str = os.environ.get("REVIEW_MODEL", "claude-sonnet-5-5")
     seed_dir: str = os.environ.get("SEED_DIR", "")                  # household seed files (mapping, goals, rules…) read on first boot
     import_dir: str = os.environ.get("IMPORT_DIR", "")              # exports here are bulk-loaded at every start (new/changed files only)
+    i_know_auth_is_off: bool = _bool("I_KNOW_AUTH_IS_OFF", False)   # allows AUTH_DISABLED=true on a non-localhost BASE_URL
 
     def validate(self) -> list[str]:
         problems = []
-        if not self.session_secret or len(self.session_secret) < 32:
+        if self.auth_disabled:
+            host = urlparse(self.base_url).hostname or ""
+            if host not in {"localhost", "127.0.0.1", "::1"} and not self.i_know_auth_is_off:
+                problems.append(f"AUTH_DISABLED=true with BASE_URL host '{host}' would expose the ledger to anyone who can reach it; use localhost or set I_KNOW_AUTH_IS_OFF=1")
+            return problems
+        if len(self.session_secret) < 32:
             problems.append("SESSION_SECRET must be set (32+ random characters)")
-        if not self.auth_disabled and not (self.oidc_issuer and self.oidc_client_id and self.oidc_client_secret):
-            problems.append("OIDC_ISSUER, OIDC_CLIENT_ID and OIDC_CLIENT_SECRET must be set (or AUTH_DISABLED=true for local dev)")
+        for name, value in (("OIDC_ISSUER", self.oidc_issuer), ("OIDC_CLIENT_ID", self.oidc_client_id), ("OIDC_CLIENT_SECRET", self.oidc_client_secret)):
+            if not value:
+                problems.append(f"{name} must be set (or AUTH_DISABLED=true for local dev)")
+        if not self.allowed_groups:
+            problems.append("ALLOWED_GROUPS must list at least one group: empty would admit every account the identity provider authenticates")
         return problems
+
+    def enforce(self) -> None:
+        """Refuse to start on any validation problem, printing the whole list."""
+        problems = self.validate()
+        if problems:
+            raise ConfigError("invalid configuration:\n" + "\n".join(f"  - {p}" for p in problems))
 
 
 settings = Settings()
