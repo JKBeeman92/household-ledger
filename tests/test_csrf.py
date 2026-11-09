@@ -71,10 +71,12 @@ def test_json_clients_get_json_403(raw_client, reset_db):
     assert r.status_code == 403 and "detail" in r.json()
 
 
-def test_bearer_requests_are_exempt(raw_client, reset_db):
-    r = raw_client.post("/rebuild", headers={"Authorization": "Bearer hl_example"})
-    assert r.status_code != 403
-    assert raw_client.post("/rebuild", headers={"Authorization": "Basic abc"}).status_code == 403
+def test_a_bearer_header_alone_does_not_skip_the_check(raw_client, reset_db):
+    """No bearer authentication exists yet, so such a request is still authorised by the session cookie (#9)."""
+    form_token(raw_client)
+    for h in ("Bearer hl_example", "bearer junk", "Basic abc"):
+        assert raw_client.post("/rebuild", headers={"Authorization": h}).status_code == 403, h
+    assert client_untouched(raw_client)
 
 
 def test_exemption_is_one_replaceable_seam(raw_client, reset_db, monkeypatch):

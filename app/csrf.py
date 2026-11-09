@@ -32,10 +32,9 @@ def csrf_field(request: Request) -> Markup:
 
 
 def csrf_exempt(request: Request) -> bool:
-    """True for requests authenticated by an `Authorization: Bearer` API token: they carry no cookie, so there is nothing to forge.
-    Header presence is enough here because a cross-site page cannot set Authorization without a CORS preflight, which this app never grants;
-    the token's own validity is checked by the API auth dependency (#34), not here."""
-    return request.headers.get("authorization", "")[:7].lower() == "bearer "
+    """The seam for #34's API tokens: True only for a request authenticated by a verified token, never by the session cookie.
+    No bearer authentication exists yet, so nothing is exempt; an `Authorization` header alone proves nothing (#9)."""
+    return False
 
 
 async def protect(request: Request) -> None:
