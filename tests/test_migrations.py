@@ -43,7 +43,7 @@ def test_existing_database_adopts_baseline_and_keeps_rows(scratch):
         c.execute("INSERT INTO source_files (kind, budget_month, filename, sha256, row_count) VALUES ('transactions','2025-01','shire.csv','abc',1)")
         c.execute("INSERT INTO transactions (source_file_id, budget_month, row_no, grp, item, type, date, merchant, amount) VALUES (1,'2025-01',1,'Food','Groceries','expense','2025-01-05','Bywater Market',12.50)")
         c.execute("INSERT INTO item_mapping (item, canonical_item, category, flow) VALUES ('groceries','Groceries','Food','expense')")
-    assert db.migrate(scratch) == ["0001_baseline.sql"]
+    assert db.migrate(scratch) == [p.name for p in sorted(db.MIGRATIONS.glob("*.sql"))]
     assert q(scratch, "SELECT merchant, amount::text FROM transactions") == [("Bywater Market", "12.50")]
     assert q(scratch, "SELECT item FROM item_mapping") == [("groceries",)]
     assert q(scratch, "SELECT count(*) FROM source_files") == [(1,)]
@@ -55,7 +55,7 @@ def test_second_start_applies_nothing(scratch):
 
 
 def test_out_of_order_migration_is_applied(scratch, tmp_path):
-    for p in db.MIGRATIONS.glob("*.sql"):
+    for p in db.MIGRATIONS.glob("0001_*.sql"):   # only the baseline, so later real migrations do not change the expected lists
         (tmp_path / p.name).write_text(p.read_text())
     (tmp_path / "0022_second_breakfast.sql").write_text("CREATE TABLE second_breakfast (id INT);")
     assert db.migrate(scratch, tmp_path) == ["0001_baseline.sql", "0022_second_breakfast.sql"]

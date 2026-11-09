@@ -9,9 +9,10 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
-from .auth import current_user
+from .auth import current_user, revalidate
 from .config import settings
 from . import db, csrf
+from .security import SecurityHeaders
 from .web_helpers import ROOT, flash, render
 from .routes import brand, auth, pages, upload, settings as settings_routes, api
 
@@ -30,8 +31,9 @@ async def lifespan(app: FastAPI):
     db.pool.close()
 
 
-app = FastAPI(title="Household Ledger", docs_url=None, redoc_url=None, lifespan=lifespan, dependencies=[Depends(csrf.protect)])
-app.add_middleware(SessionMiddleware, secret_key=settings.session_secret or secrets.token_hex(32), https_only=settings.base_url.startswith("https"), same_site="lax", max_age=12 * 3600)
+app = FastAPI(title="Household Ledger", docs_url=None, redoc_url=None, lifespan=lifespan, dependencies=[Depends(csrf.protect), Depends(revalidate)])
+app.add_middleware(SessionMiddleware, secret_key=settings.session_secret or secrets.token_hex(32), https_only=settings.base_url.startswith("https"), same_site="lax", max_age=settings.session_max_age)
+app.add_middleware(SecurityHeaders)   # outermost: CSP nonce + security headers on every response
 app.mount("/static", StaticFiles(directory=ROOT / "web" / "static"), name="static")
 for module in (brand, auth, pages, upload, settings_routes, api):
     app.include_router(module.router)

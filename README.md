@@ -116,9 +116,18 @@ The app is its own OIDC client — no proxy outpost in front of it.
 1. Authentik → Applications → Providers → **Create** → OAuth2/OpenID Provider. Confidential client, authorization-code flow,
    redirect URI `https://ledger.example.com/auth/callback`, signing key selected, scopes `openid email profile` plus the
    default `groups` mapping (the app reads the `groups` claim).
+   Also select the `offline_access` scope (the app needs a refresh token for the group re-check below) and add
+   `https://ledger.example.com/signed-out` as a redirect URI: it is the `post_logout_redirect_uri` that **Sign out** sends.
 2. Applications → **Create** `ledger`, bound to that provider. Restrict with a policy binding on the `admins` group (or set
    `ALLOWED_GROUPS` to whichever group you use — the app enforces this too).
 3. Put the provider's client ID/secret and the issuer URL (`https://auth.example.com/application/o/ledger/`) in `.env`.
+
+Sign-in lasts `SESSION_MAX_AGE` (12 h). Every `GROUP_RECHECK_SECONDS` (5 min) the app refreshes the token and reads `groups`
+again, so removing someone from the group, or disabling them in Authentik, signs them out within that interval; if Authentik
+cannot be reached for the re-check, the session also ends. **Sign out** ends the Authentik session too (`id_token_hint`).
+The tokens stay in the database (`auth_sessions`); the cookie holds only a random id. Upgrading signs everyone out once.
+A theme in `BRAND_DIR` that loads fonts or images from a host other than Google Fonts needs that host in `CSP_STYLE_SRC` /
+`CSP_FONT_SRC` / `CSP_IMG_SRC` (see `.env.example`); otherwise the browser's Content-Security-Policy blocks it.
 
 `AUTH_DISABLED=true` skips all of this for local development and signs you in as `dev@localhost`. Never set it in production.
 With auth on, the app refuses to start (and prints why) on a missing or short `SESSION_SECRET`, missing OIDC settings, or empty `ALLOWED_GROUPS`; `AUTH_DISABLED=true` with a non-localhost `BASE_URL` also needs `I_KNOW_AUTH_IS_OFF=1`.

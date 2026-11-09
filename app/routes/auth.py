@@ -35,6 +35,13 @@ async def auth_callback(request: Request):
 
 
 @router.get("/logout")
-def logout(request: Request):
-    request.session.clear()
-    return RedirectResponse(auth.logout_url(), status_code=303)
+async def logout(request: Request):
+    return RedirectResponse(await auth.logout(request), status_code=303)
+
+
+@router.get("/signed-out", response_class=HTMLResponse)
+def signed_out(request: Request):
+    """Where the IdP sends the browser after end-session (`post_logout_redirect_uri`)."""
+    if auth.current_user(request):
+        return RedirectResponse("/")
+    return render(request, "login.html", None, next="/", error="", signed_out=True)
