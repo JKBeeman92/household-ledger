@@ -139,3 +139,33 @@ def test_renaming_a_goal_keeps_its_confirmation(client, reset_db):
         assert conn.execute("SELECT 1 FROM goals WHERE key='ren_a'").fetchone() is None
         g = conn.execute("SELECT value, confirmed_at FROM goals WHERE key='ren_b'").fetchone()
     assert g["confirmed_at"] == stamp and float(g["value"]) == 6
+
+
+def _cpi(conn):
+    return conn.execute("SELECT month, cpi, source FROM cpi ORDER BY month").fetchall()
+
+
+@pytest.mark.parametrize("body,needle", [
+    ("month,cpi,source\n", "no CPI rows"),
+    ("when,value\n2026-01,300\n", "header"),
+    ("month,cpi,source\n2026-01,300,x\n2026-1,301,x\n", "line 3: month must look like YYYY-MM"),
+    ("month,cpi,source\n2026-01,abc,x\n", "line 2: cpi must be a positive number"),
+    ("month,cpi,source\n2026-01,-4,x\n", "line 2: cpi must be a positive number"),
+    ("month,cpi,source\n2026-01,300,x\n2026-02,301,x\n2026-01,302,x\n", "line 4: month 2026-01 repeats line 2"),
+])
+def test_bulk_cpi_is_validated_before_anything_is_deleted(client, reset_db, body, needle):
+    with db.pool.connection() as conn:
+        before = _cpi(conn)
+    assert before
+    page = client.get(client.post("/settings/cpi", data={"body": body}).headers["location"]).text
+    assert "Not saved" in page and needle in page
+    with db.pool.connection() as conn:
+        assert _cpi(conn) == before
+
+
+def test_bulk_cpi_valid_save_replaces_the_table(client, reset_db):
+    body = "month,cpi,source\n2026-01,300.5,mine\n2026-02,301,\n"
+    page = client.get(client.post("/settings/cpi", data={"body": body}).headers["location"]).text
+    assert "Saved 2 CPI months" in page
+    with db.pool.connection() as conn:
+        assert [(r["month"], float(r["cpi"]), r["source"]) for r in _cpi(conn)] == [("2026-01", 300.5, "mine"), ("2026-02", 301.0, "")]

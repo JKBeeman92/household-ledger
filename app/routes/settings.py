@@ -136,6 +136,33 @@ def _mapping_import(conn, body: str) -> str:
     return f"{len(clean)} mapping rows"
 
 
+def _cpi_rows(body: str) -> list[tuple[str, str, str]]:
+    """Check the whole CPI CSV before anything is deleted: a header with month and cpi, at least one row, month as YYYY-MM, a positive number, no month twice."""
+    reader = csv.DictReader(io.StringIO(body.lstrip("\ufeff")))
+    if not {"month", "cpi"}.issubset(reader.fieldnames or []):
+        raise ValueError("CPI needs a header line month,cpi,source")
+    out, problems, seen = [], [], {}
+    for r in reader:
+        n = reader.line_num
+        m, raw = (r.get("month") or "").strip(), (r.get("cpi") or "").strip()
+        if not MONTH_RE.match(m):
+            problems.append(f"line {n}: month must look like YYYY-MM"); continue
+        try:
+            v = float(raw)
+            if not 0 < v < 1e6 or v != v:
+                raise ValueError
+        except ValueError:
+            problems.append(f"line {n}: cpi must be a positive number"); continue
+        if m in seen:
+            problems.append(f"line {n}: month {m} repeats line {seen[m]}"); continue
+        seen[m] = n; out.append((m, raw, (r.get("source") or "").strip()))
+    if not out and not problems:
+        problems.append("no CPI rows: the table would be emptied")
+    if problems:
+        raise ValueError(f"{len(problems)} problem{'s' * (len(problems) != 1)}: " + "; ".join(problems[:8]) + (f"; and {len(problems) - 8} more" if len(problems) > 8 else ""))
+    return out
+
+
 def _editor_body(conn, key: str) -> str:
     if key == "mapping":
         return _mapping_csv(conn)
@@ -156,9 +183,9 @@ def _save_editor(conn, key: str, body: str) -> str:
     if key == "mapping":
         return _mapping_import(conn, body)
     if key == "cpi":
-        rows = list(csv.DictReader(io.StringIO(body)))
+        rows = _cpi_rows(body)
         conn.execute("DELETE FROM cpi")
-        conn.cursor().executemany("INSERT INTO cpi VALUES (%s,%s,%s)", [(r["month"], r["cpi"], r.get("source", "")) for r in rows])
+        conn.cursor().executemany("INSERT INTO cpi VALUES (%s,%s,%s)", rows)
         return f"{len(rows)} CPI months"
     data = json.loads(body)
     if key in ("goals", "events"):
