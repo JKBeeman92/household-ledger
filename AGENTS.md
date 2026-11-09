@@ -42,5 +42,5 @@ the database, not in prompts — read them there.
   release-please reads.
 - **Releases are automatic.** release-please keeps a `chore(main): release x.y.z` PR open on `main`; merging it tags `vx.y.z`, writes
   `CHANGELOG.md`, bumps `version.txt`. `feat` bumps minor, `fix` bumps patch (while < 1.0, a breaking change bumps minor).
-- **Images**: every push to `main` publishes `ghcr.io/jkbeeman92/household-ledger:latest` and `:sha-<short>`; a release additionally
+- **Images**: every push to `main` publishes (amd64 + arm64) `ghcr.io/jkbeeman92/household-ledger:latest` and `:sha-<short>`; a release additionally
   publishes `:x.y.z`, `:x.y`, `:x`. Deployments that want stability pin `:x`; `:latest` follows `main`.

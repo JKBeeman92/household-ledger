@@ -54,7 +54,7 @@ The same import is available by hand:
 docker compose exec ledger python -m pipeline.import_exports /data/import
 ```
 
-Updates: the image is published to `ghcr.io/jkbeeman92/household-ledger` on every push to `main` (and `vX.Y.Z` tags).
+Updates: the image is published to `ghcr.io/jkbeeman92/household-ledger` on every push to `main` (and `vX.Y.Z` tags), for both `linux/amd64` and `linux/arm64`.
 `docker compose pull && docker compose up -d`, or any image-watching updater, is the whole upgrade.
 
 **Hardening.** The compose file runs the app with a read-only root filesystem, all Linux capabilities dropped and
