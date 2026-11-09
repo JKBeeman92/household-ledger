@@ -3,6 +3,7 @@ from __future__ import annotations
 
 
 def test_a_second_flash_is_kept_while_the_first_is_unread(client, reset_db):
+    client.get("/settings")   # drain anything an earlier test left pending in this shared client's session
     bad = {"body": "Item,CanonicalItem,Category,Flow,Note\nPipeweed,Pipeweed,Fun,nonsense,\n"}
     client.post("/settings/mapping", data=bad)          # first flash, not yet rendered
     client.post("/settings/household", data={"body": "[]"})   # second flash, added to the pending list
