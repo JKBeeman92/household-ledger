@@ -197,7 +197,8 @@ class BuildBusy(RuntimeError):
 def build_running(conn: psycopg.Connection) -> bool:
     """True while some session holds the build lock. A crashed process drops its session, and with it the lock."""
     with conn.cursor(row_factory=tuple_row) as cur:
-        cur.execute("SELECT 1 FROM pg_locks WHERE locktype='advisory' AND classid=%s AND objid=%s AND objsubid=2 AND granted", BUILD_LOCK)
+        cur.execute("SELECT 1 FROM pg_locks WHERE locktype='advisory' AND classid=%s AND objid=%s AND objsubid=2 AND granted "
+                    "AND database = (SELECT oid FROM pg_database WHERE datname = current_database())", BUILD_LOCK)   # advisory locks are per database
         busy = cur.fetchone() is not None
     conn.commit()
     return busy

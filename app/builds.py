@@ -14,7 +14,8 @@ def build_status(conn) -> dict:
     row = conn.execute("SELECT id, started_at, finished_at, ok, summary, detail FROM build_log ORDER BY id DESC LIMIT 1").fetchone()
     running = build_running(conn)
     if row is None:
-        return {"running": running, "id": None, "state": "running" if running else "never"}
+        return {"running": running, "id": None, "state": "running" if running else "never", "started_at": None, "finished_at": None,
+                "ok": None, "summary": None, "problems": [], "problem_count": 0}
     state = "running" if running and row["finished_at"] is None else "interrupted" if row["finished_at"] is None else "ok" if row["ok"] else "failed"
     problems = [l[len("Reconciliation: "):] for l in (row["detail"] or "").splitlines() if l.startswith("Reconciliation: ")]
     summary = "the process stopped before this build finished" if state == "interrupted" or (row["summary"] or "").startswith("interrupted:") else row["summary"]

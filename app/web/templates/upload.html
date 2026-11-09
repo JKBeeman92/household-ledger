@@ -20,7 +20,7 @@ addEventListener('DOMContentLoaded', () => {
 <div class="panel" id="build-panel" style="margin-top:var(--space-4)" data-state="{{ build.state }}">
   <h2>Build status</h2>
   <p id="build-line" role="status" aria-live="polite" style="margin:0 0 var(--space-2);border-left:3px solid var({{ '--info' if build.state in ('running', 'never') else '--success' if build.state == 'ok' else '--danger' }});padding-left:var(--space-3)">
-    {%- if build.state == 'running' %}<strong>Rebuilding</strong> since {{ build.started_at.strftime('%H:%M:%S') }}. This page updates when it finishes.
+    {%- if build.state == 'running' %}<strong>Rebuilding</strong>{% if build.started_at %} since {{ build.started_at.strftime('%H:%M:%S') }}{% endif %}. This page updates when it finishes.
     {%- elif build.state == 'never' %}No build yet.
     {%- else %}<strong>{{ {'ok': 'Last build finished', 'failed': 'Last build failed', 'interrupted': 'Last build was interrupted'}[build.state] }}</strong>{% if build.finished_at %} at {{ build.finished_at.strftime('%Y-%m-%d %H:%M:%S') }}{% endif %}: {{ build.summary }}{% endif -%}
   </p>

@@ -114,3 +114,23 @@ def test_startup_import_failure_before_rebuild_is_recorded(client, reset_db, tmp
     with db.pool.connection() as conn:
         row = conn.execute("SELECT ok, summary FROM build_log ORDER BY id DESC LIMIT 1").fetchone()
     assert row["ok"] is False and "start-up import failed" in row["summary"] and "unreadable export" in row["summary"]
+
+
+def test_a_lock_held_in_another_database_is_not_our_build(loaded):
+    """Advisory locks are per database: a rebuild of a different database on the same server must not read as ours."""
+    from app.config import settings
+    name = "lock_" + __import__("uuid").uuid4().hex[:8]
+    with psycopg.connect(settings.database_url, autocommit=True) as admin:
+        admin.execute(f'CREATE DATABASE "{name}"')
+    try:
+        with psycopg.connect(settings.database_url, dbname=name, autocommit=True) as elsewhere:
+            hold_lock(elsewhere)
+            assert loaded.get("/api/build").json()["running"] is False
+    finally:
+        with psycopg.connect(settings.database_url, autocommit=True) as admin:
+            admin.execute(f'DROP DATABASE "{name}" WITH (FORCE)')
+
+
+def test_status_page_renders_while_locked_before_any_build_row(client, reset_db, other_session):
+    hold_lock(other_session)
+    assert client.get("/upload").status_code == 200 and client.get("/api/build").json()["state"] == "running"
