@@ -58,7 +58,9 @@ table.plain th { color: var(--ink-muted); font-weight: 600; }
 .keyhelp dl { margin: var(--space-2) 0; } .keyhelp dt { margin-top: var(--space-2); font-weight: 600; } .keyhelp dd { margin: 0; max-width: 70ch; }
 /* settings row editors */
 .stack { display: grid; gap: var(--space-4); }
+.stack > * { min-width: 0; }  /* grid items default to min-content width; let wide editor tables scroll inside .tablewrap instead of widening the page */
 .tablewrap { overflow-x: auto; margin-top: var(--space-3); }
+table.plain { position: relative; }  /* contains the absolutely positioned .sr labels so a scrolled table cannot widen the page */
 table.edit th[data-sort] { cursor: pointer; user-select: none; white-space: nowrap; }
 table.edit th[aria-sort=ascending]::after { content: " \25B2"; font-size: 10px; } table.edit th[aria-sort=descending]::after { content: " \25BC"; font-size: 10px; }
 table.edit td.acts { white-space: nowrap; width: 1%; }

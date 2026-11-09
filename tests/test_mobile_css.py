@@ -33,3 +33,11 @@ def test_no_hex_colours_in_app_css():
 
 def test_page_is_scalable_viewport(client, reset_db):
     assert "width=device-width, initial-scale=1" in client.get("/").text
+
+
+def test_settings_editor_tables_scroll_inside_their_panel():
+    # grid items must be allowed to shrink below their min-content width (else a wide table widens the panel and the page),
+    # and a table is the containing block for its visually-hidden .sr labels so a scrolled table cannot widen the page either
+    assert re.search(r"\.stack > \* \{ min-width: 0; \}", CSS)
+    assert re.search(r"table\.plain \{ position: relative; \}", CSS)
+    assert re.search(r"\.tablewrap \{[^}]*overflow-x: auto", CSS)
