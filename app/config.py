@@ -24,6 +24,7 @@ class Settings:
     oidc_client_id: str = os.environ.get("OIDC_CLIENT_ID", "")
     oidc_client_secret: str = os.environ.get("OIDC_CLIENT_SECRET", "")
     allowed_groups: tuple[str, ...] = tuple(g.strip() for g in os.environ.get("ALLOWED_GROUPS", "admins").split(",") if g.strip())
+    editor_groups: tuple[str, ...] = tuple(g.strip() for g in os.environ.get("EDITOR_GROUPS", "").split(",") if g.strip())   # empty = every allowed group edits
     auth_disabled: bool = _bool("AUTH_DISABLED", False)            # local development only
     # month-close review
     anthropic_api_key: str = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -37,6 +38,11 @@ class Settings:
     csp_style_src: str = os.environ.get("CSP_STYLE_SRC", "https://fonts.googleapis.com")
     csp_font_src: str = os.environ.get("CSP_FONT_SRC", "https://fonts.gstatic.com")
     csp_img_src: str = os.environ.get("CSP_IMG_SRC", "")
+
+    @property
+    def editors(self) -> tuple[str, ...]:
+        """Groups whose members may change things; EDITOR_GROUPS, or ALLOWED_GROUPS when it is unset."""
+        return self.editor_groups or self.allowed_groups
 
     def validate(self) -> list[str]:
         problems = []

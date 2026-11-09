@@ -122,6 +122,9 @@ The app is its own OIDC client — no proxy outpost in front of it.
    `ALLOWED_GROUPS` to whichever group you use — the app enforces this too).
 3. Put the provider's client ID/secret and the issuer URL (`https://auth.example.com/application/o/ledger/`) in `.env`.
 
+**Viewers and editors.** Everyone admitted by `ALLOWED_GROUPS` can see the dashboard and `/api/*`. Set `EDITOR_GROUPS` (default: same as `ALLOWED_GROUPS`) to the subset
+that may also upload, rebuild, edit settings and generate reviews; other members get no nav links for those and a 403 page if they open them. Role changes at the IdP apply at the next group re-check.
+
 Sign-in lasts `SESSION_MAX_AGE` (12 h). Every `GROUP_RECHECK_SECONDS` (5 min) the app refreshes the token and reads `groups`
 again, so removing someone from the group, or disabling them in Authentik, signs them out within that interval; if Authentik
 cannot be reached for the re-check, the session also ends. **Sign out** ends the Authentik session too (`id_token_hint`).

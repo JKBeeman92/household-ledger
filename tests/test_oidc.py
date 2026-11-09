@@ -175,3 +175,63 @@ def test_bad_session_or_csp_config_refuses_to_start(change, needle):
     good = dict(auth_disabled=False, session_secret="s" * 32, oidc_issuer=ISSUER, oidc_client_id="ledger", oidc_client_secret="shh", allowed_groups=("admins",))
     with pytest.raises(ConfigError, match=needle):
         Settings(**{**good, **change}).enforce()
+
+
+# ---- viewer vs editor (EDITOR_GROUPS) ----
+@pytest.fixture
+def roles(idp, monkeypatch):
+    monkeypatch.setattr(auth, "settings", dataclasses.replace(auth.settings, allowed_groups=("admins", "family"), editor_groups=("admins",)))
+    idp.add_user("rosie", "rosie@shire.test", ["family"])
+    return idp
+
+
+def test_viewer_sees_the_dashboard_but_no_editor_nav(roles, browser):
+    assert sign_in(browser, roles, "rosie", "/").headers["location"] == "/"
+    page = browser.get("/")
+    assert page.status_code == 200 and 'href="/upload"' not in page.text and 'href="/settings"' not in page.text
+    assert browser.get("/api/status").status_code == 200
+    assert 'href="/upload"' in sign_in_get(roles, "frodo", "/").text
+
+
+def sign_in_get(idp, sub, nxt):
+    c = make_client(csrf=True); sign_in(c, idp, sub, nxt); return c.get("/")
+
+
+def test_viewer_gets_a_403_page_on_every_editor_route_and_nothing_changes(roles, browser):
+    sign_in(browser, roles, "rosie", "/")
+    for method, path, kw in [("get", "/upload", {}), ("get", "/settings", {}), ("post", "/upload", {"files": [("files", ("a.csv", b"a", "text/csv"))]}),
+                             ("post", "/rebuild", {}), ("post", "/review/generate", {"data": {"month": "2026-09"}}),
+                             ("post", "/settings/mapping", {"data": {"body": "x"}})]:
+        r = getattr(browser, method)(path, **kw)
+        assert r.status_code == 403 and "view this, not change it" in r.text, path
+        assert "location" not in r.headers
+    assert browser.post("/rebuild", headers={"accept": "application/json"}).json()["detail"]
+    assert sql("SELECT count(*) n FROM build_log")[0]["n"] == 0
+
+
+def test_editor_api_dependency_refuses_a_viewer_with_403_json():
+    from starlette.requests import Request
+    req = Request({"type": "http", "path": "/api/x", "query_string": b"", "headers": [], "session": {"sid": "s", "user": {"email": "r@shire.test", "groups": ["family"]}}})
+    from unittest import mock
+    with mock.patch.object(auth, "settings", dataclasses.replace(auth.settings, auth_disabled=False, allowed_groups=("admins", "family"), editor_groups=("admins",))):
+        with pytest.raises(auth.Forbidden) as e:
+            auth.require_editor_api(req)
+        assert e.value.status_code == 403
+        req.session["user"]["groups"] = ["admins"]
+        assert auth.require_editor_api(req)["is_editor"]
+
+
+def test_editors_default_to_allowed_groups_and_dev_user_edits(idp, browser):
+    assert auth.settings.editors == ("admins",)       # EDITOR_GROUPS unset
+    sign_in(browser, idp)
+    assert browser.get("/upload").status_code == 200
+    assert auth.DEV_USER["is_editor"]
+
+
+def test_role_change_applies_at_the_next_recheck(roles, browser):
+    sign_in(browser, roles, "frodo", "/")
+    assert browser.get("/upload").status_code == 200
+    roles.users["frodo"]["groups"] = ["family"]       # demoted at the IdP, still admitted
+    age_check(RECHECK + 1)
+    assert browser.get("/upload").status_code == 403
+    assert browser.get("/api/status").status_code == 200

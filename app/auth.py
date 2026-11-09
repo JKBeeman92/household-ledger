@@ -40,13 +40,25 @@ def make_oauth(s=settings, **client_kwargs) -> OAuth:
 
 oauth = make_oauth()
 
-DEV_USER = {"email": "dev@localhost", "name": "Local developer", "groups": list(settings.allowed_groups)}
+DEV_USER = {"email": "dev@localhost", "name": "Local developer", "groups": list(settings.allowed_groups), "is_editor": True}
+
+
+class Forbidden(HTTPException):
+    """A signed-in viewer reached an editor route: main.py renders a 403 page (JSON for API callers) instead of redirecting."""
+    def __init__(self, detail: str = "Your account can view the ledger but not change it."):
+        super().__init__(status_code=403, detail=detail)
+
+
+def is_editor(groups) -> bool:
+    return bool(set(groups or []) & set(settings.editors))
 
 
 def current_user(request: Request) -> dict | None:
+    """The signed-in user with `is_editor` computed from the groups kept in the session (refreshed at every group re-check)."""
     if settings.auth_disabled:
         return DEV_USER
-    return request.session.get("user") if request.session.get("sid") else None
+    u = request.session.get("user") if request.session.get("sid") else None
+    return {**u, "is_editor": is_editor(u.get("groups"))} if u else None
 
 
 def require_user(request: Request) -> dict:
@@ -67,13 +79,19 @@ def require_user_api(request: Request) -> dict:
 
 
 def require_editor(request: Request) -> dict:
-    """Dependency for HTML routes that change state. Every admitted user is an editor until roles exist."""
-    return require_user(request)
+    """Dependency for HTML routes that change state: anonymous goes to sign-in, a viewer gets the 403 page."""
+    user = require_user(request)
+    if not user["is_editor"]:
+        raise Forbidden()
+    return user
 
 
 def require_editor_api(request: Request) -> dict:
     """Dependency for JSON routes that change state."""
-    return require_user_api(request)
+    user = require_user_api(request)
+    if not user["is_editor"]:
+        raise Forbidden()
+    return user
 
 
 def _safe_next(nxt: str | None) -> str:
@@ -132,7 +150,7 @@ def _admitted(groups) -> bool:
     return bool(set(groups or []) & set(settings.allowed_groups))
 
 
-async def _recheck(row: dict) -> dict | None:
+async def _recheck(row: dict) -> tuple[dict, list[str]] | tuple[None, None]:
     """Ask the IdP again: refresh the token (when we have a refresh token) and read the current groups from userinfo."""
     token = {"access_token": row["access_token"], "token_type": "Bearer", "expires_at": row["access_expires_at"]}
     if row["refresh_token"]:
@@ -141,8 +159,8 @@ async def _recheck(row: dict) -> dict | None:
             token = dict(await c.refresh_token(md["token_endpoint"], refresh_token=row["refresh_token"]))
     info = await oauth.idp.userinfo(token=token)
     if info.get("sub") != row["sub"] or not _admitted(info.get("groups")):
-        return None
-    return token
+        return None, None
+    return token, sorted(info.get("groups") or [])
 
 
 async def revalidate(request: Request) -> None:
@@ -157,12 +175,13 @@ async def revalidate(request: Request) -> None:
     if not st["due"] or not (row := await run_in_threadpool(_claim, sid)):
         return
     try:
-        token = await _recheck(row)
+        token, groups = await _recheck(row)
     except Exception as e:  # noqa: BLE001 - any failure fails closed
         log.warning("group re-check failed for %s: %s: %s", request.session.get("user", {}).get("email"), type(e).__name__, e)
-        token = None
+        token = groups = None
     if token:
         await run_in_threadpool(_update, sid, token)
+        request.session["user"] = {**request.session["user"], "groups": groups}   # a role change at the IdP applies within the interval
     else:
         log.info("session ended by group re-check: %s", request.session.get("user", {}).get("email"))
         await run_in_threadpool(_drop, sid)
