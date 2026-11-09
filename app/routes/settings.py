@@ -184,6 +184,9 @@ def _save_editor(conn, key: str, body: str) -> str:
         return _mapping_import(conn, body)
     if key == "cpi":
         rows = _cpi_rows(body)
+        base = (db.get_setting(conn, "rules", {}) or {}).get("cpi_base_month")
+        if base and base not in {r[0] for r in rows}:
+            raise ValueError(f"the pipeline rules name {base} as cpi_base_month, so that month must stay in the CPI table (change the rule first)")
         conn.execute("DELETE FROM cpi")
         conn.cursor().executemany("INSERT INTO cpi VALUES (%s,%s,%s)", rows)
         return f"{len(rows)} CPI months"
@@ -208,6 +211,9 @@ def _save_editor(conn, key: str, body: str) -> str:
         problems = schema.validate(data, schema.load(key))
         if problems:
             raise ValueError(f"{len(problems)} problem{'s' * (len(problems) != 1)}: " + "; ".join(problems[:8]) + (f"; and {len(problems) - 8} more" if len(problems) > 8 else ""))
+        base = data.get("cpi_base_month") if key == "rules" else None
+        if base and conn.execute("SELECT 1 FROM cpi WHERE month=%s", (base,)).fetchone() is None:
+            raise ValueError(f"cpi_base_month {base} is not a month in the CPI table")
         db.put_setting(conn, key, data)
         return key
     raise ValueError("unknown editor")

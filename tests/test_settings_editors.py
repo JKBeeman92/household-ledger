@@ -1,6 +1,6 @@
 """Settings editors: row-level saves for mapping, goals and events, line-numbered CSV errors, CSV export."""
 from __future__ import annotations
-import csv, dataclasses, io
+import csv, dataclasses, io, json
 
 import pytest
 
@@ -164,8 +164,34 @@ def test_bulk_cpi_is_validated_before_anything_is_deleted(client, reset_db, body
 
 
 def test_bulk_cpi_valid_save_replaces_the_table(client, reset_db):
+    with db.pool.connection() as conn:
+        db.put_setting(conn, "rules", {}); conn.commit()   # the golden rules name a base month that this smaller table drops
     body = "month,cpi,source\n2026-01,300.5,mine\n2026-02,301,\n"
     page = client.get(client.post("/settings/cpi", data={"body": body}).headers["location"]).text
     assert "Saved 2 CPI months" in page
     with db.pool.connection() as conn:
         assert [(r["month"], float(r["cpi"]), r["source"]) for r in _cpi(conn)] == [("2026-01", 300.5, "mine"), ("2026-02", 301.0, "")]
+
+
+def test_rules_cpi_base_month_must_be_in_the_cpi_table(client, reset_db):
+    with db.pool.connection() as conn:
+        rules_before = db.get_setting(conn, "rules", {})
+        have = conn.execute("SELECT month FROM cpi ORDER BY month LIMIT 1").fetchone()["month"]
+    page = client.get(client.post("/settings/rules", data={"body": json.dumps({"cpi_base_month": "1999-01"})}).headers["location"]).text
+    assert "Not saved" in page and "1999-01 is not a month in the CPI table" in page
+    with db.pool.connection() as conn:
+        assert db.get_setting(conn, "rules", {}) == rules_before
+    page = client.get(client.post("/settings/rules", data={"body": json.dumps({"cpi_base_month": have})}).headers["location"]).text
+    assert "Saved rules" in page
+
+
+def test_cpi_save_cannot_drop_the_month_the_rules_name(client, reset_db):
+    with db.pool.connection() as conn:
+        base = conn.execute("SELECT month FROM cpi ORDER BY month LIMIT 1").fetchone()["month"]
+        db.put_setting(conn, "rules", {"cpi_base_month": base}); conn.commit()
+        before = _cpi(conn)
+    others = "".join(f"{r['month']},{r['cpi']},{r['source']}\n" for r in before if r["month"] != base)
+    page = client.get(client.post("/settings/cpi", data={"body": "month,cpi,source\n" + others}).headers["location"]).text
+    assert "Not saved" in page and base in page and "cpi_base_month" in page
+    with db.pool.connection() as conn:
+        assert _cpi(conn) == before
