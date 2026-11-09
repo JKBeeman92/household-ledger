@@ -47,7 +47,7 @@ Hostname `ledger.beeman.family`, host port `8010`, app directory `/volume2/ledge
 
 ## Updating
 
-`docker compose pull && docker compose up -d` (or the image updater). The schema applies itself on start. To pin a major
+`docker compose pull && docker compose up -d` (or the image updater). Pending database migrations apply themselves on start. To pin a major
 version instead of following `main`, set the image tag to `:0` (or `:1` once released) in `docker-compose.yml`.
 
 ## Open items

@@ -34,7 +34,7 @@ $EDITOR .env            # passwords, BASE_URL, OIDC settings
 docker compose up -d
 ```
 
-First boot applies the schema and seeds the reference tables. Seeds come from `SEED_DIR` (`/volume2/ledger/seed/` in the compose file)
+First boot applies the migrations and seeds the reference tables. Seeds come from `SEED_DIR` (`/volume2/ledger/seed/` in the compose file)
 when a file is present there, else from the generic files in `pipeline/` (CPI table, empty mapping, goal keys with no values).
 A seed directory holds any of `item_mapping.csv`, `goals.json`, `events.json`, `rules.json`, `review.json`, `household.json`;
 after the first boot the database owns them and the Settings page is the editor. Keep your seed directory out of public repos —
@@ -106,7 +106,7 @@ export DATABASE_URL=postgresql://ledger:ledger@localhost:5432/ledger AUTH_DISABL
 uvicorn app.main:app --reload --port 8010
 ```
 
-Layout: `app/` (FastAPI, templates, static), `pipeline/` (the scripts and the seed data), `db/schema.sql`, `examples/brand-beeman/`.
+Layout: `app/` (FastAPI, templates, static), `pipeline/` (the scripts and the seed data), `db/migrations/` (numbered SQL, applied at start), `examples/brand-beeman/`.
 
 ## Privacy
 
