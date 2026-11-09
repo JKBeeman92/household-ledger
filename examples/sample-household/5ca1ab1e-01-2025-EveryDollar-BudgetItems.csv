@@ -1,0 +1,24 @@
+Group,Item,Planned,Spent,Remaining
+Income,Rosie Paycheck,5640.00,5640.00,0.00
+Income,Sam Contract Income,1900.00,1836.48,63.52
+Giving,Charity,380.00,-380.00,0.00
+Savings,Emergency Fund,300.00,-300.00,0.00
+Savings,Holiday,100.00,0.00,100.00
+Housing,Rent,1450.00,-1450.00,0.00
+Utilities,Electric,95.00,-121.29,-26.29
+Utilities,Water,48.00,-47.48,0.52
+Utilities,Internet,65.00,-65.00,0.00
+Insurance,Renters Insurance,22.00,-22.00,0.00
+Insurance,Car Insurance,118.00,-118.00,0.00
+Food,Groceries,720.00,-807.66,-87.66
+Food,Eating Out,160.00,-190.82,-30.82
+Transportation,Fuel,140.00,-142.44,-2.44
+Transportation,Car Maintenance,60.00,0.00,60.00
+Health,Medicine,55.00,-78.03,-23.03
+Subscriptions,Streaming,32.00,-32.00,0.00
+Household,Household Supplies,85.00,-76.21,8.79
+Personal,Rosie Fun Money,120.00,-108.10,11.90
+Personal,Sam Fun Money,120.00,-115.19,4.81
+Fun,Date Night,100.00,-106.15,-6.15
+Debt,Student Loan,275.00,-275.00,0.00
+Other,Venmo Pass-Through,0.00,0.00,0.00
