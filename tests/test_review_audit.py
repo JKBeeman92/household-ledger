@@ -1,6 +1,7 @@
 """Review cost guard, audit list and hand-editing. The provider is stubbed; nothing touches the network."""
 from __future__ import annotations
 import json
+from markupsafe import escape
 
 import pytest
 
@@ -84,3 +85,35 @@ def test_audit_routes_need_editor(client, reset_db, monkeypatch):
     monkeypatch.setattr(auth, "settings", dataclasses.replace(settings, auth_disabled=False))
     for path in ("/reviews/history", "/reviews/confirm?month=2026-01", "/reviews/edit/2026-01"):
         assert client.get(path).status_code == 307
+
+
+def test_instructions_default_edit_reset_and_used_by_provider(client, month, http):
+    with db.pool.connection() as conn:
+        assert review.instructions(conn) == review.SYSTEM
+    assert review.SYSTEM[:40] in client.get("/reviews/prompt").text.replace("&#34;", '"')
+    assert client.post("/reviews/prompt", data={"instructions": "Emphasise debt payoff.\r\n"}).status_code == 303
+    with db.pool.connection() as conn:
+        assert review.instructions(conn) == "Emphasise debt payoff."
+    assert "(customised)" in client.get("/reviews/prompt").text
+    client.post("/review/generate", data={"month": month, "confirm": "yes"})
+    assert "Emphasise debt payoff." in json.dumps(http[0][0], default=str)
+    client.post("/reviews/prompt/reset")
+    with db.pool.connection() as conn:
+        assert review.instructions(conn) == review.SYSTEM and db.get_setting(conn, review.SETTING) is None
+
+
+def test_blank_or_builtin_text_clears_override_and_long_is_rejected(client, month):
+    client.post("/reviews/prompt", data={"instructions": "x"})
+    client.post("/reviews/prompt", data={"instructions": "  "})
+    with db.pool.connection() as conn:
+        assert db.get_setting(conn, review.SETTING) is None
+    assert "Not saved" in client.get(client.post("/reviews/prompt", data={"instructions": "x" * 20001}).headers["location"]).text
+
+
+def test_prompt_preview_is_exact_context_without_provider_call(client, month, http):
+    with db.pool.connection() as conn:
+        exact = review.prompt_for(conn, month)
+    page = client.get(f"/reviews/prompt?month={month}").text
+    assert str(escape(exact)) in page and http[0] == []
+    assert "Upload that month" in client.get("/reviews/prompt?month=1999-01").text
+    assert "Pick a budget month" in client.get("/reviews/prompt?month=bad").text
