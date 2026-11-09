@@ -211,13 +211,14 @@ def test_viewer_gets_a_403_page_on_every_editor_route_and_nothing_changes(roles,
 
 def test_editor_api_dependency_refuses_a_viewer_with_403_json():
     from starlette.requests import Request
-    req = Request({"type": "http", "path": "/api/x", "query_string": b"", "headers": [], "session": {"sid": "s", "user": {"email": "r@shire.test", "groups": ["family"]}}})
+    req = Request({"type": "http", "path": "/api/x", "query_string": b"", "headers": [], "session": {"sid": "s", "user": {"email": "r@shire.test", "groups": ["admins"]}},
+                   "state": {"auth_groups": ["family"]}})   # the role is the server row's (loaded by revalidate), not the cookie's
     from unittest import mock
     with mock.patch.object(auth, "settings", dataclasses.replace(auth.settings, auth_disabled=False, allowed_groups=("admins", "family"), editor_groups=("admins",))):
         with pytest.raises(auth.Forbidden) as e:
             auth.require_editor_api(req)
         assert e.value.status_code == 403
-        req.session["user"]["groups"] = ["admins"]
+        req.state.auth_groups = ["admins"]
         assert auth.require_editor_api(req)["is_editor"]
 
 
@@ -235,3 +236,25 @@ def test_role_change_applies_at_the_next_recheck(roles, browser):
     age_check(RECHECK + 1)
     assert browser.get("/upload").status_code == 403
     assert browser.get("/api/status").status_code == 200
+
+
+def test_role_comes_from_the_server_row_not_a_replayed_cookie(roles, browser):
+    sign_in(browser, roles, "frodo", "/")
+    old = browser.cookies["session"]                  # a copy taken while still an editor
+    roles.users["frodo"]["groups"] = ["family"]
+    age_check(RECHECK + 1)
+    assert browser.get("/upload").status_code == 403
+    assert sql("SELECT groups FROM auth_sessions")[0]["groups"] == ["family"]
+    browser.cookies.clear(); browser.cookies.set("session", old)
+    assert browser.get("/upload").status_code == 403  # the old cookie's groups grant nothing
+    roles.users["frodo"]["groups"] = ["admins"]       # promotion applies the same way
+    age_check(RECHECK + 1)
+    assert browser.get("/upload").status_code == 200
+
+
+def test_a_row_without_groups_is_rechecked_at_once(roles, browser):
+    sign_in(browser, roles, "frodo", "/")
+    roles.users["frodo"]["groups"] = ["family"]
+    sql("UPDATE auth_sessions SET groups = NULL")     # a row signed in before the groups column existed
+    assert browser.get("/upload").status_code == 403
+    assert sql("SELECT groups FROM auth_sessions")[0]["groups"] == ["family"]

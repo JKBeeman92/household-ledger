@@ -6,7 +6,8 @@ discovery-backed client, read the `groups` claim and admit only members of ALLOW
 A sign-in has two halves. The signed session cookie (4 KB, shared with flash messages and the CSRF token) carries only a
 random session id and the small user dict. The tokens, which do not fit (an Authentik id_token alone is 1-2 KB), live in
 `auth_sessions` (migration 0010) under the sha256 of that id: the id_token for logout's `id_token_hint`, and the access and
-refresh tokens for the re-check. `revalidate` (an app-level dependency) ends the session when its row is gone (signed out
+refresh tokens for the re-check, plus the groups from the last sign-in or re-check, which alone decide the role (the cookie's
+copy is for display; an older, still validly signed copy of the cookie must not bring back an old role). `revalidate` (an app-level dependency) ends the session when its row is gone (signed out
 elsewhere), past SESSION_MAX_AGE since sign-in, or when the GROUP_RECHECK_SECONDS re-check fails: every interval one request
 refreshes the token and reads `groups` from userinfo again, so removing someone from the group, disabling them or revoking
 the grant at the IdP locks them out within that interval. Any failure of the re-check, IdP unreachable included, ends the
@@ -54,11 +55,12 @@ def is_editor(groups) -> bool:
 
 
 def current_user(request: Request) -> dict | None:
-    """The signed-in user with `is_editor` computed from the groups kept in the session (refreshed at every group re-check)."""
+    """The signed-in user with `is_editor` computed from the groups on the server-side row, which `revalidate` loads for this
+    request (refreshed at every group re-check). Before that has run, or while a re-check is pending, nobody is an editor."""
     if settings.auth_disabled:
         return DEV_USER
     u = request.session.get("user") if request.session.get("sid") else None
-    return {**u, "is_editor": is_editor(u.get("groups"))} if u else None
+    return {**u, "is_editor": is_editor(getattr(request.state, "auth_groups", None))} if u else None
 
 
 def require_user(request: Request) -> dict:
@@ -104,32 +106,34 @@ def _key(sid: str) -> str:
     return hashlib.sha256(sid.encode()).hexdigest()
 
 
-def _store(sid: str, sub: str, email: str, token: dict) -> None:
+def _store(sid: str, sub: str, email: str, token: dict, groups: list[str]) -> None:
     with db.pool.connection() as conn:
         conn.execute("DELETE FROM auth_sessions WHERE expires_at < now()")
-        conn.execute("INSERT INTO auth_sessions (id_hash, sub, email, id_token, access_token, access_expires_at, refresh_token, expires_at) "
-                     "VALUES (%s, %s, %s, %s, %s, %s, %s, now() + make_interval(secs => %s))",
-                     (_key(sid), sub, email, token.get("id_token"), token.get("access_token"), token.get("expires_at"), token.get("refresh_token"), settings.session_max_age))
+        conn.execute("INSERT INTO auth_sessions (id_hash, sub, email, id_token, access_token, access_expires_at, refresh_token, groups, expires_at) "
+                     "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, now() + make_interval(secs => %s))",
+                     (_key(sid), sub, email, token.get("id_token"), token.get("access_token"), token.get("expires_at"), token.get("refresh_token"), groups, settings.session_max_age))
 
 
 def _state(sid: str) -> dict | None:
-    """None when there is no live row; else whether a group re-check is due."""
+    """None when there is no live row; else whether a group re-check is due (always, for a row without groups) and the groups."""
     with db.pool.connection() as conn:
-        return conn.execute("SELECT checked_at <= now() - make_interval(secs => %s) AS due FROM auth_sessions WHERE id_hash=%s AND expires_at > now()",
+        return conn.execute("SELECT checked_at <= now() - make_interval(secs => %s) OR groups IS NULL AS due, groups FROM auth_sessions WHERE id_hash=%s AND expires_at > now()",
                             (settings.group_recheck_seconds, _key(sid))).fetchone()
 
 
 def _claim(sid: str) -> dict | None:
-    """Atomically take the due re-check, so concurrent requests (the dashboard fetches several) refresh the token once."""
+    """Atomically take the due re-check, so concurrent requests (the dashboard fetches several) refresh the token once.
+    A row without groups gets '{}' (no role) while its re-check runs, so a concurrent request neither claims it again nor edits."""
     with db.pool.connection() as conn:
-        return conn.execute("UPDATE auth_sessions SET checked_at=now() WHERE id_hash=%s AND checked_at <= now() - make_interval(secs => %s) "
+        return conn.execute("UPDATE auth_sessions SET checked_at=now(), groups=coalesce(groups, '{}') WHERE id_hash=%s "
+                            "AND (checked_at <= now() - make_interval(secs => %s) OR groups IS NULL) "
                             "RETURNING sub, access_token, access_expires_at, refresh_token", (_key(sid), settings.group_recheck_seconds)).fetchone()
 
 
-def _update(sid: str, token: dict) -> None:
+def _update(sid: str, token: dict, groups: list[str]) -> None:
     with db.pool.connection() as conn:
-        conn.execute("UPDATE auth_sessions SET access_token=%s, access_expires_at=%s, refresh_token=%s, id_token=coalesce(%s, id_token) WHERE id_hash=%s",
-                     (token.get("access_token"), token.get("expires_at"), token.get("refresh_token"), token.get("id_token"), _key(sid)))
+        conn.execute("UPDATE auth_sessions SET access_token=%s, access_expires_at=%s, refresh_token=%s, id_token=coalesce(%s, id_token), groups=%s WHERE id_hash=%s",
+                     (token.get("access_token"), token.get("expires_at"), token.get("refresh_token"), token.get("id_token"), groups, _key(sid)))
 
 
 def _drop(sid: str | None) -> str | None:
@@ -172,6 +176,7 @@ async def revalidate(request: Request) -> None:
     if not st:
         _end(request)
         return
+    request.state.auth_groups = st["groups"]
     if not st["due"] or not (row := await run_in_threadpool(_claim, sid)):
         return
     try:
@@ -180,8 +185,9 @@ async def revalidate(request: Request) -> None:
         log.warning("group re-check failed for %s: %s: %s", request.session.get("user", {}).get("email"), type(e).__name__, e)
         token = groups = None
     if token:
-        await run_in_threadpool(_update, sid, token)
-        request.session["user"] = {**request.session["user"], "groups": groups}   # a role change at the IdP applies within the interval
+        await run_in_threadpool(_update, sid, token, groups)
+        request.state.auth_groups = groups                                       # a role change at the IdP applies within the interval
+        request.session["user"] = {**request.session["user"], "groups": groups}   # display copy only
     else:
         log.info("session ended by group re-check: %s", request.session.get("user", {}).get("email"))
         await run_in_threadpool(_drop, sid)
@@ -206,7 +212,7 @@ async def finish_login(request: Request) -> RedirectResponse:
         raise HTTPException(status_code=403, detail=f"{claims.get('email', 'this account')} is not in an allowed group ({', '.join(settings.allowed_groups)})")
     await run_in_threadpool(_drop, request.session.get("sid"))
     sid = secrets.token_urlsafe(32)
-    await run_in_threadpool(_store, sid, claims.get("sub", ""), claims.get("email", ""), token)
+    await run_in_threadpool(_store, sid, claims.get("sub", ""), claims.get("email", ""), token, sorted(groups))
     request.session["sid"] = sid
     request.session["user"] = {"email": claims.get("email", ""), "name": claims.get("name") or claims.get("preferred_username", ""), "groups": sorted(groups)}
     nxt = request.session.pop("next", "/")
