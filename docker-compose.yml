@@ -1,5 +1,5 @@
 # Household Ledger — run from the published image. Copy .env.example to .env first.
-# Upgrades: `docker compose pull && docker compose up -d` (or let Watchtower/your updater do it): the schema applies itself on start.
+# Upgrades: `docker compose pull && docker compose up -d` (or let Watchtower/your updater do it): pending migrations apply themselves on start.
 services:
   ledger:
     image: ghcr.io/jkbeeman92/household-ledger:latest

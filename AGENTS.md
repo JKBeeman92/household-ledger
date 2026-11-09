@@ -14,6 +14,13 @@ Household Ledger is a FastAPI + Postgres app around a small, file-based budget p
 - Colours come from the brand contract tokens (`docs/BRANDING.md`). Never type a hex colour into `app.css` or the page.
 - No secrets in the repo. `.env` is ignored; `.env.example` holds placeholders only.
 
+## Schema changes
+Never edit an applied file in `db/migrations/`; add `NNNN_name.sql`, where NNNN is the 4-digit GitHub issue number (`0022_source_file_history.sql`).
+`app/db.py` applies, at start and under an advisory lock, every file not yet in `schema_migrations`, in filename order, each in its own
+transaction; a failure aborts start-up and leaves that file unrecorded. Out-of-order numbers from parallel branches still apply.
+Derived tables (`ledger`, `datasets`) may be dropped and rebuilt by a migration; raw tables (`source_files`, `transactions`,
+`budget_items`) and reference tables (`item_mapping`, `cpi`, `goals`, `life_events`, `settings`, `reviews`) must migrate their data.
+
 ## Adding a household-specific rule
 Put it in `rules.json` (and the `RULES` dict defaults in `build_ledger.py`) rather than in code, so other households can change
 it on the Settings page.
