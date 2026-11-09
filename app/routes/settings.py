@@ -75,14 +75,14 @@ def _save_editor(conn, key: str, body: str) -> str:
 
 
 @router.get("/settings", response_class=HTMLResponse)
-def settings_page(request: Request, user=Depends(auth.require_user)):
+def settings_page(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         editors = [{"key": k, "body": _editor_body(conn, k), **v} for k, v in EDITORS.items()]
     return render(request, "settings.html", user, active="settings", editors=editors)
 
 
 @router.post("/settings/{key}")
-def settings_save(request: Request, key: str, body: str = Form(...), user=Depends(auth.require_user)):
+def settings_save(request: Request, key: str, body: str = Form(...), user=Depends(auth.require_editor)):
     if key not in EDITORS:
         raise HTTPException(404)
     with db.pool.connection() as conn:

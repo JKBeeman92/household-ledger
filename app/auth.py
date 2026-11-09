@@ -46,6 +46,16 @@ def require_user_api(request: Request) -> dict:
     return user
 
 
+def require_editor(request: Request) -> dict:
+    """Dependency for HTML routes that change state. Every admitted user is an editor until roles exist."""
+    return require_user(request)
+
+
+def require_editor_api(request: Request) -> dict:
+    """Dependency for JSON routes that change state."""
+    return require_user_api(request)
+
+
 def _safe_next(nxt: str | None) -> str:
     return nxt if nxt and nxt.startswith("/") and not nxt.startswith("//") else "/"
 
