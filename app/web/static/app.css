@@ -68,3 +68,43 @@ table.edit [aria-invalid=true] { border-color: var(--danger); }
 .tools { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; } .tools input[type=search] { max-width: 18rem; }
 .rowstatus { min-height: 1.4em; margin: var(--space-3) 0 0; } .rowstatus.ok { color: var(--success); } .rowstatus.bad { color: var(--danger); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* ---- Phones and small tablets (issue #24): tabs scroll, year tables keep their first column, radars stack, 44 px tap targets.
+   Dashboard rules use #dash-root.hl so they win over the page's own inline <style>. Close a month and Settings get rules only. */
+@media (max-width: 820px) {
+  .topbar { flex-wrap: wrap; row-gap: var(--space-2); }
+  .topbar .wordmark { min-height: 44px; }
+  .topbar nav { margin-left: 0; width: 100%; flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: var(--space-1); -webkit-overflow-scrolling: touch; }
+  .topbar nav a, .btn { min-height: 44px; min-width: 44px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; scroll-snap-align: start; flex: none; }
+  input[type=file], input[type=text], input[type=number], select { min-height: 44px; }
+  input[type=file]::file-selector-button { min-height: 32px; }
+  .panel { padding: var(--space-4); }
+  .panel summary, details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+  .shell table.plain { display: block; overflow-x: auto; max-width: 100%; }
+  textarea.json { min-height: 16rem; }
+  .shell form p > button.btn, .shell form button.btn { margin-top: var(--space-1); }
+
+  #dash-root.hl .controls { gap: var(--cds-gap-sm); }
+  #dash-root.hl .seg { display: flex; width: 100%; }
+  #dash-root.hl .seg button { flex: 1 1 0; min-height: 44px; padding-inline: var(--cds-pad-md); }
+  #dash-root.hl .tabs { flex-wrap: nowrap; overflow-x: auto; width: 100%; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; padding-bottom: var(--cds-gap-xs); }
+  #dash-root.hl .tabs button { min-height: 44px; min-width: 44px; flex: none; white-space: nowrap; scroll-snap-align: start; padding-inline: var(--cds-pad-md); }
+  #dash-root.hl details.how summary { min-height: 44px; display: flex; align-items: center; }
+  #dash-root.hl .legend.years span { display: inline-flex; align-items: center; min-height: 44px; padding-inline: var(--cds-pad-sm); }
+  #dash-root.hl .legend.years { gap: 0 var(--cds-gap-sm); }
+  #dash-root.hl .lede a, #dash-root.hl .note a { display: inline-block; min-height: 44px; line-height: 44px; }
+  #dash-root.hl .card { padding: var(--cds-pad-md); }
+  #dash-root.hl .tbl { max-width: 100%; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+  /* year tables: the first column (year / category / item) stays put while the numbers scroll under it */
+  #dash-root.hl .tbl th:first-child, #dash-root.hl .tbl td:first-child { position: sticky; left: 0; z-index: 1; background: var(--color-panel); border-right: 1px solid var(--color-border-line); }
+  #dash-root.hl .tbl th:first-child { z-index: 3; }
+  #dash-root.hl .tbl td:first-child { max-width: 11rem; overflow: hidden; text-overflow: ellipsis; }
+  #dash-root.hl .tbl th, #dash-root.hl .tbl td { padding-block: 10px; }
+  #dash-root.hl .chart { min-height: 220px; }
+}
+@media (max-width: 600px) {
+  #dash-root.hl .radars, #dash-root.hl .grid, #dash-root.hl .tiles { grid-template-columns: 1fr; }
+  #dash-root.hl .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #dash-root.hl .tile .v { font-size: 22px; }
+  .login .card { padding: var(--space-6); max-width: calc(100vw - 32px); }
+}
