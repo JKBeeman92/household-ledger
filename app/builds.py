@@ -2,7 +2,7 @@
 from __future__ import annotations
 import logging
 
-from . import db
+from . import db, hooks
 from pipeline.run_pipeline import rebuild, build_running, BuildBusy
 
 log = logging.getLogger("ledger")
@@ -28,6 +28,7 @@ def run_background() -> None:
     try:
         with db.pool.connection() as conn:
             rebuild(conn)
+        hooks.notify("build.completed")   # after the build is recorded and its connection released; logs its own failures, never raises
     except BuildBusy:
         log.info("background rebuild skipped: another rebuild is running")
     except Exception as e:  # noqa: BLE001

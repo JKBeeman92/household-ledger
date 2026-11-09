@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 from statistics import mean
 
-from . import db, review_providers as providers
+from . import db, hooks, review_providers as providers
 
 SETTING = "review_instructions"
 SYSTEM = (
@@ -107,6 +107,7 @@ def generate(conn, month: str) -> dict:
     )
     refresh_dataset(conn)
     conn.commit()
+    hooks.notify_async(conn, "review.stored", month, sections=len(sections))
     return {"month": month, "sections": sections}
 
 
@@ -119,3 +120,4 @@ def save_agent(conn, month: str, sections: list[dict], who: str) -> None:
     )
     refresh_dataset(conn)
     conn.commit()
+    hooks.notify_async(conn, "review.stored", month, sections=len(sections))
