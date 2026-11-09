@@ -19,9 +19,10 @@ Put it in `rules.json` (and the `RULES` dict defaults in `build_ledger.py`) rath
 it on the Settings page.
 
 ## Checking a change
-1. `uvicorn app.main:app --reload` with `AUTH_DISABLED=true` against a local Postgres.
-2. `python -m pipeline.import_exports <dir>` on a set of exports; it exits non-zero if reconciliation fails.
-3. Open the page in light and dark; no console errors; every tab draws.
+1. `DATABASE_URL=<throwaway database> python -m pytest -q` (`requirements-dev.txt`; see CONTRIBUTING.md). Goldens change only deliberately (`UPDATE_GOLDENS=1`).
+2. `uvicorn app.main:app --reload` with `AUTH_DISABLED=true` against a local Postgres.
+3. `python -m pipeline.import_exports <dir>` on a set of exports; it exits non-zero if reconciliation fails.
+4. Open the page in light and dark; no console errors; every tab draws.
 
 ## Month-to-month operation (what a session is usually for)
 A new month arrives as two CSVs. Upload them on **Close a month**. If the build log says UNMAPPED, add the item on the Settings

@@ -22,6 +22,21 @@ uvicorn app.main:app --reload --port 8010
 
 Open <http://localhost:8010>, load exports on **Close a month** (or `python -m pipeline.import_exports <dir>`).
 
+## Running the tests
+
+```sh
+pip install -r requirements-dev.txt
+DATABASE_URL=postgresql://ledger:ledger@localhost:5432/ledger_test python -m pytest -q
+```
+
+`DATABASE_URL` must name a Postgres database you can throw away: every table the app uses is truncated in it before each test, and
+nothing outside it is touched. Without it the database tests are skipped and only the pipeline golden test runs. CI runs the same
+thing against a `postgres:16` service container, and the image is not built unless it passes.
+
+The pipeline test runs `build_ledger`, `aggregate`, `make_datasets` and `make_budget_items` on `tests/fixtures/golden/` and diffs the
+output against `tests/fixtures/golden/expected/`. When you change the arithmetic on purpose, regenerate with `UPDATE_GOLDENS=1 python
+-m pytest tests/test_pipeline_golden.py`, read the `git diff`, and commit it with the change. Goldens are never rewritten otherwise.
+
 ## Releases
 
 Automatic. Merging a `feat:` or `fix:` PR makes release-please open a `chore(main): release x.y.z` PR with the changelog;

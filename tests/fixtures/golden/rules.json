@@ -1,0 +1,40 @@
+{
+ "cpi_base_month": "2025-04",
+ "people": [
+  "Rosie",
+  "Sam"
+ ],
+ "income_by_person": {
+  "Rosie": [
+   "Paycheck"
+  ],
+  "Sam": [
+   "Contract Income"
+  ]
+ },
+ "payer_prefix_by_person": {
+  "Rosie": [
+   "Rosie "
+  ]
+ },
+ "employers": [
+  {
+   "match": "hobbiton mill",
+   "name": "Hobbiton Mill"
+  }
+ ],
+ "merchant_rules": [
+  [
+   "green dragon",
+   "Green Dragon Inn"
+  ],
+  [
+   "bywater market",
+   "Bywater Market"
+  ],
+  [
+   "shire power",
+   "Shire Power & Light"
+  ]
+ ]
+}

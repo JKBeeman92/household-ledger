@@ -1,4 +1,5 @@
-# One workflow, two jobs:
+# One workflow, three jobs:
+#   test    — pytest against a postgres:16 service container (pipeline goldens, route smoke tests); the image job needs it.
 #   release — release-please reads Conventional Commits on main, keeps a "chore(main): release x.y.z" PR open with the
 #             CHANGELOG, and when that PR is merged creates the vX.Y.Z tag and GitHub Release.
 #   image   — builds the container on every push to main (tag `latest` + short sha) and, when a release was just cut,
@@ -27,9 +28,38 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ledger
+          POSTGRES_PASSWORD: ledger
+          POSTGRES_DB: ledger_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ledger -d ledger_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://ledger:ledger@localhost:5432/ledger_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest -q
+
   image:
-    needs: [release]
-    if: always() && (github.event_name == 'pull_request' || needs.release.result == 'success')
+    needs: [release, test]
+    # always() lets the image job run on pull requests, where release is skipped; it also lifts the implicit "all needs succeeded"
+    # rule, so a failed or cancelled test must be checked explicitly.
+    if: always() && needs.test.result == 'success' && (github.event_name == 'pull_request' || needs.release.result == 'success')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
