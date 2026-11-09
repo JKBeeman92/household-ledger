@@ -108,3 +108,14 @@ def generate(conn, month: str) -> dict:
     refresh_dataset(conn)
     conn.commit()
     return {"month": month, "sections": sections}
+
+
+def save_agent(conn, month: str, sections: list[dict], who: str) -> None:
+    """Store a review an agent wrote (MCP save_review) through the same path as a generated one: the row says who wrote it, there is
+    no prompt to keep, any hand-edit mark is cleared (the agent's text replaces the edited one), and the `review` dataset refreshes."""
+    conn.execute(
+        "INSERT INTO reviews (month, model, sections, prompt, hand_edited_at) VALUES (%s,%s,%s,%s,NULL) ON CONFLICT (month) DO UPDATE SET generated_at=now(), model=EXCLUDED.model, sections=EXCLUDED.sections, prompt=EXCLUDED.prompt, hand_edited_at=NULL",
+        (month, who, json.dumps(sections), "(written by an agent over MCP; the agent saw the instructions and figures through its tools)"),
+    )
+    refresh_dataset(conn)
+    conn.commit()

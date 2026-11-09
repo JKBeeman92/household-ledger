@@ -145,6 +145,21 @@ an editor, their tokens are revoked; revoke a token by hand when someone leaves 
 `AUTH_DISABLED=true` skips all of this for local development and signs you in as `dev@localhost`. Never set it in production.
 With auth on, the app refuses to start (and prints why) on a missing or short `SESSION_SECRET`, missing OIDC settings, or empty `ALLOWED_GROUPS`; `AUTH_DISABLED=true` with a non-localhost `BASE_URL` also needs `I_KNOW_AUTH_IS_OFF=1`.
 
+## Connect an agent
+
+The app serves an [MCP](https://modelcontextprotocol.io) endpoint at `/mcp` (streamable HTTP) so Claude Code, Claude Desktop or any
+MCP client can read the month-close figures. Create a token on **Settings → API tokens** (`read`, or `read+review` if the agent
+should write reviews), then:
+
+```
+claude mcp add --transport http household-ledger https://ledger.example.com/mcp --header "Authorization: Bearer hl_YOUR_TOKEN"
+```
+
+Tools: `list_months`, `get_dataset(name)`, `month_summary(m)`, `category_trend(category, months)`, `goals()`, `review(m)`,
+`review_instructions()`, and `save_review(m, sections)`, which needs the `read+review` scope, replaces that month's review and records
+the token that wrote it. The endpoint accepts API tokens only (no browser session, not even with `AUTH_DISABLED=true`). It serves
+derived datasets only: there is no `transactions` tool, and merchants, notes and raw rows never leave through MCP.
+
 ## Month-close review
 
 With a review provider configured, the Close-a-month page can write a review of any loaded month. It sends derived figures only
