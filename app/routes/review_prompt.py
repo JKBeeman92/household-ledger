@@ -19,14 +19,15 @@ def prompt_page(request: Request, month: str = "", user=Depends(auth.require_edi
         saved = isinstance(db.get_setting(conn, review.SETTING, None), str) and text != review.SYSTEM
         row = conn.execute("SELECT rows FROM datasets WHERE name='monthly'").fetchone()
         months = sorted((r["m"] for r in row["rows"]), reverse=True) if row else []
-        context, error = None, None
+        context, error, tokens = None, None, None
         if month:
             try:
                 context = review.prompt_for(conn, month) if MONTH.match(month) else None
+                tokens = review.estimate_tokens(conn, month) if context else None
                 error = None if context else "Pick a budget month from the list."
             except ValueError as e:
                 error = f"{e}. Upload that month and rebuild first."
-    return render(request, "reviews_prompt.html", user, active="reviews", text=text, customised=saved, months=months, month=month, context=context, error=error, default=review.SYSTEM)
+    return render(request, "reviews_prompt.html", user, active="reviews", text=text, customised=saved, months=months, month=month, context=context, tokens=tokens, error=error, default=review.SYSTEM)
 
 
 @router.post("/reviews/prompt")
