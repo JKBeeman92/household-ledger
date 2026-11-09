@@ -58,4 +58,9 @@ addEventListener('DOMContentLoaded', () => {
   </tbody></table></details>
   <form method="post" action="/rebuild" style="margin-top:var(--space-3)">{{ csrf_field(request) }}<button class="btn" type="submit" id="rebuild-btn" {% if build.state == 'running' %}disabled{% endif %}>Rebuild without uploading</button> <span class="muted">after editing the mapping, CPI, goals, events or rules</span></form>
 </div>
+<div class="panel" style="margin-top:var(--space-4)">
+  <h2>Take your data out, or scan for new files</h2>
+  <p class="muted">Downloads: <a href="/export/ledger.csv">ledger.csv</a> · <a href="/export/datasets.zip">datasets.zip</a> · <a href="/export/sources.zip">sources.zip</a> (the raw exports, original filenames).</p>
+  <form method="post" action="/import/scan">{{ csrf_field(request) }}<button class="btn" type="submit">Scan import directory now</button> <span class="muted">loads new or changed exports from IMPORT_DIR without a restart</span></form>
+</div>
 {% endblock %}

@@ -46,6 +46,8 @@ background and the page shows its progress; only one rebuild runs at a time, eve
 starts: every EveryDollar export whose month is not yet in the database, or whose contents changed, is stored, then one rebuild
 runs. Files already loaded are skipped by checksum, so the directory can stay as a permanent archive of the raw exports.
 A failed start-up import is logged and recorded in the build log; it never stops the container from starting.
+**Close a month** also has a *Scan import directory now* button (no restart needed), and download links for `ledger.csv`, `datasets.zip` and
+`sources.zip` (the raw exports rebuilt in EveryDollar's shape, original filenames), also at `/export/...` for any signed-in user.
 The same import is available by hand:
 
 ```sh
