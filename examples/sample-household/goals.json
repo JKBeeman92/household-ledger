@@ -1,0 +1,51 @@
+[
+ {
+  "key": "gross_annual",
+  "value": 78000,
+  "unit": "usd",
+  "label": "Gross salary, annual",
+  "note": "Invented for the sample household."
+ },
+ {
+  "key": "pay_frequency",
+  "value": 26,
+  "unit": "paychecks/yr",
+  "label": "Pay frequency",
+  "note": "26 = every two weeks; two or three months carry three paychecks."
+ },
+ {
+  "key": "giving_floor",
+  "value": 0.05,
+  "unit": "share of gross",
+  "label": "Giving floor",
+  "note": "Never below this share of gross."
+ },
+ {
+  "key": "giving_target",
+  "value": 0.07,
+  "unit": "share of gross",
+  "label": "Giving target",
+  "note": "Work toward this share of gross."
+ },
+ {
+  "key": "joy_target",
+  "value": 0.04,
+  "unit": "share of gross",
+  "label": "Joy savings target",
+  "note": "Share of gross planned into the joy-savings group (rules.joy_group)."
+ },
+ {
+  "key": "housing_cap",
+  "value": 0.35,
+  "unit": "share of take-home",
+  "label": "Housing + utilities cap",
+  "note": "Housing categories (rules.housing_categories) over net paychecks."
+ },
+ {
+  "key": "investing_per_paycheck",
+  "value": 150,
+  "unit": "usd",
+  "label": "Investing per paycheck",
+  "note": "Deposited outside the budget app; not in the exports."
+ }
+]

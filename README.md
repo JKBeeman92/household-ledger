@@ -53,6 +53,32 @@ docker compose exec ledger python -m pipeline.import_exports /data/import
 Updates: the image is published to `ghcr.io/jkbeeman92/household-ledger` on every push to `main` (and `vX.Y.Z` tags).
 `docker compose pull && docker compose up -d`, or any image-watching updater, is the whole upgrade.
 
+## Try it with the sample household
+
+`examples/sample-household/` is a synthetic household (two earners, 18 budget months, a student loan, a transfer pair, three-paycheck
+months, life events) that reconciles clean, so you can see every tab before loading your own exports. The seed files go in `SEED_DIR`
+(first boot only) and the exports in `IMPORT_DIR`.
+
+Compose, from a checkout of this repo (`LEDGER_DATA` defaults to `./data`, which git ignores):
+
+```sh
+mkdir -p data/seed data/import
+cp examples/sample-household/*.json examples/sample-household/item_mapping.csv data/seed/
+cp examples/sample-household/*-EveryDollar-*.csv data/import/
+docker compose up -d
+```
+
+Local, against a Postgres of your own:
+
+```sh
+export DATABASE_URL=postgresql://ledger:ledger@localhost:5432/ledger AUTH_DISABLED=true SESSION_SECRET=$(openssl rand -hex 32)
+export SEED_DIR=$PWD/examples/sample-household IMPORT_DIR=$PWD/examples/sample-household
+uvicorn app.main:app --port 8010
+```
+
+Seeding only happens into empty tables, so start from an empty database. `python -I examples/sample-household/generate.py` rebuilds
+the files byte for byte (fixed seed, no clock); everything in them is invented.
+
 ## Sign-in (Authentik)
 
 The app is its own OIDC client — no proxy outpost in front of it.
