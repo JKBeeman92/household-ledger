@@ -127,13 +127,13 @@
 
     <div class="card">
       <h2 id="radar-chart">Category shape, year over year</h2>
-      <p class="note">Three stars so the small categories are readable: each has its own dollar scale. A spoke is a category, a ring is a year. The current year is drawn solid; earlier years fade with age. Click a year in the legend to hide or show it on all three.</p>
-      <details class="how"><summary>How to read this</summary><p>Read a star as a fingerprint: the current year’s solid outline against the faded outlines of earlier years. A spoke that grows year over year is a category whose share of life grew; a spoke that shrinks is one that was tamed. Scales differ between the three stars, so compare shapes within a star, not across them. Switch to real dollars to see whether a growing spoke is more than inflation.</p></details>
+      <p class="note">Up to three stars so the small categories are readable: each has its own dollar scale. A spoke is a category, a ring is a year. The current year is drawn solid; earlier years fade with age. Click a year in the legend to hide or show it on every star.</p>
+      <details class="how"><summary>How to read this</summary><p>Read a star as a fingerprint: the current year’s solid outline against the faded outlines of earlier years. A spoke that grows year over year is a category whose share of life grew; a spoke that shrinks is one that was tamed. The stars are made from your own categories: those with spending are ranked by their total over all years and dealt into the largest third, the middle third and the smallest third (fewer stars when there are fewer than nine categories, and never one with fewer than three spokes). Scales differ between stars, so compare shapes within a star, not across them. Switch to real dollars to see whether a growing spoke is more than inflation.</p></details>
       <div class="legend years" data-draw="radar-legend" data-source="cat_year"></div>
       <div class="grid radars">
-        <div><h3 class="sub">Big fixed costs</h3><div class="chart radar" data-draw="radar-a" data-source="cat_year"></div></div>
-        <div><h3 class="sub">Everyday living</h3><div class="chart radar" data-draw="radar-b" data-source="cat_year"></div></div>
-        <div><h3 class="sub">Discretionary and projects</h3><div class="chart radar" data-draw="radar-c" data-source="cat_year"></div></div>
+        <div><h3 class="sub">Categories</h3><div class="chart radar" data-draw="radar-a" data-source="cat_year"></div></div>
+        <div><h3 class="sub">Categories</h3><div class="chart radar" data-draw="radar-b" data-source="cat_year"></div></div>
+        <div><h3 class="sub">Categories</h3><div class="chart radar" data-draw="radar-c" data-source="cat_year"></div></div>
       </div>
     </div>
     <div class="grid">
@@ -459,7 +459,7 @@ window.HL = (() => {
     svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(money).tickSize(-(W - ml - 8))).call((g) => { g.select('.domain').remove(); g.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); g.attr('font-size', null).attr('font-family', null); });
     const probeX = svg.append('text').attr('opacity', 0); let lw = 0;
     for (const v of xs) { probeX.text(opts.xfmt ? opts.xfmt(v) : v); lw = Math.max(lw, probeX.node().getComputedTextLength()); } probeX.remove();
-    const every = Math.ceil(xs.length / Math.max(1, Math.floor((W - ml) / (lw + 12))));
+    const every = Math.ceil(xs.length / Math.max(1, Math.floor((W - ml) / (lw + 28))));
     svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).tickValues(xs.filter((_, i) => i % every === 0)).tickFormat(opts.xfmt || ((d) => d)).tickSize(0)).call((g) => { g.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); g.attr('font-size', null).attr('font-family', null); edgeTicks(g, ml, W - 8); });
     const col = (i) => colors()[i % colors().length];
     const t = tip(el);
@@ -630,7 +630,7 @@ dash.draw('monthly', (el) => {
   const ml = HL.margins(svg, y.ticks(5), HL.money);
   const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
   svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
-  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 90))).tickFormat(d3.utcFormat('%Y')).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
+  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
   const line = (k) => d3.line().x((r) => x(r.d)).y((r) => y(r[k]));
   const defs = svg.append('defs'); const grad = defs.append('linearGradient').attr('id', 'hl-inc').attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 1);
@@ -703,7 +703,7 @@ let employerOrder = [];
 dash.draw('employer', (el) => {
   const g = dash.data('employer'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
   const rows = g.data.map((r) => ({ m: r.m, employer: r.employer, amount: Number(r.amount) }));
-  employerOrder = HL.stackChart(el, rows, 'm', 'employer', 'amount', { order: [...d3.rollup(rows, (v) => d3.sum(v, (r) => r.amount), (r) => r.employer)].filter((d) => d[0] !== 'Unknown').sort((a, b) => b[1] - a[1]).map((d) => d[0]).concat(rows.some((r) => r.employer === 'Unknown') ? ['Unknown'] : []), xfmt: (m) => m.slice(0, 4) });
+  employerOrder = HL.stackChart(el, rows, 'm', 'employer', 'amount', { order: [...d3.rollup(rows, (v) => d3.sum(v, (r) => r.amount), (r) => r.employer)].filter((d) => d[0] !== 'Unknown').sort((a, b) => b[1] - a[1]).map((d) => d[0]).concat(rows.some((r) => r.employer === 'Unknown') ? ['Unknown'] : []), xfmt: (m) => dash.fmt.month(HL.parseM(m)) });
 });
 dash.draw('employer-legend', (el) => { const g = dash.data('employer'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, employerOrder); });
 
@@ -786,7 +786,7 @@ dash.draw('debts', (el) => {
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
   const probe = svg.append('text').attr('opacity', 0); let ml = 0; for (const r of rows) { probe.text(r.item); ml = Math.max(ml, probe.node().getComputedTextLength()); } probe.remove(); ml = Math.ceil(ml) + 12;
   const x = d3.scaleUtc([d3.min(rows, (r) => r.d0), d3.max(rows, (r) => r.d1)], [ml, W - 70]);
-  svg.append('g').attr('transform', `translate(0,${mt - 6})`).call(d3.axisTop(x).ticks(Math.max(2, Math.floor((W - ml) / 80))).tickFormat(d3.utcFormat('%Y')).tickSize(0)).call((a) => { a.select('.domain').remove(); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 70); });
+  svg.append('g').attr('transform', `translate(0,${mt - 6})`).call(d3.axisTop(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').remove(); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 70); });
   const c = HL.colors(); const t = HL.tip(el);
   const grp = svg.append('g').selectAll('g').data(rows).join('g').attr('transform', (r, i) => `translate(0,${mt + i * rowH})`);
   grp.append('text').attr('x', ml - 8).attr('y', rowH / 2 + 4).attr('text-anchor', 'end').attr('fill', 'var(--color-fg)').text((r) => r.item);
@@ -870,20 +870,28 @@ dash.draw('verify', (tb) => {
 
 <script nonce="{{ csp_nonce(request) }}">(() => {
 
-// ---- radar: top-8 categories as spokes, one ring per year ----
+// ---- radar: the household's own categories as spokes, one ring per year ----
 window.HLradarHidden = window.HLradarHidden || new Set();
-const RADAR_GROUPS = {
-  'radar-a': ['Housing', 'Debt', 'Giving', 'Groceries', 'Taxes', 'Savings'],
-  'radar-b': ['Household', 'Personal', 'Utilities', 'Transportation', 'Health', 'Insurance', 'Dining & Date', 'Subscriptions'],
-  'radar-c': ['Travel', 'Technology', 'Gifts & Holiday', 'Projects', 'House Purchase'],
+const RADAR_NAMES = ['radar-a', 'radar-b', 'radar-c'];
+// pure: the household's categories with spending, largest first, split into up to three stars of at least three spokes each
+const radarGroups = (totals) => {
+  const ranked = [...totals].filter((t) => t[1] > 0).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).map((t) => t[0]);
+  const k = Math.min(3, Math.max(1, Math.floor(ranked.length / 3))); const out = []; let at = 0;
+  for (let i = 0; i < k && ranked.length; i++) { const n = Math.ceil((ranked.length - at) / (k - i)); out.push(ranked.slice(at, at + n)); at += n; }
+  return out;
 };
-const drawRadar = (el, cats) => {
-  const g = dash.data('cat_year'); el.replaceChildren();
-  if (g.status !== 'ok') { el.textContent = '—'; return; }
+const radarTitles = { 1: ['All categories'], 2: ['Larger categories', 'Smaller categories'], 3: ['Largest categories', 'Mid-sized categories', 'Smallest categories'] };
+const drawRadar = (el, idx) => {
+  const g = dash.data('cat_year'); el.replaceChildren(); const card = el.parentElement; card.style.display = '';
+  const none = () => { if (idx) card.style.display = 'none'; else { card.querySelector('.sub').textContent = ''; el.textContent = 'No category spending to compare yet.'; } };
+  if (g.status !== 'ok') { none(); return; }
   const f = HL.basis() === 'real' ? 'amount_real' : 'amount';
   const years = [...new Set(g.data.map((r) => r.y))].sort();
   const val = new Map(); for (const r of g.data) val.set(r.y + '|' + r.category, (val.get(r.y + '|' + r.category) || 0) + Number(r[f]));
-  cats = cats.filter((c) => years.some((y) => (val.get(y + '|' + c) || 0) > 0));
+  const tot = new Map(); for (const r of g.data) tot.set(r.category, (tot.get(r.category) || 0) + Number(r[f]));
+  const groups = radarGroups([...tot]); const cats = groups[idx];
+  if (!cats) { none(); return; }
+  card.querySelector('.sub').textContent = radarTitles[groups.length][idx];
   const W = el.clientWidth || 300, H = Math.max(260, Math.min(340, W)), cx = W / 2, cy = H / 2 + 4, R = Math.min(W, H) / 2 - 46;
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
   const rMax = d3.max(years, (y) => d3.max(cats, (c) => Math.max(0, val.get(y + '|' + c) || 0))) || 1;
@@ -904,12 +912,12 @@ const drawRadar = (el, cats) => {
     .on('pointermove', (pe, y) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(y)}</div>` + cats.map((cat) => `<div>${HL.esc(cat)} ${HL.esc(HL.money(val.get(y + '|' + cat) || 0))}</div>`).join('')); }).on('pointerleave', () => t.hide());
   el.style.minHeight = H + 'px';
 };
-for (const [name, cats] of Object.entries(RADAR_GROUPS)) dash.draw(name, (el) => drawRadar(el, cats));
+RADAR_NAMES.forEach((name, i) => dash.draw(name, (el) => drawRadar(el, i)));
 dash.draw('radar-legend', (el) => {
   const g = dash.data('cat_year'); if (g.status !== 'ok') { el.replaceChildren(); return; }
   const years = [...new Set(g.data.map((r) => r.y))].sort(); const c = HL.colors();
   el.replaceChildren(...years.map((y, i) => { const sp = document.createElement('span'); sp.style.setProperty('--sw', c[i % c.length]); sp.textContent = y; sp.setAttribute('role', 'button'); sp.tabIndex = 0; sp.setAttribute('aria-pressed', String(!window.HLradarHidden.has(y)));
-    const flip = () => { if (window.HLradarHidden.has(y)) window.HLradarHidden.delete(y); else window.HLradarHidden.add(y); for (const n of Object.keys(RADAR_GROUPS)) dash.draw(n); dash.draw('radar-legend'); };
+    const flip = () => { if (window.HLradarHidden.has(y)) window.HLradarHidden.delete(y); else window.HLradarHidden.add(y); for (const n of RADAR_NAMES) dash.draw(n); dash.draw('radar-legend'); };
     sp.onclick = flip; sp.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } }; return sp; }));
 });
 
@@ -986,13 +994,14 @@ dash.draw('lm-items', (tb) => {
 const pct1 = dash.fmt.pct(1);
 const gTile = (name, field) => dash.draw(name, (el) => { const g = dash.data('goal_summary'); el.textContent = g.status === 'ok' && g.data[0] && g.data[0][field] != null ? pct1(g.data[0][field]) : '—'; });
 gTile('g-giving', 'giving_share'); gTile('g-joy', 'joy_share'); gTile('g-house', 'housing_share'); gTile('g-th', 'takehome_share');
+const goalPct = (key) => { const G = dash.data('goals'); const r = G.status === 'ok' ? G.data.find((x) => x.key === key) : null; const v = r ? Number(r.value) : NaN; return Number.isFinite(v) ? dash.fmt.pct(Number.isInteger(v * 100) ? 0 : 1)(v) : null; };
 const gDelta = (name, field, words, goodUp) => dash.draw(name, (el) => {
   const g = dash.data('goal_summary'); el.classList.remove('up', 'down');
   if (g.status !== 'ok' || !g.data[0] || g.data[0][field] == null) { el.textContent = '—'; return; }
   const v = g.data[0][field]; if (typeof v === 'string') { el.textContent = v; return; }
-  el.textContent = (v >= 0 ? '+' : '−') + dash.fmt.pct(1)(Math.abs(v)) + ' ' + words; el.classList.add((v >= 0) === goodUp ? 'up' : 'down');
+  el.textContent = (v >= 0 ? '+' : '−') + dash.fmt.pct(1)(Math.abs(v)) + ' ' + (typeof words === 'function' ? words() : words); el.classList.add((v >= 0) === goodUp ? 'up' : 'down');
 });
-gDelta('g-giving-d', 'giving_vs_floor', 'against the 10% floor', true); gDelta('g-joy-d', 'joy_vs_target', 'against the 10% target', true); gDelta('g-house-d', 'housing_vs_cap', 'against the 25% cap', false); gDelta('g-th-d', 'takehome_note', '', true);
+gDelta('g-giving-d', 'giving_vs_floor', () => 'against the ' + (goalPct('giving_floor') || '') + ' floor', true); gDelta('g-joy-d', 'joy_vs_target', () => 'against the ' + (goalPct('joy_target') || '') + ' target', true); gDelta('g-house-d', 'housing_vs_cap', () => 'against the ' + (goalPct('housing_cap') || '') + ' cap', false); gDelta('g-th-d', 'takehome_note', '', true);
 
 dash.draw('goal-lines', (el) => {
   const g = dash.data('goal_month'), G = dash.data('goals'); el.replaceChildren();
@@ -1006,7 +1015,7 @@ dash.draw('goal-lines', (el) => {
   const ml = HL.margins(svg, y.ticks(5), dash.fmt.pct(0));
   const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
   svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(dash.fmt.pct(0)).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
-  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 90))).tickFormat(d3.utcFormat('%Y')).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
+  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
   const ref = (v, col, label) => { svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', col).attr('stroke-dasharray', '5 4').attr('stroke-opacity', .7); svg.append('text').attr('x', W - 8).attr('y', y(v) - 4).attr('text-anchor', 'end').attr('fill', col).text(label); };
   ref(gv('giving_floor'), c[0], 'giving floor'); ref(gv('giving_target'), c[0], 'giving target'); ref(gv('joy_target'), c[1], 'joy target'); ref(gv('housing_cap'), c[2], 'housing cap');
