@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pipeline rules",
+  "description": "Household-specific classification rules read by pipeline/build_ledger.py and pipeline/aggregate.py. Keys not listed here are ignored by the pipeline, so they are rejected on save.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "cpi_base_month": {
+      "type": ["string", "null"], "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+      "description": "Month (YYYY-MM) whose dollars the real-dollars toggle expresses everything in. Must be a month in the CPI index. Empty (null) means the latest CPI month."
+    },
+    "people": {
+      "type": "array", "items": {"type": "string", "minLength": 1},
+      "description": "The earners/payers in the household, for example [\"Rosie\", \"Sam\"]."
+    },
+    "income_by_person": {
+      "type": "object", "additionalProperties": {"type": "array", "items": {"type": "string"}},
+      "description": "Person -> CanonicalItem names that are that person's income, for example {\"Rosie\": [\"Paycheck\"]}. Other income is attributed to Household."
+    },
+    "payer_prefix_by_person": {
+      "type": "object", "additionalProperties": {"type": "array", "items": {"type": "string"}},
+      "description": "Person -> item-name prefixes that mark their personal spending, for example {\"Rosie\": [\"Rosie \"]}. Remember the trailing space."
+    },
+    "payer_items_by_person": {
+      "type": "object", "additionalProperties": {"type": "array", "items": {"type": "string"}},
+      "description": "Person -> explicit CanonicalItem names that are their personal spending. Tried after the prefixes; anything unmatched is Household."
+    },
+    "employers": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["match", "name"],
+        "properties": {
+          "match": {"type": "string", "minLength": 1, "format": "regex", "description": "Regular expression searched in the lower-cased paycheck merchant, for example \"hobbiton mill\"."},
+          "name": {"type": "string", "minLength": 1, "description": "Employer name shown on the dashboard."}
+        }
+      },
+      "description": "Paycheck merchants -> employer names. The first entry whose match is found in the merchant wins."
+    },
+    "employer_before": {
+      "type": ["object", "null"], "additionalProperties": false, "required": ["month", "name"],
+      "properties": {
+        "month": {"type": "string", "pattern": "^\\d{4}-(0[1-9]|1[0-2])$", "description": "Last budget month (YYYY-MM) the fallback applies to."},
+        "name": {"type": "string", "minLength": 1, "description": "Employer name to use."}
+      },
+      "description": "Fallback for paychecks with no matching merchant in budget months up to and including month."
+    },
+    "debt_plug_until": {
+      "type": ["string", "null"], "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+      "description": "Budget month (YYYY-MM) up to which positive debt \"Interest\" rows are balancing plugs rather than payments."
+    },
+    "transfer_item_words": {
+      "type": ["string", "null"], "format": "regex",
+      "description": "Regular expression of item-name words that mark a transfer between envelopes (\"Transfer to <word>\"). Empty (null) uses the built-in list."
+    },
+    "offbudget_since": {
+      "type": ["string", "null"], "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+      "description": "Budget month (YYYY-MM) from which unpaired off-budget outflows are counted on the Exclusions table."
+    },
+    "merchant_rules": {
+      "type": "array",
+      "items": {
+        "type": "array", "minItems": 2, "maxItems": 2,
+        "prefixItems": [
+          {"type": "string", "minLength": 1, "format": "regex", "description": "Regular expression, case-insensitive."},
+          {"type": "string", "minLength": 1, "description": "Display name."}
+        ]
+      },
+      "description": "Pairs [regex, display name] that tidy merchant names, for example [\"green dragon\", \"Green Dragon Inn\"]. Tried in order, before the built-in rules."
+    }
+  }
+}

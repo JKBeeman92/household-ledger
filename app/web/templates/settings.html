@@ -9,6 +9,10 @@
   <form class="panel" method="post" action="/settings/{{ ed.key }}">{{ csrf_field(request) }}
     <h2>{{ ed.title }}</h2>
     <p class="muted">{{ ed.help }}</p>
+    {% if ed.fields %}<details class="keyhelp"><summary>Keys and what they do</summary>
+      <dl>{% for f in ed.fields %}<dt><code>{{ f.key }}</code> <span class="muted">{{ f.type }}{% if f.required %}, required{% endif %}</span></dt><dd>{{ f.description }}</dd>{% endfor %}</dl>
+      <p class="muted">Checked against the published <a href="/schemas/{{ ed.key }}.schema.json">JSON Schema</a> when you save.</p>
+    </details>{% endif %}
     <textarea class="json" name="body" spellcheck="false">{{ ed.body }}</textarea>
     <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save {{ ed.title|lower }}</button></p>
   </form>

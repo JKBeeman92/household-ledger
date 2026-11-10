@@ -3,7 +3,7 @@ import csv, io, json
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from .. import db, auth
+from .. import db, auth, schema
 from ..web_helpers import flash, render
 from pipeline.run_pipeline import norm
 
@@ -15,8 +15,8 @@ EDITORS = {
     "goals": {"title": "Goals", "help": "JSON list of {key, value, unit, label, note}. The Goals tab and the month-close review read these. value may be null when not yet known."},
     "events": {"title": "Life events", "help": "JSON list of {m: \"YYYY-MM\", label}. Drawn as markers on the timeline charts."},
     "cpi": {"title": "CPI index", "help": "CSV: month, cpi, source. Used for the real-dollars toggle. Append the newest month from FRED CPIAUCSL; mark estimates in source."},
-    "rules": {"title": "Pipeline rules", "help": "JSON. Household-specific classification: cpi_base_month, people, income_by_person, payer_prefix_by_person, payer_items_by_person, employers, employer_before, debt_plug_until, transfer_item_words."},
-    "household": {"title": "Household", "help": "JSON: name, title, currency. Shown in the header and page titles."},
+    "rules": {"title": "Pipeline rules", "help": "JSON object of household-specific classification rules. Unknown keys and invalid regular expressions are rejected on save."},
+    "household": {"title": "Household", "help": "JSON object: name, title, currency, theme. Shown in the header and page titles."},
 }
 
 
@@ -68,8 +68,9 @@ def _save_editor(conn, key: str, body: str) -> str:
         conn.cursor().executemany("INSERT INTO life_events VALUES (%s,%s)", [(e["m"], e["label"]) for e in data])
         return f"{len(data)} events"
     if key in ("rules", "household"):
-        if not isinstance(data, dict):
-            raise ValueError("expected a JSON object")
+        problems = schema.validate(data, schema.load(key))
+        if problems:
+            raise ValueError(f"{len(problems)} problem{'s' * (len(problems) != 1)}: " + "; ".join(problems[:8]) + (f"; and {len(problems) - 8} more" if len(problems) > 8 else ""))
         db.put_setting(conn, key, data)
         return key
     raise ValueError("unknown editor")
@@ -78,7 +79,7 @@ def _save_editor(conn, key: str, body: str) -> str:
 @router.get("/settings", response_class=HTMLResponse)
 def settings_page(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
-        editors = [{"key": k, "body": _editor_body(conn, k), **v} for k, v in EDITORS.items()]
+        editors = [{"key": k, "body": _editor_body(conn, k), "fields": schema.help_fields(k) if k in schema.NAMES else [], **v} for k, v in EDITORS.items()]
     return render(request, "settings.html", user, active="settings", editors=editors)
 
 

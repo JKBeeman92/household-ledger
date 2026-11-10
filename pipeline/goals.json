@@ -2,6 +2,6 @@
  {"key":"pay_frequency","value":26,"unit":"paychecks/yr","label":"Pay frequency","note":"26 = every two weeks; two months a year carry three paychecks."},
  {"key":"giving_floor","value":0.10,"unit":"share of gross","label":"Giving floor","note":"Never below this share of gross."},
  {"key":"giving_target","value":0.15,"unit":"share of gross","label":"Giving target","note":"Work toward this share of gross."},
- {"key":"joy_target","value":0.10,"unit":"share of gross","label":"Joy savings target","note":"Share of gross planned into the joy-savings group (rules.joy_group)."},
- {"key":"housing_cap","value":0.25,"unit":"share of take-home","label":"Housing + utilities cap","note":"Housing categories (rules.housing_categories) over net paychecks."},
+ {"key":"joy_target","value":0.10,"unit":"share of gross","label":"Joy savings target","note":"Share of gross planned into the joy-savings group."},
+ {"key":"housing_cap","value":0.25,"unit":"share of take-home","label":"Housing + utilities cap","note":"Housing categories over net paychecks."},
  {"key":"investing_per_paycheck","value":null,"unit":"usd","label":"Investing per paycheck","note":"Deposited outside the budget app; not in the exports."}]
