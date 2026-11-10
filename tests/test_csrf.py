@@ -71,12 +71,13 @@ def test_json_clients_get_json_403(raw_client, reset_db):
     assert r.status_code == 403 and "detail" in r.json()
 
 
-def test_a_bearer_header_alone_does_not_skip_the_check(raw_client, reset_db):
-    """No bearer authentication exists yet, so such a request is still authorised by the session cookie (#9)."""
-    form_token(raw_client)
-    for h in ("Bearer hl_example", "bearer junk", "Basic abc"):
-        assert raw_client.post("/rebuild", headers={"Authorization": h}).status_code == 403, h
-    assert client_untouched(raw_client)
+def test_only_a_valid_bearer_token_is_exempt(raw_client, reset_db):
+    from test_api_tokens import make_token
+    for bad in ("Bearer hl_example", "Bearer ", "Basic abc"):
+        r = raw_client.post("/rebuild", headers={"Authorization": bad, "Accept": "application/json"})
+        assert r.status_code == 403 and "could not be verified" in r.json()["detail"], bad
+    r = raw_client.post("/rebuild", headers={"Authorization": f"Bearer {make_token('read+review')}"})
+    assert r.status_code == 307 and r.headers["location"].startswith("/login")   # past CSRF, then refused: a token never authorises /rebuild
 
 
 def test_exemption_is_one_replaceable_seam(raw_client, reset_db, monkeypatch):

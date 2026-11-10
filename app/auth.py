@@ -15,6 +15,7 @@ session (fail closed); the next page load goes back through sign-in.
 """
 from __future__ import annotations
 import hashlib
+import hmac
 import logging
 import secrets
 from urllib.parse import quote, urlencode
@@ -46,17 +47,75 @@ DEV_USER = {"email": "dev@localhost", "name": "Local developer", "groups": list(
 
 class Forbidden(HTTPException):
     """A signed-in viewer reached an editor route: main.py renders a 403 page (JSON for API callers) instead of redirecting."""
-    def __init__(self, detail: str = "Your account can view the ledger but not change it."):
-        super().__init__(status_code=403, detail=detail)
+    def __init__(self, detail: str = "Your account can view the ledger but not change it.", headers: dict | None = None):
+        super().__init__(status_code=403, detail=detail, headers=headers)
 
 
 def is_editor(groups) -> bool:
     return bool(set(groups or []) & set(settings.editors))
 
 
+# ---- API tokens ----
+TOKEN_PREFIX = "hl_"
+SCOPES = {"read": frozenset({"read"}), "read+review": frozenset({"read", "review"})}
+REALM = 'Bearer realm="household-ledger"'
+_UNSET = object()
+
+
+def bearer(request: Request) -> str | None:
+    """The token of an `Authorization: Bearer` header ("" when empty), or None when the request has no Bearer header."""
+    h = request.headers.get("authorization", "")
+    return h[7:].strip() if h[:7].lower() == "bearer " or h.lower() == "bearer" else None
+
+
+def hash_token(raw: str) -> str:
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
+def new_token() -> tuple[str, str]:
+    """(token shown once, hash stored): 256 random bits."""
+    raw = TOKEN_PREFIX + secrets.token_urlsafe(32)
+    return raw, hash_token(raw)
+
+
+def _lookup_token(raw: str) -> dict | None:
+    if not raw.startswith(TOKEN_PREFIX) or len(raw) > 200:
+        return None
+    h = hash_token(raw)
+    with db.pool.connection() as conn:
+        row = conn.execute("SELECT id, token_hash, name, scope, owner_email, last_used_at < now() - interval '60 seconds' OR last_used_at IS NULL AS stale "
+                           "FROM api_tokens WHERE token_hash=%s AND revoked_at IS NULL", (h,)).fetchone()
+        if not row or not hmac.compare_digest(row["token_hash"].encode(), h.encode()):
+            return None
+        if row["stale"]:   # last-used time to the minute, without a write on every request
+            conn.execute("UPDATE api_tokens SET last_used_at=now() WHERE id=%s", (row["id"],))
+    return row
+
+
+def token_user(request: Request) -> dict | None:
+    """The user a valid Bearer token stands for (cached on the request), or None for no Bearer header or an unknown/revoked token."""
+    state = request.scope.setdefault("state", {})
+    if (hit := state.get("api_token_user", _UNSET)) is not _UNSET:
+        return hit
+    raw = bearer(request)
+    row = _lookup_token(raw) if raw else None
+    user = row and {"email": row["owner_email"], "name": f"API token {row['name']}", "groups": [], "is_editor": False,
+                    "token": {"id": row["id"], "name": row["name"], "scope": row["scope"]}}
+    state["api_token_user"] = user or None
+    return user or None
+
+
+def revoke_tokens_of(email: str) -> int:
+    with db.pool.connection() as conn:
+        return conn.execute("UPDATE api_tokens SET revoked_at=now() WHERE owner_email=%s AND revoked_at IS NULL", (email,)).rowcount
+
+
 def current_user(request: Request) -> dict | None:
     """The signed-in user with `is_editor` computed from the groups on the server-side row, which `revalidate` loads for this
-    request (refreshed at every group re-check). Before that has run, or while a re-check is pending, nobody is an editor."""
+    request (refreshed at every group re-check). Before that has run, or while a re-check is pending, nobody is an editor.
+    None for any request with a Bearer header: a token never stands in for a session (HTML routes send it to sign-in)."""
+    if bearer(request) is not None:
+        return None
     if settings.auth_disabled:
         return DEV_USER
     u = request.session.get("user") if request.session.get("sid") else None
@@ -73,11 +132,31 @@ def require_user(request: Request) -> dict:
 
 
 def require_user_api(request: Request) -> dict:
-    """Dependency for JSON routes: 401 instead of a redirect (the page's shim handles the redirect)."""
+    """Dependency for read-only JSON routes: a session user or a valid API token; 401 (with WWW-Authenticate) otherwise."""
+    if bearer(request) is not None:
+        if (user := token_user(request)) is None:
+            raise HTTPException(status_code=401, detail="invalid or revoked API token", headers={"WWW-Authenticate": REALM + ', error="invalid_token"'})
+        return user
     user = current_user(request)
     if user is None:
-        raise HTTPException(status_code=401, detail="sign in required")
+        raise HTTPException(status_code=401, detail="sign in required", headers={"WWW-Authenticate": REALM})
     return user
+
+
+def require_scope(need: str):
+    """Dependency factory for JSON routes a token may use: `read` (anyone signed in, any token) or `review` (an editor's
+    session, or a `read+review` token). Not for uploads, settings or rebuilds: those use require_editor(_api), which no token passes."""
+    assert need in ("read", "review")
+
+    def dep(request: Request) -> dict:
+        user = require_user_api(request)
+        tok = user.get("token")
+        if tok and need not in SCOPES[tok["scope"]]:
+            raise Forbidden(f"this token's scope ({tok['scope']}) does not include {need}", headers={"WWW-Authenticate": REALM + ', error="insufficient_scope"'})
+        if not tok and need == "review" and not user["is_editor"]:
+            raise Forbidden()
+        return user
+    return dep
 
 
 def require_editor(request: Request) -> dict:
@@ -89,8 +168,10 @@ def require_editor(request: Request) -> dict:
 
 
 def require_editor_api(request: Request) -> dict:
-    """Dependency for JSON routes that change state."""
+    """Dependency for JSON routes that change state. An API token never passes, whatever its scope."""
     user = require_user_api(request)
+    if user.get("token"):
+        raise Forbidden("API tokens cannot change settings, upload or rebuild; sign in instead.")
     if not user["is_editor"]:
         raise Forbidden()
     return user
@@ -168,8 +249,9 @@ async def _recheck(row: dict) -> tuple[dict, list[str]] | tuple[None, None]:
 
 
 async def revalidate(request: Request) -> None:
-    """App-level dependency: end a session whose row is gone or expired, and re-check its groups every GROUP_RECHECK_SECONDS."""
-    if settings.auth_disabled or not ("user" in request.session or "sid" in request.session):
+    """App-level dependency: end a session whose row is gone or expired, and re-check its groups every GROUP_RECHECK_SECONDS.
+    A Bearer request is left alone: its session is ignored anyway (current_user), and the token is checked by require_user_api."""
+    if settings.auth_disabled or bearer(request) is not None or not ("user" in request.session or "sid" in request.session):
         return
     sid = request.session.get("sid")
     st = sid and await run_in_threadpool(_state, sid)
@@ -179,11 +261,16 @@ async def revalidate(request: Request) -> None:
     request.state.auth_groups = st["groups"]
     if not st["due"] or not (row := await run_in_threadpool(_claim, sid)):
         return
+    email = request.session.get("user", {}).get("email")
     try:
         token, groups = await _recheck(row)
+        denied = token is None
     except Exception as e:  # noqa: BLE001 - any failure fails closed
-        log.warning("group re-check failed for %s: %s: %s", request.session.get("user", {}).get("email"), type(e).__name__, e)
+        log.warning("group re-check failed for %s: %s: %s", email, type(e).__name__, e)
         token = groups = None
+        denied = False   # IdP unreachable is not a verdict on the person: their API tokens stay
+    if email and (denied or (token and not is_editor(groups))) and (n := await run_in_threadpool(revoke_tokens_of, email)):
+        log.info("revoked %d API token(s) of %s: no longer an editor", n, email)
     if token:
         await run_in_threadpool(_update, sid, token, groups)
         request.state.auth_groups = groups                                       # a role change at the IdP applies within the interval

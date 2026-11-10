@@ -136,6 +136,12 @@ The tokens stay in the database (`auth_sessions`); the cookie holds only a rando
 A theme in `BRAND_DIR` that loads fonts or images from a host other than Google Fonts needs that host in `CSP_STYLE_SRC` /
 `CSP_FONT_SRC` / `CSP_IMG_SRC` (see `.env.example`); otherwise the browser's Content-Security-Policy blocks it.
 
+**API tokens** (scripts, monitoring, agents). An editor creates personal tokens on **Settings → API tokens**; each is shown once
+(only its hash is stored), scoped `read` or `read+review`, and revocable there, with its last-used time. Send it as
+`Authorization: Bearer hl_…` to `/api/*` and `/metrics` (e.g. a Prometheus `authorization` block). Tokens never open a page and
+never upload, rebuild or change settings; a revoked or unknown token gets 401. When the group re-check finds the owner is no longer
+an editor, their tokens are revoked; revoke a token by hand when someone leaves and never signs in again.
+
 `AUTH_DISABLED=true` skips all of this for local development and signs you in as `dev@localhost`. Never set it in production.
 With auth on, the app refuses to start (and prints why) on a missing or short `SESSION_SECRET`, missing OIDC settings, or empty `ALLOWED_GROUPS`; `AUTH_DISABLED=true` with a non-localhost `BASE_URL` also needs `I_KNOW_AUTH_IS_OFF=1`.
 
