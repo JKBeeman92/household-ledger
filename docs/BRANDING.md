@@ -39,3 +39,7 @@ cp my-brand/* "$LEDGER_DATA"/brand/
 
 and restart nothing — the files are read on each request. The built-in theme, `app/web/static/brand/theme.css`, is the reference
 for every token a kit has to define.
+
+`examples/brand-kit/` is a complete example kit, "Mallorn" (gold and silver on umber, parchment in light mode, Cormorant Garamond /
+Source Sans 3 / IBM Plex Mono). It is deliberately unlike the built-in theme, so it shows how much a kit can change; its
+`README.md` has the copy command, and `tests/test_contrast.py` checks it alongside the built-in theme.

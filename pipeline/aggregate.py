@@ -7,6 +7,8 @@ L = [r for r in csv.DictReader(open("ledger.csv"))]
 for r in L:
     r["amt"] = float(r["Amount"]); r["real"] = float(r["AmountReal"]); r["in"] = r["InTotals"] == "1"
 T = [r for r in L if r["in"]]
+RU = json.load(open("rules.json")) if os.path.exists("rules.json") else {}
+PAYCHECK_MIN = float(RU.get("paycheck_min") if RU.get("paycheck_min") is not None else 500)   # same default as build_ledger.RULES
 months = sorted({r["BudgetMonth"] for r in L})
 years = sorted({m[:4] for m in months})
 
@@ -68,7 +70,7 @@ emp = collections.defaultdict(lambda: collections.defaultdict(float)); empn = co
 for r in T:
     if r["CanonicalItem"]=="Paycheck":
         emp[r["BudgetMonth"]][r["Employer"] or "Unknown"] += r["amt"]
-        if r["amt"] > 500: empn[r["BudgetMonth"]][r["Employer"] or "Unknown"] += 1   # deposits; small negatives are deductions
+        if r["amt"] > PAYCHECK_MIN: empn[r["BudgetMonth"]][r["Employer"] or "Unknown"] += 1   # deposits; small ones are deductions
 employer = {m:{k:{"amount":round(v,2),"n":empn[m][k]} for k,v in emp[m].items()} for m in months}
 
 # --- debt payoff timeline (cumulative paid per debt item) ---

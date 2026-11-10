@@ -212,26 +212,26 @@
 
   <!-- ===================== GOALS ===================== -->
   <section id="goals" class="page" role="tabpanel" aria-labelledby="tab-goals" tabindex="0" hidden>
-    <p class="intro">Where the household stands against the standing targets: a giving floor, a joy-savings share, and a housing cap. Targets are shares of gross or take-home pay, so they move with income rather than with the plan.</p>
+    <p class="intro">Where the household stands against the standing targets: a giving floor, a savings share, and a housing cap. Which categories count as giving and housing, and which budget groups count as savings, are rules on the Settings page. Targets are shares of gross or take-home pay, so they move with income rather than with the plan.</p>
     <div class="tiles">
       <div class="card tile"><div class="k">Giving, last 12 months</div><div class="v" data-draw="g-giving" data-source="goal_summary" data-field="giving_share" data-where="row=last12">—</div><div class="d" data-draw="g-giving-d" data-source="goal_summary" data-field="giving_vs_floor" data-where="row=last12">—</div></div>
-      <div class="card tile"><div class="k">Planned into joy envelopes, last 12 months</div><div class="v" data-draw="g-joy" data-source="goal_summary" data-field="joy_share" data-where="row=last12">—</div><div class="d" data-draw="g-joy-d" data-source="goal_summary" data-field="joy_vs_target" data-where="row=last12">—</div></div>
+      <div class="card tile"><div class="k">Planned into savings groups, last 12 months</div><div class="v" data-draw="g-joy" data-source="goal_summary" data-field="joy_share" data-where="row=last12">—</div><div class="d" data-draw="g-joy-d" data-source="goal_summary" data-field="joy_vs_target" data-where="row=last12">—</div></div>
       <div class="card tile"><div class="k">Housing + utilities, last 12 months</div><div class="v" data-draw="g-house" data-source="goal_summary" data-field="housing_share" data-where="row=last12">—</div><div class="d" data-draw="g-house-d" data-source="goal_summary" data-field="housing_vs_cap" data-where="row=last12">—</div></div>
       <div class="card tile"><div class="k">Take-home as share of gross</div><div class="v" data-draw="g-th" data-source="goal_summary" data-field="takehome_share" data-where="row=last12">—</div><div class="d" data-draw="g-th-d" data-source="goal_summary" data-field="takehome_note" data-where="row=last12">—</div></div>
     </div>
     <div class="card">
       <h2 id="goal-chart">The three ratios, month by month</h2>
-      <p class="note">Giving as a share of gross (floor and target lines), joy-envelope funding as a share of gross (target line), and housing plus utilities as a share of take-home (cap line). Twelve-month trailing averages, so a three-paycheck month or a lump payment does not whip the line around.</p>
+      <p class="note">Giving as a share of gross (floor and target lines), savings-group funding as a share of gross (target line), and housing plus utilities as a share of take-home (cap line). Twelve-month trailing averages, so a three-paycheck month or a lump payment does not whip the line around.</p>
       <div class="chart" data-draw="goal-lines" data-source="goal_month goals"></div>
-      <div class="legend"><span data-c="0">Giving / gross</span><span data-c="1">Joy funding / gross</span><span data-c="2">Housing + utilities / take-home</span></div>
-      <details class="how"><summary>How to read this</summary><p>A solid line above its dashed target is good for giving and joy, and bad for housing. The lines are twelve-month trailing averages, so a change in behaviour takes a few months to show. Gross is the stated annual salary spread evenly across months; take-home is the net paychecks that actually landed, so the housing ratio is honest about months with two versus three paychecks only in the trailing view.</p></details>
+      <div class="legend"><span data-c="0">Giving / gross</span><span data-c="1">Savings funding / gross</span><span data-c="2">Housing + utilities / take-home</span></div>
+      <details class="how"><summary>How to read this</summary><p>A solid line above its dashed target is good for giving and savings, and bad for housing. The lines are twelve-month trailing averages, so a change in behaviour takes a few months to show. Gross is the stated annual salary spread evenly across months; take-home is the net paychecks that actually landed, so the housing ratio is honest about months with two versus three paychecks only in the trailing view.</p></details>
     </div>
     <div class="grid">
       <div class="card">
         <h2 id="goal-table">Latest months in detail</h2>
         <p class="note">Single-month figures, newest first. Expect the housing share to drop in three-paycheck months and rise in two-paycheck months.</p>
         <div class="tbl"><table data-source="goal_month" data-row-key="m"><thead><tr>
-          <th data-field="m">Month</th><th data-field="paychecks">Paychecks</th><th data-field="takehome">Take-home</th><th data-field="giving">Giving</th><th data-field="giving_share">/ gross</th><th data-field="joy_planned">Joy planned</th><th data-field="joy_share">/ gross</th><th data-field="housing">Housing + util.</th><th data-field="housing_share">/ take-home</th>
+          <th data-field="m">Month</th><th data-field="paychecks">Paychecks</th><th data-field="takehome">Take-home</th><th data-field="giving">Giving</th><th data-field="giving_share">/ gross</th><th data-field="joy_planned">Savings planned</th><th data-field="joy_share">/ gross</th><th data-field="housing">Housing + util.</th><th data-field="housing_share">/ take-home</th>
         </tr></thead><tbody data-draw="goal-table"></tbody></table></div>
       </div>
       <div class="card">
@@ -286,7 +286,7 @@
     <div class="grid">
       <div class="card">
         <h2 id="slush-chart">Catch-all envelopes</h2>
-        <p class="note">Spending booked to envelopes that tend to act as catch-alls: Long Term Savings, Taxes, Emergency Fund and Generosity. High bars mean real spending sitting under a saving label.</p>
+        <p class="note">Spending booked to the envelopes your rules name as catch-alls (<span data-draw="slush-items" data-source="goal_config">none yet</span>). High bars mean real spending sitting under a saving label. Name them as <code>catchall_items</code> in the rules on the Settings page.</p>
       <details class="how"><summary>How to read this</summary><p>EveryDollar envelopes named like savings can end up holding everyday spending. When a bar here is tall, real spending was hidden under a saving label that year. An empty chart means nothing was booked to these envelopes.</p></details>
         <div class="chart" data-draw="slush" data-source="slush"></div>
         <div class="legend" data-draw="slush-legend" data-source="slush"></div>
@@ -535,25 +535,31 @@ dash.calc('lm_items', { inputs: ['budget_items'], title: 'Last month envelopes b
   const last = [...new Set(budget_items.map((r) => r.m))].sort().pop();
   return budget_items.filter((r) => r.m === last && r.flow !== 'income').map((r) => ({ item: r.item, category: r.category, planned: Number(r.planned), actual: Number(r.actual), gap: Number(r.actual) - Number(r.planned) })).filter((r) => Math.abs(r.gap) >= 1).sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap)).slice(0, 25);
 } });
-dash.calc('goal_month', { inputs: ['budget_items', 'employer', 'cat_month', 'goals'], title: 'Goal ratios by month', description: 'Per budget month: net paychecks (take-home) and paycheck count (deposits over $500) from employer; giving spend and housing + utilities spend from cat_month; money planned into the Joy Saving group from budget_items; each as a share of gross (goals.gross_annual / 12) or of take-home; plus twelve-month trailing shares.', fn: (budget_items, employer, cat_month, goals) => {
-  const gross = Number((goals.find((g) => g.key === 'gross_annual') || {}).value) / 12;
+// what counts as giving, housing and savings: the goal_config dataset (from rules.json), or the pipeline defaults before a rebuild has emitted it
+const goalConfig = HL.goalConfig = () => { const g = dash.data('goal_config'); const c = g.status === 'ok' && g.data[0] ? g.data[0] : {};
+  return { giving_categories: c.giving_categories || ['Giving'], housing_categories: c.housing_categories || ['Housing', 'Utilities'], savings_groups: c.savings_groups || [], catchall_items: c.catchall_items || [] }; };
+dash.calc('goal_month', { inputs: ['budget_items', 'employer', 'cat_month', 'goals'], title: 'Goal ratios by month', description: 'Per budget month: net paychecks (take-home) and paycheck count (deposits over the rules\u2019 paycheck_min) from employer; giving spend and housing spend from cat_month, by the categories goal_config names; money planned into goal_config\u2019s savings groups from budget_items; each as a share of gross (goals.gross_annual / 12) or of take-home; plus twelve-month trailing shares.', fn: (budget_items, employer, cat_month, goals) => {
+  const cfg = goalConfig();
+  const gv = goals.find((g) => g.key === 'gross_annual'); const gross = gv && gv.value != null ? Number(gv.value) / 12 : 0;
+  const givCats = new Set(cfg.giving_categories), houCats = new Set(cfg.housing_categories), savGroups = new Set(cfg.savings_groups);
   const months = [...new Set(cat_month.map((r) => r.m))].sort();
   const th = new Map(), pc = new Map();
   for (const r of employer) { th.set(r.m, (th.get(r.m) || 0) + Number(r.amount)); pc.set(r.m, (pc.get(r.m) || 0) + Number(r.n || 0)); }
-  const joy = new Map(); for (const r of budget_items) if (r.group === 'Joy Saving') joy.set(r.m, (joy.get(r.m) || 0) + Number(r.planned));
+  const joy = new Map(); for (const r of budget_items) if (savGroups.has(r.group)) joy.set(r.m, (joy.get(r.m) || 0) + Number(r.planned));
   const giv = new Map(), hou = new Map();
-  for (const r of cat_month) { if (r.category === 'Giving') giv.set(r.m, (giv.get(r.m) || 0) + Number(r.amount)); if (r.category === 'Housing' || r.category === 'Utilities') hou.set(r.m, (hou.get(r.m) || 0) + Number(r.amount)); }
+  for (const r of cat_month) { if (givCats.has(r.category)) giv.set(r.m, (giv.get(r.m) || 0) + Number(r.amount)); if (houCats.has(r.category)) hou.set(r.m, (hou.get(r.m) || 0) + Number(r.amount)); }
   const rows = months.map((m) => { const t = th.get(m) || 0, g = giv.get(m) || 0, j = joy.get(m) || 0, h = hou.get(m) || 0;
-    return { m, takehome: t, paychecks: pc.get(m) || 0, giving: g, giving_share: gross ? g / gross : null, joy_planned: j, joy_share: gross ? j / gross : null, housing: h, housing_share: t ? h / t : null }; });
+    return { m, takehome: t, paychecks: pc.get(m) || 0, giving: g, giving_share: gross ? g / gross : null, joy_planned: j, joy_share: gross && savGroups.size ? j / gross : null, housing: h, housing_share: t ? h / t : null }; });
   for (let i = 0; i < rows.length; i++) { const w = rows.slice(Math.max(0, i - 11), i + 1); const n = w.length; const T = d3.sum(w, (r) => r.takehome);
-    rows[i].giving_share_12 = gross ? d3.sum(w, (r) => r.giving) / (gross * n) : null; rows[i].joy_share_12 = gross ? d3.sum(w, (r) => r.joy_planned) / (gross * n) : null; rows[i].housing_share_12 = T ? d3.sum(w, (r) => r.housing) / T : null; }
+    rows[i].giving_share_12 = gross ? d3.sum(w, (r) => r.giving) / (gross * n) : null; rows[i].joy_share_12 = gross && savGroups.size ? d3.sum(w, (r) => r.joy_planned) / (gross * n) : null; rows[i].housing_share_12 = T ? d3.sum(w, (r) => r.housing) / T : null; }
   return rows;
 } });
 dash.calc('goal_summary', { inputs: ['goal_month', 'goals'], title: 'Goal ratios, trailing twelve months', description: 'The last row of goal_month\u2019s twelve-month trailing shares, with the gap to each target from goals.', fn: (goal_month, goals) => {
-  const gv = (k) => Number((goals.find((g) => g.key === k) || {}).value); const last = goal_month[goal_month.length - 1] || {};
-  const gross = gv('gross_annual') / 12; const w = goal_month.slice(-12); const T = d3.sum(w, (r) => r.takehome);
-  return [{ row: 'last12', month: last.m, giving_share: last.giving_share_12, giving_vs_floor: last.giving_share_12 - gv('giving_floor'), giving_vs_target: last.giving_share_12 - gv('giving_target'),
-            joy_share: last.joy_share_12, joy_vs_target: last.joy_share_12 - gv('joy_target'), housing_share: last.housing_share_12, housing_vs_cap: last.housing_share_12 - gv('housing_cap'),
+  const gv = (k) => { const g = goals.find((x) => x.key === k); return g && g.value != null && Number.isFinite(Number(g.value)) ? Number(g.value) : null; };
+  const gap = (v, k) => v == null || gv(k) == null ? null : v - gv(k); const last = goal_month[goal_month.length - 1] || {};
+  const gross = (gv('gross_annual') || 0) / 12; const w = goal_month.slice(-12); const T = d3.sum(w, (r) => r.takehome);
+  return [{ row: 'last12', month: last.m, giving_share: last.giving_share_12, giving_vs_floor: gap(last.giving_share_12, 'giving_floor'), giving_vs_target: gap(last.giving_share_12, 'giving_target'),
+            joy_share: last.joy_share_12, joy_vs_target: gap(last.joy_share_12, 'joy_target'), housing_share: last.housing_share_12, housing_vs_cap: gap(last.housing_share_12, 'housing_cap'),
             takehome_share: gross ? (T / w.length) / gross : null, takehome_note: 'net paychecks over stated gross' }];
 } });
 
@@ -758,6 +764,7 @@ dash.draw('slush', (el) => {
   const g = dash.data('slush'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
   slushOrder = HL.stackChart(el, g.data.map((r) => ({ y: r.y, item: r.item, v: Number(r.amount) })), 'y', 'item', 'v');
 });
+dash.draw('slush-items', (el) => { const items = HL.goalConfig().catchall_items; el.textContent = items.length ? items.join(', ') : 'none yet'; });
 dash.draw('slush-legend', (el) => { const g = dash.data('slush'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, slushOrder); });
 dash.draw('exclusions', (tb) => {
   const g = dash.data('exclusions'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
@@ -1006,8 +1013,10 @@ gDelta('g-giving-d', 'giving_vs_floor', () => 'against the ' + (goalPct('giving_
 dash.draw('goal-lines', (el) => {
   const g = dash.data('goal_month'), G = dash.data('goals'); el.replaceChildren();
   if (g.status !== 'ok' || G.status !== 'ok') { el.textContent = '—'; return; }
-  const gv = (k) => Number((G.data.find((r) => r.key === k) || {}).value);
-  const rows = g.data.filter((r) => r.m >= '2019-01').map((r) => ({ d: HL.parseM(r.m), m: r.m, a: r.giving_share_12, b: r.joy_share_12, c: r.housing_share_12 }));
+  const gv = (k) => { const r = G.data.find((x) => x.key === k); return r && r.value != null && Number.isFinite(Number(r.value)) ? Number(r.value) : null; };
+  const first = g.data.findIndex((r) => r.giving_share_12 != null || r.joy_share_12 != null || r.housing_share_12 != null);   // start where there is something to draw
+  if (first < 0) { el.textContent = 'Nothing to draw yet: record gross pay on the Settings page, and paychecks need to land in the exports.'; return; }
+  const rows = g.data.slice(first).map((r) => ({ d: HL.parseM(r.m), m: r.m, a: r.giving_share_12, b: r.joy_share_12, c: r.housing_share_12 }));
   const W = el.clientWidth || 600, H = 300, mt = 10, mb = 28;
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
   const yMax = Math.max(0.35, d3.max(rows, (r) => Math.max(r.a || 0, r.b || 0, r.c || 0)));
@@ -1017,15 +1026,15 @@ dash.draw('goal-lines', (el) => {
   svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(dash.fmt.pct(0)).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
   svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
-  const ref = (v, col, label) => { svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', col).attr('stroke-dasharray', '5 4').attr('stroke-opacity', .7); svg.append('text').attr('x', W - 8).attr('y', y(v) - 4).attr('text-anchor', 'end').attr('fill', col).text(label); };
-  ref(gv('giving_floor'), c[0], 'giving floor'); ref(gv('giving_target'), c[0], 'giving target'); ref(gv('joy_target'), c[1], 'joy target'); ref(gv('housing_cap'), c[2], 'housing cap');
+  const ref = (v, col, label) => { if (v == null) return; svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', col).attr('stroke-dasharray', '5 4').attr('stroke-opacity', .7); svg.append('text').attr('x', W - 8).attr('y', y(v) - 4).attr('text-anchor', 'end').attr('fill', col).text(label); };
+  ref(gv('giving_floor'), c[0], 'giving floor'); ref(gv('giving_target'), c[0], 'giving target'); ref(gv('joy_target'), c[1], 'savings target'); ref(gv('housing_cap'), c[2], 'housing cap');
   const line = (k) => d3.line().defined((r) => r[k] != null).x((r) => x(r.d)).y((r) => y(r[k]));
   ['a', 'b', 'c'].forEach((k, i) => svg.append('path').datum(rows).attr('fill', 'none').attr('stroke', c[i]).attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round').attr('d', line(k)));
   const t = HL.tip(el); const bis = d3.bisector((r) => r.d).center;
   const hover = svg.append('g').attr('display', 'none'); hover.append('line').attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--cds-chart-axis)');
   svg.append('rect').attr('x', ml).attr('y', mt).attr('width', Math.max(0, W - ml - 8)).attr('height', H - mt - mb).attr('fill', 'transparent')
     .on('pointermove', (pe) => { const [px, py] = d3.pointer(pe, el); const r = rows[bis(rows, x.invert(px))]; if (!r) return; hover.attr('display', null).select('line').attr('x1', x(r.d)).attr('x2', x(r.d));
-      t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}, trailing 12 months</div><div><span class="sw" style="background:${c[0]}"></span>Giving ${r.a == null ? '—' : pct1(r.a)}</div><div><span class="sw" style="background:${c[1]}"></span>Joy funding ${r.b == null ? '—' : pct1(r.b)}</div><div><span class="sw" style="background:${c[2]}"></span>Housing + utilities ${r.c == null ? '—' : pct1(r.c)}</div>`); })
+      t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}, trailing 12 months</div><div><span class="sw" style="background:${c[0]}"></span>Giving ${r.a == null ? '—' : pct1(r.a)}</div><div><span class="sw" style="background:${c[1]}"></span>Savings funding ${r.b == null ? '—' : pct1(r.b)}</div><div><span class="sw" style="background:${c[2]}"></span>Housing + utilities ${r.c == null ? '—' : pct1(r.c)}</div>`); })
     .on('pointerleave', () => { hover.attr('display', 'none'); t.hide(); });
 });
 dash.draw('goal-table', (tb) => {

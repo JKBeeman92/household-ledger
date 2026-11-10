@@ -7,6 +7,8 @@ of `docker compose logs ledger` (check them for anything private first).
 - [ ] **The container starts.** `docker compose ps` shows `ledger` healthy. The compose file runs it with a read-only root, no
       capabilities and a 256 MB `/tmp`; an error about a read-only file system means something writes outside `/tmp`, which is a
       bug to report, not a setting to loosen.
+- [ ] **Allowed groups.** `ALLOWED_GROUPS` is set in `.env`. Since 0.2.0 it has no default: unset or empty, the container
+      refuses to start and `docker compose logs ledger` says so (it used to fall back to `admins`).
 - [ ] **Health.** `curl -s http://localhost:8010/healthz` returns `{"ok":true,"last_build":"none"}` on an empty database, and
       `"last_build":"ok"` after the first successful rebuild.
 - [ ] **Sign-in and sign-out.** Sign in through your OIDC provider; **Sign out** also ends the provider session and lands on

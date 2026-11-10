@@ -50,7 +50,15 @@
     },
     "transfer_item_words": {
       "type": ["string", "null"], "format": "regex",
-      "description": "Regular expression of item-name words that mark a transfer between envelopes (\"Transfer to <word>\"). Empty (null) uses the built-in list."
+      "description": "Regular expression of item-name words that mark a transfer between envelopes (\"Transfer to <word>\"). Empty (null) uses the built-in generic list: savings, checking, emergency fund, sinking fund, slush, fund, budget."
+    },
+    "transfer_merchants": {
+      "type": ["string", "null"], "format": "regex",
+      "description": "Regular expression of whole merchant names (case-insensitive) that are moves between envelopes, for example \"second breakfast fund|party tree rebalance\". Tried alongside the built-in transfer, rebalance and redistribution names."
+    },
+    "verify_transfer_prefixes": {
+      "type": "array", "items": {"type": "string", "minLength": 1},
+      "description": "CanonicalItem prefixes whose rows mapped with the verify flow are moves between envelopes rather than spending, for example [\"Slush\"]. Empty keeps every verify row on the verify list."
     },
     "offbudget_since": {
       "type": ["string", "null"], "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
@@ -66,6 +74,26 @@
         ]
       },
       "description": "Pairs [regex, display name] that tidy merchant names, for example [\"green dragon\", \"Green Dragon Inn\"]. Tried in order, before the built-in rules."
+    },
+    "catchall_items": {
+      "type": "array", "items": {"type": "string", "minLength": 1},
+      "description": "CanonicalItem names that tend to act as catch-alls, for example [\"Emergency Fund\", \"Taxes\"]. The Where it went tab charts their spending by year; empty hides the chart."
+    },
+    "paycheck_min": {
+      "type": ["number", "null"], "minimum": 0,
+      "description": "A Paycheck row above this many dollars counts as one deposit (paycheck counts on the Goals tab and the employer chart); smaller ones are deductions. Empty (null) means 500."
+    },
+    "goal_giving_categories": {
+      "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
+      "description": "Categories whose spending counts as giving on the Goals tab. Empty (null) means [\"Giving\"]."
+    },
+    "goal_housing_categories": {
+      "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
+      "description": "Categories counted against the housing cap on the Goals tab. Empty (null) means [\"Housing\", \"Utilities\"]."
+    },
+    "goal_savings_groups": {
+      "type": "array", "items": {"type": "string", "minLength": 1},
+      "description": "Budget groups whose planned amounts count toward the savings target on the Goals tab, for example [\"Long-expected Party\"]. Empty leaves that ratio blank."
     }
   }
 }

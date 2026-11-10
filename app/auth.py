@@ -1,10 +1,10 @@
-"""OIDC authorization-code login against Authentik, with a group check that is repeated while the session lives.
+"""OIDC authorization-code login against any OpenID Connect provider, with a group check that is repeated while the session lives.
 
-The app is its own OIDC client (no proxy outpost in front): Authentik issues an ID token, we verify it via authlib's
+The app is its own OIDC client (no authenticating proxy in front): the provider issues an ID token, we verify it via authlib's
 discovery-backed client, read the `groups` claim and admit only members of ALLOWED_GROUPS.
 
 A sign-in has two halves. The signed session cookie (4 KB, shared with flash messages and the CSRF token) carries only a
-random session id and the small user dict. The tokens, which do not fit (an Authentik id_token alone is 1-2 KB), live in
+random session id and the small user dict. The tokens, which do not fit (an id_token alone is often 1-2 KB), live in
 `auth_sessions` (migration 0010) under the sha256 of that id: the id_token for logout's `id_token_hint`, and the access and
 refresh tokens for the re-check, plus the groups from the last sign-in or re-check, which alone decide the role (the cookie's
 copy is for display; an older, still validly signed copy of the cookie must not bring back an old role). `revalidate` (an app-level dependency) ends the session when its row is gone (signed out
@@ -28,7 +28,7 @@ from .config import settings
 from . import db
 
 log = logging.getLogger("ledger")
-SCOPE = "openid email profile groups offline_access"   # offline_access: Authentik issues a refresh token only for it
+SCOPE = "openid email profile groups offline_access"   # offline_access: many providers (Authentik among them) issue a refresh token only for it
 
 
 def make_oauth(s=settings, **client_kwargs) -> OAuth:

@@ -32,6 +32,17 @@ def test_bad_production_config_refuses_to_start(change, needle):
         cfg(**change).enforce()
 
 
+def test_unset_allowed_groups_refuses_to_start():
+    """The default is no group at all, so a production config that never sets ALLOWED_GROUPS fails closed (issue #91)."""
+    import os, subprocess, sys
+    env = {k: v for k, v in os.environ.items() if k != "ALLOWED_GROUPS"}
+    code = ("from app.config import Settings; s = Settings(auth_disabled=False, session_secret='s'*32, oidc_issuer='https://id.example.com/', "
+            "oidc_client_id='ledger', oidc_client_secret='shh'); print(s.allowed_groups); print(s.validate())")
+    out = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, check=True, cwd=os.path.dirname(os.path.dirname(__file__))).stdout
+    assert out.splitlines()[0] == "()"
+    assert "ALLOWED_GROUPS must be set" in out
+
+
 def test_every_problem_is_listed():
     with pytest.raises(ConfigError) as e:
         cfg(session_secret="", oidc_client_secret="", allowed_groups=()).enforce()

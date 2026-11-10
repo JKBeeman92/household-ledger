@@ -36,5 +36,11 @@
    "shire power",
    "Shire Power & Light"
   ]
+ ],
+ "catchall_items": [
+  "Emergency Fund"
+ ],
+ "goal_savings_groups": [
+  "Savings"
  ]
 }

@@ -19,7 +19,14 @@ RULES = {
   "employers": [],                     # [{"match": regex on merchant, "name": "Employer"}]
   "employer_before": None,             # {"month": "YYYY-MM", "name": "..."}: paychecks before this month with no merchant
   "debt_plug_until": None,             # "YYYY-MM": debt "Interest" rows up to here are balancing plugs, not payments
-  "transfer_item_words": None,         # extra item-name words that mark a transfer (regex), or None for the defaults
+  "transfer_item_words": None,         # item-name words that mark a transfer ("Transfer to <word>"; regex), or None for the defaults
+  "transfer_merchants": None,          # regex of whole merchant names that are envelope moves (e.g. "office redistribution"), tried with the defaults
+  "verify_transfer_prefixes": [],      # CanonicalItem prefixes whose "verify" rows are moves between envelopes, not spending
+  "catchall_items": [],                # CanonicalItem names that act as catch-alls (the Where it went tab charts them)
+  "paycheck_min": 500,                 # a Paycheck row above this many dollars counts as one deposit; smaller ones are deductions
+  "goal_giving_categories": ["Giving"],              # categories whose spend is giving, for the Goals tab
+  "goal_housing_categories": ["Housing", "Utilities"],  # categories counted against the housing cap
+  "goal_savings_groups": [],           # budget groups whose planned amounts count toward the savings target
   "offbudget_since": None,             # "YYYY-MM": count unpaired off-budget outflows from here (exclusions table)
   "merchant_rules": [                  # [regex, display name]; household extras go in rules.json and are tried first
     [r"^(amzn|amazon)", "Amazon"], [r"^wal-?mart|^wm supercenter", "Walmart"], [r"^sams ?club", "Sam's Club"], [r"^costco", "Costco"],
@@ -43,18 +50,20 @@ def employer(bm, merchant):
     if eb and bm <= eb["month"]: return eb["name"]
     return ""
 
-ITEM_WORDS = RULES.get("transfer_item_words") or (r"long ?term(?: savings)?|vacation|holiday|hygiene|grocery|date|health|gifts?|house misc|utilities|mobile|"
-              r"technology|emergency|renters?(?: insurance)?|life insurance|every ?dollar(?: plus)?|meds?|xbox|tax slush|"
-              r"disability|clothing|car repair|office|audible|gym|slush|savings|checking|budget")
+ITEM_WORDS = RULES.get("transfer_item_words") or r"savings|checking|emergency(?: fund)?|sinking fund|slush|fund|budget"
 TRANSFER_RX = re.compile(
-    r"^(transfer|rebalance|fund rebalance|fund transfer|find transfer|redistribution|office redistribution|"
-    r"end of year rebalance|long term transfer|xbox transfer|house misc transfer|from vacation|from long ?term|"
-    r"holiday|technology|car repair|long term|maintenance|tax slush|"
-    r"transfer(?:ring)? (?:to|from) (?:" + ITEM_WORDS + r")\b.*)$", re.I)
+    r"^(transfer|rebalance|fund rebalance|fund transfer|redistribution|"
+    + (r"(?:" + RULES["transfer_merchants"] + r")|" if RULES.get("transfer_merchants") else "")
+    + r"transfer(?:ring)? (?:to|from) (?:" + ITEM_WORDS + r")\b.*)$", re.I)
 
 def is_transfer_merchant(m):
     m = norm(m).lower()
     return bool(TRANSFER_RX.match(m))
+
+# US state, DC and territory codes, less the ones that are also words at the end of a business name (Co, In, Or, Me, Hi, Ok,
+# De, La, Pa, Ma, Id, Oh): stripping "Pizza Co" to "Pizza" is worse than leaving "Denver Co" unstripped. merchant_rules can tidy those.
+STATES = ("al|ak|az|ar|ca|ct|dc|fl|ga|il|ia|ks|ky|md|mi|mn|ms|mo|mt|ne|nv|nh|nj|nm|ny|nc|nd|"
+          "ri|sc|sd|tn|tx|ut|vt|va|wa|wv|wi|wy|pr|gu|vi")
 
 def merchant_norm(m):
     s = norm(m)
@@ -62,7 +71,7 @@ def merchant_norm(m):
     s = re.sub(r"\b(direct dep|dir dep|payroll|web pmts|autopay|debit card purchase|purchase)\b.*$", "", s, flags=re.I)
     s = re.sub(r"[#*].*$", "", s)
     s = re.sub(r"\b[a-z]*\d+[a-z0-9]*\b", "", s, flags=re.I)         # store codes / confirmation numbers
-    s = re.sub(r"\b(az|mo|ks|ca|il|wy|mt|sd|ia)\b$", "", s.strip(), flags=re.I)  # trailing state
+    s = re.sub(r"\b(" + STATES + r")\b$", "", s.strip(), flags=re.I)  # trailing state or territory code
     s = re.sub(r"\s+", " ", s).strip(" -.,")
     for pat, name in RULES["merchant_rules"]:
         if re.search(pat, s, flags=re.I): return name
@@ -96,7 +105,8 @@ for r in rows:
     is_transfer = (flow == "transfer") or is_transfer_merchant(r["Merchant"]) or \
                   (norm(r["Merchant"]).lower() == r["Item"].lower() and amt > 0 and r["Group"] != "Income")
     ci = mp["CanonicalItem"]
-    if flow == "verify" and ci.startswith("Slush"): flow, is_transfer = "transfer", True; ci = "Transfer"
+    if flow == "verify" and RULES["verify_transfer_prefixes"] and ci.startswith(tuple(RULES["verify_transfer_prefixes"])):
+        flow, is_transfer = "transfer", True; ci = "Transfer"
     earner = ""
     if flow == "income":
         earner = next((p for p, items in RULES["income_by_person"].items() if ci in items), "Household")

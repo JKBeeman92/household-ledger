@@ -59,17 +59,19 @@ RULES = {
     "payer_prefix_by_person": {"Rosie": ["Rosie "], "Sam": ["Sam "]},
     "employers": [{"match": "hobbiton mill", "name": "Hobbiton Mill"}],
     "merchant_rules": [["green dragon", "Green Dragon Inn"], ["bywater market", "Bywater Market"], ["shire power", "Shire Power & Light"]],
+    "catchall_items": ["Emergency Fund", "Holiday", "Generosity"],
+    "goal_savings_groups": ["Savings"],
 }
 GOALS = [
     {"key": "gross_annual", "value": 78000, "unit": "usd", "label": "Gross salary, annual", "note": "Invented for the sample household."},
     {"key": "pay_frequency", "value": 26, "unit": "paychecks/yr", "label": "Pay frequency", "note": "26 = every two weeks; two or three months carry three paychecks."},
     {"key": "giving_floor", "value": 0.05, "unit": "share of gross", "label": "Giving floor", "note": "Never below this share of gross."},
     {"key": "giving_target", "value": 0.07, "unit": "share of gross", "label": "Giving target", "note": "Work toward this share of gross."},
-    {"key": "joy_target", "value": 0.04, "unit": "share of gross", "label": "Joy savings target", "note": "Share of gross planned into the joy-savings group."},
-    {"key": "housing_cap", "value": 0.35, "unit": "share of take-home", "label": "Housing + utilities cap", "note": "Housing categories over net paychecks."},
+    {"key": "joy_target", "value": 0.04, "unit": "share of gross", "label": "Savings target", "note": "Share of gross planned into the Savings group."},
+    {"key": "housing_cap", "value": 0.35, "unit": "share of take-home", "label": "Housing cap", "note": "Housing and utilities over net paychecks."},
     {"key": "investing_per_paycheck", "value": 150, "unit": "usd", "label": "Investing per paycheck", "note": "Deposited outside the budget app; not in the exports."},
 ]
-HOUSEHOLD = {"name": "Sample Household", "title": "Sample Household Ledger", "currency": "USD"}
+HOUSEHOLD = {"name": "Sample Household", "title": "Sample Household Ledger", "currency": "USD", "locale": "en-US"}
 
 
 def money(c): return f"{'-' if c < 0 else ''}{abs(c) // 100}.{abs(c) % 100:02d}"
