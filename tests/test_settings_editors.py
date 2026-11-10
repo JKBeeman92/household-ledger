@@ -1,6 +1,6 @@
 """Settings editors: row-level saves for mapping, goals and events, line-numbered CSV errors, CSV export."""
 from __future__ import annotations
-import csv, dataclasses, io
+import csv, dataclasses, io, json
 
 import pytest
 
@@ -125,3 +125,73 @@ def test_row_endpoints_need_sign_in(client, reset_db, auth_on):
     assert client.post("/settings/mapping/row", data=ROW).status_code == 401
     assert client.post("/settings/mapping/row/delete", data={"original": "x"}).status_code == 401
     assert client.get("/settings/mapping.csv").status_code == 307
+
+
+def test_renaming_a_goal_keeps_its_confirmation(client, reset_db):
+    with db.pool.connection() as conn:
+        conn.execute("DELETE FROM goals WHERE key IN ('ren_a','ren_b')")
+        conn.execute("INSERT INTO goals (key,value,unit,label,note,confirmed_at) VALUES ('ren_a',5,'usd','Ren','',now())")
+        conn.commit()
+        stamp = conn.execute("SELECT confirmed_at FROM goals WHERE key='ren_a'").fetchone()["confirmed_at"]
+    r = client.post("/settings/goals/row", data={"original": "ren_a", "key": "ren_b", "label": "Ren", "value": "6", "unit": "usd", "note": ""})
+    assert r.json()["ok"]
+    with db.pool.connection() as conn:
+        assert conn.execute("SELECT 1 FROM goals WHERE key='ren_a'").fetchone() is None
+        g = conn.execute("SELECT value, confirmed_at FROM goals WHERE key='ren_b'").fetchone()
+    assert g["confirmed_at"] == stamp and float(g["value"]) == 6
+
+
+def _cpi(conn):
+    return conn.execute("SELECT month, cpi, source FROM cpi ORDER BY month").fetchall()
+
+
+@pytest.mark.parametrize("body,needle", [
+    ("month,cpi,source\n", "no CPI rows"),
+    ("when,value\n2026-01,300\n", "header"),
+    ("month,cpi,source\n2026-01,300,x\n2026-1,301,x\n", "line 3: month must look like YYYY-MM"),
+    ("month,cpi,source\n2026-01,abc,x\n", "line 2: cpi must be a positive number"),
+    ("month,cpi,source\n2026-01,-4,x\n", "line 2: cpi must be a positive number"),
+    ("month,cpi,source\n2026-01,300,x\n2026-02,301,x\n2026-01,302,x\n", "line 4: month 2026-01 repeats line 2"),
+])
+def test_bulk_cpi_is_validated_before_anything_is_deleted(client, reset_db, body, needle):
+    with db.pool.connection() as conn:
+        before = _cpi(conn)
+    assert before
+    page = client.get(client.post("/settings/cpi", data={"body": body}).headers["location"]).text
+    assert "Not saved" in page and needle in page
+    with db.pool.connection() as conn:
+        assert _cpi(conn) == before
+
+
+def test_bulk_cpi_valid_save_replaces_the_table(client, reset_db):
+    with db.pool.connection() as conn:
+        db.put_setting(conn, "rules", {}); conn.commit()   # the golden rules name a base month that this smaller table drops
+    body = "month,cpi,source\n2026-01,300.5,mine\n2026-02,301,\n"
+    page = client.get(client.post("/settings/cpi", data={"body": body}).headers["location"]).text
+    assert "Saved 2 CPI months" in page
+    with db.pool.connection() as conn:
+        assert [(r["month"], float(r["cpi"]), r["source"]) for r in _cpi(conn)] == [("2026-01", 300.5, "mine"), ("2026-02", 301.0, "")]
+
+
+def test_rules_cpi_base_month_must_be_in_the_cpi_table(client, reset_db):
+    with db.pool.connection() as conn:
+        rules_before = db.get_setting(conn, "rules", {})
+        have = conn.execute("SELECT month FROM cpi ORDER BY month LIMIT 1").fetchone()["month"]
+    page = client.get(client.post("/settings/rules", data={"body": json.dumps({"cpi_base_month": "1999-01"})}).headers["location"]).text
+    assert "Not saved" in page and "1999-01 is not a month in the CPI table" in page
+    with db.pool.connection() as conn:
+        assert db.get_setting(conn, "rules", {}) == rules_before
+    page = client.get(client.post("/settings/rules", data={"body": json.dumps({"cpi_base_month": have})}).headers["location"]).text
+    assert "Saved rules" in page
+
+
+def test_cpi_save_cannot_drop_the_month_the_rules_name(client, reset_db):
+    with db.pool.connection() as conn:
+        base = conn.execute("SELECT month FROM cpi ORDER BY month LIMIT 1").fetchone()["month"]
+        db.put_setting(conn, "rules", {"cpi_base_month": base}); conn.commit()
+        before = _cpi(conn)
+    others = "".join(f"{r['month']},{r['cpi']},{r['source']}\n" for r in before if r["month"] != base)
+    page = client.get(client.post("/settings/cpi", data={"body": "month,cpi,source\n" + others}).headers["location"]).text
+    assert "Not saved" in page and base in page and "cpi_base_month" in page
+    with db.pool.connection() as conn:
+        assert _cpi(conn) == before

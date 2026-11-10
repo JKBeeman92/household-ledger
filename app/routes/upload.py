@@ -63,7 +63,7 @@ async def upload(request: Request, background: BackgroundTasks, files: list[Uplo
         conn.commit()
         if stored:
             if build_running(conn):
-                flash(request, f"Stored {stored} file{'s' if stored != 1 else ''}. A rebuild is already running; press Rebuild when it finishes to include them.", "bad")
+                flash(request, f"Stored {stored} file{'s' if stored != 1 else ''}. A rebuild is already running; it will run again to include them.", "bad")
             else:
                 background.add_task(run_background)
                 flash(request, f"Stored {stored} file{'s' if stored != 1 else ''}. Rebuilding in the background; progress is shown below.")
