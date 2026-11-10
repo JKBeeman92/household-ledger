@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}CPI · {{ household.title }}{% endblock %}
+{% block content %}
+<p class="eyebrow">Real dollars</p>
+<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-4)">CPI index</h1>
+<div class="row">
+  <div class="panel">
+    <h2>Fetch latest</h2>
+    <p class="muted">Adds months the table is missing and replaces months marked as carried forward, interpolated or estimated once the series publishes them. Published values are never changed. Needs outbound network access; if the fetch fails or the file is not a CPI series, nothing changes. The ledger is rebuilt afterwards.</p>
+    <p class="muted">Newest month: <span class="mono">{% if latest %}{{ latest.month }} ({{ latest.source }}){% else %}none{% endif %}</span> · estimated months: {{ estimated|length }}</p>
+    <form method="post" action="/cpi/fetch">{{ csrf_field(request) }}<button class="btn primary" type="submit">Fetch latest CPI</button></form>
+  </div>
+  <form class="panel" method="post" action="/cpi/url">{{ csrf_field(request) }}
+    <h2>Series URL</h2>
+    <p class="muted">A CSV in FRED's layout (a header, then date and value per month). Leave blank for FRED's CPIAUCSL; non-US households can point at their own index.</p>
+    <label for="url">URL</label>
+    <input id="url" name="url" type="text" inputmode="url" value="{{ '' if url == default_url else url }}" placeholder="{{ default_url }}">
+    <p style="margin-top:var(--space-3)"><button class="btn" type="submit">Save URL</button></p>
+  </form>
+</div>
+{% endblock %}

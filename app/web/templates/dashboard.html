@@ -391,6 +391,11 @@
         <p class="note">Filled months are marked in the Source column and shown in the warning color.</p>
         <div class="tbl"><table data-source="cpi" data-row-key="month"><thead><tr><th data-field="month">Month</th><th data-field="cpi">CPI-U</th><th data-field="source">Source</th></tr></thead><tbody data-draw="cpi"></tbody></table></div>
       </div>
+      <div class="card" id="cpi-estimated">
+        <h2>Estimated CPI months</h2>
+        <p class="note">Not yet published by the index; the value is carried forward, interpolated or estimated. <b>Fetch latest</b> on the CPI page replaces them once published.</p>
+        <p data-draw="cpi-estimated"></p>
+      </div>
       <div class="card">
         <h2 id="verify-table">Unverified inflows</h2>
         <p class="note">Booked as income in EveryDollar but not yet identified. Kept out of every total until confirmed.</p>
@@ -803,6 +808,10 @@ dash.draw('people-pivot', (tb) => {
 dash.draw('cpi', (tb) => {
   const g = dash.data('cpi'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   HL.fillTable(tb, g.data, [(r) => r.month, (r) => d3.format('.3f')(Number(r.cpi)), (r, td) => { if (!/^FRED/.test(r.source)) td.parentElement.classList.add('filled'); return r.source; }]);
+});
+dash.draw('cpi-estimated', (el) => {
+  const g = dash.data('cpi'); const m = g.status === 'ok' ? g.data.filter((r) => /carried|interpolat|estimat/i.test(r.source)).map((r) => r.month) : [];
+  el.textContent = m.length ? m.join(', ') : 'None: every month is published.';
 });
 dash.draw('verify', (tb) => {
   const g = dash.data('verify'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
