@@ -117,3 +117,34 @@ def test_prompt_preview_is_exact_context_without_provider_call(client, month, ht
     assert str(escape(exact)) in page and http[0] == []
     assert "Upload that month" in client.get("/reviews/prompt?month=1999-01").text
     assert "Pick a budget month" in client.get("/reviews/prompt?month=bad").text
+
+
+def test_context_carries_prior_review_life_events_and_goal_confirmations(client, month):
+    prev = review._month_before(month)
+    secret = {"transactions", "merchant", "memo"}
+    with db.pool.connection() as conn:
+        base = review.build_context(conn, month)["continuity"]
+        assert base["prior_review"] is None and base["life_events"] == {prev: [], month: []}
+        conn.execute("INSERT INTO reviews (month, model, sections, prompt) VALUES (%s,'m',%s,'p')", (prev, json.dumps([{"order": 1, "heading": "Plan", "text": "Cut dining out by $50. " + "x" * 3000}])))
+        conn.execute("INSERT INTO life_events (month, label) VALUES (%s,'Moved to Bywater'),(%s,'New job at the mill'),('1999-01','Old news')", (prev, month))
+        conn.execute("INSERT INTO goals (key, value, unit, label, confirmed_at) VALUES ('giving_floor', 10, '%', 'Giving floor', '2026-03-04T10:00:00Z') ON CONFLICT (key) DO UPDATE SET value=10, unit='%', label='Giving floor', confirmed_at='2026-03-04T10:00:00Z'")
+        conn.execute("INSERT INTO goals (key, value, unit, label) VALUES ('unasked', 1, '', 'Never confirmed') ON CONFLICT (key) DO NOTHING")
+        conn.commit()
+        ctx = review.build_context(conn, month)
+        sent = review.prompt_for(conn, month)
+    c = ctx["continuity"]
+    assert c["prior_review"][0]["heading"] == "Plan" and c["prior_review"][0]["text"].startswith("Cut dining out") and len(c["prior_review"][0]["text"]) == review.SECTION_CHARS
+    assert c["life_events"] == {prev: ["Moved to Bywater"], month: ["New job at the mill"]}
+    assert [g["key"] for g in c["goal_confirmations"]] == ["giving_floor"]
+    assert c["goal_confirmations"][0] == {"key": "giving_floor", "label": "Giving floor", "value": 10.0, "unit": "%", "confirmed": "2026-03-04"}
+    assert "Old news" not in sent and not any(k in ctx for k in secret)
+    assert "suggested change" in review.SYSTEM and "suggested change" in c["note"]
+
+
+def test_customised_prompt_is_kept_and_preview_shows_continuity(client, month):
+    client.post("/reviews/prompt", data={"instructions": "Emphasise debt payoff."})
+    with db.pool.connection() as conn:
+        conn.execute("INSERT INTO life_events (month, label) VALUES (%s,'Second breakfast habit')", (month,)); conn.commit()
+        assert review.instructions(conn) == "Emphasise debt payoff."
+    page = client.get(f"/reviews/prompt?month={month}").text
+    assert "Second breakfast habit" in page and "prior_review" in page and "input tokens" in page

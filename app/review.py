@@ -19,7 +19,9 @@ SYSTEM = (
     "Required sections, in this order: the month in one line; against the prior month; against the trailing twelve; envelopes most over "
     "and under plan (name plan amounts that look wrong-sized); where the standing ratios stand (giving vs floor/target, joy savings vs target, "
     "housing+utilities vs cap) and whether this month moved them; one trend worth watching; what to change in next month's plan. "
-    "If the month had three paychecks, say so and do not read it as a raise. Return only the JSON object."
+    "If the month had three paychecks, say so and do not read it as a raise. "
+    "The data may also carry last month's review, life events and goal confirmations: say whether last month's suggested change was made, "
+    "and name a life event (a move, a job change) rather than inferring it. Return only the JSON object."
 )
 
 
@@ -32,6 +34,21 @@ def instructions(conn) -> str:
 def _month_before(m: str) -> str:
     y, mo = int(m[:4]), int(m[5:])
     return f"{y - 1}-12" if mo == 1 else f"{y}-{mo - 1:02d}"
+
+
+SECTION_CHARS = 1200   # per stored section; keeps last month's review from dominating the prompt
+CONTINUITY_NOTE = ("prior_review is last month's stored review: say whether its suggested change for this month was made. life_events are "
+                   "the household's own notes for this and the prior month: name them rather than inferring. goal_confirmations are the answers from the month-close checklist.")
+
+
+def continuity(conn, month: str, prev: str) -> dict:
+    """Prior review, life events and confirmed goals: derived text and household-entered labels only, never transactions, merchants or notes."""
+    row = conn.execute("SELECT sections FROM reviews WHERE month=%s", (prev,)).fetchone()
+    prior = [{"heading": s["heading"], "text": s["text"][:SECTION_CHARS]} for s in row["sections"]] if row else None
+    events = {m: [r["label"] for r in conn.execute("SELECT label FROM life_events WHERE month=%s ORDER BY label", (m,)).fetchall()] for m in (prev, month)}
+    goals = [{"key": r["key"], "label": r["label"], "value": float(r["value"]) if r["value"] is not None else None, "unit": r["unit"], "confirmed": r["confirmed_at"].date().isoformat()}
+             for r in conn.execute("SELECT key, label, value, unit, confirmed_at FROM goals WHERE confirmed_at IS NOT NULL ORDER BY key").fetchall()]
+    return {"note": CONTINUITY_NOTE, "prior_review": prior, "life_events": events, "goal_confirmations": goals}
 
 
 def build_context(conn, month: str) -> dict:
@@ -59,6 +76,7 @@ def build_context(conn, month: str) -> dict:
         "envelopes_planned_vs_actual": items,
         "paycheck_envelopes_with_money": paychecks,
         "goals": goals,
+        "continuity": continuity(conn, month, prev),
     }
 
 
