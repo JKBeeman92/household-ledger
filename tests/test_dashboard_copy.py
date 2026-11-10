@@ -6,8 +6,8 @@ import pytest
 
 from conftest import GOLDEN, ROOT, upload_files
 
-# wording written for the original household's history; the Method tab now generates its narrative from the datasets
-RETIRED = ["family-loan", "pass-through fund", "Trauma Fund", "Boa", "Josh", "CJ", "NCM", "U-Haul", "Steam", "Pulmonx", "Student loans end", "first Sunday"]
+# phrases from narrative that used to be written by hand for one household; the Method tab now generates its text from the datasets
+RETIRED = ["pass-through fund", "first Sunday"]
 STABLE_IDS = ["overview", "lastmonth", "goals", "where", "leaks", "position", "people", "method", "excl-table", "verify-table", "cpi-table", "method-exclusions"]
 
 
