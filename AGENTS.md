@@ -4,7 +4,8 @@ Household Ledger is a FastAPI + Postgres app around a small, file-based budget p
 
 ## Invariants
 - **Raw exports are facts; everything else is derived.** Never edit rows in `transactions`/`budget_items`; fix the mapping or
-  rules and rebuild. `ledger` and `datasets` are truncated and rewritten on every rebuild.
+  rules and rebuild. For a source read through a profile (#96) the fact is the uploaded file in `source_files.content`; its rows
+  are re-derived from it only by `reapply_profile`, never edited. `ledger` and `datasets` are truncated and rewritten on every rebuild.
 - **Budget month, not calendar month**, everywhere.
 - **Reconciliation must stay clean**: Σ transactions per envelope == BudgetItems Spent. A change that breaks this is wrong.
 - `pipeline/*.py` must keep working as standalone scripts on a folder of CSVs (`python -I build_ledger.py` etc.). They read

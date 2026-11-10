@@ -48,30 +48,94 @@ def record_history(cur, event: str, by: str = "", **where) -> None:
                 f"SELECT kind, budget_month, filename, sha256, row_count, uploaded_at, uploaded_by, %s, %s FROM source_files WHERE {cond}", (event, by, *where.values()))
 
 
-def ingest(conn: psycopg.Connection, filename: str, data: bytes, uploaded_by: str = "") -> dict:
-    """Store one export file. Replaces an existing file of the same kind+month."""
-    kind, bm, rows = parse_export(filename, data)
+def _store_rows(cur, sid: int, kind: str, bm: str, rows: list[dict]) -> None:
+    """Insert one file's rows, already in the internal (EveryDollar) shape."""
+    if kind == "transactions":
+        cur.executemany(
+            "INSERT INTO transactions (source_file_id,budget_month,row_no,grp,item,type,date,merchant,account,amount,note) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            [(sid, bm, i + 2, r["Group"], r["Item"], r["Type"], _date(r["Date"]), r.get("Merchant", ""), r.get("Account", ""), r["Amount"], r.get("Note", "")) for i, r in enumerate(rows)],
+        )
+    else:
+        cur.executemany(
+            "INSERT INTO budget_items (source_file_id,budget_month,grp,item,planned,spent,remaining) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+            [(sid, bm, r["Group"], r["Item"], r["Planned"], r["Spent"], r["Remaining"]) for r in rows],
+        )
+
+
+def ingest(conn: psycopg.Connection, filename: str, data: bytes, uploaded_by: str = "", *,
+           profile: dict | None = None, kind: str | None = None, budget_month: str | None = None) -> dict:
+    """Store one export file. Replaces an existing file of the same kind+month.
+
+    Without `profile` the file must be an EveryDollar export, named as EveryDollar names it. With a profile ({"id", "spec"} from
+    source_profiles) the caller says which kind of file it is and for which budget month; the file is kept as uploaded and its
+    rows are read through the profile's mapping."""
+    if profile is None:
+        kind, bm, rows = parse_export(filename, data)
+        content, profile_id = None, None
+    else:
+        from .sources import apply
+        if kind not in ("transactions", "budget_items"):
+            raise ValueError(f"{filename}: say whether this is the transactions file or the budget file")
+        if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", budget_month or ""):
+            raise ValueError(f"{filename}: the budget month must be YYYY-MM")
+        bm, rows = budget_month, apply(kind, data, profile["spec"])
+        content, profile_id = data, profile["id"]
     sha = hashlib.sha256(data).hexdigest()
     with conn.cursor(row_factory=tuple_row) as cur:
         record_history(cur, "replaced", uploaded_by, kind=kind, budget_month=bm)
         cur.execute("DELETE FROM source_files WHERE kind=%s AND budget_month=%s", (kind, bm))
         cur.execute(
-            "INSERT INTO source_files (kind, budget_month, filename, sha256, row_count, uploaded_by) VALUES (%s,%s,%s,%s,%s,%s) RETURNING id",
-            (kind, bm, os.path.basename(filename), sha, len(rows), uploaded_by),
+            "INSERT INTO source_files (kind, budget_month, filename, sha256, row_count, uploaded_by, profile_id, content) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+            (kind, bm, os.path.basename(filename), sha, len(rows), uploaded_by, profile_id, content),
         )
-        sid = cur.fetchone()[0]
-        if kind == "transactions":
-            cur.executemany(
-                "INSERT INTO transactions (source_file_id,budget_month,row_no,grp,item,type,date,merchant,account,amount,note) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                [(sid, bm, i + 2, r["Group"], r["Item"], r["Type"], _date(r["Date"]), r.get("Merchant", ""), r.get("Account", ""), r["Amount"], r.get("Note", "")) for i, r in enumerate(rows)],
-            )
-        else:
-            cur.executemany(
-                "INSERT INTO budget_items (source_file_id,budget_month,grp,item,planned,spent,remaining) VALUES (%s,%s,%s,%s,%s,%s,%s)",
-                [(sid, bm, r["Group"], r["Item"], r["Planned"], r["Spent"], r["Remaining"]) for r in rows],
-            )
+        _store_rows(cur, cur.fetchone()[0], kind, bm, rows)
     conn.commit()
     return {"kind": kind, "budget_month": bm, "rows": len(rows), "sha256": sha}
+
+
+def reapply_profile(conn: psycopg.Connection, profile_id: int) -> int:
+    """Re-read every stored file of a profile through its current spec, replacing the rows derived from them, in one transaction.
+    The files themselves are not touched. Returns the number of files; raises ValueError naming the file that no longer reads."""
+    from .sources import apply, ProfileError
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute("SELECT spec FROM source_profiles WHERE id=%s", (profile_id,))
+        row = cur.fetchone()
+        if row is None:
+            raise ValueError("no such profile")
+        cur.execute("SELECT id, kind, budget_month, filename, content FROM source_files WHERE profile_id=%s ORDER BY budget_month, kind", (profile_id,))
+        files = cur.fetchall()
+        try:
+            for f in files:
+                rows = apply(f["kind"], bytes(f["content"]), row["spec"])
+                cur.execute(f"DELETE FROM {'transactions' if f['kind'] == 'transactions' else 'budget_items'} WHERE source_file_id=%s", (f["id"],))
+                _store_rows(cur, f["id"], f["kind"], f["budget_month"], rows)
+                cur.execute("UPDATE source_files SET row_count=%s WHERE id=%s", (len(rows), f["id"]))
+        except ProfileError as e:
+            conn.rollback()
+            raise ValueError(f"{f['filename']} ({f['budget_month']}): {e}") from None
+    conn.commit()
+    return len(files)
+
+
+def save_profile(conn: psycopg.Connection, spec: dict, commit: bool = True) -> int:
+    """Insert or update a profile by name (validated first); returns its id. The caller re-applies it to stored files if it changed:
+    pass commit=False and let reapply_profile commit, so a profile that no longer reads its files is never saved."""
+    from .sources import validate_profile
+    validate_profile(spec)
+    with conn.cursor(row_factory=tuple_row) as cur:
+        cur.execute("INSERT INTO source_profiles (name, spec) VALUES (%s, %s) ON CONFLICT (name) DO UPDATE SET spec=EXCLUDED.spec, updated_at=now() RETURNING id",
+                    (spec["name"].strip(), json.dumps(spec)))
+        pid = cur.fetchone()[0]
+    if commit:
+        conn.commit()
+    return pid
+
+
+def load_profiles(conn: psycopg.Connection) -> list[dict]:
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute("SELECT p.id, p.name, p.spec, p.updated_at, count(f.id)::int AS files FROM source_profiles p LEFT JOIN source_files f ON f.profile_id=p.id "
+                    "GROUP BY p.id ORDER BY p.name")
+        return cur.fetchall()
 
 
 def _date(mmddyyyy: str) -> str:

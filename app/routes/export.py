@@ -107,9 +107,13 @@ def _source_chunks(conn, f):
 
 def _source_entries():
     with db.pool.connection() as conn:
-        files = conn.execute("SELECT id, kind, filename FROM source_files ORDER BY budget_month, kind").fetchall()
+        files = conn.execute("SELECT id, kind, budget_month, filename, content IS NOT NULL AS mapped FROM source_files ORDER BY budget_month, kind").fetchall()
         for f in files:
-            yield f["filename"], _source_chunks(conn, f)
+            if f["mapped"]:   # a mapped source (#96): the file exactly as uploaded, under its month (its name need not carry one)
+                row = conn.execute("SELECT content FROM source_files WHERE id=%s", (f["id"],)).fetchone()
+                yield f"{f['budget_month']}/{f['filename']}", iter([bytes(row["content"])])
+            else:
+                yield f["filename"], _source_chunks(conn, f)
 
 
 @router.get("/export/sources.zip")

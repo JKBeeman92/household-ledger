@@ -37,7 +37,7 @@ a { color: var(--accent); }
 .panel h2 { font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: .03em; margin: 0 0 var(--space-3); }
 .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2-text, var(--accent-2)); margin: 0 0 var(--space-1); }
 label { display: block; font-weight: 600; margin-bottom: var(--space-1); }
-input[type=file], input[type=text], input[type=search], input[type=number], textarea, select { font: inherit; color: var(--ink); background: var(--surface-300); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); width: 100%; box-sizing: border-box; }
+input[type=file], input[type=text], input[type=search], input[type=number], input[type=month], textarea, select { font: inherit; color: var(--ink); background: var(--surface-300); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); width: 100%; box-sizing: border-box; }
 textarea.json { font-family: var(--font-mono); font-size: 13px; min-height: 22rem; }
 .flash { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border-left: 3px solid var(--info); background: var(--surface-200); margin-bottom: var(--space-4); }
 .flash.ok { border-left-color: var(--success); } .flash.bad { border-left-color: var(--danger); } .flash.warn { border-left-color: var(--warning); }
@@ -78,7 +78,7 @@ table.edit [aria-invalid=true] { border-color: var(--danger); }
   .topbar .wordmark { min-height: 44px; }
   .topbar nav { margin-left: 0; width: 100%; flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: var(--space-1); -webkit-overflow-scrolling: touch; }
   .topbar nav a, .btn { min-height: 44px; min-width: 44px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; scroll-snap-align: start; flex: none; }
-  input[type=file], input[type=text], input[type=number], select { min-height: 44px; }
+  input[type=file], input[type=text], input[type=number], input[type=month], select { min-height: 44px; }
   input[type=file]::file-selector-button { min-height: 32px; }
   .panel { padding: var(--space-4); }
   .panel summary, details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }

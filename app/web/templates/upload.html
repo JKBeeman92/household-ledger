@@ -44,8 +44,8 @@ addEventListener('DOMContentLoaded', () => {
 </div>{% endif %}
 <div class="row" style="margin-top:var(--space-4)">
   <form class="panel" method="post" action="/upload" enctype="multipart/form-data">{{ csrf_field(request) }}
-    <h2>1 · Upload the two EveryDollar exports</h2>
-    <p class="muted">Transactions and BudgetItems for the budget month that just ended, or a <code>.zip</code> of a whole back catalogue (limit {{ max_upload_mb }} MB). Filenames are read for the month; re-uploading a month replaces it. Files are reconciled on arrival (every envelope's transactions must sum to its Spent) and the ledger is rebuilt.</p>
+    <h2>1 · Upload the month's two files</h2>
+    <p class="muted">Transactions and BudgetItems for the budget month that just ended, or a <code>.zip</code> of a whole back catalogue (limit {{ max_upload_mb }} MB). Filenames are read for the month; re-uploading a month replaces it. From another budget tool, upload its transactions CSV and budget CSV together: you will be asked once how their columns map (<a href="/settings/sources">Sources</a>). Files are reconciled on arrival (every envelope's transactions must sum to its Spent) and the ledger is rebuilt.</p>
     <label for="files">Export files</label>
     <div id="dropzone" class="dropzone"><input id="files" name="files" type="file" accept=".csv,.zip" multiple required>
       <p class="muted dz-hint" hidden>Drop CSV or zip files here, or choose them above.</p></div>
@@ -76,7 +76,7 @@ addEventListener('DOMContentLoaded', () => {
 </div>
 <div class="panel" style="margin-top:var(--space-4)">
   <h2>Take your data out, or scan for new files</h2>
-  <p class="muted">Downloads: <a href="/export/ledger.csv">ledger.csv</a> · <a href="/export/datasets.zip">datasets.zip</a> · <a href="/export/sources.zip">sources.zip</a> (the raw exports, original filenames).</p>
+  <p class="muted">Downloads: <a href="/export/ledger.csv">ledger.csv</a> · <a href="/export/datasets.zip">datasets.zip</a> · <a href="/export/sources.zip">sources.zip</a> (the raw exports: EveryDollar files in their shape and original filenames, other sources exactly as uploaded).</p>
   <form method="post" action="/import/scan">{{ csrf_field(request) }}<button class="btn" type="submit">Scan import directory now</button> <span class="muted">loads new or changed exports from IMPORT_DIR without a restart</span></form>
 </div>
 {% endblock %}
