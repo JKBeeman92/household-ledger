@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Household Ledger">
+  <!-- a red leather book, gold-tooled: a border, a plain gold ring, and a lone mountain inside it -->
+  <rect x="9" y="5" width="46" height="54" rx="3" fill="#7d2318"/>
+  <rect x="9" y="5" width="7" height="54" rx="2" fill="#5e1a12"/>
+  <rect x="19.5" y="9" width="31.5" height="46" rx="1.5" fill="none" stroke="#e0b65a" stroke-width="1.2"/>
+  <circle cx="35.2" cy="32" r="11" fill="none" stroke="#e0b65a" stroke-width="3.2"/>
+  <circle cx="35.2" cy="32" r="11" fill="none" stroke="#f6dc94" stroke-width="1" stroke-dasharray="2 5" stroke-opacity=".8"/>
+  <path d="M27.8 37 L33 28.8 L35.2 31.5 L36.6 29.7 L42.6 37 Z" fill="#e0b65a"/>
+  <path d="M16 12 V52" stroke="#e0b65a" stroke-opacity=".5" stroke-width="1"/>
+</svg>

@@ -1,6 +1,8 @@
 # Branding and themes
 
-The app ships with its own brand ("Verdigris": teal and ochre on graphite, Fraunces / Inter / JetBrains Mono). Everything visual
+The app ships with its own brand, "Homestead": money green and warm terracotta on cream by day and on warm charcoal by night,
+Plus Jakarta Sans with JetBrains Mono for figures. Its mark is a house whose walls are a ledger sheet with a dollar sign on it.
+Everything visual
 is replaceable without rebuilding the image: mount a directory at `BRAND_DIR` (default `/data/brand`) and any file in it
 shadows the shipped default of the same name under `/brand/…`.
 
@@ -40,6 +42,16 @@ cp my-brand/* "$LEDGER_DATA"/brand/
 and restart nothing — the files are read on each request. The built-in theme, `app/web/static/brand/theme.css`, is the reference
 for every token a kit has to define.
 
-`examples/brand-kit/` is a complete example kit, "Mallorn" (gold and silver on umber, parchment in light mode, Cormorant Garamond /
-Source Sans 3 / IBM Plex Mono). It is deliberately unlike the built-in theme, so it shows how much a kit can change; its
-`README.md` has the copy command, and `tests/test_contrast.py` checks it alongside the built-in theme.
+## The logo
+
+`mark.svg` is the logo everywhere: the header, the dashboard masthead, the login card and the browser tab (favicon). Drop your
+own `mark.svg` into `BRAND_DIR` to replace it. Keep it square (any `viewBox`); it is drawn from 16 px (favicon) to about 64 px,
+so it should read at 16 px, and it sits on both the light and the dark surface, so give it its own background shape, as the
+shipped mark does, rather than relying on the page behind it.
+
+## Example kit: The Red Book
+
+`examples/brand-kits/red-book/` is a complete alternative kit after the Red Book of Westmarch, the ledger of the Shire: red
+leather and gold leaf by night, parchment and red ink by day, Cinzel / EB Garamond / Courier Prime, a gold-tooled book for the
+mark and a hand-drawn map for the login backdrop. Its `README.md` has the copy command, and `tests/test_contrast.py` checks it
+alongside the built-in theme.

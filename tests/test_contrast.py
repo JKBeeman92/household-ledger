@@ -8,8 +8,8 @@ import pytest
 
 from conftest import ROOT
 
-THEMES = {"verdigris": ROOT / "app" / "web" / "static" / "brand" / "theme.css",
-          "mallorn (example kit)": ROOT / "examples" / "brand-kit" / "theme.css"}
+THEMES = {"homestead": ROOT / "app" / "web" / "static" / "brand" / "theme.css",
+          "red-book (example kit)": ROOT / "examples" / "brand-kits" / "red-book" / "theme.css"}
 
 TEXT = 4.5
 GRAPHIC = 3.0

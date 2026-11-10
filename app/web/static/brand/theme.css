@@ -1,38 +1,39 @@
-/* Household Ledger — default brand ("Verdigris").
+/* Household Ledger — default brand ("Homestead"): money green and warm terracotta on cream by day, on warm charcoal by night.
+   Plus Jakarta Sans for headings and text, JetBrains Mono for figures; soft corners, quiet shadows.
    This file is the whole visual contract: colours, type, spacing, chart series, login backdrop.
    Override it by mounting a directory with your own theme.css at BRAND_DIR (see docs/BRANDING.md). */
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400&display=swap");
 
 :root {
-  --surface-000: #0b0e12; --surface-100: #11161c; --surface-200: #181f27; --surface-300: #212a34;
-  --line: #27313c; --line-strong: #6d7f90;
-  --ink: #e8ecef; --ink-muted: #a3b0bc; --ink-faint: #7d8b98;
-  --accent: #3fb8a5; --accent-hover: #63cdbc; --accent-soft: #10302c; --on-accent: #0b0e12;
-  --accent-2: #e0a458; --accent-2-deep: #a9742e; --on-accent-2: #1b1308; --accent-2-text: var(--accent-2);
-  --focus: #9ff2e3;
-  --success: #7ed3a6; --warning: #e6b95f; --danger: #e2705f; --info: #7fb4d6; --on-status: #0b0e12;
-  --series-1: #3fb8a5; --series-2: #e0a458; --series-3: #7fb4d6; --series-4: #9ff2e3;
-  --series-5: #9aa9b6; --series-6: #f1dcb8; --series-7: #a9742e; --series-8: #6d7f90;
-  --chart-grid: #2d3844; --chart-axis: #4d5c6b; --chart-reference: #e0a458;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.5); --shadow-md: 0 6px 20px rgba(0,0,0,.55);
-  --shadow-glow: 0 0 0 1px rgba(159,242,227,.35), 0 0 24px rgba(159,242,227,.2);
-  --login-backdrop: url('/brand/backdrop.svg'); --login-overlay: linear-gradient(rgba(11,14,18,.35), rgba(11,14,18,.75));
-  --font-display: "Fraunces", Georgia, serif; --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; --font-mono: "JetBrains Mono", Consolas, monospace;
+  --surface-000: #100f0d; --surface-100: #171512; --surface-200: #1f1c18; --surface-300: #2a2621;
+  --line: #36312a; --line-strong: #84796b;
+  --ink: #f3eee6; --ink-muted: #c4baab; --ink-faint: #9d9283;
+  --accent: #5cc495; --accent-hover: #7fd4ad; --accent-soft: #163327; --on-accent: #10140f;
+  --accent-2: #ec9466; --accent-2-deep: #c06a40; --on-accent-2: #1a0f08; --accent-2-text: var(--accent-2);
+  --focus: #a6ecc9;
+  --success: #7fd0a2; --warning: #e9bd62; --danger: #ef8a73; --info: #8fb9dc; --on-status: #10140f;
+  --series-1: #5cc495; --series-2: #ec9466; --series-3: #8fb9dc; --series-4: #e9cf7c;
+  --series-5: #c4a1d6; --series-6: #7fc7c0; --series-7: #d98f99; --series-8: #a39787;
+  --chart-grid: #2c2823; --chart-axis: #5b5248; --chart-reference: #ec9466;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.45); --shadow-md: 0 6px 18px rgba(0,0,0,.45);
+  --shadow-glow: 0 0 0 1px rgba(166,236,201,.35), 0 0 18px rgba(92,196,149,.18);
+  --login-backdrop: url('/brand/backdrop.svg'); --login-overlay: linear-gradient(rgba(16,15,13,.35), rgba(16,15,13,.75));
+  --font-display: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif; --font-sans: "Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, sans-serif; --font-mono: "JetBrains Mono", Consolas, monospace;
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
-  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 14px; --radius-full: 999px;
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-full: 999px;
 }
 :root[data-theme="light"] {
-  --surface-000: #ffffff; --surface-100: #f5f7f9; --surface-200: #ffffff; --surface-300: #eaeef2;
-  --line: #dde3e9; --line-strong: #6f7d8b;
-  --ink: #141a21; --ink-muted: #4f5d6b; --ink-faint: #5d6b78;
-  --accent: #167a6b; --accent-hover: #0f6357; --accent-soft: #dff4f0; --on-accent: #ffffff;
-  --accent-2: #b4792c; --accent-2-deep: #86581c; --on-accent-2: #ffffff; --accent-2-text: var(--accent-2-deep);
-  --focus: #1f8f7e;
-  --success: #1a7a48; --warning: #8a6209; --danger: #c2442f; --info: #2d6f9e; --on-status: #ffffff;
-  --series-1: #1f8f7e; --series-2: #b4792c; --series-3: #2d6f9e; --series-4: #7a5fb5;
-  --series-5: #5a6772; --series-6: #9a7a3a; --series-7: #86581c; --series-8: #8592a0;
-  --chart-grid: #e3e8ed; --chart-axis: #8592a0; --chart-reference: #b4792c;
-  --shadow-sm: 0 1px 2px rgba(20,26,33,.08); --shadow-md: 0 6px 20px rgba(20,26,33,.12);
-  --shadow-glow: 0 0 0 1px rgba(31,143,126,.3), 0 0 24px rgba(31,143,126,.15);
-  --login-overlay: linear-gradient(rgba(245,247,249,.55), rgba(245,247,249,.85));
+  --surface-000: #ffffff; --surface-100: #faf6ef; --surface-200: #ffffff; --surface-300: #f1ebe1;
+  --line: #e6ddcf; --line-strong: #85796a;
+  --ink: #1d2621; --ink-muted: #4f5a53; --ink-faint: #5f6862;
+  --accent: #1f6f52; --accent-hover: #175a42; --accent-soft: #e2f2ea; --on-accent: #ffffff;
+  --accent-2: #d2693f; --accent-2-deep: #a34c26; --on-accent-2: #ffffff; --accent-2-text: var(--accent-2-deep);
+  --focus: #2b8a66;
+  --success: #1d7247; --warning: #8a6208; --danger: #b8432b; --info: #2f6c98; --on-status: #ffffff;
+  --series-1: #1f8a64; --series-2: #d2693f; --series-3: #2f6c98; --series-4: #a8801b;
+  --series-5: #7b5aa6; --series-6: #2b8483; --series-7: #b04a63; --series-8: #857a6c;
+  --chart-grid: #ece5d9; --chart-axis: #a59a8a; --chart-reference: #d2693f;
+  --shadow-sm: 0 1px 2px rgba(29,38,33,.07); --shadow-md: 0 6px 18px rgba(29,38,33,.09);
+  --shadow-glow: 0 0 0 1px rgba(31,111,82,.3), 0 0 18px rgba(31,111,82,.12);
+  --login-overlay: linear-gradient(rgba(250,246,239,.5), rgba(250,246,239,.85));
 }
