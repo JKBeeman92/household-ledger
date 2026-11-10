@@ -39,11 +39,13 @@ when a file is present there, else from the generic files in `pipeline/` (CPI ta
 A seed directory holds any of `item_mapping.csv`, `goals.json`, `events.json`, `rules.json`, `review.json`, `household.json`;
 after the first boot the database owns them and the Settings page is the editor. Keep your seed directory out of public repos —
 it is your household's data.
-Then open the site, go to **Close a month**, and upload exports (the form takes any number of files at once).
+Then open the site, go to **Close a month**, and upload exports (the form takes any number of files at once). The rebuild runs in the
+background and the page shows its progress; only one rebuild runs at a time, even across containers.
 
 **Bulk load at start.** Anything dropped in `/volume2/ledger/import/` (mounted as `IMPORT_DIR`) is loaded when the container
 starts: every EveryDollar export whose month is not yet in the database, or whose contents changed, is stored, then one rebuild
 runs. Files already loaded are skipped by checksum, so the directory can stay as a permanent archive of the raw exports.
+A failed start-up import is logged and recorded in the build log; it never stops the container from starting.
 The same import is available by hand:
 
 ```sh

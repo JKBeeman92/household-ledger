@@ -88,7 +88,7 @@ recurring=[]
 last12=months[-12:]
 for k,v in subs.items():
     ms=sorted(v); cur=sum(v[m] for m in last12)/12
-    recurring.append({"item":k,"first":ms[0],"last":ms[-1],"active":ms[-1]>=months[-3],"monthly_now":round(cur,2),"lifetime":round(sum(v.values()),2)})
+    recurring.append({"item":k,"first":ms[0],"last":ms[-1],"active":ms[-1]>=months[-3:][0],"monthly_now":round(cur,2),"lifetime":round(sum(v.values()),2)})
 recurring.sort(key=lambda s:-s["monthly_now"])
 
 # --- transfers & exclusions summary ---

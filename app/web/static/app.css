@@ -53,3 +53,4 @@ table.plain th { color: var(--ink-muted); font-weight: 600; }
 /* theme toggle shows the mode you would switch TO */
 #theme-toggle .sun { display: inline; } #theme-toggle .moon { display: none; }
 :root[data-theme="light"] #theme-toggle .sun { display: none; } :root[data-theme="light"] #theme-toggle .moon { display: inline; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }

@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Request, Depends, UploadFile, File, Form
+from fastapi import APIRouter, BackgroundTasks, Request, Depends, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from ..config import settings
 from .. import db, auth, review
 from ..web_helpers import flash, render, _months
-from pipeline.run_pipeline import ingest, rebuild
+from ..builds import build_status, run_background
+from pipeline.run_pipeline import ingest, build_running
 
 router = APIRouter()
 
@@ -14,12 +15,12 @@ def upload_page(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         files = conn.execute("SELECT budget_month, kind, filename, row_count, uploaded_at FROM source_files ORDER BY budget_month DESC, kind").fetchall()
         months = _months(conn)
-        last = conn.execute("SELECT * FROM build_log ORDER BY id DESC LIMIT 1").fetchone()
-    return render(request, "upload.html", user, active="upload", files=files, months=months, last_build=last, review_enabled=bool(settings.anthropic_api_key))
+        build = build_status(conn)
+    return render(request, "upload.html", user, active="upload", files=files, months=months, build=build, review_enabled=bool(settings.anthropic_api_key))
 
 
 @router.post("/upload")
-async def upload(request: Request, files: list[UploadFile] = File(...), user=Depends(auth.require_editor)):
+async def upload(request: Request, background: BackgroundTasks, files: list[UploadFile] = File(...), user=Depends(auth.require_editor)):
     stored, errors = [], []
     with db.pool.connection() as conn:
         for f in files:
@@ -30,27 +31,25 @@ async def upload(request: Request, files: list[UploadFile] = File(...), user=Dep
                 conn.rollback(); errors.append(f"{f.filename}: {e}")
         conn.commit()
         if stored:
-            try:
-                res = rebuild(conn)
-                rec = res["reconciliation"]
-                flash(request, f"Stored {', '.join(stored)}. Rebuilt: {res['summary']}.", "ok" if rec["clean"] else "bad")
-                for p in rec.get("problems", [])[:10]:
-                    flash(request, f"Reconciliation: {p}", "bad")
-            except Exception as e:  # noqa: BLE001
-                flash(request, f"Files stored but rebuild failed: {str(e)[:800]}", "bad")
+            if build_running(conn):
+                flash(request, f"Stored {', '.join(stored)}. A rebuild is already running; press Rebuild when it finishes to include these files.", "bad")
+            else:
+                background.add_task(run_background)
+                flash(request, f"Stored {', '.join(stored)}. Rebuilding in the background; progress is shown below.")
     for e in errors:
         flash(request, e, "bad")
     return RedirectResponse("/upload", status_code=303)
 
 
 @router.post("/rebuild")
-def rebuild_now(request: Request, user=Depends(auth.require_editor)):
+def rebuild_now(request: Request, background: BackgroundTasks, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
-        try:
-            res = rebuild(conn)
-            flash(request, f"Rebuilt: {res['summary']}.", "ok" if res["reconciliation"]["clean"] else "bad")
-        except Exception as e:  # noqa: BLE001
-            flash(request, f"Rebuild failed: {str(e)[:800]}", "bad")
+        busy = build_running(conn)
+    if busy:
+        flash(request, "A rebuild is already running; wait for it to finish.", "bad")
+    else:
+        background.add_task(run_background)
+        flash(request, "Rebuilding in the background; progress is shown below.")
     return RedirectResponse("/upload", status_code=303)
 
 
