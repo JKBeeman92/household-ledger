@@ -77,7 +77,7 @@ def test_only_a_valid_bearer_token_is_exempt(raw_client, reset_db):
         r = raw_client.post("/rebuild", headers={"Authorization": bad, "Accept": "application/json"})
         assert r.status_code == 403 and "could not be verified" in r.json()["detail"], bad
     r = raw_client.post("/rebuild", headers={"Authorization": f"Bearer {make_token('read+review')}"})
-    assert r.status_code == 307 and r.headers["location"].startswith("/login")   # past CSRF, then refused: a token never authorises /rebuild
+    assert r.status_code == 303 and r.headers["location"].startswith("/login")   # past CSRF, then refused: a token never authorises /rebuild
 
 
 def test_exemption_is_one_replaceable_seam(raw_client, reset_db, monkeypatch):

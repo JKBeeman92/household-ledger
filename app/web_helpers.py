@@ -39,8 +39,11 @@ def render(request: Request, name: str, user, **ctx):
 def _span(conn) -> dict:
     """Years covered and the CPI base month, for the page's text."""
     r = conn.execute("SELECT min(budget_month) a, max(budget_month) b FROM source_files").fetchone()
-    rules = db.get_setting(conn, "rules", {}) or {}
-    base = rules.get("cpi_base_month") or (r["b"] or "2026-09")
+    built = conn.execute("SELECT rows FROM datasets WHERE name='build_meta'").fetchone()   # what the pipeline emitted: the month every real-dollar figure is in
+    base = built["rows"][0]["cpi_base_month"] if built and built["rows"] else None
+    if not base:   # nothing built yet: say what the next build will use (the pipeline's rule: the cpi_base_month rule, else the latest CPI month)
+        rules = db.get_setting(conn, "rules", {}) or {}
+        base = rules.get("cpi_base_month") or conn.execute("SELECT max(month) m FROM cpi").fetchone()["m"] or r["b"] or "2026-09"
     bd = _dt.date(int(base[:4]), int(base[5:7]), 1)
     fy, ly = (int(r["a"][:4]) if r["a"] else bd.year), (int(r["b"][:4]) if r["b"] else bd.year)
     return {"first_year": fy, "last_year": ly, "years": ly - fy + 1, "cpi_base_short": bd.strftime("%b %Y"), "cpi_base_long": bd.strftime("%B %Y"),

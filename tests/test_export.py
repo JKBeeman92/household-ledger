@@ -66,7 +66,8 @@ def test_empty_database_exports_are_valid(client, reset_db):
 def test_exports_require_sign_in(client, loaded, auth_on):
     for path in ("/export/ledger.csv", "/export/datasets.zip", "/export/sources.zip"):
         assert client.get(path).status_code == 307
-    assert client.post("/import/scan").status_code == 307
+    r = client.post("/import/scan")
+    assert r.status_code == 303 and r.headers["location"].startswith("/login")   # 303: the browser must not re-POST to /login
 
 
 def test_scan_import_dir(client, reset_db, monkeypatch, tmp_path):
@@ -89,3 +90,24 @@ def test_scan_without_import_dir_says_so(client, reset_db):
 def test_upload_page_has_the_scan_form(client, reset_db):
     t = client.get("/upload").text
     assert 'action="/import/scan"' in t and "/export/sources.zip" in t
+
+
+def test_scan_survives_one_bad_file_and_says_which(client, reset_db, monkeypatch, tmp_path):
+    from app.routes import export
+    from app import db
+    for p in sorted((GOLDEN / "exports").glob("*.csv")):
+        text = p.read_text()
+        if p.name == "c0ffee-02-2025-EveryDollar-Transactions.csv":
+            text = text.replace("02/03/2025", "2025-02-03")
+        (tmp_path / p.name).write_text(text)
+    monkeypatch.setattr(export, "settings", dataclasses.replace(export.settings, import_dir=str(tmp_path)))
+    r = client.post("/import/scan")
+    page = client.get(r.headers["location"]).text
+    assert "7 new or changed file(s) loaded" in page and "Rebuilt:" in page
+    assert "Not loaded: c0ffee-02-2025-EveryDollar-Transactions.csv" in page
+    with db.pool.connection() as conn:
+        months = {x["budget_month"] for x in conn.execute("SELECT budget_month FROM ledger").fetchall()}
+        loaded = conn.execute("SELECT count(*) n FROM source_files").fetchone()["n"]
+        last = conn.execute("SELECT ok, summary, detail FROM build_log ORDER BY id DESC LIMIT 1").fetchone()
+    assert loaded == 7 and {"2025-01", "2025-03", "2025-04"} <= months
+    assert last["ok"] is False and "c0ffee-02-2025-EveryDollar-Transactions.csv" in last["summary"] and "c0ffee-02-2025-EveryDollar-Transactions.csv" in last["detail"]

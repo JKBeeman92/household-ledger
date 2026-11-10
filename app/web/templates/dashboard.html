@@ -35,7 +35,7 @@
 .hl .tip .t { color: var(--cds-text-secondary); }
 .hl .tip .sw { display: inline-block; width: .6em; height: .6em; border-radius: 50%; margin-right: .4em; vertical-align: middle; }
 .hl .legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs) var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: var(--cds-gap-sm); }
-.hl .legend.years span { cursor: pointer; } .hl .legend.years span[aria-pressed="false"] { opacity: .4; text-decoration: line-through; }
+.hl .legend.years span { cursor: pointer; } .hl .legend.years span:focus-visible, .hl dfn:focus-visible, .hl .page:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; } .hl .legend.years span[aria-pressed="false"] { opacity: .4; text-decoration: line-through; }
 .hl .legend span::before { content: ""; display: inline-block; width: .6em; height: .6em; border-radius: 50%; margin-right: .4em; background: var(--sw); vertical-align: middle; }
 .hl .tbl { overflow-x: auto; max-height: 28rem; overflow-y: auto; }
 .hl table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-caption); }
@@ -51,7 +51,7 @@
 .hl [data-dash-source-state=empty] { color: transparent; }
 .hl [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
 /* Brand accents arrive through dash.colors (set on --brand0/--brand1 in script), never typed here. */
-.hl .eyebrow { font-size: var(--cds-font-size-caption); font-weight: var(--cds-font-weight-medium); letter-spacing: .08em; text-transform: uppercase; color: var(--brand1, var(--color-fg-muted)); margin: 0 0 var(--cds-gap-xs); }
+.hl .eyebrow { font-size: var(--cds-font-size-caption); font-weight: var(--cds-font-weight-medium); letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2-text, var(--color-fg-muted)); margin: 0 0 var(--cds-gap-xs); }
 .hl .masthead { display: flex; align-items: center; gap: var(--cds-gap-sm); margin-bottom: var(--cds-gap-xs); }
 .hl .mark { width: 28px; height: 28px; flex: none; }
 .hl .mark polygon { fill: none; stroke: var(--brand1, var(--color-fg-muted)); stroke-width: 2; }
@@ -59,12 +59,12 @@
 .hl .intro { color: var(--color-fg-muted); margin: 0 0 var(--cds-gap-md); max-width: 70ch; }
 .hl .intro dfn, .hl .lede dfn, .hl .prose dfn { font-style: normal; border-bottom: 1px dotted var(--brand1, var(--color-fg-muted)); cursor: help; }
 .hl details.how { margin: var(--cds-gap-sm) 0 0; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-.hl details.how summary { cursor: pointer; color: var(--brand1, var(--color-fg-muted)); font-weight: var(--cds-font-weight-medium); letter-spacing: .04em; }
+.hl details.how summary { cursor: pointer; color: var(--accent-2-text, var(--color-fg-muted)); font-weight: var(--cds-font-weight-medium); letter-spacing: .04em; }
 .hl details.how summary:focus-visible { outline: 2px solid var(--brand0, var(--color-fg)); outline-offset: 2px; }
 .hl details.how p { margin: var(--cds-gap-xs) 0 0; max-width: 70ch; line-height: 1.5; }
 .hl .card h2 { border-left: 3px solid var(--brand1, var(--color-border-line)); padding-left: var(--cds-pad-sm); }
 .hl tbody tr:hover td { background: color-mix(in srgb, var(--color-fg) 6%, transparent); }
-.hl .seg button[aria-pressed="true"], .hl .tabs button[aria-selected="true"] { background: var(--brand0, var(--color-fg)); border-color: var(--brand0, var(--color-fg)); color: var(--color-bg); }
+.hl .seg button[aria-pressed="true"], .hl .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .hl .review h3 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: var(--cds-gap-md) 0 var(--cds-gap-xs); } .hl .review h3:first-child { margin-top: 0; } .hl .review p { margin: 0; line-height: 1.55; max-width: 70ch; }
 .hl .summary-list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--cds-gap-xs); }
 .hl .summary-list li { padding: var(--cds-pad-xs) var(--cds-pad-sm); border-left: 3px solid var(--color-border-line); }
@@ -79,7 +79,7 @@
     <img class="mark" src="/brand/mark.svg" alt="">
     <h1>{{ household.title or 'Household Ledger' }}{% if span.has_data %} {{ span.first_year }}{% if span.last_year != span.first_year %}–{{ span.last_year }}{% endif %}{% endif %}</h1>
   </div>
-  <p class="lede">Over the last twelve <dfn title="EveryDollar files each transaction into the month whose budget it belonged to, which is not always its calendar month. Every figure here uses the budget month.">budget months</dfn> the household took in <b data-draw="lede-income">—</b>, spent <b data-draw="lede-spend">—</b> on <dfn title="Everything that is not income, debt principal or a transfer: housing, food, giving, insurance, projects, envelope spending.">living</dfn> and <b data-draw="lede-debt">—</b> on debt, and kept <b data-draw="lede-net">—</b>. Every figure comes from the EveryDollar exports, with moves between envelopes and anything else your rules exclude taken out (the Method tab lists what). Dotted terms carry a definition on hover; each card has a <em>How to read this</em> note.</p>
+  <p class="lede">Over the last twelve <dfn title="EveryDollar files each transaction into the month whose budget it belonged to, which is not always its calendar month. Every figure here uses the budget month.">budget months</dfn> the household took in <b data-draw="lede-income">—</b>, spent <b data-draw="lede-spend">—</b> on <dfn title="Everything that is not income, debt principal or a transfer: housing, food, giving, insurance, projects, envelope spending.">living</dfn> and <b data-draw="lede-debt">—</b> on debt, and kept <b data-draw="lede-net">—</b>. Every figure comes from the EveryDollar exports, with moves between envelopes and anything else your rules exclude taken out (the Method tab lists what). Dotted terms carry a definition: hover, focus or tap them; each card has a <em>How to read this</em> note.</p>
 
   {% if not span.has_data %}<p class="note" id="empty-state">Nothing is loaded yet, so every figure below is blank. {% if user and user.is_editor %}Add your first EveryDollar Transactions and BudgetItems exports on <a href="/upload">Close a month</a>, or load the sample household described in the README.{% else %}An editor needs to load the first EveryDollar exports.{% endif %}</p>{% endif %}
 
@@ -88,20 +88,20 @@
       <button type="button" class="dollars" data-dollars="nominal" aria-pressed="true">Nominal</button>
       <button type="button" class="dollars" data-dollars="real" aria-pressed="false">{{ span.cpi_base_short }} prices (price-index adjusted)</button>
     </div>
-    <div class="tabs" role="tablist">
-      <button type="button" class="tab" data-tab="overview" role="tab" aria-selected="true">Overview</button>
-      <button type="button" class="tab" data-tab="lastmonth" role="tab" aria-selected="false">Last month</button>
-      <button type="button" class="tab" data-tab="goals" role="tab" aria-selected="false">Goals</button>
-      <button type="button" class="tab" data-tab="where" role="tab" aria-selected="false">Where it went</button>
-      <button type="button" class="tab" data-tab="leaks" role="tab" aria-selected="false">Leaks</button>
-      <button type="button" class="tab" data-tab="position" role="tab" aria-selected="false">Position</button>
-      <button type="button" class="tab" data-tab="people" role="tab" aria-selected="false">People</button>
-      <button type="button" class="tab" data-tab="method" role="tab" aria-selected="false">Method</button>
+    <div class="tabs" role="tablist" aria-label="Dashboard sections" aria-orientation="horizontal">
+      <button type="button" class="tab" id="tab-overview" data-tab="overview" role="tab" aria-controls="overview" aria-selected="true" tabindex="0">Overview</button>
+      <button type="button" class="tab" id="tab-lastmonth" data-tab="lastmonth" role="tab" aria-controls="lastmonth" aria-selected="false" tabindex="-1">Last month</button>
+      <button type="button" class="tab" id="tab-goals" data-tab="goals" role="tab" aria-controls="goals" aria-selected="false" tabindex="-1">Goals</button>
+      <button type="button" class="tab" id="tab-where" data-tab="where" role="tab" aria-controls="where" aria-selected="false" tabindex="-1">Where it went</button>
+      <button type="button" class="tab" id="tab-leaks" data-tab="leaks" role="tab" aria-controls="leaks" aria-selected="false" tabindex="-1">Leaks</button>
+      <button type="button" class="tab" id="tab-position" data-tab="position" role="tab" aria-controls="position" aria-selected="false" tabindex="-1">Position</button>
+      <button type="button" class="tab" id="tab-people" data-tab="people" role="tab" aria-controls="people" aria-selected="false" tabindex="-1">People</button>
+      <button type="button" class="tab" id="tab-method" data-tab="method" role="tab" aria-controls="method" aria-selected="false" tabindex="-1">Method</button>
     </div>
   </div>
 
   <!-- ===================== OVERVIEW ===================== -->
-  <section id="overview" class="page">
+  <section id="overview" class="page" role="tabpanel" aria-labelledby="tab-overview" tabindex="0">
     <p class="intro">Is the household gaining or losing ground, and what changed when? {% if span.has_data %}Start here for the shape of {{ span.years }} {{ 'year' if span.years == 1 else 'years' }}.{% endif %}</p>
     <div class="tiles basis-nominal">
       <div class="card tile"><div class="k">Income, last 12 months</div><div class="v" data-draw="t-inc-n" data-source="last12" data-field="income">—</div><div class="d" data-draw="d-inc-n" data-source="last12" data-field="income_delta">—</div></div>
@@ -127,13 +127,13 @@
 
     <div class="card">
       <h2 id="radar-chart">Category shape, year over year</h2>
-      <p class="note">Three stars so the small categories are readable: each has its own dollar scale. A spoke is a category, a ring is a year. The current year is drawn solid; earlier years fade with age. Click a year in the legend to hide or show it on all three.</p>
-      <details class="how"><summary>How to read this</summary><p>Read a star as a fingerprint: the current year’s solid outline against the faded outlines of earlier years. A spoke that grows year over year is a category whose share of life grew; a spoke that shrinks is one that was tamed. Scales differ between the three stars, so compare shapes within a star, not across them. Switch to real dollars to see whether a growing spoke is more than inflation.</p></details>
+      <p class="note">Up to three stars so the small categories are readable: each has its own dollar scale. A spoke is a category, a ring is a year. The current year is drawn solid; earlier years fade with age. Click a year in the legend to hide or show it on every star.</p>
+      <details class="how"><summary>How to read this</summary><p>Read a star as a fingerprint: the current year’s solid outline against the faded outlines of earlier years. A spoke that grows year over year is a category whose share of life grew; a spoke that shrinks is one that was tamed. The stars are made from your own categories: those with spending are ranked by their total over all years and dealt into the largest third, the middle third and the smallest third (fewer stars when there are fewer than nine categories, and never one with fewer than three spokes). Scales differ between stars, so compare shapes within a star, not across them. Switch to real dollars to see whether a growing spoke is more than inflation.</p></details>
       <div class="legend years" data-draw="radar-legend" data-source="cat_year"></div>
       <div class="grid radars">
-        <div><h3 class="sub">Big fixed costs</h3><div class="chart radar" data-draw="radar-a" data-source="cat_year"></div></div>
-        <div><h3 class="sub">Everyday living</h3><div class="chart radar" data-draw="radar-b" data-source="cat_year"></div></div>
-        <div><h3 class="sub">Discretionary and projects</h3><div class="chart radar" data-draw="radar-c" data-source="cat_year"></div></div>
+        <div><h3 class="sub">Categories</h3><div class="chart radar" data-draw="radar-a" data-source="cat_year"></div></div>
+        <div><h3 class="sub">Categories</h3><div class="chart radar" data-draw="radar-b" data-source="cat_year"></div></div>
+        <div><h3 class="sub">Categories</h3><div class="chart radar" data-draw="radar-c" data-source="cat_year"></div></div>
       </div>
     </div>
     <div class="grid">
@@ -156,7 +156,7 @@
 
 
   <!-- ===================== LAST MONTH ===================== -->
-  <section id="lastmonth" class="page" hidden>
+  <section id="lastmonth" class="page" role="tabpanel" aria-labelledby="tab-lastmonth" tabindex="0" hidden>
     <p class="intro">How did the month that just closed compare with its plan and with the year behind it, and which envelopes should move before the next one is set?</p>
     <p class="lede">How <b data-draw="lm-name">—</b> went against the EveryDollar plan, and against the twelve months before it. Planned and spent are EveryDollar's own figures for that budget month, so transfers between envelopes show here as they did in the app.</p>
     <div class="tiles">
@@ -211,7 +211,7 @@
 
 
   <!-- ===================== GOALS ===================== -->
-  <section id="goals" class="page" hidden>
+  <section id="goals" class="page" role="tabpanel" aria-labelledby="tab-goals" tabindex="0" hidden>
     <p class="intro">Where the household stands against the standing targets: a giving floor, a joy-savings share, and a housing cap. Targets are shares of gross or take-home pay, so they move with income rather than with the plan.</p>
     <div class="tiles">
       <div class="card tile"><div class="k">Giving, last 12 months</div><div class="v" data-draw="g-giving" data-source="goal_summary" data-field="giving_share" data-where="row=last12">—</div><div class="d" data-draw="g-giving-d" data-source="goal_summary" data-field="giving_vs_floor" data-where="row=last12">—</div></div>
@@ -244,7 +244,7 @@
   </section>
 
   <!-- ===================== WHERE IT WENT ===================== -->
-  <section id="where" class="page" hidden>
+  <section id="where" class="page" role="tabpanel" aria-labelledby="tab-where" tabindex="0" hidden>
     <p class="intro">Which categories carry the spending, how each has grown, and what sits inside any one of them.</p>
     <div class="card">
       <h2 id="cat-chart">Spend by category, by year</h2>
@@ -273,7 +273,7 @@
   </section>
 
   <!-- ===================== LEAKS ===================== -->
-  <section id="leaks" class="page" hidden>
+  <section id="leaks" class="page" role="tabpanel" aria-labelledby="tab-leaks" tabindex="0" hidden>
     <p class="intro">Costs that recur without a decision, and envelopes that quietly absorbed spending they were not meant for.</p>
     <div class="card">
       <h2 id="recurring-table">Recurring costs</h2>
@@ -301,7 +301,7 @@
   </section>
 
   <!-- ===================== POSITION ===================== -->
-  <section id="position" class="page" hidden>
+  <section id="position" class="page" role="tabpanel" aria-labelledby="tab-position" tabindex="0" hidden>
     <p class="intro">The year-end view: what came in, what went out, what was kept, and the debts that were paid down and taken on.</p>
     <div class="card">
       <h2 id="yearly-table">Year by year</h2>
@@ -328,7 +328,7 @@
   </section>
 
   <!-- ===================== PEOPLE ===================== -->
-  <section id="people" class="page" hidden>
+  <section id="people" class="page" role="tabpanel" aria-labelledby="tab-people" tabindex="0" hidden>
     <p class="intro">Who earned the income and whose envelopes spent it. People and their items come from the rules in Settings; anything not assigned to a person is Household.</p>
     <div class="grid">
       <div class="card">
@@ -355,7 +355,7 @@
   </section>
 
   <!-- ===================== METHOD ===================== -->
-  <section id="method" class="page" hidden>
+  <section id="method" class="page" role="tabpanel" aria-labelledby="tab-method" tabindex="0" hidden>
     <p class="intro">How the numbers were made, what was removed, and the choices to revisit if a figure looks wrong.</p>
     <div class="card prose">
       <h2>How to read this</h2>
@@ -459,7 +459,7 @@ window.HL = (() => {
     svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(money).tickSize(-(W - ml - 8))).call((g) => { g.select('.domain').remove(); g.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); g.attr('font-size', null).attr('font-family', null); });
     const probeX = svg.append('text').attr('opacity', 0); let lw = 0;
     for (const v of xs) { probeX.text(opts.xfmt ? opts.xfmt(v) : v); lw = Math.max(lw, probeX.node().getComputedTextLength()); } probeX.remove();
-    const every = Math.ceil(xs.length / Math.max(1, Math.floor((W - ml) / (lw + 12))));
+    const every = Math.ceil(xs.length / Math.max(1, Math.floor((W - ml) / (lw + 28))));
     svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).tickValues(xs.filter((_, i) => i % every === 0)).tickFormat(opts.xfmt || ((d) => d)).tickSize(0)).call((g) => { g.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); g.attr('font-size', null).attr('font-family', null); edgeTicks(g, ml, W - 8); });
     const col = (i) => colors()[i % colors().length];
     const t = tip(el);
@@ -564,12 +564,19 @@ dash.calc('goal_summary', { inputs: ['goal_month', 'goals'], title: 'Goal ratios
 // ---- controls: dollar basis + tabs (HTML owns the text; script sets attributes only) ----
 const setBasis = (b) => dash.setParams({ dollars: b });
 document.querySelectorAll('.hl .dollars').forEach((btn) => btn.addEventListener('click', () => setBasis(btn.dataset.dollars)));
+const tabs = [...document.querySelectorAll('.hl .tab')];
 const showTab = (name) => {
   document.querySelectorAll('.hl .page').forEach((s) => { s.hidden = s.id !== name; });
-  document.querySelectorAll('.hl .tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+  tabs.forEach((b) => { const on = b.dataset.tab === name; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
   dash.setLink(name);
 };
-document.querySelectorAll('.hl .tab').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+tabs.forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+// roving tabindex: arrows, Home and End move focus and select (automatic activation, as the panels are already loaded)
+tabs.forEach((b, i) => b.addEventListener('keydown', (e) => {
+  const to = { ArrowRight: (i + 1) % tabs.length, ArrowLeft: (i + tabs.length - 1) % tabs.length, Home: 0, End: tabs.length - 1 }[e.key];
+  if (to === undefined) return;
+  e.preventDefault(); tabs[to].focus(); showTab(tabs[to].dataset.tab);
+}));
 const start = location.hash.slice(1);
 if (['overview','lastmonth','goals','where','leaks','position','people','method'].includes(start)) showTab(start);
 window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (document.getElementById(h) && document.getElementById(h).classList.contains('page')) showTab(h); });
@@ -623,7 +630,7 @@ dash.draw('monthly', (el) => {
   const ml = HL.margins(svg, y.ticks(5), HL.money);
   const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
   svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
-  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 90))).tickFormat(d3.utcFormat('%Y')).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
+  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
   const line = (k) => d3.line().x((r) => x(r.d)).y((r) => y(r[k]));
   const defs = svg.append('defs'); const grad = defs.append('linearGradient').attr('id', 'hl-inc').attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 1);
@@ -696,7 +703,7 @@ let employerOrder = [];
 dash.draw('employer', (el) => {
   const g = dash.data('employer'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
   const rows = g.data.map((r) => ({ m: r.m, employer: r.employer, amount: Number(r.amount) }));
-  employerOrder = HL.stackChart(el, rows, 'm', 'employer', 'amount', { order: [...d3.rollup(rows, (v) => d3.sum(v, (r) => r.amount), (r) => r.employer)].filter((d) => d[0] !== 'Unknown').sort((a, b) => b[1] - a[1]).map((d) => d[0]).concat(rows.some((r) => r.employer === 'Unknown') ? ['Unknown'] : []), xfmt: (m) => m.slice(0, 4) });
+  employerOrder = HL.stackChart(el, rows, 'm', 'employer', 'amount', { order: [...d3.rollup(rows, (v) => d3.sum(v, (r) => r.amount), (r) => r.employer)].filter((d) => d[0] !== 'Unknown').sort((a, b) => b[1] - a[1]).map((d) => d[0]).concat(rows.some((r) => r.employer === 'Unknown') ? ['Unknown'] : []), xfmt: (m) => dash.fmt.month(HL.parseM(m)) });
 });
 dash.draw('employer-legend', (el) => { const g = dash.data('employer'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, employerOrder); });
 
@@ -779,7 +786,7 @@ dash.draw('debts', (el) => {
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
   const probe = svg.append('text').attr('opacity', 0); let ml = 0; for (const r of rows) { probe.text(r.item); ml = Math.max(ml, probe.node().getComputedTextLength()); } probe.remove(); ml = Math.ceil(ml) + 12;
   const x = d3.scaleUtc([d3.min(rows, (r) => r.d0), d3.max(rows, (r) => r.d1)], [ml, W - 70]);
-  svg.append('g').attr('transform', `translate(0,${mt - 6})`).call(d3.axisTop(x).ticks(Math.max(2, Math.floor((W - ml) / 80))).tickFormat(d3.utcFormat('%Y')).tickSize(0)).call((a) => { a.select('.domain').remove(); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 70); });
+  svg.append('g').attr('transform', `translate(0,${mt - 6})`).call(d3.axisTop(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').remove(); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 70); });
   const c = HL.colors(); const t = HL.tip(el);
   const grp = svg.append('g').selectAll('g').data(rows).join('g').attr('transform', (r, i) => `translate(0,${mt + i * rowH})`);
   grp.append('text').attr('x', ml - 8).attr('y', rowH / 2 + 4).attr('text-anchor', 'end').attr('fill', 'var(--color-fg)').text((r) => r.item);
@@ -863,20 +870,28 @@ dash.draw('verify', (tb) => {
 
 <script nonce="{{ csp_nonce(request) }}">(() => {
 
-// ---- radar: top-8 categories as spokes, one ring per year ----
+// ---- radar: the household's own categories as spokes, one ring per year ----
 window.HLradarHidden = window.HLradarHidden || new Set();
-const RADAR_GROUPS = {
-  'radar-a': ['Housing', 'Debt', 'Giving', 'Groceries', 'Taxes', 'Savings'],
-  'radar-b': ['Household', 'Personal', 'Utilities', 'Transportation', 'Health', 'Insurance', 'Dining & Date', 'Subscriptions'],
-  'radar-c': ['Travel', 'Technology', 'Gifts & Holiday', 'Projects', 'House Purchase'],
+const RADAR_NAMES = ['radar-a', 'radar-b', 'radar-c'];
+// pure: the household's categories with spending, largest first, split into up to three stars of at least three spokes each
+const radarGroups = (totals) => {
+  const ranked = [...totals].filter((t) => t[1] > 0).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).map((t) => t[0]);
+  const k = Math.min(3, Math.max(1, Math.floor(ranked.length / 3))); const out = []; let at = 0;
+  for (let i = 0; i < k && ranked.length; i++) { const n = Math.ceil((ranked.length - at) / (k - i)); out.push(ranked.slice(at, at + n)); at += n; }
+  return out;
 };
-const drawRadar = (el, cats) => {
-  const g = dash.data('cat_year'); el.replaceChildren();
-  if (g.status !== 'ok') { el.textContent = '—'; return; }
+const radarTitles = { 1: ['All categories'], 2: ['Larger categories', 'Smaller categories'], 3: ['Largest categories', 'Mid-sized categories', 'Smallest categories'] };
+const drawRadar = (el, idx) => {
+  const g = dash.data('cat_year'); el.replaceChildren(); const card = el.parentElement; card.style.display = '';
+  const none = () => { if (idx) card.style.display = 'none'; else { card.querySelector('.sub').textContent = ''; el.textContent = 'No category spending to compare yet.'; } };
+  if (g.status !== 'ok') { none(); return; }
   const f = HL.basis() === 'real' ? 'amount_real' : 'amount';
   const years = [...new Set(g.data.map((r) => r.y))].sort();
   const val = new Map(); for (const r of g.data) val.set(r.y + '|' + r.category, (val.get(r.y + '|' + r.category) || 0) + Number(r[f]));
-  cats = cats.filter((c) => years.some((y) => (val.get(y + '|' + c) || 0) > 0));
+  const tot = new Map(); for (const r of g.data) tot.set(r.category, (tot.get(r.category) || 0) + Number(r[f]));
+  const groups = radarGroups([...tot]); const cats = groups[idx];
+  if (!cats) { none(); return; }
+  card.querySelector('.sub').textContent = radarTitles[groups.length][idx];
   const W = el.clientWidth || 300, H = Math.max(260, Math.min(340, W)), cx = W / 2, cy = H / 2 + 4, R = Math.min(W, H) / 2 - 46;
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
   const rMax = d3.max(years, (y) => d3.max(cats, (c) => Math.max(0, val.get(y + '|' + c) || 0))) || 1;
@@ -897,12 +912,13 @@ const drawRadar = (el, cats) => {
     .on('pointermove', (pe, y) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(y)}</div>` + cats.map((cat) => `<div>${HL.esc(cat)} ${HL.esc(HL.money(val.get(y + '|' + cat) || 0))}</div>`).join('')); }).on('pointerleave', () => t.hide());
   el.style.minHeight = H + 'px';
 };
-for (const [name, cats] of Object.entries(RADAR_GROUPS)) dash.draw(name, (el) => drawRadar(el, cats));
+RADAR_NAMES.forEach((name, i) => dash.draw(name, (el) => drawRadar(el, i)));
 dash.draw('radar-legend', (el) => {
   const g = dash.data('cat_year'); if (g.status !== 'ok') { el.replaceChildren(); return; }
   const years = [...new Set(g.data.map((r) => r.y))].sort(); const c = HL.colors();
-  el.replaceChildren(...years.map((y, i) => { const sp = document.createElement('span'); sp.style.setProperty('--sw', c[i % c.length]); sp.textContent = y; sp.setAttribute('role', 'button'); sp.setAttribute('aria-pressed', String(!window.HLradarHidden.has(y)));
-    sp.onclick = () => { if (window.HLradarHidden.has(y)) window.HLradarHidden.delete(y); else window.HLradarHidden.add(y); for (const n of Object.keys(RADAR_GROUPS)) dash.draw(n); dash.draw('radar-legend'); }; return sp; }));
+  el.replaceChildren(...years.map((y, i) => { const sp = document.createElement('span'); sp.style.setProperty('--sw', c[i % c.length]); sp.textContent = y; sp.setAttribute('role', 'button'); sp.tabIndex = 0; sp.setAttribute('aria-pressed', String(!window.HLradarHidden.has(y)));
+    const flip = () => { if (window.HLradarHidden.has(y)) window.HLradarHidden.delete(y); else window.HLradarHidden.add(y); for (const n of RADAR_NAMES) dash.draw(n); dash.draw('radar-legend'); };
+    sp.onclick = flip; sp.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } }; return sp; }));
 });
 
 })();</script>
@@ -978,13 +994,14 @@ dash.draw('lm-items', (tb) => {
 const pct1 = dash.fmt.pct(1);
 const gTile = (name, field) => dash.draw(name, (el) => { const g = dash.data('goal_summary'); el.textContent = g.status === 'ok' && g.data[0] && g.data[0][field] != null ? pct1(g.data[0][field]) : '—'; });
 gTile('g-giving', 'giving_share'); gTile('g-joy', 'joy_share'); gTile('g-house', 'housing_share'); gTile('g-th', 'takehome_share');
+const goalPct = (key) => { const G = dash.data('goals'); const r = G.status === 'ok' ? G.data.find((x) => x.key === key) : null; const v = r ? Number(r.value) : NaN; return Number.isFinite(v) ? dash.fmt.pct(Number.isInteger(v * 100) ? 0 : 1)(v) : null; };
 const gDelta = (name, field, words, goodUp) => dash.draw(name, (el) => {
   const g = dash.data('goal_summary'); el.classList.remove('up', 'down');
   if (g.status !== 'ok' || !g.data[0] || g.data[0][field] == null) { el.textContent = '—'; return; }
   const v = g.data[0][field]; if (typeof v === 'string') { el.textContent = v; return; }
-  el.textContent = (v >= 0 ? '+' : '−') + dash.fmt.pct(1)(Math.abs(v)) + ' ' + words; el.classList.add((v >= 0) === goodUp ? 'up' : 'down');
+  el.textContent = (v >= 0 ? '+' : '−') + dash.fmt.pct(1)(Math.abs(v)) + ' ' + (typeof words === 'function' ? words() : words); el.classList.add((v >= 0) === goodUp ? 'up' : 'down');
 });
-gDelta('g-giving-d', 'giving_vs_floor', 'against the 10% floor', true); gDelta('g-joy-d', 'joy_vs_target', 'against the 10% target', true); gDelta('g-house-d', 'housing_vs_cap', 'against the 25% cap', false); gDelta('g-th-d', 'takehome_note', '', true);
+gDelta('g-giving-d', 'giving_vs_floor', () => 'against the ' + (goalPct('giving_floor') || '') + ' floor', true); gDelta('g-joy-d', 'joy_vs_target', () => 'against the ' + (goalPct('joy_target') || '') + ' target', true); gDelta('g-house-d', 'housing_vs_cap', () => 'against the ' + (goalPct('housing_cap') || '') + ' cap', false); gDelta('g-th-d', 'takehome_note', '', true);
 
 dash.draw('goal-lines', (el) => {
   const g = dash.data('goal_month'), G = dash.data('goals'); el.replaceChildren();
@@ -998,7 +1015,7 @@ dash.draw('goal-lines', (el) => {
   const ml = HL.margins(svg, y.ticks(5), dash.fmt.pct(0));
   const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
   svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(dash.fmt.pct(0)).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
-  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 90))).tickFormat(d3.utcFormat('%Y')).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
+  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
   const ref = (v, col, label) => { svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', col).attr('stroke-dasharray', '5 4').attr('stroke-opacity', .7); svg.append('text').attr('x', W - 8).attr('y', y(v) - 4).attr('text-anchor', 'end').attr('fill', col).text(label); };
   ref(gv('giving_floor'), c[0], 'giving floor'); ref(gv('giving_target'), c[0], 'giving target'); ref(gv('joy_target'), c[1], 'joy target'); ref(gv('housing_cap'), c[2], 'housing cap');
@@ -1025,5 +1042,6 @@ dash.draw('goal-params', (tb) => {
 
 })();</script>
 
+<script src="/static/a11y.js"></script>
 {% endblock %}
 {% block head %}<meta name="ledger-currency" content="{{ fmt.currency }}"><meta name="ledger-locale" content="{{ fmt.locale }}"><script src="/static/dash-shim.js"></script>{% endblock %}

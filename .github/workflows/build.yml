@@ -2,10 +2,10 @@
 #   test    — pytest against a postgres:16 service container (pipeline goldens, route smoke tests); the image job needs it.
 #   release — release-please reads Conventional Commits on main, keeps a "chore(main): release x.y.z" PR open with the
 #             CHANGELOG, and when that PR is merged creates the vX.Y.Z tag and GitHub Release.
-#   image   — builds the container on every push to main (tag `latest` + short sha) and, when a release was just cut,
-#             also tags it with the semver (x.y.z, x.y, x). Only this job and `release` hold write permissions.
-#   image-check — pull requests only: builds the image into the runner's Docker (no push) and fails on fixable HIGH/CRITICAL
-#             vulnerabilities found by Trivy. Read-only token.
+#   image   — builds the container for linux/amd64 and linux/arm64 on every push to main (tag `latest` + short sha) and, when a
+#             release was just cut, also tags it with the semver (x.y.z, x.y, x). Only this job and `release` hold write permissions.
+#   image-check — pull requests only: builds the amd64 image into the runner's Docker (no push; a multi-platform build cannot be
+#             loaded) and fails on fixable HIGH/CRITICAL vulnerabilities found by Trivy. Read-only token.
 # Third-party actions are pinned to a commit SHA with the version in a trailing comment; Dependabot bumps both together.
 name: build
 on:
@@ -72,6 +72,7 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Log in to GHCR
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
@@ -93,6 +94,7 @@ jobs:
         with:
           context: .
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -111,6 +113,7 @@ jobs:
         with:
           context: .
           push: false
+          platforms: linux/amd64   # single platform: `load` needs one image in the local Docker daemon
           load: true   # Trivy scans the image from the local Docker daemon
           tags: household-ledger:pr-scan
           cache-from: type=gha

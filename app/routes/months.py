@@ -25,7 +25,7 @@ def delete_month(month: str, request: Request, background: BackgroundTasks, user
     if not n:
         flash(request, f"No files are loaded for {month}.", "bad")
     elif busy:
-        flash(request, f"Deleted both files for {month}. A rebuild is already running; press Rebuild when it finishes to drop the month from the ledger.", "bad")
+        flash(request, f"Deleted both files for {month}. A rebuild is already running; it will run again to drop the month from the ledger.", "bad")
     else:
         background.add_task(run_background)
         flash(request, f"Deleted both files for {month}. Rebuilding in the background; progress is shown below.")
