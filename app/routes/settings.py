@@ -82,7 +82,7 @@ def _row_save(conn, kind: str, f: dict) -> tuple[dict, dict]:
             _unique_err(conn, "SELECT 1 FROM goals WHERE key=%s", (c["key"],), err, "key", "already a goal")
         if not err:
             if orig and orig != c["key"]:
-                conn.execute("DELETE FROM goals WHERE key=%s", (orig,))
+                conn.execute("UPDATE goals SET key=%s WHERE key=%s", (c["key"], orig))   # a rename keeps confirmed_at
             conn.execute("INSERT INTO goals (key,value,unit,label,note) VALUES (%s,%s,%s,%s,%s) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, unit=EXCLUDED.unit, label=EXCLUDED.label, note=EXCLUDED.note, updated_at=now()",
                          (c["key"], c["value"], c["unit"], c["label"], c["note"]))
     else:
@@ -136,6 +136,33 @@ def _mapping_import(conn, body: str) -> str:
     return f"{len(clean)} mapping rows"
 
 
+def _cpi_rows(body: str) -> list[tuple[str, str, str]]:
+    """Check the whole CPI CSV before anything is deleted: a header with month and cpi, at least one row, month as YYYY-MM, a positive number, no month twice."""
+    reader = csv.DictReader(io.StringIO(body.lstrip("\ufeff")))
+    if not {"month", "cpi"}.issubset(reader.fieldnames or []):
+        raise ValueError("CPI needs a header line month,cpi,source")
+    out, problems, seen = [], [], {}
+    for r in reader:
+        n = reader.line_num
+        m, raw = (r.get("month") or "").strip(), (r.get("cpi") or "").strip()
+        if not MONTH_RE.match(m):
+            problems.append(f"line {n}: month must look like YYYY-MM"); continue
+        try:
+            v = float(raw)
+            if not 0 < v < 1e6 or v != v:
+                raise ValueError
+        except ValueError:
+            problems.append(f"line {n}: cpi must be a positive number"); continue
+        if m in seen:
+            problems.append(f"line {n}: month {m} repeats line {seen[m]}"); continue
+        seen[m] = n; out.append((m, raw, (r.get("source") or "").strip()))
+    if not out and not problems:
+        problems.append("no CPI rows: the table would be emptied")
+    if problems:
+        raise ValueError(f"{len(problems)} problem{'s' * (len(problems) != 1)}: " + "; ".join(problems[:8]) + (f"; and {len(problems) - 8} more" if len(problems) > 8 else ""))
+    return out
+
+
 def _editor_body(conn, key: str) -> str:
     if key == "mapping":
         return _mapping_csv(conn)
@@ -156,9 +183,12 @@ def _save_editor(conn, key: str, body: str) -> str:
     if key == "mapping":
         return _mapping_import(conn, body)
     if key == "cpi":
-        rows = list(csv.DictReader(io.StringIO(body)))
+        rows = _cpi_rows(body)
+        base = (db.get_setting(conn, "rules", {}) or {}).get("cpi_base_month")
+        if base and base not in {r[0] for r in rows}:
+            raise ValueError(f"the pipeline rules name {base} as cpi_base_month, so that month must stay in the CPI table (change the rule first)")
         conn.execute("DELETE FROM cpi")
-        conn.cursor().executemany("INSERT INTO cpi VALUES (%s,%s,%s)", [(r["month"], r["cpi"], r.get("source", "")) for r in rows])
+        conn.cursor().executemany("INSERT INTO cpi VALUES (%s,%s,%s)", rows)
         return f"{len(rows)} CPI months"
     data = json.loads(body)
     if key in ("goals", "events"):
@@ -181,6 +211,9 @@ def _save_editor(conn, key: str, body: str) -> str:
         problems = schema.validate(data, schema.load(key))
         if problems:
             raise ValueError(f"{len(problems)} problem{'s' * (len(problems) != 1)}: " + "; ".join(problems[:8]) + (f"; and {len(problems) - 8} more" if len(problems) > 8 else ""))
+        base = data.get("cpi_base_month") if key == "rules" else None
+        if base and conn.execute("SELECT 1 FROM cpi WHERE month=%s", (base,)).fetchone() is None:
+            raise ValueError(f"cpi_base_month {base} is not a month in the CPI table")
         db.put_setting(conn, key, data)
         return key
     raise ValueError("unknown editor")

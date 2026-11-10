@@ -85,6 +85,6 @@ def test_mapping_route_needs_an_editor(client, reset_db, monkeypatch):
     from app import auth, db
     monkeypatch.setattr(auth, "settings", dataclasses.replace(auth.settings, auth_disabled=False))
     r = client.post("/upload/map", data={"item": ["Hobbit Hole Fund"], "category": ["Housing"], "flow": ["expense"]})
-    assert r.status_code in (307, 401, 403) and "/upload" != r.headers.get("location")
+    assert r.status_code in (303, 401, 403) and "/upload" != r.headers.get("location")
     with db.pool.connection() as conn:
         assert conn.execute("SELECT count(*) n FROM item_mapping WHERE item='Hobbit Hole Fund'").fetchone()["n"] == 0

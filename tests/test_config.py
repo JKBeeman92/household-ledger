@@ -7,7 +7,7 @@ import pytest
 from app import auth
 from app.config import ConfigError, Settings
 
-GOOD = dict(auth_disabled=False, i_know_auth_is_off=False, session_secret="s" * 32, oidc_issuer="https://id.example.com/", oidc_client_id="ledger",
+GOOD = dict(auth_disabled=False, i_know_auth_is_off=False, in_container=False, session_secret="s" * 32, oidc_issuer="https://id.example.com/", oidc_client_id="ledger",
             oidc_client_secret="shh", allowed_groups=("admins",), base_url="https://ledger.example.com")
 
 
@@ -46,6 +46,16 @@ def test_auth_off_needs_localhost_or_explicit_override():
         cfg(auth_disabled=True, base_url=url, session_secret="").enforce()
 
 
+def test_auth_off_in_the_container_image_always_needs_the_override():
+    """The image listens on 0.0.0.0, so a localhost BASE_URL says nothing about who can reach it."""
+    from pathlib import Path
+    dockerfile = (Path(__file__).resolve().parent.parent / "Dockerfile").read_text()
+    assert "LEDGER_IN_CONTAINER=1" in dockerfile and "0.0.0.0" in dockerfile
+    with pytest.raises(ConfigError, match="I_KNOW_AUTH_IS_OFF"):
+        cfg(auth_disabled=True, base_url="http://localhost:8010", in_container=True).enforce()
+    cfg(auth_disabled=True, base_url="http://localhost:8010", in_container=True, i_know_auth_is_off=True).enforce()
+
+
 def test_app_refuses_to_start_on_bad_config(monkeypatch):
     from fastapi.testclient import TestClient
     from app import main
@@ -72,7 +82,7 @@ def test_safe_next_keeps_local_paths():
 def test_login_redirect_encodes_next():
     from starlette.requests import Request
     from fastapi import HTTPException
-    req = Request({"type": "http", "path": "/x", "query_string": b"a=1&next=//evil", "headers": [], "session": {}})
+    req = Request({"type": "http", "method": "GET", "path": "/x", "query_string": b"a=1&next=//evil", "headers": [], "session": {}})
     with pytest.raises(HTTPException) as e:
         _anon(req)
     assert e.value.headers["Location"] == "/login?next=/x%3Fa%3D1%26next%3D//evil"

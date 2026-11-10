@@ -149,7 +149,7 @@ never upload, rebuild or change settings; a revoked or unknown token gets 401. W
 an editor, their tokens are revoked; revoke a token by hand when someone leaves and never signs in again.
 
 `AUTH_DISABLED=true` skips all of this for local development and signs you in as `dev@localhost`. Never set it in production.
-With auth on, the app refuses to start (and prints why) on a missing or short `SESSION_SECRET`, missing OIDC settings, or empty `ALLOWED_GROUPS`; `AUTH_DISABLED=true` with a non-localhost `BASE_URL` also needs `I_KNOW_AUTH_IS_OFF=1`.
+With auth on, the app refuses to start (and prints why) on a missing or short `SESSION_SECRET`, missing OIDC settings, or empty `ALLOWED_GROUPS`; `AUTH_DISABLED=true` in the container image (which listens on all interfaces) or with a non-localhost `BASE_URL` also needs `I_KNOW_AUTH_IS_OFF=1`.
 
 ## Connect an agent
 
