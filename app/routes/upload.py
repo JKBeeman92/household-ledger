@@ -22,7 +22,8 @@ def upload_page(request: Request, user=Depends(auth.require_editor)):
         build = build_status(conn)
         findings = latest_findings(conn)
         checklist = checklist_goals(conn)
-    return render(request, "upload.html", user, active="upload", findings=findings, checklist=checklist, files=files, months=months, build=build, review_enabled=bool(settings.anthropic_api_key))
+        review_ok = review.providers.is_configured(conn)
+    return render(request, "upload.html", user, active="upload", findings=findings, checklist=checklist, files=files, months=months, build=build, review_enabled=review_ok)
 
 
 @router.post("/upload")

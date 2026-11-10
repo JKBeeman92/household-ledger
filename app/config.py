@@ -29,6 +29,11 @@ class Settings:
     # month-close review
     anthropic_api_key: str = os.environ.get("ANTHROPIC_API_KEY", "")
     review_model: str = os.environ.get("REVIEW_MODEL", "claude-sonnet-5-5")
+    review_provider: str = os.environ.get("REVIEW_PROVIDER", "anthropic")   # anthropic | openai | ollama | gemini
+    review_model_explicit: str = os.environ.get("REVIEW_MODEL", "")         # the non-Anthropic providers have no default model
+    review_base_url: str = os.environ.get("REVIEW_BASE_URL", "")
+    review_api_key: str = os.environ.get("REVIEW_API_KEY", "")
+    review_max_tokens: int = int(os.environ.get("REVIEW_MAX_TOKENS", "2500"))
     seed_dir: str = os.environ.get("SEED_DIR", "")                  # household seed files (mapping, goals, rules…) read on first boot
     import_dir: str = os.environ.get("IMPORT_DIR", "")              # exports here are bulk-loaded at every start (new/changed files only)
     i_know_auth_is_off: bool = _bool("I_KNOW_AUTH_IS_OFF", False)   # allows AUTH_DISABLED=true on a non-localhost BASE_URL

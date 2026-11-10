@@ -42,7 +42,7 @@ addEventListener('DOMContentLoaded', () => {
     <form method="post" action="/review/generate">{{ csrf_field(request) }}
       <label for="month">Budget month</label>
       <select id="month" name="month">{% for m in months %}<option value="{{ m }}" {% if loop.first %}selected{% endif %}>{{ m }}</option>{% endfor %}</select>
-      <p style="margin-top:var(--space-4)"><button class="btn primary" type="submit" {% if not review_enabled %}disabled title="Set ANTHROPIC_API_KEY to enable"{% endif %}>Generate review</button>
+      <p style="margin-top:var(--space-4)"><button class="btn primary" type="submit" {% if not review_enabled %}disabled title="Configure a review provider to enable"{% endif %}>Generate review</button>
       {% if not review_enabled %}<span class="muted" style="margin-left:var(--space-2)">disabled: no API key configured</span>{% endif %}</p>
     </form>
   </div>

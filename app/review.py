@@ -6,9 +6,8 @@ transactions, merchants or notes. The prompt is stored alongside the result so a
 from __future__ import annotations
 import json
 from statistics import mean
-import httpx
 
-from .config import settings
+from . import review_providers as providers
 
 SYSTEM = (
     "You write the month-close review for a household budget dashboard. You are given the closed budget month, the month before it, "
@@ -57,25 +56,15 @@ def build_context(conn, month: str) -> dict:
 
 
 def generate(conn, month: str) -> dict:
-    if not settings.anthropic_api_key:
-        raise RuntimeError("ANTHROPIC_API_KEY is not configured")
+    prov = providers.resolve(conn)
+    if (why := prov.problem()):
+        raise RuntimeError(f"no review provider is configured: {why}")
     ctx = build_context(conn, month)
     prompt = json.dumps(ctx, separators=(",", ":"))
-    r = httpx.post(
-        "https://api.anthropic.com/v1/messages",
-        headers={"x-api-key": settings.anthropic_api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
-        json={"model": settings.review_model, "max_tokens": 2500, "system": SYSTEM, "messages": [{"role": "user", "content": prompt}]},
-        timeout=120,
-    )
-    r.raise_for_status()
-    text = "".join(b.get("text", "") for b in r.json()["content"] if b.get("type") == "text").strip()
-    if text.startswith("```"):
-        text = text.strip("`").split("\n", 1)[1].rsplit("```", 1)[0]
-    sections = json.loads(text)["sections"]
-    sections = [{"order": int(s["order"]), "heading": str(s["heading"]), "text": str(s["text"])} for s in sections]
+    sections = providers.parse_sections(prov.complete(SYSTEM, prompt))
     conn.execute(
         "INSERT INTO reviews (month, model, sections, prompt) VALUES (%s,%s,%s,%s) ON CONFLICT (month) DO UPDATE SET generated_at=now(), model=EXCLUDED.model, sections=EXCLUDED.sections, prompt=EXCLUDED.prompt",
-        (month, settings.review_model, json.dumps(sections), prompt),
+        (month, prov.label, json.dumps(sections), prompt),
     )
     rows = conn.execute("SELECT month, sections FROM reviews ORDER BY month").fetchall()
     review_rows = [dict(m=r["month"], **sec) for r in rows for sec in r["sections"]]
