@@ -28,13 +28,13 @@ EveryDollar exports ──upload──▶ Postgres (source_files, transactions, 
 ## Run it
 
 ```sh
-mkdir -p /volume2/ledger/{postgres,brand}
-cp docker-compose.yml .env.example /volume2/ledger/ && cd /volume2/ledger && mv .env.example .env
+mkdir -p /srv/ledger/{postgres,brand}
+cp docker-compose.yml .env.example /srv/ledger/ && cd /srv/ledger && mv .env.example .env
 $EDITOR .env            # passwords, BASE_URL, OIDC settings
 docker compose up -d
 ```
 
-First boot applies the migrations and seeds the reference tables. Seeds come from `SEED_DIR` (`/volume2/ledger/seed/` in the compose file)
+First boot applies the migrations and seeds the reference tables. Seeds come from `SEED_DIR` (`/srv/ledger/seed/` in the compose file)
 when a file is present there, else from the generic files in `pipeline/` (CPI table, empty mapping, goal keys with no values).
 A seed directory holds any of `item_mapping.csv`, `goals.json`, `events.json`, `rules.json`, `review.json`, `household.json`;
 after the first boot the database owns them and the Settings page is the editor. Keep your seed directory out of public repos —
@@ -42,7 +42,7 @@ it is your household's data.
 Then open the site, go to **Close a month**, and upload exports (the form takes any number of files at once, or a `.zip` of a back catalogue; drop them on the form or choose them; request bodies are capped by `MAX_UPLOAD_MB`, default 50). The rebuild runs in the
 background and the page shows its progress; only one rebuild runs at a time, even across containers.
 
-**Bulk load at start.** Anything dropped in `/volume2/ledger/import/` (mounted as `IMPORT_DIR`) is loaded when the container
+**Bulk load at start.** Anything dropped in `/srv/ledger/import/` (mounted as `IMPORT_DIR`) is loaded when the container
 starts: every EveryDollar export whose month is not yet in the database, or whose contents changed, is stored, then one rebuild
 runs. Files already loaded are skipped by checksum, so the directory can stay as a permanent archive of the raw exports.
 A failed start-up import is logged and recorded in the build log; it never stops the container from starting.
@@ -55,7 +55,9 @@ docker compose exec ledger python -m pipeline.import_exports /data/import
 ```
 
 Updates: the image is published to `ghcr.io/jkbeeman92/household-ledger` on every push to `main` (and `vX.Y.Z` tags), for both `linux/amd64` and `linux/arm64`.
-`docker compose pull && docker compose up -d`, or any image-watching updater, is the whole upgrade.
+`docker compose pull && docker compose up -d`, or any image-watching updater, is the whole upgrade. For anything you rely on, pin the
+image in `docker-compose.yml` to a release (`:X.Y.Z`, or `:0` for the latest 0.x) instead of `:latest`. A checklist for the first
+run of a new install or release is in [`docs/FIRST-RUN.md`](docs/FIRST-RUN.md).
 
 **Hardening.** The compose file runs the app with a read-only root filesystem, all Linux capabilities dropped and
 `no-new-privileges`; its only writable path is a 256 MB tmpfs on `/tmp` (rebuild working folder, upload spool). If you run the
@@ -69,11 +71,11 @@ The database holds all the state that matters; `docker-compose.yml` has an optio
 `up` does not start it) that dumps it on a schedule:
 
 ```sh
-mkdir -p /volume2/ledger/backups
+mkdir -p /srv/ledger/backups
 docker compose --profile backup up -d      # one dump now, then every BACKUP_INTERVAL_HOURS (24)
 ```
 
-Dumps land in `/volume2/ledger/backups/ledger-<UTC time>.dump` (`pg_dump -Fc`, readable only by root) and dumps older than
+Dumps land in `/srv/ledger/backups/ledger-<UTC time>.dump` (`pg_dump -Fc`, readable only by root) and dumps older than
 `BACKUP_KEEP_DAYS` (14) are deleted. Both settings are optional entries in `.env`. A failed dump is logged (`docker compose logs backup`) and
 never replaces an earlier good one. Copy that directory off the machine; a backup on the same disk is not a backup.
 
@@ -86,7 +88,7 @@ The dump is the database only. To rebuild a household from nothing you also need
 docker compose stop ledger
 docker compose exec -T ledger-db dropdb -U ledger --force ledger
 docker compose exec -T ledger-db createdb -U ledger ledger
-docker compose exec -T ledger-db pg_restore -U ledger -d ledger --no-owner < /volume2/ledger/backups/ledger-YYYYMMDDTHHMMSSZ.dump
+docker compose exec -T ledger-db pg_restore -U ledger -d ledger --no-owner < /srv/ledger/backups/ledger-YYYYMMDDTHHMMSSZ.dump
 docker compose start ledger
 ```
 

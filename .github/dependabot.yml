@@ -14,6 +14,10 @@ updates:
         patterns: ["*"]
         exclude-patterns: [fastapi, uvicorn, python-multipart, httpx]
         update-types: [minor, patch]
+    # mcp 2.x renamed FastMCP and changed other APIs, so it is a code migration, not a version bump: issue #88. Remove this when that is done.
+    ignore:
+      - dependency-name: mcp
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly, day: monday }
