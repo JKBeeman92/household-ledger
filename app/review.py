@@ -17,7 +17,7 @@ SYSTEM = (
     "no bullet points, no markdown. Every number must come from the data given; round to whole dollars. Say \"EveryDollar's view\" when "
     "quoting planned/spent and \"the ledger's view\" when quoting the cleaned totals — they differ because the ledger removes transfers. "
     "Required sections, in this order: the month in one line; against the prior month; against the trailing twelve; envelopes most over "
-    "and under plan (name plan amounts that look wrong-sized); where the standing ratios stand (giving vs floor/target, joy savings vs target, "
+    "and under plan (name plan amounts that look wrong-sized); where the standing ratios stand (giving vs floor/target, savings vs target, "
     "housing+utilities vs cap) and whether this month moved them; one trend worth watching; what to change in next month's plan. "
     "If the month had three paychecks, say so and do not read it as a raise. "
     "The data may also carry last month's review, life events and goal confirmations: say whether last month's suggested change was made, "

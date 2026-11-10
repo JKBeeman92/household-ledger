@@ -31,15 +31,15 @@
   "key": "joy_target",
   "value": 0.04,
   "unit": "share of gross",
-  "label": "Joy savings target",
-  "note": "Share of gross planned into the joy-savings group."
+  "label": "Savings target",
+  "note": "Share of gross planned into the Savings group."
  },
  {
   "key": "housing_cap",
   "value": 0.35,
   "unit": "share of take-home",
-  "label": "Housing + utilities cap",
-  "note": "Housing categories over net paychecks."
+  "label": "Housing cap",
+  "note": "Housing and utilities over net paychecks."
  },
  {
   "key": "investing_per_paycheck",

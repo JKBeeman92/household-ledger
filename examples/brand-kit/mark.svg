@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Household Ledger">
+  <rect x="4" y="4" width="56" height="56" rx="3" fill="#15110c"/>
+  <rect x="6.5" y="6.5" width="51" height="51" rx="1.5" fill="none" stroke="#a9bccb" stroke-width="1"/>
+  <path d="M32 52 V20" stroke="#a9bccb" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M32 22 C 24 22, 18 16, 18 10 C 26 10, 32 15, 32 22 Z" fill="#d9b44a"/>
+  <path d="M32 22 C 40 22, 46 16, 46 10 C 38 10, 32 15, 32 22 Z" fill="#e8c96a"/>
+  <path d="M32 34 C 24 34, 16 30, 14 23 C 23 22, 31 27, 32 34 Z" fill="#d9b44a"/>
+  <path d="M32 34 C 40 34, 48 30, 50 23 C 41 22, 33 27, 32 34 Z" fill="#e8c96a"/>
+  <path d="M14 52 H50" stroke="#8a7a66" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

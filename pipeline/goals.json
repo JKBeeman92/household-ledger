@@ -1,7 +1,7 @@
-[{"key":"gross_annual","value":null,"unit":"usd","label":"Gross salary, annual","note":"Ask for an update at every month-close."},
- {"key":"pay_frequency","value":26,"unit":"paychecks/yr","label":"Pay frequency","note":"26 = every two weeks; two months a year carry three paychecks."},
- {"key":"giving_floor","value":0.10,"unit":"share of gross","label":"Giving floor","note":"Never below this share of gross."},
- {"key":"giving_target","value":0.15,"unit":"share of gross","label":"Giving target","note":"Work toward this share of gross."},
- {"key":"joy_target","value":0.10,"unit":"share of gross","label":"Joy savings target","note":"Share of gross planned into the joy-savings group."},
- {"key":"housing_cap","value":0.25,"unit":"share of take-home","label":"Housing + utilities cap","note":"Housing categories over net paychecks."},
+[{"key":"gross_annual","value":null,"unit":"usd","label":"Gross salary, annual","note":"Household gross pay before tax; the giving and savings shares are of this."},
+ {"key":"pay_frequency","value":null,"unit":"paychecks/yr","label":"Pay frequency","note":"Paychecks per year, for example 12, 24, 26 or 52."},
+ {"key":"giving_floor","value":null,"unit":"share of gross","label":"Giving floor","note":"The least share of gross to give."},
+ {"key":"giving_target","value":null,"unit":"share of gross","label":"Giving target","note":"The share of gross to work toward."},
+ {"key":"joy_target","value":null,"unit":"share of gross","label":"Savings target","note":"Share of gross planned into the savings groups named in the rules."},
+ {"key":"housing_cap","value":null,"unit":"share of take-home","label":"Housing cap","note":"Housing categories (from the rules) over net paychecks."},
  {"key":"investing_per_paycheck","value":null,"unit":"usd","label":"Investing per paycheck","note":"Deposited outside the budget app; not in the exports."}]

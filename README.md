@@ -121,25 +121,37 @@ uvicorn app.main:app --port 8010
 Seeding only happens into empty tables, so start from an empty database. `python -I examples/sample-household/generate.py` rebuilds
 the files byte for byte (fixed seed, no clock); everything in them is invented.
 
-## Sign-in (Authentik)
+## Sign-in (any OIDC provider)
 
-The app is its own OIDC client — no proxy outpost in front of it.
+The app is its own OIDC client — no authenticating proxy in front of it. Any OpenID Connect provider with a discovery document
+works (Authentik, Keycloak, Authelia, Zitadel, Entra ID, …) as long as it can:
+
+- register a confidential client using the authorization-code flow, with redirect URIs `https://ledger.example.com/auth/callback`
+  and `https://ledger.example.com/signed-out` (the `post_logout_redirect_uri` that **Sign out** sends);
+- put the user's groups in a `groups` claim, in the ID token and from userinfo;
+- issue a refresh token (the app asks for `offline_access`), which the group re-check below uses.
+
+Put the issuer URL (the one with `/.well-known/openid-configuration` under it) and the client ID/secret in `.env`, and set
+`ALLOWED_GROUPS` to the group(s) that may use the ledger. **`ALLOWED_GROUPS` is required**: unset or empty, the app refuses to
+start, rather than admitting everyone the provider authenticates.
+
+**Example: Authentik.**
 
 1. Authentik → Applications → Providers → **Create** → OAuth2/OpenID Provider. Confidential client, authorization-code flow,
    redirect URI `https://ledger.example.com/auth/callback`, signing key selected, scopes `openid email profile` plus the
    default `groups` mapping (the app reads the `groups` claim).
    Also select the `offline_access` scope (the app needs a refresh token for the group re-check below) and add
    `https://ledger.example.com/signed-out` as a redirect URI: it is the `post_logout_redirect_uri` that **Sign out** sends.
-2. Applications → **Create** `ledger`, bound to that provider. Restrict with a policy binding on the `admins` group (or set
-   `ALLOWED_GROUPS` to whichever group you use — the app enforces this too).
+2. Applications → **Create** `ledger`, bound to that provider. Restrict it with a policy binding on the group you will put in
+   `ALLOWED_GROUPS`, for example `ledger-users` (the app enforces it too).
 3. Put the provider's client ID/secret and the issuer URL (`https://auth.example.com/application/o/ledger/`) in `.env`.
 
 **Viewers and editors.** Everyone admitted by `ALLOWED_GROUPS` can see the dashboard and `/api/*`. Set `EDITOR_GROUPS` (default: same as `ALLOWED_GROUPS`) to the subset
 that may also upload, rebuild, edit settings and generate reviews; other members get no nav links for those and a 403 page if they open them. Role changes at the IdP apply at the next group re-check.
 
 Sign-in lasts `SESSION_MAX_AGE` (12 h). Every `GROUP_RECHECK_SECONDS` (5 min) the app refreshes the token and reads `groups`
-again, so removing someone from the group, or disabling them in Authentik, signs them out within that interval; if Authentik
-cannot be reached for the re-check, the session also ends. **Sign out** ends the Authentik session too (`id_token_hint`).
+again, so removing someone from the group, or disabling them at the provider, signs them out within that interval; if the provider
+cannot be reached for the re-check, the session also ends. **Sign out** ends the provider session too (`id_token_hint`), where the provider supports RP-initiated logout.
 The tokens stay in the database (`auth_sessions`); the cookie holds only a random id. Upgrading signs everyone out once.
 A theme in `BRAND_DIR` that loads fonts or images from a host other than Google Fonts needs that host in `CSP_STYLE_SRC` /
 `CSP_FONT_SRC` / `CSP_IMG_SRC` (see `.env.example`); otherwise the browser's Content-Security-Policy blocks it.
@@ -151,7 +163,7 @@ never upload, rebuild or change settings; a revoked or unknown token gets 401. W
 an editor, their tokens are revoked; revoke a token by hand when someone leaves and never signs in again.
 
 `AUTH_DISABLED=true` skips all of this for local development and signs you in as `dev@localhost`. Never set it in production.
-With auth on, the app refuses to start (and prints why) on a missing or short `SESSION_SECRET`, missing OIDC settings, or empty `ALLOWED_GROUPS`; `AUTH_DISABLED=true` in the container image (which listens on all interfaces) or with a non-localhost `BASE_URL` also needs `I_KNOW_AUTH_IS_OFF=1`.
+With auth on, the app refuses to start (and prints why) on a missing or short `SESSION_SECRET`, missing OIDC settings, or unset or empty `ALLOWED_GROUPS`; `AUTH_DISABLED=true` in the container image (which listens on all interfaces) or with a non-localhost `BASE_URL` also needs `I_KNOW_AUTH_IS_OFF=1`.
 
 ## Connect an agent
 

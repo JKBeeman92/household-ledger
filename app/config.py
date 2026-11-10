@@ -19,11 +19,11 @@ class Settings:
     base_url: str = os.environ.get("BASE_URL", "http://localhost:8010").rstrip("/")
     port: int = int(os.environ.get("PORT", "8010"))
     session_secret: str = os.environ.get("SESSION_SECRET", "")
-    # OIDC against Authentik (or any provider with a discovery document)
+    # OIDC against any provider with a discovery document (Authentik, Keycloak, Authelia, Entra ID, ...)
     oidc_issuer: str = os.environ.get("OIDC_ISSUER", "")           # e.g. https://auth.example.com/application/o/ledger/
     oidc_client_id: str = os.environ.get("OIDC_CLIENT_ID", "")
     oidc_client_secret: str = os.environ.get("OIDC_CLIENT_SECRET", "")
-    allowed_groups: tuple[str, ...] = tuple(g.strip() for g in os.environ.get("ALLOWED_GROUPS", "admins").split(",") if g.strip())
+    allowed_groups: tuple[str, ...] = tuple(g.strip() for g in os.environ.get("ALLOWED_GROUPS", "").split(",") if g.strip())
     editor_groups: tuple[str, ...] = tuple(g.strip() for g in os.environ.get("EDITOR_GROUPS", "").split(",") if g.strip())   # empty = every allowed group edits
     auth_disabled: bool = _bool("AUTH_DISABLED", False)            # local development only
     # month-close review
@@ -74,7 +74,7 @@ class Settings:
         if not 0 < self.group_recheck_seconds <= self.session_max_age:
             problems.append("GROUP_RECHECK_SECONDS must be positive and no longer than SESSION_MAX_AGE")
         if not self.allowed_groups:
-            problems.append("ALLOWED_GROUPS must list at least one group: empty would admit every account the identity provider authenticates")
+            problems.append("ALLOWED_GROUPS must be set to at least one group: unset or empty would admit every account the identity provider authenticates")
         return problems
 
     def enforce(self) -> None:
