@@ -1,0 +1,41 @@
+/* Example brand kit, "War of the Ring": the light/dark toggle changes sides. Light mode is the West, the white stone of
+   Minas Tirith, the green and gold of Rohan; dark mode is the Shadow, the soot of Mordor, the fire of Orodruin and the iron of
+   Isengard. Each side has its own login backdrop (--login-backdrop is set per mode); the mark, the Ring, belongs to both.
+   Marcellus SC for headings, Alegreya for text, Fira Mono for figures. All art is original SVG; nothing is taken from the films
+   or from any edition of the books. Copy this directory into BRAND_DIR (docs/BRANDING.md). tests/test_contrast.py checks it
+   against the same WCAG pairs as the built-in theme. */
+@import url("https://fonts.googleapis.com/css2?family=Marcellus+SC&family=Alegreya:wght@400;600;700&family=Fira+Mono&display=swap");
+
+:root {   /* the Shadow: Mordor and Isengard */
+  --surface-000: #0b0908; --surface-100: #12100e; --surface-200: #1a1613; --surface-300: #251f1a;
+  --line: #3a2f27; --line-strong: #8c7d70;
+  --ink: #f1e8de; --ink-muted: #c7b9aa; --ink-faint: #a09282;
+  --accent: #f07a2e; --accent-hover: #ff9a55; --accent-soft: #3d1c0a; --on-accent: #140b05;
+  --accent-2: #c9ced4; --accent-2-deep: #8a939c; --on-accent-2: #12100e; --accent-2-text: var(--accent-2);
+  --focus: #ffb070;
+  --success: #a9c98a; --warning: #f0c25a; --danger: #ff7a62; --info: #a8b7c4; --on-status: #12100e;
+  --series-1: #f07a2e; --series-2: #c9ced4; --series-3: #e8c95a; --series-4: #d8604a;
+  --series-5: #a8b7c4; --series-6: #9fb57f; --series-7: #c08ad8; --series-8: #9a8c80;
+  --chart-grid: #2c241e; --chart-axis: #5e5045; --chart-reference: #c9ced4;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.6); --shadow-md: 0 4px 0 rgba(0,0,0,.35), 0 14px 30px rgba(0,0,0,.5);
+  --shadow-glow: 0 0 0 1px rgba(240,122,46,.55), 0 0 26px rgba(240,122,46,.28);
+  --login-backdrop: url('/brand/backdrop-dark.svg'); --login-overlay: linear-gradient(rgba(11,9,8,.1), rgba(11,9,8,.55));
+  --font-display: "Marcellus SC", "Trajan Pro", Georgia, serif; --font-sans: "Alegreya", Georgia, serif; --font-mono: "Fira Mono", Consolas, monospace;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
+  --radius-sm: 2px; --radius-md: 3px; --radius-lg: 6px; --radius-full: 999px;
+}
+:root[data-theme="light"] {   /* the West: Gondor and Rohan */
+  --surface-000: #ffffff; --surface-100: #f6f4ee; --surface-200: #fdfcf8; --surface-300: #ebe7dc;
+  --line: #dcd6c8; --line-strong: #7d7766;
+  --ink: #1b241e; --ink-muted: #46524a; --ink-faint: #56625a;
+  --accent: #2f6b3a; --accent-hover: #24552d; --accent-soft: #e1eedf; --on-accent: #ffffff;
+  --accent-2: #a8801c; --accent-2-deep: #7a5c0f; --on-accent-2: #ffffff; --accent-2-text: var(--accent-2-deep);
+  --focus: #2f6b3a;
+  --success: #2f6b3a; --warning: #7f5f08; --danger: #a83a28; --info: #34506a; --on-status: #ffffff;
+  --series-1: #2f6b3a; --series-2: #a8801c; --series-3: #34506a; --series-4: #a83a28;
+  --series-5: #6a5a9c; --series-6: #2d7a77; --series-7: #8a6a3a; --series-8: #777b80;
+  --chart-grid: #e8e4d9; --chart-axis: #9c9684; --chart-reference: #a8801c;
+  --shadow-sm: 0 1px 2px rgba(27,36,30,.08); --shadow-md: 0 4px 0 rgba(27,36,30,.04), 0 12px 26px rgba(27,36,30,.1);
+  --shadow-glow: 0 0 0 1px rgba(47,107,58,.4), 0 0 20px rgba(168,128,28,.18);
+  --login-backdrop: url('/brand/backdrop-light.svg'); --login-overlay: linear-gradient(rgba(246,244,238,.25), rgba(246,244,238,.75));
+}
