@@ -55,7 +55,7 @@ def init() -> None:
         seed_dir = Path(settings.seed_dir) if settings.seed_dir else PIPELINE_DIR
         seed_reference_tables(conn, seed_dir)
         if conn.execute("SELECT 1 FROM settings WHERE key='household'").fetchone() is None:
-            hh = {"name": "Household", "title": "Household Ledger", "theme": "beeman", "currency": "USD", "locale": "en-US"}
+            hh = {"name": "Household", "title": "Household Ledger", "theme": "verdigris", "currency": "USD", "locale": "en-US"}
             p = seed_dir / "household.json"
             if not p.exists():
                 p = PIPELINE_DIR / "household.json"

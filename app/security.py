@@ -3,7 +3,7 @@
 Inline <script> blocks run only with `nonce="{{ csp_nonce(request) }}"`; scripts from /static are 'self'. style-src allows
 'unsafe-inline' because the templates and the dashboard's tooltips use style attributes (so it must not carry a nonce, which
 would switch 'unsafe-inline' off). Theme web fonts are the one external need: CSP_STYLE_SRC / CSP_FONT_SRC / CSP_IMG_SRC add
-sources for a BRAND_DIR theme; the defaults cover Google Fonts, which both shipped themes @import."""
+sources for a BRAND_DIR theme; the defaults cover Google Fonts, which the shipped theme @imports."""
 from __future__ import annotations
 import secrets
 

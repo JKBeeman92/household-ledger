@@ -40,7 +40,7 @@ class Settings:
     in_container: bool = _bool("LEDGER_IN_CONTAINER", False)        # set by the Dockerfile: the image listens on 0.0.0.0
     session_max_age: int = int(os.environ.get("SESSION_MAX_AGE", str(12 * 3600)))       # seconds from sign-in; never extended
     group_recheck_seconds: int = int(os.environ.get("GROUP_RECHECK_SECONDS", "300"))    # how soon a removed group member is locked out
-    # extra Content-Security-Policy sources (space-separated) for a BRAND_DIR theme; defaults cover the shipped themes' Google Fonts
+    # extra Content-Security-Policy sources (space-separated) for a BRAND_DIR theme; defaults cover the shipped theme's Google Fonts
     csp_style_src: str = os.environ.get("CSP_STYLE_SRC", "https://fonts.googleapis.com")
     csp_font_src: str = os.environ.get("CSP_FONT_SRC", "https://fonts.gstatic.com")
     csp_img_src: str = os.environ.get("CSP_IMG_SRC", "")

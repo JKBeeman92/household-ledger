@@ -1,4 +1,4 @@
-"""WCAG contrast of the token pairs the app actually draws (issue #15), for both shipped themes in both modes.
+"""WCAG contrast of the token pairs the app actually draws (issue #15), for the shipped theme in both modes.
 Text pairs need 4.5:1 (small text); borders, focus rings and chart marks need 3:1. Add a pair here when app.css or the dashboard
 starts using a new combination. Ratios are computed from the theme files themselves, so a theme edit that regresses fails here."""
 from __future__ import annotations
@@ -8,7 +8,7 @@ import pytest
 
 from conftest import ROOT
 
-THEMES = {"verdigris": ROOT / "app" / "web" / "static" / "brand" / "theme.css", "beeman": ROOT / "examples" / "brand-beeman" / "theme.css"}
+THEMES = {"verdigris": ROOT / "app" / "web" / "static" / "brand" / "theme.css"}
 
 TEXT = 4.5
 GRAPHIC = 3.0

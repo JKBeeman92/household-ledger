@@ -29,12 +29,13 @@ The Content-Security-Policy allows Google Fonts by default; fonts, stylesheets o
 Light/dark: the header button toggles `data-theme="light"` on `<html>` and remembers the choice in the browser; with no stored
 choice the OS preference is used. A theme must therefore define both blocks.
 
-## Example: the Beeman kit
+## Installing a kit
 
-`examples/brand-beeman/` is a complete override (Cinzel/Source Sans, pine and bronze, the moonlit-valley login). Install it with
+Put your files (a `theme.css`, and optionally a mark and images) in the brand directory:
 
 ```sh
-cp examples/brand-beeman/* "$LEDGER_DATA"/brand/
+cp my-brand/* "$LEDGER_DATA"/brand/
 ```
 
-and restart nothing — the files are read on each request.
+and restart nothing — the files are read on each request. The built-in theme, `app/web/static/brand/theme.css`, is the reference
+for every token a kit has to define.

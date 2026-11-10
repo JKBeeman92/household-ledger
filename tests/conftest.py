@@ -78,7 +78,7 @@ def reset_db(client):
         with db.pool.connection() as conn:
             conn.execute(f"TRUNCATE {TABLES} RESTART IDENTITY CASCADE")
             seed_reference_tables(conn, refs)
-            db.put_setting(conn, "household", {"name": "Household", "title": "Household Ledger", "theme": "beeman", "currency": "USD"})
+            db.put_setting(conn, "household", {"name": "Household", "title": "Household Ledger", "theme": "verdigris", "currency": "USD"})
     reset()
     return reset
 

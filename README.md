@@ -189,7 +189,7 @@ export DATABASE_URL=postgresql://ledger:ledger@localhost:5432/ledger AUTH_DISABL
 uvicorn app.main:app --reload --port 8010
 ```
 
-Layout: `app/` (FastAPI, templates, static), `pipeline/` (the scripts and the seed data), `db/migrations/` (numbered SQL, applied at start), `examples/brand-beeman/`.
+Layout: `app/` (FastAPI, templates, static), `pipeline/` (the scripts and the seed data), `db/migrations/` (numbered SQL, applied at start), `examples/sample-household/` (synthetic data for a first run).
 
 ## Privacy
 

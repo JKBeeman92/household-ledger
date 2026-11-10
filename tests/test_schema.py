@@ -58,7 +58,7 @@ def test_nested_errors_name_the_key_and_regexes_are_compiled():
 
 def test_household_schema():
     s = schema.load("household")
-    assert schema.validate({"name": "Bag End", "title": "Bag End Ledger", "currency": "USD", "theme": "beeman"}, s) == []
+    assert schema.validate({"name": "Bag End", "title": "Bag End Ledger", "currency": "USD", "theme": "verdigris"}, s) == []
     errs = schema.validate({"name": "", "currency": "usd", "colour": 1}, s)
     assert any(e.startswith("name: must not be empty") for e in errs) and "title: required" in errs
     assert any(e.startswith("currency:") for e in errs) and any(e.startswith("colour: unknown key") for e in errs)
