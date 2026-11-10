@@ -43,6 +43,7 @@ class Settings:
     csp_style_src: str = os.environ.get("CSP_STYLE_SRC", "https://fonts.googleapis.com")
     csp_font_src: str = os.environ.get("CSP_FONT_SRC", "https://fonts.gstatic.com")
     csp_img_src: str = os.environ.get("CSP_IMG_SRC", "")
+    log_format: str = os.environ.get("LOG_FORMAT", "")             # "json" for one JSON object per line with a request id; default is readable
 
     @property
     def editors(self) -> tuple[str, ...]:

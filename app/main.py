@@ -15,9 +15,10 @@ from .config import settings
 from . import db, csrf
 from .security import SecurityHeaders
 from .web_helpers import ROOT, flash, render
-from .routes import brand, auth, pages, upload, settings as settings_routes, api, build, findings, schemas, cpi, reviews, review_audit, review_prompt
-from .routes import months, checklist, brand, auth, pages, upload, settings as settings_routes, api, schemas, cpi, reviews, review_audit, review_prompt
+from .logging_setup import configure as configure_logging, RequestIdMiddleware
+from .routes import brand, auth, pages, upload, settings as settings_routes, api, build, findings, months, checklist, schemas, cpi, reviews, review_audit, review_prompt, ops
 
+configure_logging(settings.log_format)
 log = logging.getLogger("ledger")
 
 
@@ -36,9 +37,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Household Ledger", docs_url=None, redoc_url=None, lifespan=lifespan, dependencies=[Depends(csrf.protect), Depends(revalidate)])
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret or secrets.token_hex(32), https_only=settings.base_url.startswith("https"), same_site="lax", max_age=settings.session_max_age)
 app.add_middleware(GZipMiddleware, minimum_size=1024)
-app.add_middleware(SecurityHeaders)   # outermost: CSP nonce + security headers on every response
+app.add_middleware(SecurityHeaders)   # CSP nonce + security headers on every response
+app.add_middleware(RequestIdMiddleware)   # outermost, so every log line and response carries the request id
 app.mount("/static", StaticFiles(directory=ROOT / "web" / "static"), name="static")
-for module in (brand, auth, pages, upload, settings_routes, api, build, findings, months, checklist, schemas, cpi, reviews, review_audit, review_prompt):
+for module in (brand, auth, pages, upload, settings_routes, api, build, findings, months, checklist, schemas, cpi, reviews, review_audit, review_prompt, ops):
     app.include_router(module.router)
 
 

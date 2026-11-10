@@ -22,7 +22,7 @@ def auth_on(monkeypatch):
 
 def test_healthz(client):
     r = client.get("/healthz")
-    assert r.status_code == 200 and r.json() == {"ok": True}
+    assert r.status_code == 200 and r.json()["ok"] is True
 
 
 def test_dashboard_page(client, reset_db):
