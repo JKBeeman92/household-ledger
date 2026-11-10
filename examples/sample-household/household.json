@@ -1,5 +1,6 @@
 {
  "name": "Sample Household",
  "title": "Sample Household Ledger",
- "currency": "USD"
+ "currency": "USD",
+ "locale": "en-US"
 }

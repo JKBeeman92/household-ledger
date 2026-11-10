@@ -14,7 +14,7 @@ EDITORS = {
     "mapping": {"title": "Item mapping", "help": "One row per EveryDollar item: Item, CanonicalItem, Category, Flow, Note. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every EveryDollar item name must appear here or the build reports it UNMAPPED."},
     "goals": {"title": "Goals", "help": "One row per goal: key, label, value, unit, note. The Goals tab and the month-close review read these. value may be null when not yet known."},
     "events": {"title": "Life events", "help": "One row per event: month (YYYY-MM) and label. Drawn as markers on the timeline charts."},
-    "cpi": {"title": "CPI index", "help": "CSV: month, cpi, source. Used for the real-dollars toggle. Append the newest month from FRED CPIAUCSL; mark estimates in source."},
+    "cpi": {"title": "CPI index", "help": "CSV: month, cpi, source. A price index (consumer prices, any base) used for the real-amounts toggle. US households: CPI-U, appending the newest month from FRED CPIAUCSL; mark estimates in source."},
     "rules": {"title": "Pipeline rules", "help": "JSON object of household-specific classification rules. Unknown keys and invalid regular expressions are rejected on save."},
     "household": {"title": "Household", "help": "JSON object: name, title, currency, theme. Shown in the header and page titles."},
 }

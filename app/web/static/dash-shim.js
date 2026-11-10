@@ -24,7 +24,25 @@
   };
   const invalidate = () => { for (const c of calcs.values()) c.dirty = true; };
 
+  // Currency and locale come from the household setting, delivered once in <meta name="ledger-currency|ledger-locale">.
+  const meta = (n, d) => { const e = document.querySelector(`meta[name="ledger-${n}"]`); return (e && e.content) || d; };
+  const currency = meta('currency', 'USD'), locale = meta('locale', 'en-US');
+  const nf = (o) => { try { return new Intl.NumberFormat(locale, o); } catch (e) { return new Intl.NumberFormat('en-US', o); } };
+  const cur = (o) => { try { return nf({ style: 'currency', currency, ...o }); } catch (e) { return nf({ style: 'currency', currency: 'USD', ...o }); } };
+  const fixed = (f) => f.format.bind(f);
+  const dateFmt = (() => { try { return new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric', timeZone: 'UTC' }); } catch (e) { return new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }); } })();
+  const fmt = {
+    money0: fixed(cur({ minimumFractionDigits: 0, maximumFractionDigits: 0 })),
+    money2: fixed(cur({})),
+    compact: fixed(cur({ notation: 'compact', maximumFractionDigits: 1 })),
+    num: fixed(nf({})),
+    dec: (n) => fixed(nf({ minimumFractionDigits: n, maximumFractionDigits: n })),
+    pct: (n, signed) => fixed(nf({ style: 'percent', minimumFractionDigits: n, maximumFractionDigits: n, signDisplay: signed ? 'always' : 'auto' })),
+    month: (d) => dateFmt.format(d),
+  };
+
   const dash = {
+    currency, locale, fmt,
     get colors() { return readColors(); },
     data(id) {
       if (status !== 'ok') return { status, data: [], columns: [], meta: [] };

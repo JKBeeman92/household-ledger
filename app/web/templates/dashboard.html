@@ -84,8 +84,8 @@
 
   <div class="controls">
     <div class="seg" role="group" aria-label="Dollar basis">
-      <button type="button" class="dollars" data-dollars="nominal" aria-pressed="true">Nominal $</button>
-      <button type="button" class="dollars" data-dollars="real" aria-pressed="false">{{ span.cpi_base_short }} $ (CPI-adjusted)</button>
+      <button type="button" class="dollars" data-dollars="nominal" aria-pressed="true">Nominal</button>
+      <button type="button" class="dollars" data-dollars="real" aria-pressed="false">{{ span.cpi_base_short }} prices (price-index adjusted)</button>
     </div>
     <div class="tabs" role="tablist">
       <button type="button" class="tab" data-tab="overview" role="tab" aria-selected="true">Overview</button>
@@ -109,10 +109,10 @@
       <div class="card tile"><div class="k">Net kept, last 12 months</div><div class="v" data-draw="t-net-n" data-source="last12" data-field="net">—</div><div class="d" data-draw="d-sr-n" data-source="last12" data-field="savings_rate">—</div></div>
     </div>
     <div class="tiles basis-real" hidden>
-      <div class="card tile"><div class="k">Income, last 12 months ({{ span.cpi_base_short }} $)</div><div class="v" data-draw="t-inc-r" data-source="last12_real" data-field="income">—</div><div class="d" data-draw="d-inc-r" data-source="last12_real" data-field="income_delta">—</div></div>
-      <div class="card tile"><div class="k">Living spend, last 12 months ({{ span.cpi_base_short }} $)</div><div class="v" data-draw="t-sp-r" data-source="last12_real" data-field="spend">—</div><div class="d" data-draw="d-sp-r" data-source="last12_real" data-field="spend_delta">—</div></div>
-      <div class="card tile"><div class="k">Debt payments, last 12 months ({{ span.cpi_base_short }} $)</div><div class="v" data-draw="t-db-r" data-source="last12_real" data-field="debt">—</div><div class="d" data-draw="d-db-r" data-source="last12_real" data-field="debt_delta">—</div></div>
-      <div class="card tile"><div class="k">Net kept, last 12 months ({{ span.cpi_base_short }} $)</div><div class="v" data-draw="t-net-r" data-source="last12_real" data-field="net">—</div><div class="d" data-draw="d-sr-r" data-source="last12_real" data-field="savings_rate">—</div></div>
+      <div class="card tile"><div class="k">Income, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-inc-r" data-source="last12_real" data-field="income">—</div><div class="d" data-draw="d-inc-r" data-source="last12_real" data-field="income_delta">—</div></div>
+      <div class="card tile"><div class="k">Living spend, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-sp-r" data-source="last12_real" data-field="spend">—</div><div class="d" data-draw="d-sp-r" data-source="last12_real" data-field="spend_delta">—</div></div>
+      <div class="card tile"><div class="k">Debt payments, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-db-r" data-source="last12_real" data-field="debt">—</div><div class="d" data-draw="d-db-r" data-source="last12_real" data-field="debt_delta">—</div></div>
+      <div class="card tile"><div class="k">Net kept, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-net-r" data-source="last12_real" data-field="net">—</div><div class="d" data-draw="d-sr-r" data-source="last12_real" data-field="savings_rate">—</div></div>
     </div>
 
     <div class="card">
@@ -304,8 +304,8 @@
     <p class="intro">The year-end view: what came in, what went out, what was kept, and the debts that were paid down and taken on.</p>
     <div class="card">
       <h2 id="yearly-table">Year by year</h2>
-      <p class="note">Savings rate is net divided by income. Real columns restate each month in {{ span.cpi_base_long }} dollars using CPI-U; see Method.</p>
-      <details class="how"><summary>How to read this</summary><p>Savings rate is net divided by income: positive means the year added to savings, negative means it drew them down. Real columns restate every month in {{ span.cpi_base_long }} dollars; the Method tab explains the index used.</p></details>
+      <p class="note">Savings rate is net divided by income. Real columns restate each month in {{ span.cpi_base_long }} prices using the price index; see Method.</p>
+      <details class="how"><summary>How to read this</summary><p>Savings rate is net divided by income: positive means the year added to savings, negative means it drew them down. Real columns restate every month in {{ span.cpi_base_long }} prices; the Method tab explains the index used.</p></details>
       <div class="tbl"><table data-source="yearly" data-row-key="y"><thead><tr>
         <th data-field="y">Year</th><th data-field="months">Months</th><th data-field="income">Income</th><th data-field="spend">Living spend</th><th data-field="debt">Debt paid</th><th data-field="net">Net</th><th data-field="savings_rate">Savings rate</th><th data-field="income_real">Income (real)</th><th data-field="spend_real">Spend (real)</th><th data-field="net_real">Net (real)</th>
       </tr></thead><tbody data-draw="yearly"></tbody></table></div>
@@ -360,8 +360,8 @@
       <h2>How to read this</h2>
       <h3>Budget month, not calendar month</h3>
       <p>EveryDollar files transactions into budget months, and about one row in thirteen sits in a different budget month than its calendar date. Everything here uses the budget month, so a late-January rent payment filed into February stays in February, matching what the budget showed at the time.</p>
-      <h3>Nominal versus real dollars</h3>
-      <p>Nominal is what the bank saw. Real restates each month's amounts in {{ span.cpi_base_long }} dollars by multiplying by the ratio of {{ span.cpi_base_long }} CPI-U to that month's CPI-U (all urban consumers, all items, seasonally adjusted, series CPIAUCSL from FRED). Use real to compare lifestyle across years; use nominal to reconcile against statements. <span data-draw="cpi-note" data-source="cpi" data-base="{{ span.cpi_base_iso }}" data-first="{{ span.first_month or '' }}"></span></p>
+      <h3>Nominal versus real amounts</h3>
+      <p>Nominal is what the bank saw. Real restates each month's amounts in {{ span.cpi_base_long }} prices by multiplying by the ratio of the {{ span.cpi_base_long }} price index to that month's price index. For US households the documented source is CPI-U (all urban consumers, all items, seasonally adjusted, series CPIAUCSL from FRED); other countries use their own consumer price index, entered on the Settings page. Use real to compare lifestyle across years; use nominal to reconcile against statements. <span data-draw="cpi-note" data-source="cpi" data-base="{{ span.cpi_base_iso }}" data-first="{{ span.first_month or '' }}"></span></p>
       <h3>What was taken out</h3>
       <p>Transfers between envelopes appear in EveryDollar as a negative row in one item and a positive row in another, so summing them would inflate both income and spend. They are recognised by merchant text, by item name and by amount pairing, and removed. What follows is generated from the data loaded, so it lists only what this household's rules actually removed.</p>
       <div id="method-exclusions" data-draw="method-exclusions" data-source="exclusions verify"></div>
@@ -383,15 +383,15 @@
         dash.draw('reconciliation-note', (el) => { const d = rows(); if (d) el.textContent = d.length ? d.length + ' envelope' + (d.length === 1 ? '' : 's') + ' do not reconcile. Fix or re-upload the month, then rebuild.' : 'All envelopes reconcile: every month\'s transactions sum to the budget\'s Spent.'; });
         dash.draw('reconciliation', (tb) => {
           const d = rows(); if (!d) { tb.replaceChildren(); return; }
-          HL.fillTable(tb, d, [(r) => r.m, (r) => r.item, (r) => r.txn_sum == null ? '—' : d3.format(',.2f')(r.txn_sum), (r) => r.spent == null ? '—' : d3.format(',.2f')(r.spent), (r) => d3.format('+,.2f')(r.delta), (r) => r.status]);
+          HL.fillTable(tb, d, [(r) => r.m, (r) => r.item, (r) => r.txn_sum == null ? '—' : dash.fmt.dec(2)(r.txn_sum), (r) => r.spent == null ? '—' : dash.fmt.dec(2)(r.spent), (r) => (r.delta > 0 ? '+' : '') + dash.fmt.dec(2)(r.delta), (r) => r.status]);
         });
       })();</script>
     </div>
     <div class="grid">
       <div class="card">
-        <h2 id="cpi-table">CPI-U used</h2>
+        <h2 id="cpi-table">Price index used</h2>
         <p class="note">Filled months are marked in the Source column and shown in the warning color.</p>
-        <div class="tbl"><table data-source="cpi" data-row-key="month"><thead><tr><th data-field="month">Month</th><th data-field="cpi">CPI-U</th><th data-field="source">Source</th></tr></thead><tbody data-draw="cpi"></tbody></table></div>
+        <div class="tbl"><table data-source="cpi" data-row-key="month"><thead><tr><th data-field="month">Month</th><th data-field="cpi">Price index</th><th data-field="source">Source</th></tr></thead><tbody data-draw="cpi"></tbody></table></div>
       </div>
       <div class="card" id="cpi-estimated">
         <h2>Estimated CPI months</h2>
@@ -405,21 +405,20 @@
       </div>
     </div>
   </section>
-  <p class="foot">Built from EveryDollar Transactions and BudgetItems exports, one pair per budget month{% if span.has_data %}, {{ span.first_month }} through {{ span.last_month }}{% endif %}. Figures are recomputed from the attached files each time the page opens; the Sources panel shows the file behind any number. Real dollars use CPI-U with {{ span.cpi_base_long }} as the base month.</p>
+  <p class="foot">Built from EveryDollar Transactions and BudgetItems exports, one pair per budget month{% if span.has_data %}, {{ span.first_month }} through {{ span.last_month }}{% endif %}. Figures are recomputed from the attached files each time the page opens; the Sources panel shows the file behind any number. Real figures use the price index with {{ span.cpi_base_long }} as the base month.</p>
 </div>
 
 <script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- shared helpers (on window: scripts run in separate scopes) ----
 window.HL = (() => {
-  const usd0 = d3.format('$,.0f');
-  const compact = new Intl.NumberFormat('en', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 });
-  const pct = d3.format('+.1%');
-  const money = (v) => (v == null || isNaN(v)) ? '—' : (Math.abs(v) >= 10000 ? compact.format(v) : usd0(v));
+  const usd0 = dash.fmt.money0;  // currency and locale come from the household setting (see dash-shim.js)
+  const pct = dash.fmt.pct(1, true);
+  const money = (v) => (v == null || isNaN(v)) ? '—' : (Math.abs(v) >= 10000 ? dash.fmt.compact(v) : usd0(v));
   const basis = () => (dash.params().dollars === 'real' ? 'real' : 'nominal');
   const fld = (name) => basis() === 'real' ? name + '_real' : name;
   const parseM = (m) => new Date(m + '-01T00:00:00Z');
-  const fmtM = d3.utcFormat('%b %Y');
+  const fmtM = dash.fmt.month;
   const colors = () => dash.colors;
   const tip = (box) => {
     let el = box.querySelector('.tip');
@@ -493,7 +492,7 @@ const last12 = (monthly, sfx) => {
             from: cur[0] ? cur[0].m : null, to: cur.length ? cur[cur.length - 1].m : null }];
 };
 dash.calc('last12', { inputs: ['monthly'], title: 'Last 12 months, nominal', description: 'Sums of income, living spend, debt and net over the last twelve budget months, with the change against the twelve before.', fn: (monthly) => last12(monthly, '') });
-dash.calc('last12_real', { inputs: ['monthly'], title: 'Last 12 months, real', description: 'Same as last12 on the CPI-adjusted columns ({{ span.cpi_base_long }} dollars).', fn: (monthly) => last12(monthly, '_real') });
+dash.calc('last12_real', { inputs: ['monthly'], title: 'Last 12 months, real', description: 'Same as last12 on the price-index-adjusted columns ({{ span.cpi_base_long }} prices).', fn: (monthly) => last12(monthly, '_real') });
 
 dash.calc('cat_pivot', { inputs: ['cat_year'], title: 'Category by year, both bases', description: 'Pivot of cat_year: one row per category, a column per year for nominal and for real, plus totals.', fn: (cat_year) => {
   const out = new Map();
@@ -599,7 +598,7 @@ const delta = (name, calc, field, goodUp) => dash.draw(name, (el) => {
   const g = dash.data(calc); el.classList.remove('up', 'down');
   if (g.status !== 'ok' || !g.data[0] || g.data[0][field] == null) { el.textContent = '—'; return; }
   const v = g.data[0][field];
-  el.textContent = (field === 'savings_rate' ? d3.format('.1%')(v) + ' of income kept' : HL.pct(v) + ' vs prior 12 months');
+  el.textContent = (field === 'savings_rate' ? dash.fmt.pct(1)(v) + ' of income kept' : HL.pct(v) + ' vs prior 12 months');
   if (field !== 'savings_rate') el.classList.add((v >= 0) === goodUp ? 'up' : 'down'); else el.classList.add(v >= 0 ? 'up' : 'down');
 });
 for (const [sfx, calc] of [['n', 'last12'], ['r', 'last12_real']]) {
@@ -744,7 +743,7 @@ dash.draw('item-pivot', (tb) => {
 dash.draw('recurring', (tb) => {
   const g = dash.data('recurring'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   const rows = [...g.data].sort((a, b) => Number(b.monthly_now) - Number(a.monthly_now));
-  HL.fillTable(tb, rows, [(r) => r.item, (r) => (r.active === true || r.active === 'true') ? 'Yes' : 'No', (r) => r.first, (r) => r.last, (r) => d3.format('$,.2f')(Number(r.monthly_now)), (r) => HL.usd0(Number(r.lifetime))]);
+  HL.fillTable(tb, rows, [(r) => r.item, (r) => (r.active === true || r.active === 'true') ? 'Yes' : 'No', (r) => r.first, (r) => r.last, (r) => dash.fmt.money2(Number(r.monthly_now)), (r) => HL.usd0(Number(r.lifetime))]);
 });
 let slushOrder = [];
 dash.draw('slush', (el) => {
@@ -755,7 +754,7 @@ dash.draw('slush-legend', (el) => { const g = dash.data('slush'); if (g.status !
 dash.draw('exclusions', (tb) => {
   const g = dash.data('exclusions'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   const totals = ['rows_in_totals', 'rows_total', 'months'];   // rows for rules that removed nothing stay out of the table
-  HL.fillTable(tb, g.data.filter((r) => Number(r.value) !== 0 || totals.includes(r.kind)), [(r) => r.key + (r.detail ? ' (' + r.detail + ')' : ''), (r) => r.unit === 'usd' ? HL.usd0(Number(r.value)) : d3.format(',')(Number(r.value)) + ' ' + r.unit]);
+  HL.fillTable(tb, g.data.filter((r) => Number(r.value) !== 0 || totals.includes(r.kind)), [(r) => r.key + (r.detail ? ' (' + r.detail + ')' : ''), (r) => r.unit === 'usd' ? HL.usd0(Number(r.value)) : dash.fmt.num(Number(r.value)) + ' ' + r.unit]);
 });
 
 })();</script>
@@ -768,7 +767,7 @@ dash.draw('yearly', (tb) => {
   const rows = [...g.data].sort((a, b) => a.y < b.y ? -1 : 1);
   const neg = (v, td) => { if (Number(v) < 0) td.classList.add('neg'); return HL.usd0(Number(v)); };
   HL.fillTable(tb, rows, [(r) => r.y, (r) => r.months, (r) => HL.usd0(Number(r.income)), (r) => HL.usd0(Number(r.spend)), (r) => HL.usd0(Number(r.debt)), (r, td) => neg(r.net, td),
-    (r, td) => { if (Number(r.savings_rate) < 0) td.classList.add('neg'); return r.savings_rate == null ? '—' : d3.format('.1%')(Number(r.savings_rate)); },
+    (r, td) => { if (Number(r.savings_rate) < 0) td.classList.add('neg'); return r.savings_rate == null ? '—' : dash.fmt.pct(1)(Number(r.savings_rate)); },
     (r) => HL.usd0(Number(r.income_real)), (r) => HL.usd0(Number(r.spend_real)), (r, td) => neg(r.net_real, td)]);
 });
 dash.draw('debts', (el) => {
@@ -803,7 +802,7 @@ dash.draw('payer', (el) => { const g = dash.data('people'); if (g.status !== 'ok
 dash.draw('payer-legend', (el) => { const g = dash.data('people'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, payerOrder); });
 dash.draw('people-pivot', (tb) => {
   const g = dash.data('people_pivot'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
-  const names = peopleNames(dash.data('people').data), pct = d3.format('.1%');
+  const names = peopleNames(dash.data('people').data), pct = dash.fmt.pct(1);
   const cols = [['Year', (r) => r.y], ...names.map((n) => [n + ' earned', (r) => HL.usd0(r['earn_' + n])]), ['Household', (r) => HL.usd0(r.earn_Household)], ...names.map((n) => [n + ' share', (r) => r['share_' + n] == null ? '—' : pct(r['share_' + n])]), ...names.map((n) => [n + ' envelopes', (r) => HL.usd0(r['pay_' + n])]), ['Shared', (r) => HL.usd0(r.pay_Household)]];
   tb.parentElement.tHead.rows[0].replaceChildren(...cols.map(([h]) => Object.assign(document.createElement('th'), { textContent: h })));
   HL.fillTable(tb, g.data, cols.map((c) => c[1]));
@@ -820,7 +819,7 @@ dash.draw('method-exclusions', (el) => {
   const para = (t) => Object.assign(document.createElement('p'), { textContent: t });
   if (ex.status !== 'ok' || !ex.data.length) { el.replaceChildren(para('Nothing is loaded yet. Once the first exports are added, this section lists any transfers, excluded items and adjustments removed from the totals.')); return; }
   const by = (k) => ex.data.filter((r) => r.kind === k), val = (k) => by(k).reduce((a, r) => a + Number(r.value), 0), detail = (k) => (by(k)[0] || {}).detail;
-  const n = d3.format(','), usd = (v) => HL.usd0(v), rows = (v) => n(v) + (v === 1 ? ' row' : ' rows');
+  const n = dash.fmt.num, usd = (v) => HL.usd0(v), rows = (v) => n(v) + (v === 1 ? ' row' : ' rows');
   const out = [];
   if (val('transfers_tagged')) out.push(`${rows(val('transfers_tagged'))} ${val('transfers_tagged') === 1 ? 'was' : 'were'} tagged as transfers between envelopes and removed from income and spend${val('transfers_paired') ? `; ${n(val('transfers_paired'))} of them matched into in-and-out pairs` : ''}.${val('income_transfers') ? ` ${usd(val('income_transfers'))} of that had been booked as income.` : ''}`);
   for (const r of by('excluded_item')) out.push(`Item “${r.item}” (${rows(Number(r.value))}) is excluded entirely: it moves money through the budget without being household income or spending.`);
@@ -846,7 +845,7 @@ dash.draw('cpi-note', (el) => {
 });
 dash.draw('cpi', (tb) => {
   const g = dash.data('cpi'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
-  HL.fillTable(tb, g.data, [(r) => r.month, (r) => d3.format('.3f')(Number(r.cpi)), (r, td) => { if (!/^FRED/.test(r.source)) td.parentElement.classList.add('filled'); return r.source; }]);
+  HL.fillTable(tb, g.data, [(r) => r.month, (r) => dash.fmt.dec(3)(Number(r.cpi)), (r, td) => { if (!/^FRED/.test(r.source)) td.parentElement.classList.add('filled'); return r.source; }]);
 });
 dash.draw('cpi-estimated', (el) => {
   const g = dash.data('cpi'); const m = g.status === 'ok' ? g.data.filter((r) => /carried|interpolat|estimat/i.test(r.source)).map((r) => r.month) : [];
@@ -975,14 +974,14 @@ dash.draw('lm-items', (tb) => {
 <script nonce="{{ csp_nonce(request) }}">(() => {
 
 // ---- goals ----
-const pct1 = d3.format('.1%');
+const pct1 = dash.fmt.pct(1);
 const gTile = (name, field) => dash.draw(name, (el) => { const g = dash.data('goal_summary'); el.textContent = g.status === 'ok' && g.data[0] && g.data[0][field] != null ? pct1(g.data[0][field]) : '—'; });
 gTile('g-giving', 'giving_share'); gTile('g-joy', 'joy_share'); gTile('g-house', 'housing_share'); gTile('g-th', 'takehome_share');
 const gDelta = (name, field, words, goodUp) => dash.draw(name, (el) => {
   const g = dash.data('goal_summary'); el.classList.remove('up', 'down');
   if (g.status !== 'ok' || !g.data[0] || g.data[0][field] == null) { el.textContent = '—'; return; }
   const v = g.data[0][field]; if (typeof v === 'string') { el.textContent = v; return; }
-  el.textContent = (v >= 0 ? '+' : '−') + d3.format('.1%')(Math.abs(v)) + ' ' + words; el.classList.add((v >= 0) === goodUp ? 'up' : 'down');
+  el.textContent = (v >= 0 ? '+' : '−') + dash.fmt.pct(1)(Math.abs(v)) + ' ' + words; el.classList.add((v >= 0) === goodUp ? 'up' : 'down');
 });
 gDelta('g-giving-d', 'giving_vs_floor', 'against the 10% floor', true); gDelta('g-joy-d', 'joy_vs_target', 'against the 10% target', true); gDelta('g-house-d', 'housing_vs_cap', 'against the 25% cap', false); gDelta('g-th-d', 'takehome_note', '', true);
 
@@ -995,9 +994,9 @@ dash.draw('goal-lines', (el) => {
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
   const yMax = Math.max(0.35, d3.max(rows, (r) => Math.max(r.a || 0, r.b || 0, r.c || 0)));
   const y = d3.scaleLinear([0, yMax], [H - mb, mt]).nice();
-  const ml = HL.margins(svg, y.ticks(5), d3.format('.0%'));
+  const ml = HL.margins(svg, y.ticks(5), dash.fmt.pct(0));
   const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
-  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(d3.format('.0%')).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
+  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(dash.fmt.pct(0)).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
   svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 90))).tickFormat(d3.utcFormat('%Y')).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
   const ref = (v, col, label) => { svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', col).attr('stroke-dasharray', '5 4').attr('stroke-opacity', .7); svg.append('text').attr('x', W - 8).attr('y', y(v) - 4).attr('text-anchor', 'end').attr('fill', col).text(label); };
@@ -1019,11 +1018,11 @@ dash.draw('goal-table', (tb) => {
 });
 dash.draw('goal-params', (tb) => {
   const g = dash.data('goals'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
-  HL.fillTable(tb, g.data, [(r) => r.label, (r) => r.value == null ? 'not yet given' : (r.unit === 'usd' ? HL.usd0(Number(r.value)) : r.unit && r.unit.startsWith('share') ? d3.format('.0%')(Number(r.value)) : String(r.value) + ' ' + (r.unit || '')), (r) => r.note, (r) => r.confirmed_at ? r.confirmed_at.slice(0, 10) : 'never']);
+  HL.fillTable(tb, g.data, [(r) => r.label, (r) => r.value == null ? 'not yet given' : (r.unit === 'usd' ? HL.usd0(Number(r.value)) : r.unit && r.unit.startsWith('share') ? dash.fmt.pct(0)(Number(r.value)) : String(r.value) + ' ' + (r.unit || '')), (r) => r.note, (r) => r.confirmed_at ? r.confirmed_at.slice(0, 10) : 'never']);
   for (const tr of tb.children) { const row = g.data.find((d) => d.label === tr.firstChild.textContent); if (row) tr.dataset.key = row.key; }
 });
 
 })();</script>
 
 {% endblock %}
-{% block head %}<script src="/static/dash-shim.js"></script>{% endblock %}
+{% block head %}<meta name="ledger-currency" content="{{ fmt.currency }}"><meta name="ledger-locale" content="{{ fmt.locale }}"><script src="/static/dash-shim.js"></script>{% endblock %}

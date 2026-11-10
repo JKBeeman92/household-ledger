@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 
 from .. import db, auth
-from ..web_helpers import _months
+from ..web_helpers import _months, _format_settings
 
 router = APIRouter()
 
@@ -42,7 +42,8 @@ def api_status(user=Depends(auth.require_user_api)):
     with db.pool.connection() as conn:
         months = _months(conn)
         last = conn.execute("SELECT started_at, finished_at, ok, summary FROM build_log ORDER BY id DESC LIMIT 1").fetchone()
-    return {"months": len(months), "first": months[-1] if months else None, "last": months[0] if months else None, "last_build": last}
+        hh = db.get_setting(conn, "household", {})
+    return {**_format_settings(hh), "months": len(months), "first": months[-1] if months else None, "last": months[0] if months else None, "last_build": last}
 
 
 @router.get("/healthz")
