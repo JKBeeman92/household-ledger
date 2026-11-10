@@ -35,7 +35,7 @@ a { color: var(--accent); }
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .panel { background: var(--surface-200); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-6); }
 .panel h2 { font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: .03em; margin: 0 0 var(--space-3); }
-.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2); margin: 0 0 var(--space-1); }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2-text, var(--accent-2)); margin: 0 0 var(--space-1); }
 label { display: block; font-weight: 600; margin-bottom: var(--space-1); }
 input[type=file], input[type=text], input[type=search], input[type=number], textarea, select { font: inherit; color: var(--ink); background: var(--surface-300); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); width: 100%; box-sizing: border-box; }
 textarea.json { font-family: var(--font-mono); font-size: 13px; min-height: 22rem; }
@@ -118,3 +118,28 @@ table.edit [aria-invalid=true] { border-color: var(--danger); }
 .upload-results { margin: 0; padding-left: var(--space-6); }
 .upload-results li { border-left: 3px solid var(--success); padding-left: var(--space-3); margin-bottom: var(--space-1); list-style: none; }
 .upload-results li.bad { border-left-color: var(--danger); }
+/* ---- Accessibility (issue #15): definition popover for dotted <dfn> terms (hover, focus, tap), keyboard focus on panels ---- */
+.dfn-pop { position: absolute; z-index: 50; max-width: min(24rem, calc(100vw - 16px)); box-sizing: border-box; background: var(--surface-300); color: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-md); padding: var(--space-2) var(--space-3); font-size: 14px; line-height: 1.45; }
+.dfn-pop[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+/* ---- Print (issue #15): the visible tab on white paper, no chrome. a11y.js switches to the light theme for the job. ---- */
+@media print {
+  @page { margin: 14mm; }
+  html, body { background: var(--surface-000); color: var(--ink); font-size: 11pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .topbar, .flash, #theme-toggle, .controls, .btn, .dfn-pop, .foot { display: none !important; }
+  .shell { max-width: none; padding: 0; }
+  #dash-root.hl .masthead, #dash-root.hl .eyebrow { break-after: avoid; }
+  #dash-root.hl .card { break-inside: avoid; box-shadow: none; padding: var(--cds-pad-md); margin-bottom: var(--cds-gap-sm); }
+  #dash-root.hl .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #dash-root.hl .grid { grid-template-columns: 1fr 1fr; }
+  #dash-root.hl .tbl { max-height: none; overflow: visible; }
+  #dash-root.hl .tbl th { position: static; }
+  #dash-root.hl thead { display: table-header-group; }
+  #dash-root.hl tr { break-inside: avoid; }
+  #dash-root.hl .chart { min-height: 0; }
+  #dash-root.hl .tip, #dash-root.hl .legend.years { display: none; }
+  #dash-root.hl .page:focus { outline: none; }
+  #dash-root.hl dfn { border-bottom: 0; }
+  #dash-root.hl .lede a, #dash-root.hl .note a { text-decoration: none; color: inherit; }
+}
