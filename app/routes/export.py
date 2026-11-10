@@ -128,6 +128,8 @@ def scan_import_dir(request: Request, user=Depends(auth.require_editor)):
             try:
                 res = import_dir(conn, Path(settings.import_dir), uploaded_by=user.get("email", ""))
                 flash(request, f"Scanned the import directory: {res['loaded']} new or changed file(s) loaded, {res['skipped']} unchanged." + (f" Rebuilt: {res['rebuild']}." if res.get("rebuild") else ""))
+                for x in res.get("failed", []):
+                    flash(request, f"Not loaded: {x['file']}: {x['error']}", "bad")
             except Exception as e:  # noqa: BLE001
                 conn.rollback(); flash(request, f"Scan failed: {str(e)[:800]}", "bad")
     return RedirectResponse("/upload", status_code=303)

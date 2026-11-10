@@ -135,7 +135,7 @@ def test_a_token_never_authorises_a_page_upload_settings_or_rebuild(client, rese
     before = sql("SELECT key, value FROM settings ORDER BY key")
     for method, path in session_routes():
         r = client.request(method, path, headers={**bearer(tok), "X-CSRF-Token": "unused"})
-        assert r.status_code in (307, 403), (method, path, r.status_code)
+        assert r.status_code in (303, 307, 403), (method, path, r.status_code)
         assert r.status_code == 403 or r.headers["location"].startswith("/login"), (method, path)
         assert "set-cookie" not in r.headers, (method, path)
     r = client.post("/settings/mapping/row", headers=bearer(tok), data={"item": "Second breakfast", "canonical_item": "Food", "category": "Food", "flow": "spend"})

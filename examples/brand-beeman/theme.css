@@ -85,7 +85,7 @@
 /* ---- Household Ledger brand contract (see docs/BRANDING.md). Maps Beeman tokens onto the names the app reads. ---- */
 :root, :root[data-theme="light"] {
   --accent: var(--pine); --accent-hover: var(--pine-hover); --accent-soft: var(--pine-soft); --on-accent: var(--on-pine);
-  --accent-2: var(--bronze); --accent-2-deep: var(--bronze-deep); --on-accent-2: var(--on-bronze);
+  --accent-2: var(--bronze); --accent-2-deep: var(--bronze-deep); --on-accent-2: var(--on-bronze); --accent-2-text: var(--bronze);
   --focus: var(--glow);
   --series-1: var(--pine); --series-2: var(--bronze); --series-3: var(--info); --series-4: var(--glow);
   --series-5: var(--stone); --series-6: var(--moon); --series-7: var(--bronze-deep); --series-8: var(--slate);
@@ -93,3 +93,7 @@
   --login-backdrop: url('/brand/moonlit-valley.png'); --login-overlay: linear-gradient(rgba(6,17,17,.72), rgba(6,17,17,.86));
   --font-import: url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400&display=swap');
 }
+/* dark mode: input borders and the slate series sit below 3:1 on the panels, so they get a lighter value */
+:root { --line-strong: #7a9695; --series-8: #7a9695; }
+/* light mode: measured contrast (tests/test_contrast.py) — bronze text on panels, input borders and the pale moon series need darker values than the kit's */
+:root[data-theme="light"] { --accent-2-text: var(--bronze-deep); --line-strong: #5f7a78; --series-6: #8a7248; --series-8: #5f7a78; }

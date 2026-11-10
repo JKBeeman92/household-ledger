@@ -1,6 +1,8 @@
 FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PORT=8010 BRAND_DIR=/data/brand \
     FORWARDED_ALLOW_IPS='*'
+# The image listens on 0.0.0.0, so AUTH_DISABLED=true here also needs I_KNOW_AUTH_IS_OFF=1 (app/config.py)
+ENV LEDGER_IN_CONTAINER=1
 WORKDIR /srv
 # Take the base image's pending Debian security updates: python:3.12-slim lags them, and the PR image scan fails on fixable HIGH/CRITICAL.
 RUN apt-get update && apt-get -y upgrade && rm -rf /var/lib/apt/lists/*

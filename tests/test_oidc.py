@@ -258,3 +258,13 @@ def test_a_row_without_groups_is_rechecked_at_once(roles, browser):
     sql("UPDATE auth_sessions SET groups = NULL")     # a row signed in before the groups column existed
     assert browser.get("/upload").status_code == 403
     assert sql("SELECT groups FROM auth_sessions")[0]["groups"] == ["family"]
+
+
+def test_a_form_post_after_the_session_ended_lands_on_the_login_page(idp, browser):
+    sign_in(browser, idp)
+    assert browser.get("/reviews/prompt").status_code == 200                                 # the form (and its CSRF token) is rendered
+    sql("UPDATE auth_sessions SET expires_at = now() - interval '1 second'")
+    r = browser.post("/reviews/prompt", data={"instructions": "a long hand-written prompt"})
+    assert r.status_code == 303 and r.headers["location"] == "/login?next=/reviews/prompt"   # 307 would re-POST to the GET-only /login
+    assert browser.get(r.headers["location"]).status_code == 200
+    assert browser.get("/upload").status_code == 307                                         # safe methods keep 307

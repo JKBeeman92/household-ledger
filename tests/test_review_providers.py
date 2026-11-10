@@ -187,4 +187,4 @@ def test_reviews_page_needs_editor(client, reset_db, monkeypatch):
     from app import auth
     monkeypatch.setattr(auth, "settings", dataclasses.replace(auth.settings, auth_disabled=False))
     assert client.get("/reviews").status_code == 307
-    assert client.post("/reviews/test").status_code in (307, 401, 403)
+    assert client.post("/reviews/test").status_code in (303, 401, 403)

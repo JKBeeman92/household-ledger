@@ -6,7 +6,11 @@
     if (csrf) new FormData(csrf).forEach(function (v, k) { fd.append(k, v); });
     Object.keys(fields).forEach(function (k) { fd.append(k, fields[k] == null ? "" : fields[k]); });
     return fetch(url, { method: "POST", body: fd, credentials: "same-origin" }).then(function (r) {
-      return r.json().catch(function () { return { ok: false, errors: { _: "server error " + r.status } }; });
+      return r.json().catch(function () { return {}; }).then(function (body) {
+        if (r.status === 401) { location.href = "/login?next=" + encodeURIComponent("/settings"); return { ok: false, errors: { _: "Signed out: sending you to sign in." } }; }
+        if (!r.ok && !body.errors && body.deleted === undefined) return { ok: false, errors: { _: body.detail || "server error " + r.status } };
+        return body;
+      });
     });
   }
   function el(tag, attrs, text) {
@@ -65,21 +69,21 @@
       tr.querySelectorAll("[aria-invalid]").forEach(function (i) { i.removeAttribute("aria-invalid"); });
       post("/settings/" + kind + "/row", body).then(function (res) {
         if (res.ok) { delete tr.dataset.new; setOrig(tr, res.row); show(tr, res.row); status("Saved. Rebuild from the Close-a-month page to apply.", false); return; }
-        var errs = res.errors || {}, first = true;
+        var errs = res.errors || {}, first = true, fieldErr = false;
         Object.keys(errs).forEach(function (f) {
           var td = tr.querySelector('td[data-f="' + f + '"]');
           if (!td) { status(errs[f], true); return; }
-          td.querySelector(".err").textContent = errs[f]; var i = td.querySelector("input,select"); i.setAttribute("aria-invalid", "true");
+          fieldErr = true; td.querySelector(".err").textContent = errs[f]; var i = td.querySelector("input,select"); i.setAttribute("aria-invalid", "true");
           if (first) { i.focus(); first = false; }
         });
-        status("Row not saved: fix the highlighted field.", true);
+        if (fieldErr || !Object.keys(errs).length) status("Row not saved: fix the highlighted field.", true);
       }).catch(function () { status("Row not saved: could not reach the server.", true); });
     }
     function del(tr) {
       if (!confirm("Delete this row?")) return;
       post("/settings/" + kind + "/row/delete", origOf(tr)).then(function (res) {
-        if (res.ok) { tr.remove(); status("Row deleted.", false); } else status("Row not deleted (already gone? reload the page).", true);
-      });
+        if (res.ok) { tr.remove(); status("Row deleted.", false); } else status((res.errors && res.errors._) || "Row not deleted (already gone? reload the page).", true);
+      }).catch(function () { status("Row not deleted: could not reach the server.", true); });
     }
     Array.prototype.forEach.call(tbody.rows, function (tr) {
       var r = rowOf(tr); setOrig(tr, r);

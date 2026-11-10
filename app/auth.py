@@ -123,11 +123,13 @@ def current_user(request: Request) -> dict | None:
 
 
 def require_user(request: Request) -> dict:
-    """Dependency for HTML routes: redirect to login when anonymous."""
+    """Dependency for HTML routes: redirect to login when anonymous. An unsafe method gets 303, so the browser GETs the login
+    page instead of re-sending the form (307 keeps method and body, and /login is GET-only)."""
     user = current_user(request)
     if user is None:
         nxt = request.url.path + (("?" + request.url.query) if request.url.query else "")
-        raise HTTPException(status_code=307, headers={"Location": f"/login?next={quote(nxt, safe='/')}"})
+        status = 307 if request.method in ("GET", "HEAD") else 303
+        raise HTTPException(status_code=status, headers={"Location": f"/login?next={quote(nxt, safe='/')}"})
     return user
 
 

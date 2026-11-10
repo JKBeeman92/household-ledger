@@ -237,20 +237,46 @@ def build_running(conn: psycopg.Connection) -> bool:
     return busy
 
 
-def rebuild(conn: psycopg.Connection) -> dict:
-    """Rebuild ledger and datasets. Only one rebuild runs at a time across all processes (BuildBusy otherwise)."""
+MAX_PASSES = 3   # a rebuild runs again while the source files keep changing underneath it, at most this many times
+
+
+def source_fingerprint(conn: psycopg.Connection) -> str:
+    """Identity of the stored export files: changes on every upload, replacement and delete (a replaced file gets a new id)."""
     with conn.cursor(row_factory=tuple_row) as cur:
-        cur.execute("SELECT pg_try_advisory_lock(%s, %s)", BUILD_LOCK)
-        if not cur.fetchone()[0]:
-            conn.commit()
-            raise BuildBusy("a rebuild is already running")
-    try:
-        return _rebuild(conn)
-    finally:
-        conn.rollback()
+        cur.execute("SELECT coalesce(md5(string_agg(id::text || ':' || sha256, ',' ORDER BY id)), '') FROM source_files")
+        fp = cur.fetchone()[0]
+    conn.commit()
+    return fp
+
+
+def rebuild(conn: psycopg.Connection) -> dict:
+    """Rebuild ledger and datasets. Only one rebuild runs at a time across all processes (BuildBusy otherwise).
+    If the source files changed while a pass was running (an upload or delete arrived mid-build), build again, at most MAX_PASSES times.
+    The check is made after the lock is released: a request that saw the lock held and so queued nothing has committed its change before that,
+    and one that comes later finds no build running and starts its own."""
+    res = None
+    for attempt in range(MAX_PASSES):
         with conn.cursor(row_factory=tuple_row) as cur:
-            cur.execute("SELECT pg_advisory_unlock(%s, %s)", BUILD_LOCK)
-        conn.commit()
+            cur.execute("SELECT pg_try_advisory_lock(%s, %s)", BUILD_LOCK)
+            got = cur.fetchone()[0]
+        if not got:
+            conn.commit()
+            if attempt == 0:
+                raise BuildBusy("a rebuild is already running")
+            return res   # someone else started a build after our last pass; it reads the newest files
+        try:
+            res = _rebuild(conn)
+        finally:
+            conn.rollback()
+            with conn.cursor(row_factory=tuple_row) as cur:
+                cur.execute("SELECT pg_advisory_unlock(%s, %s)", BUILD_LOCK)
+            conn.commit()
+        if source_fingerprint(conn) == res["sources"]:
+            return res
+    conn.execute("UPDATE build_log SET summary = summary || %s WHERE id=%s", ("; the source files changed again during the build: press Rebuild", res["build_id"]))
+    conn.commit()
+    res["summary"] += "; the source files changed again during the build: press Rebuild"
+    return res
 
 
 def _rebuild(conn: psycopg.Connection) -> dict:
@@ -259,6 +285,7 @@ def _rebuild(conn: psycopg.Connection) -> dict:
         cur.execute("UPDATE build_log SET finished_at=now(), ok=false, summary='interrupted: the process stopped before this build finished' WHERE finished_at IS NULL")
         cur.execute("INSERT INTO build_log DEFAULT VALUES RETURNING id"); bid = cur.fetchone()[0]
     conn.commit()
+    sources = source_fingerprint(conn)   # what this pass builds from; rebuild() compares it with the files once the pass is over
     wd = Path(tempfile.mkdtemp(prefix="ledger-build-"))
     try:
         rec = reconcile(conn)
@@ -275,7 +302,7 @@ def _rebuild(conn: psycopg.Connection) -> dict:
         with conn.cursor(row_factory=tuple_row) as cur:
             cur.execute("UPDATE build_log SET finished_at=now(), ok=true, summary=%s, detail=%s WHERE id=%s", (summary, detail, bid))
         conn.commit()
-        return {"ok": True, "summary": summary, "reconciliation": rec, "counts": counts}
+        return {"ok": True, "summary": summary, "reconciliation": rec, "counts": counts, "sources": sources, "build_id": bid}
     except Exception as e:  # noqa: BLE001
         conn.rollback()
         with conn.cursor(row_factory=tuple_row) as cur:
@@ -298,16 +325,28 @@ def import_dir(conn: psycopg.Connection, import_dir: Path, uploaded_by: str = "i
         cur.execute("SELECT kind, budget_month, sha256 FROM source_files")
         known = {(k, m): sha for k, m, sha in cur.fetchall()}
     loaded = skipped = 0
+    failed: list[dict] = []
     for f in sorted(x for x in import_dir.rglob("*.csv") if FN_RX.match(x.name)):
         data = f.read_bytes()
         m = FN_RX.match(f.name)
         kind = "transactions" if m["kind"] == "Transactions" else "budget_items"
         if known.get((kind, f"{m['yyyy']}-{m['mm']}")) == hashlib.sha256(data).hexdigest():
             skipped += 1; continue
-        ingest(conn, f.name, data, uploaded_by=uploaded_by); loaded += 1
+        try:
+            ingest(conn, f.name, data, uploaded_by=uploaded_by); loaded += 1
+        except Exception as e:  # noqa: BLE001  one bad file must not stop the others
+            conn.rollback()
+            failed.append({"file": f.name, "error": str(e)[:300]})
     conn.commit()
-    res = rebuild(conn) if loaded else None
-    return {"loaded": loaded, "skipped": skipped, "rebuild": res and res["summary"]}
+    try:
+        res = rebuild(conn) if loaded else None
+    finally:
+        if failed:   # after the rebuild, so this is the newest build_log row and the failure shows on the dashboard and the build log
+            lines = "".join(f"\n{x['file']}: {x['error']}" for x in failed)
+            conn.execute("INSERT INTO build_log (finished_at, ok, summary, detail) VALUES (now(), false, %s, %s)",
+                         (f"import: {len(failed)} file(s) could not be loaded ({failed[0]['file']}: {failed[0]['error']})"[:500], f"{len(failed)} import file(s) failed:{lines}"))
+            conn.commit()
+    return {"loaded": loaded, "skipped": skipped, "failed": failed, "rebuild": res and res["summary"]}
 
 
 # ---------------------------------------------------------------- seed
