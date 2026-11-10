@@ -6,6 +6,7 @@ from .. import db, auth, review
 from ..web_helpers import flash, render, _months
 from ..builds import build_status, run_background
 from .findings import latest_findings
+from .checklist import checklist_goals
 from pipeline.run_pipeline import ingest, build_running
 
 router = APIRouter()
@@ -20,7 +21,8 @@ def upload_page(request: Request, user=Depends(auth.require_editor)):
         months = _months(conn)
         build = build_status(conn)
         findings = latest_findings(conn)
-    return render(request, "upload.html", user, active="upload", findings=findings, files=files, months=months, build=build, review_enabled=bool(settings.anthropic_api_key))
+        checklist = checklist_goals(conn)
+    return render(request, "upload.html", user, active="upload", findings=findings, checklist=checklist, files=files, months=months, build=build, review_enabled=bool(settings.anthropic_api_key))
 
 
 @router.post("/upload")
