@@ -1,0 +1,40 @@
+/* Example brand kit, "The Red Book": a ledger kept the way Bilbo and Frodo kept theirs. Red leather and gold leaf by night,
+   parchment and red ink by day; Cinzel capitals for headings, EB Garamond for text, Courier Prime for figures. The art is
+   original (a map of hills, a river and a road that goes ever on); nothing is taken from the films or the books' editions.
+   Copy this directory into BRAND_DIR (docs/BRANDING.md). tests/test_contrast.py checks it against the same WCAG pairs as
+   the built-in theme. */
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=EB+Garamond:wght@400;600&family=Courier+Prime&display=swap");
+
+:root {
+  --surface-000: #120b09; --surface-100: #1a100d; --surface-200: #231512; --surface-300: #2f1d18;
+  --line: #43291f; --line-strong: #96755f;
+  --ink: #f4e8d0; --ink-muted: #d0bc9c; --ink-faint: #a8937a;
+  --accent: #e0b65a; --accent-hover: #ecca7e; --accent-soft: #3d2c10; --on-accent: #1a100d;
+  --accent-2: #9cc3b0; --accent-2-deep: #6a9583; --on-accent-2: #1a100d; --accent-2-text: var(--accent-2);
+  --focus: #f2d891;
+  --success: #a4cf8e; --warning: #e7b85c; --danger: #f08a73; --info: #9cc3b0; --on-status: #1a100d;
+  --series-1: #e0b65a; --series-2: #9cc3b0; --series-3: #e08a6b; --series-4: #b9b4e0;
+  --series-5: #a4cf8e; --series-6: #d9a6c2; --series-7: #c7a77e; --series-8: #96755f;
+  --chart-grid: #33201a; --chart-axis: #6b4d3d; --chart-reference: #9cc3b0;
+  --shadow-sm: 0 1px 0 rgba(0,0,0,.6); --shadow-md: 0 3px 0 rgba(0,0,0,.4), 0 12px 26px rgba(0,0,0,.45);
+  --shadow-glow: 0 0 0 1px rgba(224,182,90,.55), 0 0 22px rgba(224,182,90,.2);
+  --login-backdrop: url('/brand/backdrop.svg'); --login-overlay: linear-gradient(rgba(18,11,9,.15), rgba(18,11,9,.6));
+  --font-display: "Cinzel", "Trajan Pro", Georgia, serif; --font-sans: "EB Garamond", Garamond, Georgia, serif; --font-mono: "Courier Prime", "Courier New", monospace;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
+  --radius-sm: 2px; --radius-md: 4px; --radius-lg: 8px; --radius-full: 999px;
+}
+:root[data-theme="light"] {
+  --surface-000: #fdf7ea; --surface-100: #f5ead2; --surface-200: #fbf4e4; --surface-300: #ecdcbc;
+  --line: #dcc8a2; --line-strong: #85694a;
+  --ink: #2b1a12; --ink-muted: #5a4130; --ink-faint: #6b5039;
+  --accent: #8e2a1e; --accent-hover: #6f1f15; --accent-soft: #f2d9cf; --on-accent: #fdf7ea;
+  --accent-2: #8a6a14; --accent-2-deep: #6b510c; --on-accent-2: #fdf7ea; --accent-2-text: var(--accent-2-deep);
+  --focus: #8e2a1e;
+  --success: #3f6a2b; --warning: #7f5b07; --danger: #a4321f; --info: #2f5f6e; --on-status: #fdf7ea;
+  --series-1: #8e2a1e; --series-2: #8a6a14; --series-3: #2f6a5a; --series-4: #5b4a8f;
+  --series-5: #4d7a2e; --series-6: #a0476f; --series-7: #7b5a3a; --series-8: #85694a;
+  --chart-grid: #e6d6b6; --chart-axis: #a68b66; --chart-reference: #8a6a14;
+  --shadow-sm: 0 1px 0 rgba(43,26,18,.15); --shadow-md: 0 2px 0 rgba(43,26,18,.08), 0 10px 24px rgba(43,26,18,.12);
+  --shadow-glow: 0 0 0 1px rgba(142,42,30,.45);
+  --login-overlay: linear-gradient(rgba(245,234,210,.35), rgba(245,234,210,.8));
+}
