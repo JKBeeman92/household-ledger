@@ -16,7 +16,7 @@ from . import db, csrf
 from .security import SecurityHeaders
 from .web_helpers import ROOT, flash, render
 from .logging_setup import configure as configure_logging, RequestIdMiddleware
-from .routes import brand, auth, pages, upload, settings as settings_routes, api, build, findings, months, checklist, schemas, cpi, reviews, review_audit, review_prompt, ops
+from .routes import brand, auth, pages, upload, settings as settings_routes, api, build, findings, months, checklist, schemas, cpi, reviews, review_audit, review_prompt, ops, export
 
 configure_logging(settings.log_format)
 log = logging.getLogger("ledger")
@@ -40,7 +40,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_middleware(SecurityHeaders)   # CSP nonce + security headers on every response
 app.add_middleware(RequestIdMiddleware)   # outermost, so every log line and response carries the request id
 app.mount("/static", StaticFiles(directory=ROOT / "web" / "static"), name="static")
-for module in (brand, auth, pages, upload, settings_routes, api, build, findings, months, checklist, schemas, cpi, reviews, review_audit, review_prompt, ops):
+for module in (brand, auth, pages, upload, settings_routes, api, build, findings, months, checklist, schemas, cpi, reviews, review_audit, review_prompt, ops, export):
     app.include_router(module.router)
 
 
