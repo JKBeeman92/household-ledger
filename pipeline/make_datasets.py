@@ -37,17 +37,20 @@ w("events", D["events"])
 w("cpi", [{"month":r["month"], "cpi":float(r["cpi"]), "source":r["source"]} for r in csv.DictReader(open("cpi_u.csv"))])
 
 ex = D["exclusions"]
-rows = [{"key":f"{item} rows excluded","value":n,"unit":"rows"} for item,n in sorted(ex["excluded_items"].items())] + [
-        {"key":"Inter-item transfers tagged","value":ex["transfers_tagged"],"unit":"rows"},
-        {"key":"Transfers matched as pairs","value":ex["transfers_paired"],"unit":"rows"},
-        {"key":"Balancing plugs dropped (2018)","value":ex["plugs"],"unit":"rows"},
-        {"key":"Income-typed transfers removed from income","value":ex["income_typed_transfers_total"],"unit":"usd"},
-        {"key":"Family loan inflows removed from income","value":ex["family_loan_in"],"unit":"usd"},
-        {"key":"Family loan repayments removed from spend","value":ex["family_loan_out"],"unit":"usd"},
-        {"key":"Cash moved off-budget, unpaired (2022+)","value":ex["offbudget_outflows_unpaired"],"unit":"usd"},
-        {"key":"Rows in totals","value":D["meta"]["rows_in_totals"],"unit":"rows"},
-        {"key":"Rows in ledger","value":D["meta"]["rows_total"],"unit":"rows"},
-        {"key":"Budget months","value":D["meta"]["months"],"unit":"months"}]
+RU = json.load(open("rules.json")) if os.path.exists("rules.json") else {}
+# kind: what the row is, so the Method tab can tell the story from data; detail: the rule window that produced it, if any
+def xr(key, value, unit, kind, **extra): return {"key":key,"value":value,"unit":unit,"kind":kind, **extra}
+rows = [xr(f"{item} rows excluded", n, "rows", "excluded_item", item=item) for item,n in sorted(ex["excluded_items"].items())] + [
+        xr("Inter-item transfers tagged", ex["transfers_tagged"], "rows", "transfers_tagged"),
+        xr("Transfers matched as pairs", ex["transfers_paired"], "rows", "transfers_paired"),
+        xr("Balancing plugs dropped", ex["plugs"], "rows", "plugs", detail=f"through {RU['debt_plug_until']}" if RU.get("debt_plug_until") else ""),
+        xr("Income-typed transfers removed from income", ex["income_typed_transfers_total"], "usd", "income_transfers"),
+        xr("Family loan inflows removed from income", ex["family_loan_in"], "usd", "loan_in"),
+        xr("Family loan repayments removed from spend", ex["family_loan_out"], "usd", "loan_out"),
+        xr("Cash moved off-budget, unpaired", ex["offbudget_outflows_unpaired"], "usd", "offbudget", detail=f"since {RU['offbudget_since']}" if RU.get("offbudget_since") else ""),
+        xr("Rows in totals", D["meta"]["rows_in_totals"], "rows", "rows_in_totals"),
+        xr("Rows in ledger", D["meta"]["rows_total"], "rows", "rows_total"),
+        xr("Budget months", D["meta"]["months"], "months", "months")]
 w("exclusions", rows)
 w("verify", [{"m":r["m"],"item":r["item"],"merchant":r["merchant"],"amount":r["amt"]} for r in ex["verify_rows"]])
 
