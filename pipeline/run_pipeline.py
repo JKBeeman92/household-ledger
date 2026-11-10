@@ -41,11 +41,19 @@ def parse_export(filename: str, data: bytes):
     return kind, bm, rows
 
 
+def record_history(cur, event: str, by: str = "", **where) -> None:
+    """Keep what is about to be replaced or deleted (name, sha256, row count, upload time) in source_file_history. Never the rows."""
+    cond = " AND ".join(f"{k}=%s" for k in where)
+    cur.execute("INSERT INTO source_file_history (kind, budget_month, filename, sha256, row_count, uploaded_at, uploaded_by, event, event_by) "
+                f"SELECT kind, budget_month, filename, sha256, row_count, uploaded_at, uploaded_by, %s, %s FROM source_files WHERE {cond}", (event, by, *where.values()))
+
+
 def ingest(conn: psycopg.Connection, filename: str, data: bytes, uploaded_by: str = "") -> dict:
     """Store one export file. Replaces an existing file of the same kind+month."""
     kind, bm, rows = parse_export(filename, data)
     sha = hashlib.sha256(data).hexdigest()
     with conn.cursor(row_factory=tuple_row) as cur:
+        record_history(cur, "replaced", uploaded_by, kind=kind, budget_month=bm)
         cur.execute("DELETE FROM source_files WHERE kind=%s AND budget_month=%s", (kind, bm))
         cur.execute(
             "INSERT INTO source_files (kind, budget_month, filename, sha256, row_count, uploaded_by) VALUES (%s,%s,%s,%s,%s,%s) RETURNING id",
@@ -256,9 +264,12 @@ def _rebuild(conn: psycopg.Connection) -> dict:
         rec = reconcile(conn)
         # recorded before the scripts run: an unmapped item makes build_ledger.py exit, and that is when the list matters most
         save_findings(conn, bid, {"unmapped": unmapped_items(conn), "reconciliation": dict(rec, problems=rec["problems"][:200])})
-        export_for_pipeline(conn, wd)
-        log = run_scripts(wd)
-        counts = load_outputs(conn, wd)
+        if conn.execute("SELECT 1 FROM source_files LIMIT 1").fetchone() is None:   # every month deleted: nothing to build, derived tables empty
+            conn.execute("TRUNCATE ledger, datasets"); log = "no source files loaded; ledger and datasets emptied"; counts = {"ledger": 0}
+        else:
+            export_for_pipeline(conn, wd)
+            log = run_scripts(wd)
+            counts = load_outputs(conn, wd)
         summary = f"ledger rows {counts.get('ledger')}; reconciliation {rec['counts']}; {'clean' if rec['clean'] else str(len(rec['problems'])) + ' problems'}"
         detail = log + "".join(f"\nReconciliation: {p}" for p in rec.get("problems", []))
         with conn.cursor(row_factory=tuple_row) as cur:

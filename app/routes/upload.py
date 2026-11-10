@@ -14,7 +14,9 @@ router = APIRouter()
 @router.get("/upload", response_class=HTMLResponse)
 def upload_page(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
-        files = conn.execute("SELECT budget_month, kind, filename, row_count, uploaded_at FROM source_files ORDER BY budget_month DESC, kind").fetchall()
+        files = conn.execute("SELECT f.budget_month, f.kind, f.filename, f.row_count, f.uploaded_at, f.sha256, h.event_at AS replaced_at, h.sha256 AS previous_sha256 FROM source_files f "
+                             "LEFT JOIN LATERAL (SELECT event_at, sha256 FROM source_file_history WHERE kind=f.kind AND budget_month=f.budget_month AND event='replaced' AND event_at = f.uploaded_at "
+                             "ORDER BY id DESC LIMIT 1) h ON true ORDER BY f.budget_month DESC, f.kind").fetchall()
         months = _months(conn)
         build = build_status(conn)
         findings = latest_findings(conn)
