@@ -47,7 +47,7 @@ starts: every EveryDollar export whose month is not yet in the database, or whos
 runs. Files already loaded are skipped by checksum, so the directory can stay as a permanent archive of the raw exports.
 A failed start-up import is logged and recorded in the build log; it never stops the container from starting.
 **Close a month** also has a *Scan import directory now* button (no restart needed), and download links for `ledger.csv`, `datasets.zip` and
-`sources.zip` (the raw exports rebuilt in EveryDollar's shape, original filenames), also at `/export/...` for any signed-in user.
+`sources.zip` (EveryDollar exports rebuilt in their own shape under their original filenames; other tools' files exactly as uploaded, under `YYYY-MM/`), also at `/export/...` for any signed-in user.
 The same import is available by hand:
 
 ```sh
@@ -94,6 +94,32 @@ docker compose start ledger
 
 Without the `backup` service, the same dump by hand is
 `docker compose exec -T ledger-db pg_dump -U ledger -Fc ledger > ledger.dump`.
+
+## Other budget tools
+
+EveryDollar's two exports are the built-in format and need no setup. Any other tool works too, as long as it exports the same
+pair each month: **a transactions CSV and a budget CSV**. Upload both on **Close a month**. Files not named like EveryDollar's go to
+a mapping page that shows their first rows, guesses which column is which, which file is which and the budget month, and asks
+you to confirm. The confirmed mapping is saved as a *source profile* under a name you choose and is offered again automatically
+for next month's files with the same columns. Profiles can be edited, exported and imported as JSON on **Settings → Sources**.
+
+| File | Required columns | Optional |
+|---|---|---|
+| Transactions | date; group; item; and either one signed amount column, or separate debit and credit columns, or an amount plus a type column that says income or expense | merchant / payee, account, note / memo |
+| Budget | group; item; planned; spent | — |
+
+- **Group and item** must name the same budget lines in both files: each line's transactions are reconciled against that line's
+  spent figure, as they are for EveryDollar. A tool with no budget lines (a plain bank statement) cannot be reconciled, so it is
+  not supported.
+- **Dates**: `MM/DD/YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD`, `DD.MM.YYYY`, `YYYY/MM/DD`, `DD-MM-YYYY` or `MM-DD-YYYY`. **Numbers**: either
+  decimal mark, any thousands separator, currency symbols and `(1.00)` negatives. Comma, semicolon or tab delimited; UTF-8 or Windows-1252.
+- **Signs**: say whether spending is negative or positive in each file; lines in the income groups (default `Income`) are income.
+
+The files are stored exactly as uploaded, and their rows are read through the profile, so correcting a profile re-reads every
+month stored with it; nothing needs uploading again. The import directory and `.zip` uploads take EveryDollar exports only.
+Outside the app, `python -m pipeline.sources propose …` prints a starting profile for a pair of files and
+`python -m pipeline.sources normalize --profile p.json --month YYYY-MM …` writes them as EveryDollar-named files for the standalone
+pipeline scripts.
 
 ## Try it with the sample household
 

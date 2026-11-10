@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Map columns · {{ household.title }}{% endblock %}
+{% block content %}
+{% set spec = plan.spec %}
+{% macro v(name, default) %}{{ form.get(name) if form is defined and form and form.get(name) is not none else default }}{% endmacro %}
+{% macro colsel(prefix, field, label, headers, current) %}
+  {% set cur = form.get(prefix ~ 'col_' ~ field) if form is defined and form else current %}
+  <label for="{{ prefix }}col_{{ field }}">{{ label }}</label>
+  <select id="{{ prefix }}col_{{ field }}" name="{{ prefix }}col_{{ field }}">
+    <option value="">(none)</option>
+    {% for h in headers %}<option value="{{ h }}" {% if h == cur %}selected{% endif %}>{{ h }}</option>{% endfor %}
+  </select>
+{% endmacro %}
+<p class="eyebrow">Month close</p>
+<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Map your columns</h1>
+<p class="muted" style="max-width:75ch">These files are not EveryDollar exports, so tell the ledger once how to read them. The guesses below come from the
+column names{% if plan.profile_id %} and the saved profile <strong>{{ spec.name }}</strong>, which recognises these headers{% endif %}. Nothing is stored
+until you confirm. The files are kept exactly as uploaded, so a mapping corrected later is re-applied without uploading again.</p>
+{% if error %}<p class="flash bad" role="alert" id="map-error">{{ error }}</p>{% endif %}
+
+<form method="post" action="/upload/map/{{ batch }}">{{ csrf_field(request) }}
+{% for f in plan.files %}
+<section class="panel" style="margin-top:var(--space-4)">
+  <h2><span class="mono">{{ f.filename }}</span></h2>
+  {% if f.error %}<p class="flash bad">{{ f.error }}</p>{% else %}
+  <p class="muted">{{ f.rows }} rows. The first {{ f.sample|length }}:</p>
+  <div class="tablewrap"><table class="plain"><thead><tr>{% for h in f.header %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for r in f.sample %}<tr>{% for h in f.header %}<td>{{ r[h] }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+  <fieldset style="border:0;padding:0;margin:var(--space-3) 0 0"><legend style="font-weight:600">This file is the</legend>
+    {% set k = form.get('kind_' ~ f.id) if form is defined and form else f.kind %}
+    <label style="display:inline;font-weight:400"><input type="radio" name="kind_{{ f.id }}" value="transactions" {% if k == 'transactions' %}checked{% endif %}> transactions file</label>
+    <label style="display:inline;font-weight:400;margin-left:var(--space-4)"><input type="radio" name="kind_{{ f.id }}" value="budget_items" {% if k == 'budget_items' %}checked{% endif %}> budget file (planned and spent per line)</label>
+  </fieldset>
+  {% endif %}
+</section>
+{% endfor %}
+
+<section class="panel" style="margin-top:var(--space-4)">
+  <h2>Month and source</h2>
+  <div class="row">
+    <div><label for="month">Budget month</label><input id="month" name="month" type="month" required value="{{ v('month', plan.month) }}">
+      <p class="muted">Guessed from the transaction dates. Re-uploading a month replaces it.</p></div>
+    <div><label for="profile_name">Source name</label><input id="profile_name" type="text" name="profile_name" required value="{{ v('profile_name', spec.name) }}" placeholder="e.g. Bree Bank">
+      <p class="muted">The mapping is saved under this name and reused for next month's files with the same columns.</p></div>
+  </div>
+</section>
+
+{% set t = spec.transactions or {} %}{% set th = (plan.files|selectattr('kind', 'equalto', 'transactions')|map(attribute='header')|first) if plan.files|selectattr('kind', 'equalto', 'transactions')|list else t.get('headers', []) %}
+{% if spec.transactions %}
+<section class="panel" style="margin-top:var(--space-4)">
+  <h2>Transactions columns</h2>
+  <p class="muted">Date, group and item are required, and either one signed amount column or separate debit and credit columns. Group and item
+  must name the same budget lines as the budget file, because every line's transactions are checked against its spent figure.</p>
+  <div class="row">{% for f, label in txn_labels.items() %}<div>{{ colsel('t_', f, label, th, t.columns.get(f)) }}</div>{% endfor %}</div>
+  <div class="row">
+    <div><label for="t_date_format">Date format</label><select id="t_date_format" name="t_date_format">{% for d in date_formats %}<option {% if d == v('t_date_format', t.date_format) %}selected{% endif %}>{{ d }}</option>{% endfor %}</select></div>
+    <div><label for="t_amount_mode">Amounts are</label><select id="t_amount_mode" name="t_amount_mode">
+      {% for val, lab in [('signed', 'one signed column'), ('split', 'separate debit and credit columns'), ('type', 'one column, sign from the type column')] %}<option value="{{ val }}" {% if val == v('t_amount_mode', t.amount_mode) %}selected{% endif %}>{{ lab }}</option>{% endfor %}</select></div>
+    <div><label for="t_expense_sign">Spending in the signed column is</label><select id="t_expense_sign" name="t_expense_sign">
+      {% for val, lab in [('negative', 'negative (e.g. -42.10)'), ('positive', 'positive (income negative)')] %}<option value="{{ val }}" {% if val == v('t_expense_sign', t.expense_sign) %}selected{% endif %}>{{ lab }}</option>{% endfor %}</select></div>
+    <div><label for="t_decimal">Decimal mark</label><select id="t_decimal" name="t_decimal">{% for d in ['.', ','] %}<option {% if d == v('t_decimal', t.decimal) %}selected{% endif %}>{{ d }}</option>{% endfor %}</select></div>
+    <div><label for="t_thousands">Thousands separator</label><select id="t_thousands" name="t_thousands">{% for d, lab in [(',', ','), ('.', '.'), (' ', 'space'), ('', 'none')] %}<option value="{{ d }}" {% if d == v('t_thousands', t.thousands) %}selected{% endif %}>{{ lab }}</option>{% endfor %}</select></div>
+    <div><label for="t_income_values">Type values that mean income</label><input id="t_income_values" type="text" name="t_income_values" value="{{ v('t_income_values', (t.income_values or [])|join(', ')) }}"></div>
+    <div><label for="t_income_groups">Income groups</label><input id="t_income_groups" type="text" name="t_income_groups" value="{{ v('t_income_groups', (t.income_groups or ['Income'])|join(', ')) }}"></div>
+  </div>
+</section>
+{% endif %}
+
+{% set b = spec.budget or {} %}{% set bh = (plan.files|selectattr('kind', 'equalto', 'budget_items')|map(attribute='header')|first) if plan.files|selectattr('kind', 'equalto', 'budget_items')|list else b.get('headers', []) %}
+{% if spec.budget %}
+<section class="panel" style="margin-top:var(--space-4)">
+  <h2>Budget columns</h2>
+  <p class="muted">All four are required: group, item, planned and spent. Spent is what the ledger reconciles each line's transactions against.</p>
+  <div class="row">{% for f, label in budget_labels.items() %}<div>{{ colsel('b_', f, label, bh, b.columns.get(f)) }}</div>{% endfor %}</div>
+  <div class="row">
+    <div><label for="b_spent_sign">Spending in the spent column is</label><select id="b_spent_sign" name="b_spent_sign">
+      {% for val, lab in [('negative', 'negative, as in the transactions'), ('positive', 'positive (e.g. 380.00 spent)')] %}<option value="{{ val }}" {% if val == v('b_spent_sign', b.spent_sign) %}selected{% endif %}>{{ lab }}</option>{% endfor %}</select></div>
+    <div><label for="b_decimal">Decimal mark</label><select id="b_decimal" name="b_decimal">{% for d in ['.', ','] %}<option {% if d == v('b_decimal', b.decimal) %}selected{% endif %}>{{ d }}</option>{% endfor %}</select></div>
+    <div><label for="b_thousands">Thousands separator</label><select id="b_thousands" name="b_thousands">{% for d, lab in [(',', ','), ('.', '.'), (' ', 'space'), ('', 'none')] %}<option value="{{ d }}" {% if d == v('b_thousands', b.thousands) %}selected{% endif %}>{{ lab }}</option>{% endfor %}</select></div>
+    <div><label for="b_income_groups">Income groups</label><input id="b_income_groups" type="text" name="b_income_groups" value="{{ v('b_income_groups', (b.income_groups or ['Income'])|join(', ')) }}">
+      <p class="muted">Lines in these groups are income; every other line is spending.</p></div>
+  </div>
+</section>
+{% endif %}
+
+<p style="margin-top:var(--space-4)"><button class="btn primary" type="submit" id="map-confirm">Save the mapping, store and rebuild</button></p>
+</form>
+<form method="post" action="/upload/map/{{ batch }}/discard">{{ csrf_field(request) }}<button class="btn" type="submit">Discard these files</button></form>
+{% endblock %}

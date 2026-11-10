@@ -9,7 +9,8 @@ from psycopg.types.json import Jsonb
 from ..builds import build_status, run_background
 from .findings import latest_findings
 from .checklist import checklist_goals
-from pipeline.run_pipeline import ingest, build_running
+from pipeline.run_pipeline import ingest, build_running, FN_RX
+from .sources import stash
 
 router = APIRouter()
 
@@ -46,8 +47,19 @@ async def upload(request: Request, background: BackgroundTasks, files: list[Uplo
             items += expand_zip(name, data)
         else:
             items.append(Item(name, data))
+    # files not named like EveryDollar's exports go to the mapping step (#96); a zip stays an EveryDollar back catalogue
+    loose = [it for it in items if it.data is not None and not it.source and not FN_RX.match(it.name)]
+    other = [it for it in loose if it.name.lower().endswith(".csv")]
+    items = [it for it in items if it not in loose] + [
+        Item(it.name, error="not an EveryDollar export filename (<hex>-MM-YYYY-EveryDollar-Transactions|BudgetItems.csv), "
+                            "and not a CSV another budget tool could have written") for it in loose if it not in other]
+    if len(other) > 2:
+        for it in other:
+            items.append(Item(it.name, error="more than two files that are not EveryDollar exports: upload one month's pair (transactions and budget) at a time"))
+        other = []
     results, stored = [], 0
     with db.pool.connection() as conn:
+        batch = stash(conn, [(it.name, it.data) for it in other], user.get("email", "")) if other else None
         for it in items:
             res = {"name": it.name, "source": it.source, "ok": False, "detail": it.error}
             if it.data is not None:
@@ -58,9 +70,10 @@ async def upload(request: Request, background: BackgroundTasks, files: list[Uplo
                     conn.rollback(); res["detail"] = str(e)[:300]
             results.append(res)
         # per-file results live in the database: a zip of a back catalogue would overflow the ~4 KB session cookie
-        conn.execute("INSERT INTO upload_batches (uploaded_by, results) VALUES (%s, %s)", (user.get("email", ""), Jsonb(results)))
-        conn.execute("DELETE FROM upload_batches WHERE id <= (SELECT max(id) FROM upload_batches) - 20")
-        conn.commit()
+        if results:   # only files waiting for the mapping step: nothing was stored or rejected yet
+            conn.execute("INSERT INTO upload_batches (uploaded_by, results) VALUES (%s, %s)", (user.get("email", ""), Jsonb(results)))
+            conn.execute("DELETE FROM upload_batches WHERE id <= (SELECT max(id) FROM upload_batches) - 20")
+            conn.commit()
         if stored:
             if build_running(conn):
                 flash(request, f"Stored {stored} file{'s' if stored != 1 else ''}. A rebuild is already running; it will run again to include them.", "bad")
@@ -69,6 +82,8 @@ async def upload(request: Request, background: BackgroundTasks, files: list[Uplo
                 flash(request, f"Stored {stored} file{'s' if stored != 1 else ''}. Rebuilding in the background; progress is shown below.")
     if stored < len(results):
         flash(request, f"{len(results) - stored} of {len(results)} files were not stored; see the upload result below.", "bad")
+    if batch:
+        return RedirectResponse(f"/upload/map/{batch}", status_code=303)
     return RedirectResponse("/upload", status_code=303)
 
 

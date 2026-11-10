@@ -1,0 +1,13 @@
+Category;Subcategory;Budgeted;Actual
+Income;Rosie Paycheck;3.760,00;3.760,00
+Income;Sam Contract Income;1.000,00;900,00
+Housing;Rent;1.450,00;1.450,00
+Utilities;Electric;90,00;0,00
+Food;Groceries;300,00;176,55
+Food;Eating Out;80,00;38,00
+Transportation;Fuel;90,00;41,20
+Subscriptions;Streaming;15,49;15,49
+Personal;Rosie Fun Money;40,00;26,57
+Debt;Student Loan;275,00;275,00
+Other;Venmo Pass-Through;0,00;60,00
+Other;Balancing Plug;0,00;-12,34
