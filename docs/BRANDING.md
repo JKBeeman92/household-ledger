@@ -34,7 +34,7 @@ choice the OS preference is used. A theme must therefore define both blocks.
 `examples/brand-beeman/` is a complete override (Cinzel/Source Sans, pine and bronze, the moonlit-valley login). Install it with
 
 ```sh
-cp examples/brand-beeman/* /volume2/ledger/brand/
+cp examples/brand-beeman/* "$LEDGER_DATA"/brand/
 ```
 
 and restart nothing — the files are read on each request.

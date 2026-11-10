@@ -5,7 +5,8 @@ This app holds a household's financial history. Report vulnerabilities privately
 
 What the app assumes: it runs behind an OIDC provider (`ALLOWED_GROUPS` enforced on every page and API call), on a private
 network or behind a tunnel, with the database reachable only from the app container. `AUTH_DISABLED` is for local development and
-must never be set on a reachable host. The only outbound call the app makes is to the Anthropic API, and only when a user presses
-**Generate review**; it sends derived figures (planned vs spent, category totals), never transactions, merchants or notes.
+must never be set on a reachable host. It makes outbound calls only when a user asks for one: to the
+configured review provider on **Generate review** (derived figures such as planned vs spent and category totals, never
+transactions, merchants or notes), to the price-index source on **Fetch latest CPI**, and to a webhook URL if an editor has set one.
 
 Supported: the latest release and `main`. Dependabot keeps dependencies current; the image is rebuilt on every merge.
