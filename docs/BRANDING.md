@@ -4,7 +4,8 @@ The app ships with its own brand, "Homestead": money green and warm terracotta o
 Plus Jakarta Sans with JetBrains Mono for figures. Its mark is a house whose walls are a ledger sheet with a dollar sign on it.
 Everything visual
 is replaceable without rebuilding the image: mount a directory at `BRAND_DIR` (default `/data/brand`) and any file in it
-shadows the shipped default of the same name under `/brand/…`.
+shadows the shipped default of the same name under `/brand/…`. (The household's name, title and currency are not brand files:
+they come from `household.json` in the seed directory on first boot, and from the Settings page after that.)
 
 | File in `BRAND_DIR` | Replaces | Notes |
 |---|---|---|
@@ -12,7 +13,6 @@ shadows the shipped default of the same name under `/brand/…`.
 | `custom.css` | nothing (loaded last, empty by default) | small overrides on top of a theme |
 | `mark.svg` | the mark in the header, masthead, favicon and login card | square, any size |
 | `backdrop.svg` or any image | the login backdrop | reference it from `theme.css` via `--login-backdrop` |
-| `household.json` | first-boot household name/title/currency | only read when the `household` setting does not exist yet; edit later on the Settings page |
 
 ## The token contract
 

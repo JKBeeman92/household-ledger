@@ -268,3 +268,18 @@ def test_a_form_post_after_the_session_ended_lands_on_the_login_page(idp, browse
     assert r.status_code == 303 and r.headers["location"] == "/login?next=/reviews/prompt"   # 307 would re-POST to the GET-only /login
     assert browser.get(r.headers["location"]).status_code == 200
     assert browser.get("/upload").status_code == 307                                         # safe methods keep 307
+
+
+def test_unreachable_provider_at_sign_in_start_is_a_readable_error_not_a_500(client, monkeypatch):
+    """The discovery document is fetched on the first sign-in: a provider the container cannot reach (split DNS, no hairpin NAT)
+    must land on the login page with a message, and be logged, rather than a bare 500."""
+    import httpx
+    from app import auth as auth_mod
+
+    async def boom(request, nxt):
+        raise httpx.ConnectError("name or service not known")
+    monkeypatch.setattr(auth_mod, "start_login", boom)
+    r = client.get("/auth/start?next=/", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"].startswith("/login?error=")
+    from urllib.parse import unquote
+    assert "cannot reach the identity provider: ConnectError" in unquote(r.headers["location"])   # login.html shows `error`

@@ -1,6 +1,6 @@
 # First-run checklist
 
-For a new install, or the first start of a new release. `README.md` covers the install itself; this is what to try once the
+For a new install, or the first start of a new release (read that release's notes in [`UPGRADING.md`](UPGRADING.md) first). `README.md` covers the install itself; this is what to try once the
 container is up. Replace `https://ledger.example.com` with your `BASE_URL`. If a step fails, open an issue with the relevant lines
 of `docker compose logs ledger` (check them for anything private first).
 
@@ -11,6 +11,7 @@ of `docker compose logs ledger` (check them for anything private first).
       refuses to start and `docker compose logs ledger` says so (it used to fall back to `admins`).
 - [ ] **Health.** `curl -s http://localhost:8010/healthz` returns `{"ok":true,"last_build":"none"}` on an empty database, and
       `"last_build":"ok"` after the first successful rebuild.
+- [ ] **Through the proxy.** `https://ledger.example.com/healthz` answers through the reverse proxy, and the certificate is valid.
 - [ ] **Sign-in and sign-out.** Sign in through your OIDC provider; **Sign out** also ends the provider session and lands on
       `/signed-out`. This needs the `offline_access` scope and the `/signed-out` redirect URI (README, "Sign-in").
 - [ ] **Group re-check.** Remove a test account from the allowed group at the provider; within `GROUP_RECHECK_SECONDS` (default
@@ -18,7 +19,10 @@ of `docker compose logs ledger` (check them for anything private first).
 - [ ] **Import and rebuild.** With `IMPORT_DIR` set, `docker compose logs ledger | grep "import dir"` shows one line with the
       number of files loaded; a line reading `import dir … failed` names what went wrong and the container still starts.
       Upload one month on **Close a month** (a `.zip` works too): the page returns at once, shows the build running, then a
-      "Last upload" panel and a clean reconciliation.
+      "Last upload" panel and a clean reconciliation. Upload a file of a few MB through the proxy too: a 413 from the proxy (not the
+      app) means its body-size limit is below `MAX_UPLOAD_MB`.
+- [ ] **Another budget tool** (optional). Upload a transactions CSV and a budget CSV that are not EveryDollar's: the mapping page
+      opens, and confirming it stores the month (README, "Other budget tools").
 - [ ] **Dashboard.** All eight tabs draw on a desktop and on a phone.
 - [ ] **Settings.** Edit and save one mapping row, one goal and one event; a deliberate typo in the rules JSON is refused with the
       key named.
