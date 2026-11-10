@@ -61,7 +61,9 @@ def rebuild_now(request: Request, background: BackgroundTasks, user=Depends(auth
 
 
 @router.post("/review/generate")
-def review_generate(request: Request, month: str = Form(...), user=Depends(auth.require_editor)):
+def review_generate(request: Request, month: str = Form(...), confirm: str = Form(""), user=Depends(auth.require_editor)):
+    if confirm != "yes":   # the cost guard: a provider call only follows the confirmation page
+        return RedirectResponse(f"/reviews/confirm?month={month}", status_code=303)
     with db.pool.connection() as conn:
         try:
             res = review.generate(conn, month)

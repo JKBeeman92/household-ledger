@@ -55,19 +55,31 @@ def build_context(conn, month: str) -> dict:
     }
 
 
+def prompt_for(conn, month: str) -> str:
+    return json.dumps(build_context(conn, month), separators=(",", ":"))
+
+
+def estimate_tokens(conn, month: str) -> int:
+    """Rough input size (about four characters a token) of what a generate call would send for `month`."""
+    return -(-(len(SYSTEM) + len(prompt_for(conn, month))) // 4)
+
+
+def refresh_dataset(conn) -> None:
+    rows = conn.execute("SELECT month, sections FROM reviews ORDER BY month").fetchall()
+    review_rows = [dict(m=r["month"], **sec) for r in rows for sec in r["sections"]]
+    conn.execute("INSERT INTO datasets (name, rows, row_count) VALUES ('review',%s,%s) ON CONFLICT (name) DO UPDATE SET rows=EXCLUDED.rows, row_count=EXCLUDED.row_count, built_at=now()", (json.dumps(review_rows), len(review_rows)))
+
+
 def generate(conn, month: str) -> dict:
     prov = providers.resolve(conn)
     if (why := prov.problem()):
         raise RuntimeError(f"no review provider is configured: {why}")
-    ctx = build_context(conn, month)
-    prompt = json.dumps(ctx, separators=(",", ":"))
+    prompt = prompt_for(conn, month)
     sections = providers.parse_sections(prov.complete(SYSTEM, prompt))
     conn.execute(
-        "INSERT INTO reviews (month, model, sections, prompt) VALUES (%s,%s,%s,%s) ON CONFLICT (month) DO UPDATE SET generated_at=now(), model=EXCLUDED.model, sections=EXCLUDED.sections, prompt=EXCLUDED.prompt",
+        "INSERT INTO reviews (month, model, sections, prompt, hand_edited_at) VALUES (%s,%s,%s,%s,NULL) ON CONFLICT (month) DO UPDATE SET generated_at=now(), model=EXCLUDED.model, sections=EXCLUDED.sections, prompt=EXCLUDED.prompt, hand_edited_at=NULL",
         (month, prov.label, json.dumps(sections), prompt),
     )
-    rows = conn.execute("SELECT month, sections FROM reviews ORDER BY month").fetchall()
-    review_rows = [dict(m=r["month"], **sec) for r in rows for sec in r["sections"]]
-    conn.execute("INSERT INTO datasets (name, rows, row_count) VALUES ('review',%s,%s) ON CONFLICT (name) DO UPDATE SET rows=EXCLUDED.rows, row_count=EXCLUDED.row_count, built_at=now()", (json.dumps(review_rows), len(review_rows)))
+    refresh_dataset(conn)
     conn.commit()
     return {"month": month, "sections": sections}

@@ -23,6 +23,7 @@
       <p style="margin-top:var(--space-3)"><button class="btn" type="submit" {% if problem %}disabled{% endif %}>Test connection</button></p>
     </form>
     {% if recent %}<h3>Recent reviews</h3><ul>{% for r in recent %}<li>{{ r.month }} · {{ r.model }}</li>{% endfor %}</ul>{% endif %}
+    <p><a href="/reviews/history">Past reviews, prompts and edits</a></p>
   </div>
 </div>
 {% endblock %}
