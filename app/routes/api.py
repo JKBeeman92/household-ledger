@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 
 from .. import db, auth
@@ -7,11 +7,25 @@ from ..web_helpers import _months
 router = APIRouter()
 
 
+def _etag_matches(header: str | None, etag: str) -> bool:
+    if not header:
+        return False
+    if header.strip() == "*":
+        return True
+    return any(t.strip().removeprefix("W/") == etag.removeprefix("W/") for t in header.split(","))
+
+
 @router.get("/api/datasets")
-def api_datasets(user=Depends(auth.require_user_api)):
+def api_datasets(request: Request, user=Depends(auth.require_user_api)):
+    """All datasets as one JSON object. Revalidated with an ETag from the build time, row count and sizes of `datasets`."""
     with db.pool.connection() as conn:
+        v = conn.execute("SELECT max(built_at) AS t, count(*) AS n, coalesce(sum(row_count), 0) AS rc FROM datasets").fetchone()
+        etag = 'W/"%s-%s-%s"' % (v["t"].timestamp() if v["t"] else 0, v["n"], v["rc"])
+        headers = {"ETag": etag, "Cache-Control": "private, no-cache"}
+        if _etag_matches(request.headers.get("if-none-match"), etag):
+            return Response(status_code=304, headers=headers)
         rows = conn.execute("SELECT name, rows FROM datasets").fetchall()
-    return JSONResponse({r["name"]: r["rows"] for r in rows})
+    return JSONResponse({r["name"]: r["rows"] for r in rows}, headers=headers)
 
 
 @router.get("/api/dataset/{name}")

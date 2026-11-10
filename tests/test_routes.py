@@ -107,3 +107,22 @@ def test_no_redirect_off_site_when_signed_in(client, reset_db, path):
 def test_login_page_does_not_redirect_when_signed_out(client, reset_db, auth_on):
     r = client.get("/login?next=//evil.example")
     assert r.status_code == 200 and "location" not in r.headers
+
+
+def test_datasets_are_gzipped_and_revalidated_with_etag(client, reset_db):
+    upload_files(client, GOLDEN / "exports")
+    r = client.get("/api/datasets", headers={"Accept-Encoding": "gzip"})
+    assert r.status_code == 200 and r.headers["content-encoding"] == "gzip"
+    assert r.headers["cache-control"] == "private, no-cache" and r.headers["etag"]
+    etag = r.headers["etag"]
+    r2 = client.get("/api/datasets", headers={"If-None-Match": etag})
+    assert r2.status_code == 304 and r2.content == b"" and r2.headers["etag"] == etag
+    assert client.get("/api/datasets", headers={"If-None-Match": 'W/"nope", ' + etag}).status_code == 304
+    assert client.get("/api/datasets", headers={"If-None-Match": '"stale"'}).status_code == 200
+    upload_files(client, GOLDEN / "exports")  # rebuild: datasets are rewritten, so the tag changes
+    r3 = client.get("/api/datasets", headers={"If-None-Match": etag})
+    assert r3.status_code == 200 and r3.headers["etag"] != etag
+
+
+def test_datasets_304_still_requires_sign_in(client, reset_db, auth_on):
+    assert client.get("/api/datasets", headers={"If-None-Match": "*"}).status_code == 401
