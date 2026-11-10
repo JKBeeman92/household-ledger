@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/JKBeeman92/household-ledger/compare/v0.2.0...v0.3.0) (2026-11-10)
+
+
+### Features
+
+* Household Ledger, a self-hosted household budget dashboard ([63dbec2](https://github.com/JKBeeman92/household-ledger/commit/63dbec25ea1254a014ef8f8e35908220aa9f0ac4))
+
 ## [0.2.0](https://github.com/JKBeeman92/household-ledger/compare/v0.1.0...v0.2.0) (2026-11-09)
 
 
