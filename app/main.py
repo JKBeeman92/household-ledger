@@ -18,6 +18,7 @@ from .uploads import UploadLimit
 from .web_helpers import ROOT, flash, render
 from .logging_setup import configure as configure_logging, RequestIdMiddleware
 from .routes import brand, auth, pages, upload, settings as settings_routes, api, build, findings, months, checklist, schemas, cpi, reviews, review_audit, review_prompt, ops, export, tokens
+from .mcp_endpoint import endpoint as mcp_endpoint, PATH as MCP_PATH
 
 configure_logging(settings.log_format)
 log = logging.getLogger("ledger")
@@ -31,7 +32,8 @@ async def lifespan(app: FastAPI):
         if not settings.session_secret:
             log.warning("SESSION_SECRET is empty: using a random per-process secret, so sessions reset on restart")
     db.init()
-    yield
+    async with mcp_endpoint.run():
+        yield
     db.pool.close()
 
 
@@ -44,6 +46,9 @@ app.add_middleware(RequestIdMiddleware)   # outermost, so every log line and res
 app.mount("/static", StaticFiles(directory=ROOT / "web" / "static"), name="static")
 for module in (brand, auth, pages, upload, settings_routes, api, build, findings, months, checklist, schemas, cpi, reviews, review_audit, review_prompt, ops, export, tokens):
     app.include_router(module.router)
+
+
+app.add_route(MCP_PATH, mcp_endpoint)   # a bare ASGI route: bearer-token auth in the endpoint, not the app-level cookie/CSRF dependencies
 
 
 @app.exception_handler(csrf.CsrfError)
