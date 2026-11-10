@@ -58,3 +58,23 @@ for r in L:
     if r["InTotals"]=="1" and r["CanonicalItem"] in ("Long Term Savings (slush)","Taxes","Generosity","Emergency Fund") and r["Flow"]=="expense":
         slush[(r["BudgetMonth"][:4], r["CanonicalItem"])] += -float(r["Amount"])
 w("slush", [{"y":k[0],"item":k[1],"amount":round(v,2)} for k,v in sorted(slush.items())])
+
+# reconciliation: every envelope whose transactions do not sum to its BudgetItems Spent (empty when the books are clean)
+from decimal import Decimal as _D
+_rx = __import__("re").compile(r"^[0-9a-f]+-(\d\d)-(\d{4})-EveryDollar-(Transactions|BudgetItems)\.csv$")
+def _files(folder, kind):
+    for fn in sorted(os.listdir(folder)) if os.path.isdir(folder) else []:
+        m = _rx.match(fn)
+        if m and m.group(3) == kind: yield f"{m.group(2)}-{m.group(1)}", os.path.join(folder, fn)
+_tx, _sp = collections.defaultdict(_D), {}
+for _bm, _p in _files("txns", "Transactions"):
+    for r in csv.DictReader(open(_p, newline="", encoding="utf-8-sig")): _tx[(_bm, r["Item"])] += _D(r["Amount"])
+for _bm, _p in _files("summaries", "BudgetItems"):
+    for r in csv.DictReader(open(_p, newline="", encoding="utf-8-sig")): _sp[(_bm, r["Item"])] = _D(r["Spent"])
+rec = []
+for (_bm, _it) in sorted(set(_sp) | set(_tx)):
+    s, t = _sp.get((_bm, _it)), _tx.get((_bm, _it))
+    status = "ITEM_NOT_IN_SUMMARY" if s is None else "NO_TXNS_BUT_SPENT" if t is None and s != 0 else "OK" if (t or 0) == s else "MISMATCH"
+    if status != "OK":
+        rec.append({"m": _bm, "item": _it, "txn_sum": float(t or 0), "spent": None if s is None else float(s), "delta": float((t or 0) - (s or 0)), "status": status})
+w("reconciliation", rec)

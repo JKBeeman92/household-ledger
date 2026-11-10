@@ -5,6 +5,7 @@ from ..config import settings
 from .. import db, auth, review
 from ..web_helpers import flash, render, _months
 from ..builds import build_status, run_background
+from .findings import latest_findings
 from pipeline.run_pipeline import ingest, build_running
 
 router = APIRouter()
@@ -16,7 +17,8 @@ def upload_page(request: Request, user=Depends(auth.require_editor)):
         files = conn.execute("SELECT budget_month, kind, filename, row_count, uploaded_at FROM source_files ORDER BY budget_month DESC, kind").fetchall()
         months = _months(conn)
         build = build_status(conn)
-    return render(request, "upload.html", user, active="upload", files=files, months=months, build=build, review_enabled=bool(settings.anthropic_api_key))
+        findings = latest_findings(conn)
+    return render(request, "upload.html", user, active="upload", findings=findings, files=files, months=months, build=build, review_enabled=bool(settings.anthropic_api_key))
 
 
 @router.post("/upload")

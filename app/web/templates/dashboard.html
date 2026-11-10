@@ -372,6 +372,19 @@
       <h3>Notes</h3>
       <p>The ledger carries every EveryDollar note, but notes are not shown on this page: the early years include medication names and people's names.</p>
     </div>
+    <div class="card" id="recon-card">
+      <h2>Reconciliation</h2>
+      <p class="note" data-draw="reconciliation-note">Every envelope's transactions should sum to its Spent in the BudgetItems export; any that do not are listed here.</p>
+      <div class="tbl"><table data-source="reconciliation" data-row-key="item"><thead><tr><th data-field="m">Month</th><th data-field="item">Envelope</th><th data-field="txn_sum">Σ transactions</th><th data-field="spent">Spent</th><th data-field="delta">Delta</th><th data-field="status">Status</th></tr></thead><tbody data-draw="reconciliation"></tbody></table></div>
+      <script nonce="{{ csp_nonce(request) }}">(() => {
+        const rows = () => { const g = dash.data('reconciliation'); return g.status === 'ok' ? g.data : null; };
+        dash.draw('reconciliation-note', (el) => { const d = rows(); if (d) el.textContent = d.length ? d.length + ' envelope' + (d.length === 1 ? '' : 's') + ' do not reconcile. Fix or re-upload the month, then rebuild.' : 'All envelopes reconcile: every month\'s transactions sum to the budget\'s Spent.'; });
+        dash.draw('reconciliation', (tb) => {
+          const d = rows(); if (!d) { tb.replaceChildren(); return; }
+          HL.fillTable(tb, d, [(r) => r.m, (r) => r.item, (r) => r.txn_sum == null ? '—' : d3.format(',.2f')(r.txn_sum), (r) => r.spent == null ? '—' : d3.format(',.2f')(r.spent), (r) => d3.format('+,.2f')(r.delta), (r) => r.status]);
+        });
+      })();</script>
+    </div>
     <div class="grid">
       <div class="card">
         <h2 id="cpi-table">CPI-U used</h2>
