@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}API tokens · {{ household.title }}{% endblock %}
+{% block content %}
+<p class="eyebrow">Configuration</p>
+<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">API tokens</h1>
+<p class="muted" style="max-width:70ch">Personal tokens for scripts, monitoring and agents. Send one as <code>Authorization: Bearer &lt;token&gt;</code> to <code>/api/*</code> and <code>/metrics</code>. A token reads the ledger (<code>read</code>) and may also work on month-close reviews (<code>read+review</code>); no token can upload, rebuild or change settings, and none opens a page. Tokens stop working when revoked, or when you are no longer an editor. <a href="/settings">Back to Settings</a></p>
+{% if new %}
+<section class="panel newtoken" style="margin-top:var(--space-4)" aria-labelledby="newtok-h">
+  <h2 id="newtok-h">New token: {{ new.name }}</h2>
+  <p>Copy it now. Only a hash is stored, so it is not shown again.</p>
+  <p class="tokenline" style="display:flex;gap:var(--space-2);align-items:center"><input type="text" id="newtok" class="mono" value="{{ new.token }}" readonly aria-label="New API token" spellcheck="false" autocomplete="off">
+    <button type="button" class="btn" id="copytok">Copy</button></p>
+  <p class="muted" id="copystatus" role="status" aria-live="polite">Scope: {{ new.scope }}.</p>
+</section>
+{% endif %}
+<div class="row" style="margin-top:var(--space-4)">
+  <form class="panel" method="post" action="/settings/tokens/new">{{ csrf_field(request) }}
+    <h2>Create a token</h2>
+    <p><label for="tokname">Name</label><br><input type="text" id="tokname" name="name" maxlength="60" required placeholder="e.g. Bag End monitoring" autocomplete="off"></p>
+    <p><label for="tokscope">Scope</label><br><select id="tokscope" name="scope">{% for s in scopes %}<option value="{{ s }}">{{ s }}</option>{% endfor %}</select></p>
+    <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Create token</button></p>
+  </form>
+  <div class="panel">
+    <h2>Your tokens</h2>
+    {% if tokens %}<div class="tablewrap"><table class="plain">
+      <thead><tr><th>Name</th><th>Scope</th><th>Created</th><th>Last used</th><th><span class="sr">Actions</span></th></tr></thead>
+      <tbody>{% for t in tokens %}<tr><td>{{ t.name }}</td><td>{{ t.scope }}</td>
+        <td><time datetime="{{ t.created_at.isoformat() }}">{{ t.created_at.strftime('%Y-%m-%d %H:%M') }}</time></td>
+        <td>{% if t.last_used_at %}<time datetime="{{ t.last_used_at.isoformat() }}">{{ t.last_used_at.strftime('%Y-%m-%d %H:%M') }}</time>{% else %}<span class="muted">never</span>{% endif %}</td>
+        <td><form method="post" action="/settings/tokens/{{ t.id }}/revoke" data-confirm="Revoke {{ t.name }}? Anything using it stops working.">{{ csrf_field(request) }}<button class="btn" type="submit">Revoke</button></form></td></tr>{% endfor %}</tbody>
+    </table></div>
+    <p class="muted">Times are UTC.</p>
+    {% else %}<p class="muted">No tokens yet.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}{% if new %}
+<script nonce="{{ csp_nonce(request) }}">
+  (() => {
+    const box = document.getElementById('newtok'), status = document.getElementById('copystatus');
+    box.addEventListener('focus', () => box.select());
+    document.getElementById('copytok').addEventListener('click', async () => {
+      box.select();
+      try { await navigator.clipboard.writeText(box.value); status.textContent = 'Copied.'; } catch (e) { status.textContent = 'Select the token and copy it by hand.'; }
+    });
+  })();
+</script>
+{% endif %}{% endblock %}

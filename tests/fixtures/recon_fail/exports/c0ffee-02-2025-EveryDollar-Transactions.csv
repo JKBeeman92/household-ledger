@@ -1,0 +1,15 @@
+Group,Item,Type,Date,Merchant,Account,Amount,Note
+Income,Rosie Paycheck,Income,02/03/2025,HOBBITON MILL PAYROLL,Bywater Checking,1880.00,
+Income,Rosie Paycheck,Income,02/17/2025,HOBBITON MILL PAYROLL,Bywater Checking,1880.00,
+Income,Sam Contract Income,Income,02/11/2025,Sackville Estates,Bywater Checking,1100.00,
+Income,Sam Contract Income,Income,02/20/2025,Transfer from Savings,Bywater Checking,250.00,"moved in from savings, not earned"
+Housing,Rent,Expense,02/01/2025,Bywater Property Co,Bywater Checking,-1450.00,
+Utilities,Electric,Expense,02/08/2025,SHIRE POWER & LIGHT,Bywater Checking,-97.80,
+Food,Groceries,Expense,01/30/2025,BYWATER MARKET #0412,Bywater Checking,-23.10,"dated in January, belongs to the February budget"
+Food,Groceries,Expense,02/05/2025,BYWATER MARKET #0412,Bywater Checking,-120.00,
+Food,Groceries,Expense,02/19/2025,Whole Foods,Bywater Checking,-71.60,
+Food,Eating Out,Expense,02/14/2025,Green Dragon Inn,Bywater Checking,-52.25,
+Transportation,Fuel,Expense,02/07/2025,Shire Fuel Stop,Bywater Checking,-38.90,
+Subscriptions,Streaming,Expense,02/09/2025,Netflix,Bywater Checking,-15.49,
+Personal,Rosie Fun Money,Expense,02/22/2025,Starbucks,Bywater Checking,-18.75,
+Debt,Student Loan,Expense,02/05/2025,Lembas Loan Servicing,Bywater Checking,-275.00,

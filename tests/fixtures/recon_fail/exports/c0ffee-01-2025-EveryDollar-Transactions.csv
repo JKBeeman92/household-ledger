@@ -1,0 +1,14 @@
+Group,Item,Type,Date,Merchant,Account,Amount,Note
+Income,Rosie Paycheck,Income,01/03/2025,HOBBITON MILL PAYROLL,Bywater Checking,1880.00,
+Income,Rosie Paycheck,Income,01/17/2025,HOBBITON MILL PAYROLL,Bywater Checking,1880.00,
+Income,Sam Contract Income,Income,01/10/2025,Gaffer's Garden Works,Bywater Checking,900.00,
+Housing,Rent,Expense,01/01/2025,Bywater Property Co,Bywater Checking,-1450.00,
+Food,Groceries,Expense,01/04/2025,BYWATER MARKET #0412,Bywater Checking,-112.40,
+Food,Groceries,Expense,01/18/2025,Farmer Maggot's Farm Stand,Bywater Checking,-64.15,
+Food,Eating Out,Expense,01/12/2025,GREEN DRAGON INN 8812,Bywater Checking,-38.00,birthday supper
+Transportation,Fuel,Expense,01/06/2025,Shell,Bywater Checking,-41.20,
+Subscriptions,Streaming,Expense,01/09/2025,Netflix,Bywater Checking,-15.49,
+Personal,Rosie Fun Money,Expense,01/14/2025,Amazon,Bywater Checking,-26.57,
+Debt,Student Loan,Expense,01/05/2025,Lembas Loan Servicing,Bywater Checking,-275.00,
+Other,Venmo Pass-Through,Expense,01/20/2025,Venmo,Bywater Checking,-60.00,
+Other,Balancing Plug,Expense,01/31/2025,Balancing entry,Bywater Checking,12.34,

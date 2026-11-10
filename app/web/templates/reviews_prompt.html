@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Review instructions · {{ household.title }}{% endblock %}
+{% block content %}
+<p class="eyebrow">Month-close review</p>
+<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Review instructions</h1>
+<p class="muted" style="max-width:70ch">The system prompt sent with every review, whichever provider writes it. Use it to say what this household wants emphasised (debt payoff, giving, a business's cash flow). Keep the reply format line (JSON with <code>sections</code>) or the review will not parse. <a href="/reviews">Back to Reviews</a></p>
+<div class="row" style="margin-top:var(--space-4)">
+  <form class="panel" method="post" action="/reviews/prompt">{{ csrf_field(request) }}
+    <h2>Instructions {% if customised %}<span class="muted">(customised)</span>{% else %}<span class="muted">(built-in)</span>{% endif %}</h2>
+    <p><label for="instructions">System prompt</label><br><textarea id="instructions" name="instructions" rows="16" maxlength="20000">{{ text }}</textarea></p>
+    <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save instructions</button></p>
+  </form>
+  <div class="panel">
+    <h2>Preview the context</h2>
+    <p class="muted">The exact JSON that would be sent with the instructions for a month. Nothing is sent to a provider.</p>
+    <form method="get" action="/reviews/prompt">
+      <p><label for="month">Budget month</label><br><select id="month" name="month">{% for m in months %}<option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}</option>{% endfor %}</select></p>
+      <p><button class="btn" type="submit" {% if not months %}disabled{% endif %}>Preview</button></p>
+    </form>
+    <form method="post" action="/reviews/prompt/reset">{{ csrf_field(request) }}
+      <h3>Reset</h3><p class="muted">Discard the saved text and use the built-in instructions.</p>
+      <p><button class="btn" type="submit" {% if not customised %}disabled{% endif %}>Reset to default</button></p>
+    </form>
+  </div>
+</div>
+{% if error %}<div class="panel" style="margin-top:var(--space-4)"><p>{{ error }}</p></div>{% endif %}
+{% if context %}<div class="panel" style="margin-top:var(--space-4)"><h2>Context for {{ month }}</h2><p class="muted">About {{ '{:,}'.format(tokens) }} input tokens with the instructions. Includes last month's review, life events and confirmed goals.</p><textarea class="json" id="ctx" readonly rows="16">{{ context }}</textarea></div>{% endif %}
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Confirm review · {{ household.title }}{% endblock %}
+{% block content %}
+<p class="eyebrow">Month-close review</p>
+<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Generate the {{ month }} review?</h1>
+<div class="panel" style="max-width:44rem;margin-top:var(--space-4)">
+  {% if error %}<p>{{ error }}. Upload that month and rebuild first.</p>
+  {% else %}
+  <p>This sends about <strong class="mono">{{ "{:,}".format(tokens) }}</strong> input tokens (an estimate: roughly four characters each) to <strong>{{ prov.label }}</strong>, which may cost money. The reply can use up to <span class="mono">{{ "{:,}".format(prov.max_tokens) }}</span> more.</p>
+  {% if existing %}<p>A review for {{ month }} already exists ({{ existing.model }}, {{ existing.generated_at.strftime('%Y-%m-%d') }}{% if existing.hand_edited_at %}, <strong>hand-edited</strong>{% endif %}). Generating replaces it{% if existing.hand_edited_at %} and discards your edits{% endif %}.</p>{% endif %}
+  {% if problem %}<p>Not configured: {{ problem }}. Set the provider on the <a href="/reviews">Reviews page</a>.</p>{% endif %}
+  <form method="post" action="/review/generate">{{ csrf_field(request) }}
+    <input type="hidden" name="month" value="{{ month }}"><input type="hidden" name="confirm" value="yes">
+    <p style="margin-top:var(--space-4)"><button class="btn primary" type="submit" {% if problem %}disabled{% endif %}>Send and generate</button>
+    <a class="btn" href="/upload" style="margin-left:var(--space-2)">Cancel</a></p>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

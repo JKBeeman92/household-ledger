@@ -1,0 +1,145 @@
+/* app.css — maps the dashboard page's token names onto the brand contract tokens and lays out the shell.
+   The contract (--surface-*, --ink*, --accent*, --series-*, fonts, spacing) is defined by /brand/theme.css — the shipped default,
+   or whatever theme.css sits in BRAND_DIR. Nothing in here names a colour. See docs/BRANDING.md. */
+
+:root {
+  --color-bg: var(--surface-100); --color-panel: var(--surface-200); --color-fg: var(--ink); --color-fg-muted: var(--ink-muted);
+  --color-border-line: var(--line); --color-ok: var(--success); --color-warn: var(--warning); --color-bad: var(--danger);
+  --cds-radius: var(--radius-md, 6px);
+  --cds-pad-xs: var(--space-1, 4px); --cds-pad-sm: var(--space-2, 8px); --cds-pad-md: var(--space-3, 12px); --cds-pad-lg: var(--space-4, 16px); --cds-pad-xl: var(--space-6, 24px);
+  --cds-gap-xs: var(--space-1, 4px); --cds-gap-sm: var(--space-2, 8px); --cds-gap-md: var(--space-4, 16px); --cds-gap-lg: var(--space-6, 24px); --cds-gap-xl: var(--space-8, 32px);
+  --cds-font-size-caption: 13px; --cds-font-size-body: 16px; --cds-font-size-heading: 18px; --cds-font-size-title: 26px; --cds-font-weight-medium: 600;
+  --cds-chart-grid: var(--chart-grid); --cds-chart-axis: var(--chart-axis); --cds-chart-reference: var(--chart-reference); --cds-chart-muted: var(--series-8);
+  --cds-surface-popover: var(--surface-300); --cds-border: var(--line-strong); --cds-shadow-popover: var(--shadow-md); --cds-text-secondary: var(--ink-muted);
+  --cds-dur-slow: .3s; --cds-ease-out: ease-out;
+  --font-anthropic-sans: var(--font-sans); --font-anthropic-serif: var(--font-display); --font-mono-ui: var(--font-mono);
+  --brand0: var(--accent); --brand1: var(--accent-2);
+  color-scheme: dark;
+}
+:root[data-theme="light"] { color-scheme: light; }
+
+html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); font-family: var(--font-sans); font-size: var(--cds-font-size-body); line-height: 1.45; }
+a { color: var(--accent); }
+.shell { max-width: 1280px; margin: 0 auto; padding-block: var(--space-4) var(--space-12); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.topbar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) 0 var(--space-4); border-bottom: 1px solid var(--line); margin-bottom: var(--space-6); }
+.topbar .wordmark { font-family: var(--font-display); font-weight: 600; letter-spacing: .03em; font-size: 18px; color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: var(--space-2); }
+.topbar .wordmark img { width: 26px; height: 26px; }
+.topbar nav { display: flex; gap: var(--space-2); margin-left: auto; flex-wrap: wrap; }
+.topbar nav a, .btn { font: inherit; font-size: 14px; text-decoration: none; color: var(--ink-muted); border: 1px solid var(--line-strong); border-radius: var(--radius-md); padding: 6px 12px; background: var(--surface-200); cursor: pointer; }
+.topbar nav a:hover, .btn:hover { color: var(--ink); background: var(--surface-300); }
+.topbar nav a[aria-current="page"] { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+.btn.primary { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+.btn.primary:hover { background: var(--accent-hover); }
+.btn:focus-visible, .topbar nav a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.muted { color: var(--ink-muted); }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.panel { background: var(--surface-200); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-6); }
+.panel h2 { font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: .03em; margin: 0 0 var(--space-3); }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2-text, var(--accent-2)); margin: 0 0 var(--space-1); }
+label { display: block; font-weight: 600; margin-bottom: var(--space-1); }
+input[type=file], input[type=text], input[type=search], input[type=number], textarea, select { font: inherit; color: var(--ink); background: var(--surface-300); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); width: 100%; box-sizing: border-box; }
+textarea.json { font-family: var(--font-mono); font-size: 13px; min-height: 22rem; }
+.flash { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border-left: 3px solid var(--info); background: var(--surface-200); margin-bottom: var(--space-4); }
+.flash.ok { border-left-color: var(--success); } .flash.bad { border-left-color: var(--danger); } .flash.warn { border-left-color: var(--warning); }
+.row { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); }
+table.plain { border-collapse: collapse; width: 100%; font-size: 14px; }
+table.plain th, table.plain td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+table.plain th { color: var(--ink-muted); font-weight: 600; }
+.login { min-height: 100vh; display: grid; place-items: center; background: var(--login-overlay), var(--login-backdrop) center/cover no-repeat; background-color: var(--surface-100); }
+.login .card { background: var(--surface-200); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); padding: var(--space-8); max-width: 26rem; text-align: center; box-shadow: var(--shadow-glow); }
+.login .card img { width: 64px; height: 64px; }
+.login h1 { font-family: var(--font-display); font-weight: 600; letter-spacing: .03em; margin: var(--space-3) 0 var(--space-2); }
+.foot { color: var(--ink-faint); font-size: 13px; margin-top: var(--space-12); border-top: 1px solid var(--line); padding-top: var(--space-3); }
+/* theme toggle shows the mode you would switch TO */
+#theme-toggle .sun { display: inline; } #theme-toggle .moon { display: none; }
+:root[data-theme="light"] #theme-toggle .sun { display: none; } :root[data-theme="light"] #theme-toggle .moon { display: inline; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.keyhelp { margin: var(--space-3) 0; } .keyhelp summary { cursor: pointer; color: var(--ink-muted, var(--ink)); }
+.keyhelp dl { margin: var(--space-2) 0; } .keyhelp dt { margin-top: var(--space-2); font-weight: 600; } .keyhelp dd { margin: 0; max-width: 70ch; }
+/* settings row editors */
+.stack { display: grid; gap: var(--space-4); }
+.stack > * { min-width: 0; }  /* grid items default to min-content width; let wide editor tables scroll inside .tablewrap instead of widening the page */
+.tablewrap { overflow-x: auto; margin-top: var(--space-3); }
+table.plain { position: relative; }  /* contains the absolutely positioned .sr labels so a scrolled table cannot widen the page */
+table.edit th[data-sort] { cursor: pointer; user-select: none; white-space: nowrap; }
+table.edit th[aria-sort=ascending]::after { content: " \25B2"; font-size: 10px; } table.edit th[aria-sort=descending]::after { content: " \25BC"; font-size: 10px; }
+table.edit td.acts { white-space: nowrap; width: 1%; }
+table.edit tr.editing td { vertical-align: top; background: var(--surface-300); }
+table.edit td .err { color: var(--danger); font-size: 13px; min-height: 0; }
+table.edit [aria-invalid=true] { border-color: var(--danger); }
+.tools { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; } .tools input[type=search] { max-width: 18rem; }
+.rowstatus { min-height: 1.4em; margin: var(--space-3) 0 0; } .rowstatus.ok { color: var(--success); } .rowstatus.bad { color: var(--danger); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* ---- Phones and small tablets (issue #24): tabs scroll, year tables keep their first column, radars stack, 44 px tap targets.
+   Dashboard rules use #dash-root.hl so they win over the page's own inline <style>. Close a month and Settings get rules only. */
+@media (max-width: 820px) {
+  .topbar { flex-wrap: wrap; row-gap: var(--space-2); }
+  .topbar .wordmark { min-height: 44px; }
+  .topbar nav { margin-left: 0; width: 100%; flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: var(--space-1); -webkit-overflow-scrolling: touch; }
+  .topbar nav a, .btn { min-height: 44px; min-width: 44px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; scroll-snap-align: start; flex: none; }
+  input[type=file], input[type=text], input[type=number], select { min-height: 44px; }
+  input[type=file]::file-selector-button { min-height: 32px; }
+  .panel { padding: var(--space-4); }
+  .panel summary, details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+  .shell table.plain { display: block; overflow-x: auto; max-width: 100%; }
+  textarea.json { min-height: 16rem; }
+  .shell form p > button.btn, .shell form button.btn { margin-top: var(--space-1); }
+
+  #dash-root.hl .controls { gap: var(--cds-gap-sm); }
+  #dash-root.hl .seg { display: flex; width: 100%; }
+  #dash-root.hl .seg button { flex: 1 1 0; min-height: 44px; padding-inline: var(--cds-pad-md); }
+  #dash-root.hl .tabs { flex-wrap: nowrap; overflow-x: auto; width: 100%; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; padding-bottom: var(--cds-gap-xs); }
+  #dash-root.hl .tabs button { min-height: 44px; min-width: 44px; flex: none; white-space: nowrap; scroll-snap-align: start; padding-inline: var(--cds-pad-md); }
+  #dash-root.hl details.how summary { min-height: 44px; display: flex; align-items: center; }
+  #dash-root.hl .legend.years span { display: inline-flex; align-items: center; min-height: 44px; padding-inline: var(--cds-pad-sm); }
+  #dash-root.hl .legend.years { gap: 0 var(--cds-gap-sm); }
+  #dash-root.hl .lede a, #dash-root.hl .note a { display: inline-block; min-height: 44px; line-height: 44px; }
+  #dash-root.hl .card { padding: var(--cds-pad-md); }
+  #dash-root.hl .tbl { max-width: 100%; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+  /* year tables: the first column (year / category / item) stays put while the numbers scroll under it */
+  #dash-root.hl .tbl th:first-child, #dash-root.hl .tbl td:first-child { position: sticky; left: 0; z-index: 1; background: var(--color-panel); border-right: 1px solid var(--color-border-line); }
+  #dash-root.hl .tbl th:first-child { z-index: 3; }
+  #dash-root.hl .tbl td:first-child { max-width: 11rem; overflow: hidden; text-overflow: ellipsis; }
+  #dash-root.hl .tbl th, #dash-root.hl .tbl td { padding-block: 10px; }
+  #dash-root.hl .chart { min-height: 220px; }
+}
+@media (max-width: 600px) {
+  #dash-root.hl .radars, #dash-root.hl .grid, #dash-root.hl .tiles { grid-template-columns: 1fr; }
+  #dash-root.hl .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #dash-root.hl .tile .v { font-size: 22px; }
+  .login .card { padding: var(--space-6); max-width: calc(100vw - 32px); }
+}
+
+/* upload drop zone and per-file results */
+.dropzone { border: 2px dashed var(--line-strong); border-radius: var(--radius-md); padding: var(--space-4); }
+.dropzone.over { border-color: var(--accent); background: var(--surface-300); }
+.file-list { margin: var(--space-2) 0 0; padding-left: var(--space-6); }
+.upload-results { margin: 0; padding-left: var(--space-6); }
+.upload-results li { border-left: 3px solid var(--success); padding-left: var(--space-3); margin-bottom: var(--space-1); list-style: none; }
+.upload-results li.bad { border-left-color: var(--danger); }
+/* ---- Accessibility (issue #15): definition popover for dotted <dfn> terms (hover, focus, tap), keyboard focus on panels ---- */
+.dfn-pop { position: absolute; z-index: 50; max-width: min(24rem, calc(100vw - 16px)); box-sizing: border-box; background: var(--surface-300); color: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-md); padding: var(--space-2) var(--space-3); font-size: 14px; line-height: 1.45; }
+.dfn-pop[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+/* ---- Print (issue #15): the visible tab on white paper, no chrome. a11y.js switches to the light theme for the job. ---- */
+@media print {
+  @page { margin: 14mm; }
+  html, body { background: var(--surface-000); color: var(--ink); font-size: 11pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .topbar, .flash, #theme-toggle, .controls, .btn, .dfn-pop, .foot { display: none !important; }
+  .shell { max-width: none; padding: 0; }
+  #dash-root.hl .masthead, #dash-root.hl .eyebrow { break-after: avoid; }
+  #dash-root.hl .card { break-inside: avoid; box-shadow: none; padding: var(--cds-pad-md); margin-bottom: var(--cds-gap-sm); }
+  #dash-root.hl .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #dash-root.hl .grid { grid-template-columns: 1fr 1fr; }
+  #dash-root.hl .tbl { max-height: none; overflow: visible; }
+  #dash-root.hl .tbl th { position: static; }
+  #dash-root.hl thead { display: table-header-group; }
+  #dash-root.hl tr { break-inside: avoid; }
+  #dash-root.hl .chart { min-height: 0; }
+  #dash-root.hl .tip, #dash-root.hl .legend.years { display: none; }
+  #dash-root.hl .page:focus { outline: none; }
+  #dash-root.hl dfn { border-bottom: 0; }
+  #dash-root.hl .lede a, #dash-root.hl .note a { text-decoration: none; color: inherit; }
+}

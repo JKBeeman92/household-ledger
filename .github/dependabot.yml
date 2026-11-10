@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    commit-message: { prefix: "chore(deps)" }
+    # 0.x packages treat a minor bump as breaking, so their minor bumps are not grouped: they get their own PR. Patches of them
+    # still group together, and stable (>=1.0) packages keep one weekly minor+patch PR. Keep the two pattern lists in step when a 0.x dependency is added.
+    groups:
+      python-0x-patch:
+        patterns: [fastapi, uvicorn, python-multipart, httpx]
+        update-types: [patch]
+      python-minor-patch:
+        patterns: ["*"]
+        exclude-patterns: [fastapi, uvicorn, python-multipart, httpx]
+        update-types: [minor, patch]
+    # mcp 2.x renamed FastMCP and changed other APIs, so it is a code migration, not a version bump: issue #88. Remove this when that is done.
+    ignore:
+      - dependency-name: mcp
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    commit-message: { prefix: "ci(deps)" }
+    groups:
+      actions: { patterns: ["*"] }
+  - package-ecosystem: docker
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    commit-message: { prefix: "chore(deps)" }

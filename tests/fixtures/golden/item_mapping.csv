@@ -1,0 +1,15 @@
+Item,CanonicalItem,Category,Flow,Note
+Rosie Paycheck,Paycheck,Income,income,Rosie
+Sam Contract Income,Contract Income,Income,income,Sam
+Rent,Rent,Housing,expense,
+Electric,Electric,Utilities,expense,
+Groceries,Groceries,Food,expense,
+Eating Out,Eating Out,Food,expense,
+Fuel,Fuel,Transportation,expense,
+Streaming,Streaming,Subscriptions,expense,
+Rosie Fun Money,Rosie Fun Money,Personal,expense,
+Holiday,Holiday,Savings,expense,
+Emergency Fund,Emergency Fund,Savings,expense,
+Student Loan,Student Loan,Debt,debt,
+Venmo Pass-Through,Venmo Pass-Through,Other,exclude,money moved for friends
+Balancing Plug,Balancing Plug,Other,plug,"balancing entry, not a payment"
