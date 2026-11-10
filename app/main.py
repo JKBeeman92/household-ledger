@@ -14,8 +14,8 @@ from .config import settings
 from . import db, csrf
 from .security import SecurityHeaders
 from .web_helpers import ROOT, flash, render
-from .routes import brand, auth, pages, upload, settings as settings_routes, api, build, findings, schemas, cpi, reviews, review_audit
-from .routes import months, checklist, brand, auth, pages, upload, settings as settings_routes, api, schemas, cpi, reviews, review_audit
+from .routes import brand, auth, pages, upload, settings as settings_routes, api, build, findings, schemas, cpi, reviews, review_audit, review_prompt
+from .routes import months, checklist, brand, auth, pages, upload, settings as settings_routes, api, schemas, cpi, reviews, review_audit, review_prompt
 
 log = logging.getLogger("ledger")
 
@@ -36,7 +36,7 @@ app = FastAPI(title="Household Ledger", docs_url=None, redoc_url=None, lifespan=
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret or secrets.token_hex(32), https_only=settings.base_url.startswith("https"), same_site="lax", max_age=settings.session_max_age)
 app.add_middleware(SecurityHeaders)   # outermost: CSP nonce + security headers on every response
 app.mount("/static", StaticFiles(directory=ROOT / "web" / "static"), name="static")
-for module in (brand, auth, pages, upload, settings_routes, api, build, findings, months, checklist, schemas, cpi, reviews, review_audit):
+for module in (brand, auth, pages, upload, settings_routes, api, build, findings, months, checklist, schemas, cpi, reviews, review_audit, review_prompt):
     app.include_router(module.router)
 
 

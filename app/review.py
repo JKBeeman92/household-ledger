@@ -7,8 +7,9 @@ from __future__ import annotations
 import json
 from statistics import mean
 
-from . import review_providers as providers
+from . import db, review_providers as providers
 
+SETTING = "review_instructions"
 SYSTEM = (
     "You write the month-close review for a household budget dashboard. You are given the closed budget month, the month before it, "
     "trailing-twelve-month context and the household's standing targets. Write 5 to 7 sections as JSON: "
@@ -20,6 +21,12 @@ SYSTEM = (
     "housing+utilities vs cap) and whether this month moved them; one trend worth watching; what to change in next month's plan. "
     "If the month had three paychecks, say so and do not read it as a raise. Return only the JSON object."
 )
+
+
+def instructions(conn) -> str:
+    """The effective system prompt: the household's saved text, else the built-in SYSTEM. One source for every provider (and an MCP tool)."""
+    saved = db.get_setting(conn, SETTING, None)
+    return saved if isinstance(saved, str) and saved.strip() else SYSTEM
 
 
 def _month_before(m: str) -> str:
@@ -61,7 +68,7 @@ def prompt_for(conn, month: str) -> str:
 
 def estimate_tokens(conn, month: str) -> int:
     """Rough input size (about four characters a token) of what a generate call would send for `month`."""
-    return -(-(len(SYSTEM) + len(prompt_for(conn, month))) // 4)
+    return -(-(len(instructions(conn)) + len(prompt_for(conn, month))) // 4)
 
 
 def refresh_dataset(conn) -> None:
@@ -75,7 +82,7 @@ def generate(conn, month: str) -> dict:
     if (why := prov.problem()):
         raise RuntimeError(f"no review provider is configured: {why}")
     prompt = prompt_for(conn, month)
-    sections = providers.parse_sections(prov.complete(SYSTEM, prompt))
+    sections = providers.parse_sections(prov.complete(instructions(conn), prompt))
     conn.execute(
         "INSERT INTO reviews (month, model, sections, prompt, hand_edited_at) VALUES (%s,%s,%s,%s,NULL) ON CONFLICT (month) DO UPDATE SET generated_at=now(), model=EXCLUDED.model, sections=EXCLUDED.sections, prompt=EXCLUDED.prompt, hand_edited_at=NULL",
         (month, prov.label, json.dumps(sections), prompt),
