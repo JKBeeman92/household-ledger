@@ -1,7 +1,8 @@
 # Household Ledger
 
-A self-hosted dashboard for a household budget kept in EveryDollar. Upload the two monthly exports, get a reconciled ledger,
-nine years of charts, goals tracking and a model-written month-close review — behind your own identity provider, on your own box.
+A self-hosted dashboard for a household budget kept in EveryDollar, or in any tool that exports its transactions and its budget
+each month. Upload the two monthly files, get a reconciled ledger, charts across every year you load, goals tracking and a
+model-written month-close review — behind your own identity provider, on your own box.
 
 Everything the app decides from is data you can edit on its Settings page: the item → category mapping, the CPI table for real
 dollars, goals, life-event markers, the classification rules (who earns what, which items are transfers), and the household name.
@@ -10,7 +11,7 @@ The look is a mounted directory of CSS and images ([docs/BRANDING.md](docs/BRAND
 ## How it works
 
 ```
-EveryDollar exports ──upload──▶ Postgres (source_files, transactions, budget_items)      ← immutable facts
+monthly exports    ──upload──▶ Postgres (source_files, transactions, budget_items)      ← immutable facts
                                    │ rebuild (on every upload, or on demand)
                                    ▼
                       pipeline/ (reconcile · classify · CPI-adjust · aggregate)        ← pure functions of the facts + settings
@@ -20,6 +21,7 @@ EveryDollar exports ──upload──▶ Postgres (source_files, transactions, 
 ```
 
 - A **budget month** is read from the export filename (`<id>-MM-YYYY-EveryDollar-Transactions.csv`), never from transaction dates.
+  Another tool's files are read through a source profile, and their month is confirmed on upload ([Other budget tools](#other-budget-tools)).
 - Reconciliation: for every envelope, Σ transactions must equal the BudgetItems "Spent". A month that fails still loads, and the
   page says so.
 - The pipeline scripts are plain Python with no database knowledge; `pipeline/run_pipeline.py` feeds them from Postgres and loads
@@ -27,12 +29,27 @@ EveryDollar exports ──upload──▶ Postgres (source_files, transactions, 
 
 ## Run it
 
+You need: a host with Docker Compose (amd64 or arm64), a hostname with HTTPS in front of the app (see
+[Reverse proxy and HTTPS](#reverse-proxy-and-https)), and an OpenID Connect provider with a client created for the ledger (see
+[Sign-in](#sign-in-any-oidc-provider)). Create the client first: its ID, secret and issuer URL go in `.env`.
+
 ```sh
-mkdir -p /srv/ledger/{postgres,brand}
+mkdir -p /srv/ledger/{postgres,brand,seed,import,backups}
 cp docker-compose.yml .env.example /srv/ledger/ && cd /srv/ledger && mv .env.example .env
-$EDITOR .env            # passwords, BASE_URL, OIDC settings
+openssl rand -hex 24    # POSTGRES_PASSWORD
+openssl rand -hex 32    # SESSION_SECRET
+$EDITOR .env            # the two secrets, BASE_URL, OIDC_ISSUER / _CLIENT_ID / _CLIENT_SECRET, ALLOWED_GROUPS
 docker compose up -d
+docker compose logs -f ledger   # a configuration problem is listed here; the app refuses to start (and restarts) until it is fixed
 ```
+
+The settings the app refuses to start without: `SESSION_SECRET` (32+ characters), `OIDC_ISSUER`, `OIDC_CLIENT_ID`,
+`OIDC_CLIENT_SECRET` and `ALLOWED_GROUPS`. `BASE_URL` must be the exact public URL people type, with `https://` and no trailing
+slash: sign-in redirects are built from it, and an `https` `BASE_URL` makes the session cookie HTTPS-only.
+
+**File ownership.** The app runs as uid 10001 and mounts `brand/`, `seed/` and `import/` read-only, so the files in them must be
+readable by that user (world-readable is enough: `chmod -R a+rX /srv/ledger/{brand,seed,import}`). `postgres/` belongs to the
+database container, which sets its own ownership on first start; leave it alone. `backups/` is written as root.
 
 First boot applies the migrations and seeds the reference tables. Seeds come from `SEED_DIR` (`/srv/ledger/seed/` in the compose file)
 when a file is present there, else from the generic files in `pipeline/` (CPI table, empty mapping, goal keys with no values).
@@ -54,10 +71,65 @@ The same import is available by hand:
 docker compose exec ledger python -m pipeline.import_exports /data/import
 ```
 
-Updates: the image is published to `ghcr.io/jkbeeman92/household-ledger` on every push to `main` (and `vX.Y.Z` tags), for both `linux/amd64` and `linux/arm64`.
-`docker compose pull && docker compose up -d`, or any image-watching updater, is the whole upgrade. For anything you rely on, pin the
-image in `docker-compose.yml` to a release (`:X.Y.Z`, or `:0` for the latest 0.x) instead of `:latest`. A checklist for the first
-run of a new install or release is in [`docs/FIRST-RUN.md`](docs/FIRST-RUN.md).
+**Updates.** The image is `ghcr.io/jkbeeman92/household-ledger`, for `linux/amd64` and `linux/arm64`. Every push to `main`
+publishes `:latest` and `:sha-<short>`; every release (git tag `vX.Y.Z`) also publishes `:X.Y.Z`, `:X.Y` and `:X`. For anything you
+rely on, pin `docker-compose.yml` to a release (`:0.2` takes 0.2.x fixes only; `:0` takes every 0.x release, and while the version is
+below 1.0 a minor release may change behaviour) instead of `:latest`.
+
+To upgrade: read the release's notes in [`docs/UPGRADING.md`](docs/UPGRADING.md), take a backup (`docker compose --profile backup
+run --rm -e BACKUP_ONCE=1 backup`, or the manual dump under [Backups](#backups)), then `docker compose pull && docker compose up -d`.
+Pending migrations apply themselves at start and are not reversible: to roll back, pin the previous tag and restore the dump.
+A checklist for the first run of a new install or release is in [`docs/FIRST-RUN.md`](docs/FIRST-RUN.md).
+
+## Reverse proxy and HTTPS
+
+Run the app behind a reverse proxy that terminates TLS (Caddy, nginx, Traefik, a Cloudflare tunnel, …). It must:
+
+- serve the app at the root of its hostname (`https://ledger.example.com/`, not a sub-path), the same URL as `BASE_URL`;
+- pass the `Host` header through and set `X-Forwarded-Proto` and `X-Forwarded-For`;
+- accept request bodies at least as large as `MAX_UPLOAD_MB` (50 MB by default). nginx's default is 1 MB, so set
+  `client_max_body_size 50m;`; Caddy and Traefik have no limit by default;
+- allow responses that take a while: a rebuild runs in the background, but a large upload or a month-close review can take tens
+  of seconds (raise `proxy_read_timeout` on nginx if you see 504s).
+
+Caddy, on the same host:
+
+```
+ledger.example.com {
+    reverse_proxy 127.0.0.1:8010
+}
+```
+
+nginx:
+
+```
+server {
+    listen 443 ssl;
+    server_name ledger.example.com;
+    # ssl_certificate / ssl_certificate_key ...
+    client_max_body_size 50m;
+    location / {
+        proxy_pass http://127.0.0.1:8010;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 120s;
+    }
+}
+```
+
+When the proxy runs on the same host, publish the port on loopback only (`"127.0.0.1:8010:8010"` in `docker-compose.yml`) so
+nothing reaches the app around it, and set `FORWARDED_ALLOW_IPS` to the proxy's address (see Hardening below). Opening
+`http://<host>:8010` directly is not a supported way in: with an `https` `BASE_URL` the browser drops the session cookie and sign-in
+loops back to the login page.
+
+**The container must reach the identity provider.** Sign-in exchanges the code for tokens, and the group re-check refreshes them,
+from inside the container, not from the browser. `OIDC_ISSUER` must therefore resolve and be reachable from the `ledger` container,
+with a certificate it trusts. A homelab where the provider's hostname only resolves on the LAN, or where the router does not
+hairpin traffic to its own public address, fails here: point the container at a resolvable address (for example `extra_hosts:`
+in the compose file) or put the ledger and the provider on a shared Docker network. The symptom is the login page saying
+"cannot reach the identity provider" (or "sign-in failed" after the provider's own page), and `docker compose logs ledger` shows
+the connection that failed.
 
 **Hardening.** The compose file runs the app with a read-only root filesystem, all Linux capabilities dropped and
 `no-new-privileges`; its only writable path is a 256 MB tmpfs on `/tmp` (rebuild working folder, upload spool). If you run the
@@ -79,8 +151,9 @@ Dumps land in `/srv/ledger/backups/ledger-<UTC time>.dump` (`pg_dump -Fc`, reada
 `BACKUP_KEEP_DAYS` (14) are deleted. Both settings are optional entries in `.env`. A failed dump is logged (`docker compose logs backup`) and
 never replaces an earlier good one. Copy that directory off the machine; a backup on the same disk is not a backup.
 
-The dump is the database only. To rebuild a household from nothing you also need the directories you maintain by hand:
-`seed/`, `brand/` and `import/` (the raw EveryDollar exports) complete the state.
+The dump is the database only, and it includes the files uploaded from other budget tools (they are stored in the database).
+To rebuild a household from nothing you also need the directories you maintain by hand: `seed/`, `brand/` and `import/` (the raw
+EveryDollar exports) complete the state. A one-off dump through the backup service: `docker compose --profile backup run --rm -e BACKUP_ONCE=1 backup`.
 
 **Restore** into an empty database, with the app stopped:
 
@@ -233,8 +306,10 @@ Layout: `app/` (FastAPI, templates, static), `pipeline/` (the scripts and the se
 
 This is financial data. Keep it behind SSO, keep the database on an encrypted volume, and back it up (see [Backups](#backups): the `ledger`
 database plus the `seed/`, `brand/` and `import/` directories are the whole state). The container runs as a non-root user and
-makes outbound calls only when you ask for them: to the review provider you configured when you press Generate review, and to the
-price-index source when you press Fetch latest on the CPI page. Only derived figures are sent, never transactions.
+makes outbound calls only to the identity provider (sign-in and the group re-check) and when you ask for them: to the review
+provider you configured when you press Generate review, to the price-index source when you press Fetch latest on the CPI page, and
+to the webhook URL an editor set on the Webhooks page ([docs/WEBHOOKS.md](docs/WEBHOOKS.md)). Only derived figures are sent, never
+transactions.
 
 ## License
 

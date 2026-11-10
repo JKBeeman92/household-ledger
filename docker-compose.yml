@@ -19,7 +19,7 @@ services:
       SEED_DIR: /data/seed
       IMPORT_DIR: /data/import
     ports:
-      - "8010:8010"
+      - "8010:8010"                 # with a reverse proxy on this host, use "127.0.0.1:8010:8010" (README, "Reverse proxy and HTTPS")
     volumes:
       - ${LEDGER_DATA:-./data}/brand:/data/brand:ro   # optional: theme.css, mark.svg, images, custom.css
       - ${LEDGER_DATA:-./data}/import:/data/import:ro # optional: drop EveryDollar exports here; new/changed files load on every start

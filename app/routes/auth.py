@@ -20,7 +20,11 @@ def login(request: Request, next: str = "/", error: str = ""):
 
 @router.get("/auth/start")
 async def auth_start(request: Request, next: str = "/"):
-    return await auth.start_login(request, next)
+    try:
+        return await auth.start_login(request, next)
+    except Exception as e:  # noqa: BLE001  the discovery document is fetched here: an unreachable provider is the usual cause
+        log.exception("oidc sign-in start failed (is OIDC_ISSUER reachable from this container?)")
+        return RedirectResponse(f"/login?error={quote('cannot reach the identity provider: ' + type(e).__name__, safe='')}", status_code=303)
 
 
 @router.get("/auth/callback")

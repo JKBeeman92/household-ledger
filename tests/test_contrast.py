@@ -9,7 +9,8 @@ import pytest
 from conftest import ROOT
 
 THEMES = {"homestead": ROOT / "app" / "web" / "static" / "brand" / "theme.css",
-          "red-book (example kit)": ROOT / "examples" / "brand-kits" / "red-book" / "theme.css"}
+          "red-book (example kit)": ROOT / "examples" / "brand-kits" / "red-book" / "theme.css",
+          "war-of-the-ring (example kit)": ROOT / "examples" / "brand-kits" / "war-of-the-ring" / "theme.css"}
 
 TEXT = 4.5
 GRAPHIC = 3.0

@@ -4,7 +4,8 @@ The app ships with its own brand, "Homestead": money green and warm terracotta o
 Plus Jakarta Sans with JetBrains Mono for figures. Its mark is a house whose walls are a ledger sheet with a dollar sign on it.
 Everything visual
 is replaceable without rebuilding the image: mount a directory at `BRAND_DIR` (default `/data/brand`) and any file in it
-shadows the shipped default of the same name under `/brand/…`.
+shadows the shipped default of the same name under `/brand/…`. (The household's name, title and currency are not brand files:
+they come from `household.json` in the seed directory on first boot, and from the Settings page after that.)
 
 | File in `BRAND_DIR` | Replaces | Notes |
 |---|---|---|
@@ -12,7 +13,6 @@ shadows the shipped default of the same name under `/brand/…`.
 | `custom.css` | nothing (loaded last, empty by default) | small overrides on top of a theme |
 | `mark.svg` | the mark in the header, masthead, favicon and login card | square, any size |
 | `backdrop.svg` or any image | the login backdrop | reference it from `theme.css` via `--login-backdrop` |
-| `household.json` | first-boot household name/title/currency | only read when the `household` setting does not exist yet; edit later on the Settings page |
 
 ## The token contract
 
@@ -55,3 +55,10 @@ shipped mark does, rather than relying on the page behind it.
 leather and gold leaf by night, parchment and red ink by day, Cinzel / EB Garamond / Courier Prime, a gold-tooled book for the
 mark and a hand-drawn map for the login backdrop. Its `README.md` has the copy command, and `tests/test_contrast.py` checks it
 alongside the built-in theme.
+
+## Example kit: War of the Ring
+
+`examples/brand-kits/war-of-the-ring/` uses the two modes for two sides: light mode is the West (Gondor's white stone, Rohan's
+green and gold), dark mode the Shadow (Mordor's soot and fire, Isengard's iron). It shows that `--login-backdrop` may differ per
+mode (`backdrop-light.svg`, `backdrop-dark.svg`), while `mark.svg` is shared by both, so its mark, the Ring, is drawn to read on
+either surface.
