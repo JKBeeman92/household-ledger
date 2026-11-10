@@ -14,6 +14,7 @@ from .auth import current_user, revalidate, Forbidden
 from .config import settings
 from . import db, csrf
 from .security import SecurityHeaders
+from .uploads import UploadLimit
 from .web_helpers import ROOT, flash, render
 from .logging_setup import configure as configure_logging, RequestIdMiddleware
 from .routes import brand, auth, pages, upload, settings as settings_routes, api, build, findings, months, checklist, schemas, cpi, reviews, review_audit, review_prompt, ops, export
@@ -35,6 +36,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Household Ledger", docs_url=None, redoc_url=None, lifespan=lifespan, dependencies=[Depends(csrf.protect), Depends(revalidate)])
+app.add_middleware(UploadLimit, limit_bytes=lambda: settings.max_upload_mb * 2**20)   # 413 before a form parser spools an oversized body
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret or secrets.token_hex(32), https_only=settings.base_url.startswith("https"), same_site="lax", max_age=settings.session_max_age)
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_middleware(SecurityHeaders)   # CSP nonce + security headers on every response
