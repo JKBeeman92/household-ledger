@@ -37,7 +37,7 @@ a { color: var(--accent); }
 .panel h2 { font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: .03em; margin: 0 0 var(--space-3); }
 .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2); margin: 0 0 var(--space-1); }
 label { display: block; font-weight: 600; margin-bottom: var(--space-1); }
-input[type=file], input[type=text], input[type=number], textarea, select { font: inherit; color: var(--ink); background: var(--surface-300); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); width: 100%; box-sizing: border-box; }
+input[type=file], input[type=text], input[type=search], input[type=number], textarea, select { font: inherit; color: var(--ink); background: var(--surface-300); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); width: 100%; box-sizing: border-box; }
 textarea.json { font-family: var(--font-mono); font-size: 13px; min-height: 22rem; }
 .flash { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border-left: 3px solid var(--info); background: var(--surface-200); margin-bottom: var(--space-4); }
 .flash.ok { border-left-color: var(--success); } .flash.bad { border-left-color: var(--danger); }
@@ -56,3 +56,15 @@ table.plain th { color: var(--ink-muted); font-weight: 600; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .keyhelp { margin: var(--space-3) 0; } .keyhelp summary { cursor: pointer; color: var(--ink-muted, var(--ink)); }
 .keyhelp dl { margin: var(--space-2) 0; } .keyhelp dt { margin-top: var(--space-2); font-weight: 600; } .keyhelp dd { margin: 0; max-width: 70ch; }
+/* settings row editors */
+.stack { display: grid; gap: var(--space-4); }
+.tablewrap { overflow-x: auto; margin-top: var(--space-3); }
+table.edit th[data-sort] { cursor: pointer; user-select: none; white-space: nowrap; }
+table.edit th[aria-sort=ascending]::after { content: " \25B2"; font-size: 10px; } table.edit th[aria-sort=descending]::after { content: " \25BC"; font-size: 10px; }
+table.edit td.acts { white-space: nowrap; width: 1%; }
+table.edit tr.editing td { vertical-align: top; background: var(--surface-300); }
+table.edit td .err { color: var(--danger); font-size: 13px; min-height: 0; }
+table.edit [aria-invalid=true] { border-color: var(--danger); }
+.tools { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; } .tools input[type=search] { max-width: 18rem; }
+.rowstatus { min-height: 1.4em; margin: var(--space-3) 0 0; } .rowstatus.ok { color: var(--success); } .rowstatus.bad { color: var(--danger); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
