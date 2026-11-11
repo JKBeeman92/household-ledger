@@ -48,20 +48,26 @@ def migrate(url: str, directory: Path = MIGRATIONS) -> list[str]:
     return done
 
 
+def seed_household(conn, seed_dir: Path) -> None:
+    """First boot: the household setting from seed_dir/household.json (else the shipped one) over the defaults, only when none is stored."""
+    if conn.execute("SELECT 1 FROM settings WHERE key='household'").fetchone() is not None:
+        return
+    hh = {"name": "Household", "title": "Household Ledger", "theme": "homestead", "currency": "USD", "locale": "en-US"}
+    p = Path(seed_dir) / "household.json"
+    if not p.exists():
+        p = PIPELINE_DIR / "household.json"
+    if p.exists():
+        hh.update(json.loads(p.read_text()))
+    conn.execute("INSERT INTO settings (key, value) VALUES ('household', %s)", (json.dumps(hh),))
+
+
 def init() -> None:
     migrate(settings.database_url)
     pool.open()
     with pool.connection() as conn:
         seed_dir = Path(settings.seed_dir) if settings.seed_dir else PIPELINE_DIR
         seed_reference_tables(conn, seed_dir)
-        if conn.execute("SELECT 1 FROM settings WHERE key='household'").fetchone() is None:
-            hh = {"name": "Household", "title": "Household Ledger", "theme": "homestead", "currency": "USD", "locale": "en-US"}
-            p = seed_dir / "household.json"
-            if not p.exists():
-                p = PIPELINE_DIR / "household.json"
-            if p.exists():
-                hh.update(json.loads(p.read_text()))
-            conn.execute("INSERT INTO settings (key, value) VALUES ('household', %s)", (json.dumps(hh),))
+        seed_household(conn, seed_dir)
         conn.commit()
         if settings.import_dir:
             last_build_id = conn.execute("SELECT coalesce(max(id), 0) m FROM build_log").fetchone()["m"]

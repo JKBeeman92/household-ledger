@@ -1,4 +1,4 @@
-"""Take your data out: /export/ledger.csv, /export/datasets.zip, /export/sources.zip (read-only, any signed-in user), plus the
+"""Take your data out: /export/ledger.csv, /export/datasets.zip, /export/sources.zip, /export/settings.zip (read-only, any signed-in user), plus the
 editor's "Scan import directory now". Downloads are streamed: the CSV from a server-side cursor, the zips written through a
 non-seekable ZIP writer one file at a time, so memory stays bounded by the biggest single chunk, not the whole export."""
 from __future__ import annotations
@@ -10,7 +10,7 @@ from fastapi import APIRouter, Request, Depends
 from fastapi.responses import StreamingResponse, RedirectResponse
 
 from ..config import settings
-from .. import db, auth
+from .. import db, auth, settings_export
 from ..web_helpers import flash
 from pipeline.run_pipeline import import_dir, BuildBusy, ImportRebuildFailed
 
@@ -119,6 +119,19 @@ def _source_entries():
 @router.get("/export/sources.zip")
 def export_sources(user=Depends(auth.require_user)):
     return StreamingResponse(_zip_stream(_source_entries()), media_type="application/zip", headers=_headers("sources.zip"))
+
+
+def _settings_entries():
+    with db.pool.connection() as conn:
+        files = settings_export.settings_files(conn)
+    for name, data in files.items():
+        yield name, iter([data])
+
+
+@router.get("/export/settings.zip")
+def export_settings(user=Depends(auth.require_user)):
+    """Every setting in the seed-directory shape (#160): unzip into SEED_DIR to start a new install with them. No secrets."""
+    return StreamingResponse(_zip_stream(_settings_entries()), media_type="application/zip", headers=_headers("settings.zip"))
 
 
 @router.post("/import/scan")

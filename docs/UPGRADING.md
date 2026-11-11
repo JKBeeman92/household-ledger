@@ -25,7 +25,9 @@ No action is required, and no migration runs. Two things look different:
   can no longer show the proxy, and every request is logged twice.
 - **Other log lines in the readable format** now carry their level and logger (`INFO     mcp.server…: …`) instead of the bare message.
 
-New, optional: `python -m app.admin` (README, "Without a browser"); the mapping draft and drift hints on Settings → Item mapping, with
+New, optional: **`settings.zip`** on Close a month, every setting as seed files (README, "Backups"). Download one before each later
+upgrade: 0.5.0 reshapes the item mapping (#133), and the zip makes the old one recoverable without a database restore.
+`python -m app.admin` (README, "Without a browser"); the mapping draft and drift hints on Settings → Item mapping, with
 the rules `item_name_suffixes` and `transfer_item_names` (both empty by default, meaning the built-in patterns); start-up warnings for a
 `BRAND_DIR` theme (docs/BRANDING.md).
 
