@@ -267,10 +267,10 @@
 
     <div class="card">
       <h2 id="monthly-chart">Income against outgo, by budget month</h2>
-        <ul class="key row"><li><span class="glyph">=</span>outgo is living spend plus debt payments</li><li><span class="glyph">−</span>transfers and exclusions left out (Method tab)</li><li><span class="glyph ln dot" aria-hidden="true"></span>dotted markers are life events, listed below the chart</li></ul>
+        <ul class="key row"><li><span class="glyph">=</span>outgo is living spend plus debt payments</li><li><span class="glyph">−</span>transfers and exclusions left out (Method tab)</li><li><span class="glyph ln dot" aria-hidden="true"></span>dotted markers are life events: hover one, or open the list below the chart</li></ul>
       <details class="how"><summary>How to read this</summary><p>Outgo is living spend plus debt payments. Income and outgo leave out transfers between envelopes and the other exclusions listed on the Method tab. Dotted markers are life events; hover for the label. The gap between the income line and the dotted spend-plus-debt line is the month’s net. Months where the dotted line sits above income were funded from savings or a one-off inflow. Spikes in income are bonuses, tax refunds, stimulus or severance; spikes in spend are usually a tax bill, a trip or a project. Hover a dot along the top for the event behind a step change.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Spend + debt</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-monthly" data-source="monthly events"></tbody></table></div></details>
       <div class="chart" data-draw="monthly" data-source="monthly events"></div>
-      <ul class="key row events" data-draw="event-list" data-source="events" aria-label="Life events"></ul>
+      <details class="how evlist"><summary>Life events in this period</summary><ul class="key row events" data-draw="event-list" data-source="events" aria-label="Life events"></ul></details>
       <div class="legend"><span data-c="0">Income</span><span data-c="1">Living spend</span><span data-c="2">Spend + debt</span></div>
     </div>
 
@@ -877,7 +877,12 @@ dash.draw('monthly', (el) => {
 
 // ---- annual grouped bars, net bars, employer stack ----
 dash.draw('event-list', (ul) => {
-  const g = HL.rd('events'); ul.replaceChildren(); if (g.status !== 'ok') return;
+  // closed by default: a dozen events would otherwise push the next chart off the screen (#139); hover a marker for its label
+  const box = ul.closest('details'), g = HL.rd('events'); ul.replaceChildren();
+  const n = g.status === 'ok' ? g.data.length : 0;
+  // display, not the hidden attribute: dash-shim skips draws inside [hidden], so a hidden box could never show itself again
+  if (box) { box.style.display = n ? '' : 'none'; box.querySelector('summary').textContent = `Life events in this period (${n})`; }
+  if (!n) return;
   for (const e of [...g.data].sort((a, b) => a.m < b.m ? -1 : 1)) { const li = document.createElement('li'); const gl = document.createElement('span'); gl.className = 'glyph'; gl.textContent = '┊';
     li.append(gl, `${HL.fmtM(HL.parseM(e.m))}: ${e.label}`); ul.append(li); }
 });
