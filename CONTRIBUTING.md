@@ -17,7 +17,7 @@ first thing to read. The short version:
 python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
 docker run -d --name ledger-pg -e POSTGRES_PASSWORD=ledger -e POSTGRES_USER=ledger -e POSTGRES_DB=ledger -p 5432:5432 postgres:16-alpine
 export DATABASE_URL=postgresql://ledger:ledger@localhost:5432/ledger AUTH_DISABLED=true SESSION_SECRET=$(openssl rand -hex 32)
-uvicorn app.main:app --reload --port 8010
+uvicorn app.main:app --reload --port 8010 --no-proxy-headers --no-access-log   # as the image runs it: the app writes the access line
 ```
 
 Open <http://localhost:8010>, load exports on **Close a month** (or `python -m pipeline.import_exports <dir>`).

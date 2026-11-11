@@ -11,6 +11,24 @@ Every upgrade, whatever the version:
 
 Migrations are not reversible. To roll back, pin the previous image tag in `docker-compose.yml` and restore the backup from step 2.
 
+## 0.4.0
+
+No action is required, and no migration runs. Two things look different:
+
+- **The access log is the app's own line** (#111). uvicorn's `INFO:     203.0.113.7:0 - "GET / HTTP/1.1" 200` is replaced by
+  `INFO     ledger.access: 203.0.113.7 via 172.18.0.1 "GET /" 200 4.1ms`: the client without uvicorn's `:0`, and after `via` the
+  reverse proxy it came through, which is the value `FORWARDED_ALLOW_IPS` wants. With `LOG_FORMAT=json` the existing fields are
+  unchanged and two are added, `client` and `peer`. Anything that parses the text log with a pattern for uvicorn's line needs the new
+  shape. `X-Forwarded-*` are now applied inside the app, from the same `FORWARDED_ALLOW_IPS`; the image starts uvicorn with
+  `--no-proxy-headers --no-access-log`. **If your compose file overrides the ledger service's `command:`** with the old
+  `--proxy-headers --forwarded-allow-ips …` flags, change them to those two: otherwise uvicorn rewrites the address first, the log
+  can no longer show the proxy, and every request is logged twice.
+- **Other log lines in the readable format** now carry their level and logger (`INFO     mcp.server…: …`) instead of the bare message.
+
+New, optional: `python -m app.admin` (README, "Without a browser"); the mapping draft and drift hints on Settings → Item mapping, with
+the rules `item_name_suffixes` and `transfer_item_names` (both empty by default, meaning the built-in patterns); start-up warnings for a
+`BRAND_DIR` theme (docs/BRANDING.md).
+
 ## 0.2.0
 
 **Action required before starting it:**

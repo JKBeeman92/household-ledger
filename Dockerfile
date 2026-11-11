@@ -16,4 +16,6 @@ RUN mkdir -p /data/brand && useradd -r -u 10001 ledger && chown -R ledger /data
 USER ledger
 EXPOSE 8010
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD python -c "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8010/healthz').status==200 else 1)"
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --proxy-headers --forwarded-allow-ips \"${FORWARDED_ALLOW_IPS}\""]
+# X-Forwarded-* are applied inside the app (FORWARDED_ALLOW_IPS, app/main.py) and the app writes the access line itself, with the
+# client and the proxy it came through (#111). uvicorn would otherwise do both first, by default, and hide the proxy's address.
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --no-proxy-headers --no-access-log"]
