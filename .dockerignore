@@ -2,6 +2,7 @@
 .env
 data/
 examples/
+!examples/sample-household/
 docs/
 __pycache__/
 *.zip

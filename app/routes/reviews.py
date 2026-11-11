@@ -9,6 +9,15 @@ router = APIRouter()
 
 
 @router.get("/reviews", response_class=HTMLResponse)
+def reviews_list(request: Request, user=Depends(auth.require_editor)):
+    """The reviews themselves, newest first; provider settings are one link away."""
+    with db.pool.connection() as conn:
+        rows = conn.execute("SELECT month, model, generated_at, hand_edited_at, sections FROM reviews ORDER BY month DESC").fetchall()
+        prov = rp.resolve(conn)
+    return render(request, "reviews_list.html", user, active="reviews", reviews=rows, prov=prov, problem=prov.problem())
+
+
+@router.get("/reviews/provider", response_class=HTMLResponse)
 def reviews_page(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         saved = db.get_setting(conn, rp.SETTING, {}) or {}
@@ -28,7 +37,7 @@ def reviews_save(request: Request, provider: str = Form(""), model: str = Form("
         with db.pool.connection() as conn:
             db.put_setting(conn, rp.SETTING, {"provider": provider, "model": model, "base_url": base_url}); conn.commit()
         flash(request, "Saved. Blank fields fall back to the REVIEW_* environment.")
-    return RedirectResponse("/reviews", status_code=303)
+    return RedirectResponse("/reviews/provider", status_code=303)
 
 
 @router.post("/reviews/test")
@@ -43,4 +52,4 @@ def reviews_test(request: Request, user=Depends(auth.require_editor)):
             flash(request, f"Connected to {prov.label}. Reply: {reply[:80] or '(empty)'}")
         except Exception as e:  # noqa: BLE001
             flash(request, f"Test failed for {prov.label} — {str(e)[:400]}", "bad")
-    return RedirectResponse("/reviews", status_code=303)
+    return RedirectResponse("/reviews/provider", status_code=303)

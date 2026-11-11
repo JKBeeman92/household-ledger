@@ -168,11 +168,12 @@ def test_generate_button_follows_configured_provider(client, reset_db, cfg):
 
 def test_reviews_page_save_and_test(client, reset_db, cfg, http):
     calls, reply = http
-    page = client.get("/reviews")
+    assert 'href="/reviews/provider"' in client.get("/reviews").text   # the list first; provider settings one link away
+    page = client.get("/reviews/provider")
     assert page.status_code == 200 and "Not configured" in page.text and 'href="/reviews"' in page.text
     r = client.post("/reviews", data={"provider": "openai", "model": "gpt-x", "base_url": "http://lm:1234/v1/"})
     assert r.status_code == 303
-    page = client.get("/reviews").text
+    page = client.get("/reviews/provider").text
     assert "Saved." in page and "openai:gpt-x" in page and 'value="gpt-x"' in page
     reply["v"] = Resp({"choices": [{"message": {"content": "ok"}}]})
     assert "Connected to openai:gpt-x" in client.get(client.post("/reviews/test").headers["location"]).text
