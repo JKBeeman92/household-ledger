@@ -57,6 +57,25 @@ def _write(cmd: str, fn, *args) -> int:
     return 0
 
 
+PREVIEW_0133 = Path(__file__).resolve().parents[1] / "db" / "preview" / "0133_mapping_preview.sql"
+
+
+def preview_mapping_migration() -> int:
+    """What 0133 would do to this database's mapping, read-only. Exit 0 either way; it says when the migration has already run."""
+    with _connect() as conn:
+        cols = {r["column_name"] for r in conn.execute("SELECT column_name FROM information_schema.columns WHERE table_name='item_mapping'").fetchall()}
+        if "category" not in cols:
+            print("Migration 0133 has already run on this database: nothing to preview. Its notes are on Settings → Item mapping.")
+            return 0
+        rows = conn.execute(PREVIEW_0133.read_text()).fetchall()
+        conn.rollback()
+    if not rows:
+        print("Migration 0133 keeps the item mapping as it is: no canonical item has two categories, and no row is UNMAPPED.")
+    for r in rows:
+        print(f"{r['change']}: {r['name']}: {r['detail']}")
+    return 0
+
+
 def rebuild_cmd() -> int:
     from pipeline.run_pipeline import rebuild, BuildBusy
     with _connect() as conn:
@@ -86,6 +105,13 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("add-mapping", help="add the rows of a mapping CSV (e.g. a reviewed draft); refuses items already mapped").add_argument("file")
     sub.add_parser("export-settings", help="write every setting into DIR in the seed-directory shape (as /export/settings.zip)").add_argument("dir")
     sub.add_parser("rebuild", help="rebuild the ledger and datasets (exit 75 if one is already running, 1 if it does not reconcile)")
+    for cmd, what in (("rename-category", "a category"), ("rename-canonical", "a canonical item")):
+        sp = sub.add_parser(cmd, help=f"rename {what} everywhere, rules included (renaming to an existing name merges them)")
+        sp.add_argument("old"); sp.add_argument("new")
+    sp = sub.add_parser("move-canonical", help="move a canonical item, and so all its rows, to another category")
+    sp.add_argument("name"); sp.add_argument("category")
+    sub.add_parser("preview-mapping-migration", help="before upgrading to 0.5.0: print what migration 0133 would change in the item mapping "
+                                                     "(nothing is changed; run it against a copy of the 0.4.x database)")
     a = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s", stream=sys.stderr)
 
@@ -96,6 +122,14 @@ def main(argv: list[str] | None = None) -> int:
         return _write(a.cmd, s._mapping_add, _read(a.file))
     if a.cmd == "rebuild":
         return rebuild_cmd()
+    if a.cmd in ("rename-category", "rename-canonical", "move-canonical"):
+        from app import renames
+        if a.cmd == "move-canonical":
+            return _write(a.cmd, renames.move_canonical, a.name, a.category)
+        fn = renames.rename_category if a.cmd == "rename-category" else renames.rename_canonical
+        return _write(a.cmd, fn, a.old, a.new, f"{_who()} (cli)")
+    if a.cmd == "preview-mapping-migration":
+        return preview_mapping_migration()
     with _connect() as conn:
         if a.cmd == "export-settings":
             from app.settings_export import write_dir

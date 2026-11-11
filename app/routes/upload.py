@@ -2,6 +2,7 @@ from pathlib import Path
 import json
 import logging
 from pipeline.run_pipeline import seed_reference_tables, import_dir
+from pipeline import mapping_store
 from fastapi import APIRouter, BackgroundTasks, Request, Depends, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 
@@ -147,7 +148,7 @@ def setup_sample(request: Request, background: BackgroundTasks, user=Depends(aut
     with db.pool.connection() as conn:
         if conn.execute("SELECT 1 FROM source_files LIMIT 1").fetchone():
             flash(request, "The sample is only for an empty install; this one already has months loaded.", "bad"); return RedirectResponse("/", status_code=303)
-        conn.execute("DELETE FROM item_mapping"); conn.execute("DELETE FROM goals"); conn.execute("DELETE FROM life_events")
+        mapping_store.clear(conn); conn.execute("DELETE FROM goals"); conn.execute("DELETE FROM life_events")
         conn.execute("DELETE FROM settings WHERE key IN ('rules', 'household')")
         seed_reference_tables(conn, SAMPLE_DIR)   # fills the tables it finds empty; the CPI table is kept
         db.put_setting(conn, "household", json.loads((SAMPLE_DIR / "household.json").read_text()))

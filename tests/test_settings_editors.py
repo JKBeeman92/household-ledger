@@ -14,7 +14,7 @@ def auth_on(monkeypatch):
 
 
 def mapping(conn):
-    return {r["item"]: dict(r) for r in conn.execute("SELECT item, canonical_item, category, flow, note FROM item_mapping").fetchall()}
+    return {r["item"]: dict(r) for r in conn.execute("SELECT item, canonical_item, category, flow, note FROM mapping_rows").fetchall()}
 
 
 ROW = {"item": "Bywater Rent", "canonical_item": "Rent", "category": "Housing", "flow": "expense", "note": "x"}
@@ -42,7 +42,7 @@ def test_row_add_edit_rename_delete_leave_other_rows_alone(client, reset_db):
 def test_bad_row_names_the_field_and_changes_nothing(client, reset_db):
     with db.pool.connection() as conn:
         before = mapping(conn)
-    r = client.post("/settings/mapping/row", data={**ROW, "flow": "bogus", "category": ""})
+    r = client.post("/settings/mapping/row", data={**ROW, "canonical_item": "Hobbit Hole", "flow": "bogus", "category": ""})   # a new canonical item needs a category
     assert r.status_code == 200 and not r.json()["ok"] and set(r.json()["errors"]) == {"flow", "category"} and "bogus" in r.json()["errors"]["flow"]
     first = next(iter(before))
     r = client.post("/settings/mapping/row", data={**ROW, "item": first})  # add colliding with an existing item
@@ -73,7 +73,7 @@ def test_csv_import_replaces_and_export_round_trips(client, reset_db):
 
 
 def test_large_csv_import(client, reset_db):
-    body = "Item,CanonicalItem,Category,Flow,Note\n" + "".join(f"Item {i},Canon {i % 40},Cat {i % 9},expense,\n" for i in range(250))
+    body = "Item,CanonicalItem,Category,Flow,Note\n" + "".join(f"Item {i},Canon {i % 40},Cat {i % 40 % 9},expense,\n" for i in range(250))
     client.post("/settings/mapping", data={"body": body})
     with db.pool.connection() as conn:
         assert len(mapping(conn)) == 250

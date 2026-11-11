@@ -67,6 +67,7 @@
           inp = el("input", { type: "text", name: f, "aria-label": heading(f), value: row[f] == null ? "" : row[f] });
           if (f === "category" && kind === "mapping") inp.setAttribute("list", "settings-categories");
           if (f === "person" && kind === "events") inp.setAttribute("list", "settings-people");   // suggested, not required: an unknown person is a warning (#109)
+          if (f === "canonical_item" && kind === "mapping") inp.setAttribute("list", "settings-canonicals");
           if (f === "value") inp.setAttribute("inputmode", "decimal");
           if (f === "m") inp.setAttribute("placeholder", "YYYY-MM");
         }
@@ -74,6 +75,11 @@
       });
       var acts = el("td", { "class": "acts" }), sv = el("button", { type: "button", "class": "btn primary" }, "Save"), cn = el("button", { type: "button", "class": "btn" }, "Cancel");
       acts.appendChild(sv); acts.appendChild(cn); tr.appendChild(acts);
+      if (kind === "mapping") {   // #133: a canonical item has one category, so picking a known one fills it in
+        var canonIn = tr.querySelector('input[name="canonical_item"]'), catIn = tr.querySelector('input[name="category"]');
+        var known = {}; try { known = JSON.parse((document.getElementById("canonical-category") || {}).textContent || "{}"); } catch (e) { known = {}; }
+        if (canonIn && catIn) canonIn.onchange = function () { var c = known[canonIn.value.trim()]; if (c) catIn.value = c; };
+      }
       if (blank && kind === "mapping") {   // #106: a new item whose name drifted from one already mapped ("X 2", "X Fund") gets that row's values
         var itemIn = tr.querySelector('input[name="item"]'), like = el("div", { "class": "hint", id: "suggest-hint" });
         itemIn.parentNode.appendChild(like);

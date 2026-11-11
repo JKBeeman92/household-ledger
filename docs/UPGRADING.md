@@ -20,6 +20,18 @@ Migrations run at start; read this list before upgrading.
   and events with no kind, so existing events appear there too until you give them a kind. For agents: MCP's `month_summary`
   adds `event_details` (label, kind, person) beside `events`, and the month-close review's `continuity.life_events` lists
   objects (`{"label", "kind"?, "person"?}`) instead of bare labels.
+- **The item mapping is reshaped** (#133, `0133_categories_and_canonical_items.sql`): categories and canonical items become
+  tables of their own, and a canonical item has exactly one category. **Before upgrading, download `settings.zip`** (Close a month,
+  or `python -m app.admin export-settings DIR`): it holds the old mapping, so nothing is lost if you disagree with what the
+  migration chose.
+  - A canonical item mapped under more than one category keeps the one most of its rows use (ties: alphabetical); a row whose
+    category was the placeholder `UNMAPPED` leaves the mapping and is listed as unmapped. Settings → Item mapping lists each such
+    change once, until you dismiss it.
+  - To see what it will do first, run the preview against your 0.4 database, or a copy of it. It only reads:
+    `docker compose exec -T db psql -U ledger ledger < db/preview/0133_mapping_preview.sql` (from a checkout of 0.5.0), or, with the
+    0.5.0 image and `DATABASE_URL` pointing at a copy that has not been started on 0.5.0:
+    `docker compose run --rm ledger python -m app.admin preview-mapping-migration`. No output rows means nothing changes.
+  - The mapping CSV keeps its five columns everywhere; a CSV that gives one canonical item two categories is now refused, by line.
 
 ## 0.4.0
 
