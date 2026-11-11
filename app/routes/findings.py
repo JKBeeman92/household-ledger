@@ -1,6 +1,6 @@
 """What the last build found (unmapped items, reconciliation) and the inline fix: append to the mapping, then rebuild."""
 from __future__ import annotations
-import json
+import json, re
 
 from fastapi import APIRouter, BackgroundTasks, Request, Depends, Form
 from fastapi.responses import RedirectResponse
@@ -14,12 +14,24 @@ router = APIRouter()
 FLOWS = ["expense", "income", "debt", "transfer", "plug", "zero", "exclude", "verify"]
 
 
+DRIFT = re.compile(r"\s+(?:\d+|fund|goal)$", re.I)          # "Groceries 2", "Vacation Fund", "Car Goal": the same envelope, renamed
+FUND_MOVE = re.compile(r"\b(?:transfer|rebalance|redistribution)\b", re.I)
+
+
+def guess(item: str, group: str) -> dict:
+    """A first draft for an unmapped item: its canonical name without year-drift suffixes, and a flow from its group or name."""
+    g = group.strip().lower()
+    flow = "transfer" if FUND_MOVE.search(item) else "income" if g == "income" else "debt" if g == "debt" else "expense"
+    return {"canonical_guess": DRIFT.sub("", item.strip()) or item, "flow_guess": flow}
+
+
 def latest_findings(conn) -> dict:
     """Findings of the newest finished build, plus the known categories for the form's suggestions."""
     row = conn.execute("SELECT id, finished_at, findings FROM build_log WHERE finished_at IS NOT NULL AND findings IS NOT NULL ORDER BY id DESC LIMIT 1").fetchone()
     f = (row and row["findings"]) or {}
     cats = [r["category"] for r in conn.execute("SELECT DISTINCT category FROM item_mapping WHERE category <> 'UNMAPPED' ORDER BY 1").fetchall()]
-    return {"build_id": row and row["id"], "finished_at": row and row["finished_at"], "unmapped": f.get("unmapped", []),
+    unmapped = [{**u, **guess(u.get("item", ""), u.get("group") or "")} for u in f.get("unmapped", [])]
+    return {"build_id": row and row["id"], "finished_at": row and row["finished_at"], "unmapped": unmapped,
             "reconciliation": f.get("reconciliation") or {"counts": {}, "problems": [], "clean": True}, "categories": cats, "flows": FLOWS}
 
 
