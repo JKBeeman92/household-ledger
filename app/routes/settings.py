@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 EDITORS = {
-    "mapping": {"title": "Item mapping", "help": "One row per EveryDollar item: Item, CanonicalItem, Category, Flow, Note. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every EveryDollar item name must appear here or the build reports it UNMAPPED. Fund moves kept as income items (Fund Transfer, End of Year Rebalance) need Flow transfer, or they count as income; money held for someone else and paid out needs exclude. CanonicalItem Paycheck and the categories Subscriptions, Utilities and Insurance are read by name (README, \"Names the pipeline relies on\"); rules name canonical items, not raw ones."},
+    "mapping": {"title": "Item mapping", "help": "Each EveryDollar item gets a canonical name, a category and a flow. Every item must be here, or the build lists it as unmapped.", "help_long": "One row per EveryDollar item: Item, CanonicalItem, Category, Flow, Note. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every EveryDollar item name must appear here or the build reports it UNMAPPED. Fund moves kept as income items (Fund Transfer, End of Year Rebalance) need Flow transfer, or they count as income; money held for someone else and paid out needs exclude. CanonicalItem Paycheck and the categories Subscriptions, Utilities and Insurance are read by name (README, \"Names the pipeline relies on\"); rules name canonical items, not raw ones."},
     "goals": {"title": "Goals", "help": "One row per goal: key, label, value, unit, note. The Goals tab and the month-close review read these. value may be null when not yet known."},
     "events": {"title": "Life events", "help": "One row per event: month (YYYY-MM) and label. Drawn as markers on the timeline charts."},
     "cpi": {"title": "CPI index", "help": "CSV: month, cpi, source. A price index (consumer prices, any base) used for the real-amounts toggle. US households: CPI-U, appending the newest month from FRED CPIAUCSL; mark estimates in source."},
@@ -21,6 +21,16 @@ EDITORS = {
 
 
 FLOWS = ("income", "expense", "debt", "transfer", "plug", "zero", "exclude", "verify")
+FLOW_HELP = {   # one line each, shown beside the Flow choice (what the pipeline does with the row)
+    "income": "money coming in: paychecks, refunds, interest",
+    "expense": "ordinary spending",
+    "debt": "payments on a loan or card",
+    "transfer": "a move between your own envelopes or accounts; left out of income and spending",
+    "plug": "a balancing entry EveryDollar made; left out of every total",
+    "zero": "a placeholder line; kept in the ledger, counted nowhere",
+    "exclude": "money held for someone else; left out of the ledger and every chart",
+    "verify": "an inflow not yet identified; left out until you confirm it",
+}
 MONTH_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 
 
@@ -242,7 +252,11 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         rows = {"mapping": conn.execute("SELECT item, canonical_item, category, flow, note FROM item_mapping ORDER BY category, canonical_item, item").fetchall(),
                 "goals": [{**r, "value": (f"{r['value']:f}".rstrip("0").rstrip(".") if r["value"] is not None else None)} for r in conn.execute("SELECT key, value, unit, label, note FROM goals ORDER BY key").fetchall()],
                 "events": conn.execute("SELECT month AS m, label FROM life_events ORDER BY month, label").fetchall()}
-    return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS)
+        categories = sorted({r["category"] for r in rows["mapping"] if r["category"]})
+        rules = db.get_setting(conn, "rules", {}) or {}
+        household = db.get_setting(conn, "household", {}) or {}
+    return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP,
+                  categories=categories, rules=rules, hh=household)
 
 
 @router.get("/settings/mapping.csv")
@@ -295,3 +309,45 @@ def settings_save(request: Request, key: str, body: str = Form(...), user=Depend
         except Exception as e:  # noqa: BLE001
             conn.rollback(); flash(request, f"Not saved — {e}", "bad")
     return RedirectResponse(f"/settings#{key}", status_code=303)   # back to the tab that was saved
+
+
+def _save_setting(conn, key: str, data: dict) -> list[str]:
+    problems = schema.validate(data, schema.load(key))
+    if not problems:
+        db.put_setting(conn, key, data)
+    return problems
+
+
+@router.post("/settings/household/form")
+async def household_form(request: Request, user=Depends(auth.require_editor)):
+    """The Household editor as plain fields; the same schema check as the JSON editor."""
+    f = {k: (v.strip() if isinstance(v, str) else v) for k, v in (await request.form()).items()}
+    with db.pool.connection() as conn:
+        data = {**(db.get_setting(conn, "household", {}) or {})}
+        for k in ("name", "title", "currency", "locale"):
+            if f.get(k):
+                data[k] = f[k].upper() if k == "currency" else f[k]
+        problems = _save_setting(conn, "household", data)
+        if problems:
+            conn.rollback(); flash(request, "Not saved — " + "; ".join(problems[:4]), "bad")
+        else:
+            conn.commit(); flash(request, "Saved the household's name and display settings.")
+    return RedirectResponse("/settings#household", status_code=303)
+
+
+@router.post("/settings/rules/people")
+async def rules_people_form(request: Request, user=Depends(auth.require_editor)):
+    """People and employers, the two rules every household sets, without editing JSON."""
+    form = await request.form()
+    people = [p.strip() for p in str(form.get("people", "")).split(",") if p.strip()]
+    employers = [{"match": m.strip().lower(), "name": n.strip()} for m, n in zip(form.getlist("emp_match"), form.getlist("emp_name"))
+                 if str(m).strip() and str(n).strip()]   # the pipeline searches the lower-cased merchant
+    with db.pool.connection() as conn:
+        rules = {**(db.get_setting(conn, "rules", {}) or {}), "people": people, "employers": employers}
+        problems = _save_setting(conn, "rules", rules)
+        if problems:
+            conn.rollback(); flash(request, "Not saved — " + "; ".join(problems[:4]), "bad")
+        else:
+            db.mark_inputs_changed(conn); conn.commit()
+            flash(request, f"Saved {len(people)} people and {len(employers)} employer rule(s). The dashboard shows them after a rebuild: press Rebuild now.")
+    return RedirectResponse("/settings#rules", status_code=303)

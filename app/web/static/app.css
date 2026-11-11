@@ -162,3 +162,13 @@ table.edit [aria-invalid=true] { border-color: var(--danger); }
   .topbar nav[data-more="start"], #dash-root.hl .tabs[data-more="start"] { mask-image: linear-gradient(to left, black calc(100% - 32px), transparent); }
   .topbar nav[data-more="both"], #dash-root.hl .tabs[data-more="both"] { mask-image: linear-gradient(to right, transparent, black 32px, black calc(100% - 32px), transparent); }
 }
+/* Settings editors */
+.formgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: var(--space-3) var(--space-4); }
+.formgrid label, .panel > label { font-weight: 600; } .formgrid input, .panel > label input { margin-top: var(--space-1); font-weight: 400; }
+.flowlist { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-1) var(--space-3); margin: var(--space-2) 0; }
+.flowlist dt, .flowlist dd { margin: 0; }
+table.edit .hint { font-size: .85em; color: var(--ink-muted); margin-top: var(--space-1); max-width: 22rem; white-space: normal; }
+table.edit tr.saved td { background: color-mix(in srgb, var(--success) 14%, transparent); transition: background-color 600ms ease-out; }
+table.edit .rowmsg { margin-left: var(--space-2); color: var(--success); font-weight: 600; }
+th .sortbtn { all: unset; cursor: pointer; font: inherit; color: inherit; } th .sortbtn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+th[aria-sort="ascending"] .sortbtn::after { content: " ▲"; } th[aria-sort="descending"] .sortbtn::after { content: " ▼"; }
