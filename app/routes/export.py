@@ -12,7 +12,7 @@ from fastapi.responses import StreamingResponse, RedirectResponse
 from ..config import settings
 from .. import db, auth
 from ..web_helpers import flash
-from pipeline.run_pipeline import import_dir
+from pipeline.run_pipeline import import_dir, BuildBusy, ImportRebuildFailed
 
 router = APIRouter()
 
@@ -134,6 +134,10 @@ def scan_import_dir(request: Request, user=Depends(auth.require_editor)):
                 flash(request, f"Scanned the import directory: {res['loaded']} new or changed file(s) loaded, {res['skipped']} unchanged." + (f" Rebuilt: {res['rebuild']}." if res.get("rebuild") else ""))
                 for x in res.get("failed", []):
                     flash(request, f"Not loaded: {x['file']}: {x['error']}", "bad")
+            except BuildBusy:
+                conn.rollback(); flash(request, "New files were stored; another rebuild is running and rebuilds again when it sees them.")
+            except ImportRebuildFailed as e:
+                conn.rollback(); flash(request, str(e), "bad")
             except Exception as e:  # noqa: BLE001
                 conn.rollback(); flash(request, f"Scan failed: {str(e)[:800]}", "bad")
     return RedirectResponse("/upload", status_code=303)
