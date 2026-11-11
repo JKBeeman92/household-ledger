@@ -10,7 +10,7 @@ EXPECTED = GOLDEN / "expected" / "dash_data"
 
 
 def flashes_after(client, resp) -> str:
-    assert resp.status_code == 303 and resp.headers["location"] in ("/upload", "/settings")
+    assert resp.status_code == 303 and resp.headers["location"].split("#")[0] in ("/upload", "/settings")   # Settings returns to the saved tab: /settings#<key>
     return client.get(resp.headers["location"]).text
 
 

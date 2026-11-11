@@ -3,11 +3,8 @@
 {% block content %}
 <p class="eyebrow">Configuration</p>
 <h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Settings</h1>
-<p class="muted" style="max-width:70ch">Everything the pipeline decides from is here, as data. Edit and save; the dashboard keeps its figures until a rebuild, and a banner with <strong>Rebuild now</strong> appears until one has run. Each editor validates its format before saving.</p>
-<p class="muted">The month-close review's provider and model are on the <a href="/reviews">Reviews</a> page.</p>
-<p class="muted">Tokens for scripts, monitoring and agents are on the <a href="/settings/tokens">API tokens</a> page.</p>
-<p class="muted">Column mappings for budget tools other than EveryDollar are on the <a href="/settings/sources">Sources</a> page.</p>
-<p class="muted">Notifications to a chat or an agent when a month closes are on the <a href="/webhooks">Webhooks</a> page.</p>
+<p class="muted" style="max-width:90ch">Everything the pipeline decides from is here, as data. Edit and save; the dashboard keeps its figures until a rebuild, and a banner with <strong>Rebuild now</strong> appears until one has run. Each editor validates its format before saving.</p>
+<p class="linkrow muted">Elsewhere: <a href="/reviews">Review provider</a> <a href="/settings/tokens">API tokens</a> <a href="/settings/sources">Other budget tools</a> <a href="/webhooks">Webhooks</a></p>
 <form id="csrf-form" hidden>{{ csrf_field(request) }}</form>
 <p id="rowstatus" class="rowstatus" role="status" aria-live="polite"></p>
 {% set by_key = {} %}{% for ed in editors %}{% if by_key.update({ed.key: ed}) %}{% endif %}{% endfor %}
@@ -27,7 +24,9 @@
 </section>
 {% endmacro %}
 
+<div class="subtabs" role="tablist" aria-label="Settings" id="settings-tabs"><button type="button" role="tab" id="st-mapping" aria-controls="sp-mapping" aria-selected="true" tabindex="0">Item mapping</button><button type="button" role="tab" id="st-goals" aria-controls="sp-goals" aria-selected="false" tabindex="-1">Goals</button><button type="button" role="tab" id="st-events" aria-controls="sp-events" aria-selected="false" tabindex="-1">Life events</button><button type="button" role="tab" id="st-rules" aria-controls="sp-rules" aria-selected="false" tabindex="-1">Pipeline rules</button><button type="button" role="tab" id="st-cpi" aria-controls="sp-cpi" aria-selected="false" tabindex="-1">CPI</button><button type="button" role="tab" id="st-household" aria-controls="sp-household" aria-selected="false" tabindex="-1">Household</button></div>
 <div class="stack" style="margin-top:var(--space-4)">
+<div role="tabpanel" id="sp-mapping" aria-labelledby="st-mapping">
 {% call grid("mapping", by_key.mapping, ["item","canonical_item","category","flow","note"], ["Item","Canonical item","Category","Flow","Note"], rows.mapping) %}
   <details class="keyhelp"><summary>Bulk paste or export as CSV</summary>
     <p class="muted">Paste the whole mapping as CSV to replace it. Every row is checked first and errors name the line; if any row is bad, nothing is saved. Items missing from the CSV are removed.</p>
@@ -37,12 +36,15 @@
     </form>
   </details>
 {% endcall %}
+</div>
+<div role="tabpanel" id="sp-goals" aria-labelledby="st-goals">
 {% call grid("goals", by_key.goals, ["key","label","value","unit","note"], ["Key","Label","Value","Unit","Note"], rows.goals) %}{% endcall %}
+</div>
+<div role="tabpanel" id="sp-events" aria-labelledby="st-events">
 {% call grid("events", by_key.events, ["m","label"], ["Month","Label"], rows.events) %}{% endcall %}
 </div>
-
-<div class="row" style="margin-top:var(--space-4)">
-  {% for ed in editors if ed.key in ("rules", "household", "cpi") %}
+  {% for key in ("rules", "cpi", "household") %}{% set ed = by_key[key] %}
+  <div role="tabpanel" id="sp-{{ key }}" aria-labelledby="st-{{ key }}">
   <form class="panel" method="post" action="/settings/{{ ed.key }}">{{ csrf_field(request) }}
     <h2>{{ ed.title }}</h2>
     <p class="muted">{{ ed.help }}</p>
@@ -54,7 +56,30 @@
     <textarea class="json" name="body" spellcheck="false">{{ ed.body }}</textarea>
     <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save {{ ed.title|lower }}</button></p>
   </form>
+  </div>
   {% endfor %}
 </div>
 <script src="/static/settings.js" defer></script>
+<script nonce="{{ csp_nonce(request) }}">
+// Settings as tabs: one editor at a time (the mapping alone can run to hundreds of rows). The tab is kept in the URL hash,
+// so a link or the redirect after a save opens it. Without JavaScript every panel shows, as before.
+(() => {
+  const list = document.getElementById('settings-tabs'); if (!list) return;
+  const tabs = [...list.querySelectorAll('[role=tab]')];
+  const pick = (t, focus) => {
+    for (const o of tabs) { const on = o === t; o.setAttribute('aria-selected', String(on)); o.tabIndex = on ? 0 : -1; document.getElementById(o.getAttribute('aria-controls')).hidden = !on; }
+    if (focus) t.focus();
+    history.replaceState(null, '', '#' + t.id.slice(3));
+  };
+  list.addEventListener('click', (e) => { const t = e.target.closest('[role=tab]'); if (t) pick(t); });
+  list.addEventListener('keydown', (e) => {
+    const i = tabs.indexOf(document.activeElement); if (i < 0) return;
+    const j = {ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1}[e.key]; if (j === undefined) return;
+    e.preventDefault(); pick(tabs[(j + tabs.length) % tabs.length], true);
+  });
+  const fromHash = () => { const t = document.getElementById('st-' + location.hash.slice(1)); if (t) pick(t); };
+  addEventListener('hashchange', fromHash);   // an in-page link to another tab (#events) does not reload the page
+  pick(document.getElementById('st-' + location.hash.slice(1)) || tabs[0]);
+})();
+</script>
 {% endblock %}

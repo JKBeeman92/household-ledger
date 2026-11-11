@@ -281,4 +281,4 @@ def settings_save(request: Request, key: str, body: str = Form(...), user=Depend
             flash(request, f"Saved {what}." + (" The dashboard shows it after a rebuild: press Rebuild now." if key in PIPELINE_INPUTS else ""))
         except Exception as e:  # noqa: BLE001
             conn.rollback(); flash(request, f"Not saved — {e}", "bad")
-    return RedirectResponse("/settings", status_code=303)
+    return RedirectResponse(f"/settings#{key}", status_code=303)   # back to the tab that was saved
