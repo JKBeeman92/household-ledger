@@ -14,7 +14,7 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from .auth import bearer, current_user, revalidate, Forbidden
 from .config import settings
-from . import db, csrf, stale
+from . import brand_check, db, csrf, stale
 from .security import SecurityHeaders
 from .uploads import UploadLimit
 from .web_helpers import ROOT, flash, render
@@ -44,6 +44,7 @@ async def lifespan(app: FastAPI):
         if not settings.session_secret:
             log.warning("SESSION_SECRET is empty: using a random per-process secret, so sessions reset on restart")
     db.init()
+    brand_check.check_dir(brand.BRAND_DIR)   # warns, never refuses to start (#110)
     watch = asyncio.create_task(_stale_watch())
     async with mcp_endpoint.run():
         yield
