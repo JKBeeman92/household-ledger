@@ -78,7 +78,12 @@
 .hl .key { list-style: none; margin: var(--cds-gap-sm) 0; padding: 0; display: grid; gap: var(--cds-gap-xs); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
 .hl .key.row { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs) var(--cds-gap-md); }
 .hl .key li { display: flex; align-items: center; gap: var(--cds-gap-xs); }
+.hl .key li:not(:has(.glyph))::before { content: ""; flex: none; width: 1.6rem; height: 6px; background: radial-gradient(circle, var(--accent-2-text, var(--color-fg-muted)) 3px, transparent 3.5px); }
 .hl .key .glyph { flex: none; min-width: 1.6rem; text-align: center; font-weight: var(--cds-font-weight-medium); color: var(--accent-2-text, var(--color-fg)); }
+/* Line-style swatches: the chip shows the stroke it describes instead of a character standing in for it. */
+.hl .key .glyph.ln { min-width: 1.4rem; height: 0; border-top: 2px solid currentColor; align-self: center; }
+.hl .key .glyph.ln.dash { border-top-style: dashed; } .hl .key .glyph.ln.dot { border-top-style: dotted; border-top-width: 3px; }
+.hl .key .glyph.fade { min-width: 1.4rem; height: .7rem; align-self: center; border-radius: 2px; background: linear-gradient(90deg, currentColor 50%, color-mix(in srgb, currentColor 30%, transparent) 50%); }
 .hl .key .bar { flex: none; width: 1.6rem; height: .6rem; border-radius: 2px; background: var(--k); }
 .hl .key .bar.r { clip-path: polygon(0 0, 80% 0, 100% 50%, 80% 100%, 0 100%); }
 .hl .key .bar.l { clip-path: polygon(20% 0, 100% 0, 100% 100%, 20% 100%, 0 50%); }
@@ -170,6 +175,24 @@
 .hl details.how:not([open]):has(+ details.datatable), .hl details.how:not([open]) + details.datatable:not([open]) { display: inline-block; margin-right: var(--cds-gap-lg); }
 .hl details.datatable summary { cursor: pointer; color: var(--accent-2-text, var(--color-fg-muted)); font-weight: var(--cds-font-weight-medium); }
 .hl details.datatable summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* Phone first screen: the masthead, one control row and the tab strip fit above the first tiles. The aside-notes and the
+   Overview's question line are kept for wider screens; the Method tab says the same. */
+@media (max-width: 600px) {
+  .hl .eyebrow { margin-bottom: 2px; }
+  .hl .masthead { margin-bottom: 2px; } .hl .masthead .mark { display: none; }
+  .hl h1 { font-size: var(--cds-font-size-heading); line-height: 1.2; }
+  .hl > .lede { font-size: var(--cds-font-size-caption); margin-bottom: var(--cds-gap-sm); }
+  .hl > .lede .aside-note, .hl #overview > .intro { display: none; }
+  #dash-root.hl > .controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--cds-gap-xs); margin-bottom: var(--cds-gap-sm); }
+  #dash-root.hl > .controls .ctl-label { display: none; }
+  #dash-root.hl > .controls .seg { width: auto; min-width: 0; }
+  #dash-root.hl > .controls .seg button { padding-inline: var(--cds-pad-xs); font-size: var(--cds-font-size-caption); }
+  #dash-root.hl > .controls .range { width: auto; min-width: 0; flex-wrap: nowrap; }
+  #dash-root.hl > .controls .range > label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  #dash-root.hl > .controls .range #range-pick { min-height: 44px; width: 100%; }
+  #dash-root.hl > .controls .range #range-custom:not([hidden]) { grid-column: 1 / -1; }
+  #dash-root.hl > .controls .tabs { grid-column: 1 / -1; }
+}
 /* First run: one card instead of empty charts */
 .hl.empty .controls, .hl.empty .page, .hl.empty > .lede, .hl.empty #range-status, .hl.empty .masthead + .lede { display: none !important; }
 .hl .firstrun h2 { font-size: var(--cds-font-size-title); margin: 0 0 var(--cds-gap-sm); }
@@ -244,7 +267,7 @@
 
     <div class="card">
       <h2 id="monthly-chart">Income against outgo, by budget month</h2>
-        <ul class="key row"><li><span class="glyph">=</span>outgo is living spend plus debt payments</li><li><span class="glyph">−</span>transfers and exclusions left out (Method tab)</li><li><span class="glyph">┊</span>dotted markers are life events, listed below the chart</li></ul>
+        <ul class="key row"><li><span class="glyph">=</span>outgo is living spend plus debt payments</li><li><span class="glyph">−</span>transfers and exclusions left out (Method tab)</li><li><span class="glyph ln dot" aria-hidden="true"></span>dotted markers are life events, listed below the chart</li></ul>
       <details class="how"><summary>How to read this</summary><p>Outgo is living spend plus debt payments. Income and outgo leave out transfers between envelopes and the other exclusions listed on the Method tab. Dotted markers are life events; hover for the label. The gap between the income line and the dotted spend-plus-debt line is the month’s net. Months where the dotted line sits above income were funded from savings or a one-off inflow. Spikes in income are bonuses, tax refunds, stimulus or severance; spikes in spend are usually a tax bill, a trip or a project. Hover a dot along the top for the event behind a step change.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Spend + debt</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-monthly" data-source="monthly events"></tbody></table></div></details>
       <div class="chart" data-draw="monthly" data-source="monthly events"></div>
       <ul class="key row events" data-draw="event-list" data-source="events" aria-label="Life events"></ul>
@@ -254,7 +277,7 @@
 
     <div class="card">
       <h2 id="radar-chart">Category shape, year over year</h2>
-        <ul class="key row"><li><span class="glyph">★</span>up to three stars, each on its own scale</li><li><span class="glyph">✳</span>a spoke is a category, a ring a year</li><li><span class="glyph">◐</span>current year solid, older years fade</li><li><span class="glyph">⊙</span>click a year in the legend to hide it</li></ul>
+        <ul class="key row"><li>up to three stars, each on its own scale</li><li>a spoke is a category, a ring a year</li><li><span class="glyph fade" aria-hidden="true"></span>current year solid, older years fade</li><li>click a year in the legend to hide it</li></ul>
       <details class="how"><summary>How to read this</summary><p>Up to three stars so the small categories are readable: each has its own dollar scale. A spoke is a category, a ring is a year. The current year is drawn solid; earlier years fade with age. Click a year in the legend to hide or show it on every star. Read a star as a fingerprint: the current year’s solid outline against the faded outlines of earlier years. A spoke that grows year over year is a category whose share of life grew; a spoke that shrinks is one that was tamed. The stars are made from your own categories: those with spending are ranked by their total over all years and dealt into the largest third, the middle third and the smallest third (fewer stars when there are fewer than nine categories, and never one with fewer than three spokes). Scales differ between stars, so compare shapes within a star, not across them. Switch to real dollars to see whether a growing spoke is more than inflation.</p></details>
       <div class="legend years" data-draw="radar-legend" data-source="cat_year"></div>
       <div class="grid radars">
@@ -266,14 +289,14 @@
     <div class="grid">
       <div class="card">
         <h2 id="annual-chart">By year</h2>
-        <ul class="key row"><li><span class="glyph">=</span>net is income − spend − debt</li><li><span class="glyph">◔</span>the latest year may be partial (Position tab)</li></ul>
+        <ul class="key row"><li><span class="glyph">=</span>net is income − spend − debt</li><li>the latest year may be partial (Position tab)</li></ul>
       <details class="how"><summary>How to read this</summary><p>The latest year may cover only part of a year; the Months column on the Position tab says how many. Net is income minus spend minus debt payments. Three bars per year. When the income bar clears the other two combined, the year was positive. A year with fewer than twelve months loaded has shorter bars than a full year would.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Year</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Debt payments</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-annual" data-source="yearly"></tbody></table></div></details>
         <div class="chart" data-draw="annual" data-source="yearly"></div>
         <div class="legend"><span data-c="0">Income</span><span data-c="1">Living spend</span><span data-c="3">Debt payments</span></div>
       </div>
       <div class="card">
         <h2 id="employer-chart">Paycheck source, by month</h2>
-        <ul class="key row"><li><span class="glyph">⌕</span>employer read from the deposit text (employers rule)</li><li><span class="glyph">?</span>deposits it cannot place: Unknown</li></ul>
+        <ul class="key row"><li>employer read from the deposit text (employers rule)</li><li>deposits it cannot place: Unknown</li></ul>
       <details class="how"><summary>How to read this</summary><p>Employer is read from the deposit description using the employers rule in Settings; deposits it cannot place are shown as Unknown. Paycheck deposits by month, colored by employer. A change of color is a job change; a taller month has three paychecks or a bonus paid through payroll.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Employer</th><th scope="col">Paid</th><th scope="col">Deposits</th></tr></thead><tbody data-draw="dt-employer" data-source="employer"></tbody></table></div></details>
         <div class="chart" data-draw="employer" data-source="employer"></div>
         <div class="legend" data-draw="employer-legend" data-source="employer"></div>
@@ -294,7 +317,7 @@
       <div class="aside">
         <p class="eyebrow">Month-close review</p>
         <h2 id="lm-review">Reading the month</h2>
-        <ul class="key row"><li><span class="glyph">✎</span>written by the model from the figures on this tab</li><li><span class="glyph">✓</span>every number it quotes is in the tables below</li><li><span class="glyph">▸</span>open a section to read all of it</li></ul>
+        <ul class="key row"><li>written by the model from the figures on this tab</li><li>every number it quotes is in the tables below</li><li>open a section to read all of it</li></ul>
         <details class="how"><summary>How this is made</summary><p>After each month's exports are added, Claude reads the planned-versus-spent table, the category gaps against plan and against the trailing average, and the ledger's clean monthly totals, then writes this section. It is analysis, not a record: the numbers it quotes come from the datasets, and the judgments are a starting point for your own.</p></details>
       </div>
       <div class="review" data-draw="lm-review" data-source="review"></div>
@@ -315,7 +338,7 @@
       </div>
       <div class="card">
         <h2 id="lm-avg-chart">Against the trailing twelve months</h2>
-        <ul class="key row"><li><span class="bar r" style="--k: var(--color-bad)"></span>above its average</li><li><span class="bar l" style="--k: var(--color-ok)"></span>below it</li><li><span class="glyph">→</span>should the plan move?</li></ul>
+        <ul class="key row"><li><span class="bar r" style="--k: var(--color-bad)"></span>above its average</li><li><span class="bar l" style="--k: var(--color-ok)"></span>below it</li><li>should the plan move?</li></ul>
         <details class="how"><summary>How to read this</summary><p>Spent this month minus the average of the twelve months before it, by category. This compares the month with its own recent history rather than with the plan. A category that is over plan but at its twelve-month average has a plan problem; one that is at plan but far above its average had an unusual month.</p></details>
         <div class="chart" data-draw="lm-avg" data-source="lm_cats"></div>
       </div>
@@ -354,7 +377,7 @@
     </div>
     <div class="card">
       <h2 id="goal-chart">The three ratios, month by month</h2>
-        <ul class="key row"><li><span class="glyph">—</span>solid: twelve-month trailing share</li><li><span class="glyph">- -</span>dashed: target, floor or cap</li><li><span class="glyph">↑</span>above target is good for giving and savings, bad for housing</li></ul>
+        <ul class="key row"><li><span class="glyph ln" aria-hidden="true"></span>solid: twelve-month trailing share</li><li><span class="glyph ln dash" aria-hidden="true"></span>dashed: target, floor or cap</li><li><span class="glyph">↑</span>above target is good for giving and savings, bad for housing</li></ul>
       <div class="chart" data-draw="goal-lines" data-source="goal_month goals"></div>
         <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Giving / gross</th><th scope="col">Savings / gross</th><th scope="col">Housing / take-home</th></tr></thead><tbody data-draw="dt-goal-lines" data-source="goal_month"></tbody></table></div></details>
       <div class="legend"><span data-c="0">Giving / gross</span><span data-c="1">Savings funding / gross</span><span data-c="2">Housing + utilities / take-home</span></div>
@@ -371,7 +394,7 @@
       </div>
       <div class="card">
         <h2 id="goal-params">The targets as recorded</h2>
-        <ul class="key row"><li><span class="glyph">✎</span>your stated figures, not derived from data</li><li><span class="glyph">↻</span>gross salary is asked for at every month-close</li></ul>
+        <ul class="key row"><li>your stated figures, not derived from data</li><li>gross salary is asked for at every month-close</li></ul>
         <div class="tbl"><table data-source="goals" data-row-key="key"><thead><tr><th data-field="label">Target</th><th data-field="value">Value</th><th data-field="note">Note</th><th data-field="confirmed_at">Last confirmed</th></tr></thead><tbody data-draw="goal-params"></tbody></table></div>
         <details class="how"><summary>What is not here yet</summary><p>These are the user's stated figures, not derived from the data. Gross salary is asked for at every month-close; the others change only when the user says so. Investing that is deposited outside EveryDollar never appears in the exports, so this page cannot see it. Once the amount is recorded in the targets table it can be shown as a share of gross alongside the others, and it should be: it is the one goal this page currently cannot check.</p></details>
       </div>
@@ -383,7 +406,7 @@
     <p class="intro">Which categories carry the spending, how each has grown, and what sits inside any one of them.</p>
     <div class="card">
       <h2 id="cat-chart">Spend by category, by year</h2>
-        <ul class="key row"><li><span class="glyph">▤</span>stacked by category, largest at the bottom</li><li><span class="glyph">+</span>debt, taxes, large purchases and savings spending included</li><li><span class="glyph">−</span>transfers and plugs left out</li></ul>
+        <ul class="key row"><li>stacked by category, largest at the bottom</li><li><span class="glyph">+</span>debt, taxes, large purchases and savings spending included</li><li><span class="glyph">−</span>transfers and plugs left out</li></ul>
       <details class="how"><summary>How to read this</summary><p>Stacked by category. Debt payments, taxes, large purchases and savings-envelope spending are included and labelled; transfers and plugs are not. Each column is a year; each band a category, largest at the bottom. A band that suddenly grows or appears marks a year when that category changed size, such as a one-off purchase or two years of one bill paid in one budget year.</p></details>
       <div class="chart" data-draw="cat-stack" data-source="cat_year"></div>
       <div class="legend" data-draw="cat-legend" data-source="cat_year"></div>
@@ -403,7 +426,7 @@
     </div>
       <div id="w-t-items" hidden>
         <h3 class="visually-hidden" id="item-table">Items inside a category</h3>
-        <ul class="key row"><li><span class="glyph">⇲</span>pick a category</li><li><span class="glyph">≡</span>merged names from the mapping</li></ul>
+        <ul class="key row"><li>pick a category</li><li>merged names from the mapping</li></ul>
       
       <details class="how"><summary>How to read this</summary><p>Pick a category to see its canonical items by year. Item names are the merged names from the mapping, not EveryDollar's originals. Items are EveryDollar envelopes after merging renamed copies (Grocery 2 and Grocery are one item). Pick a category above to change the list.</p></details>
       <div class="controls"><select class="cat-pick" aria-label="Category" data-draw="cat-pick" data-source="cat_year"></select></div>
@@ -419,7 +442,7 @@
     <p class="intro">Costs that recur without a decision, and envelopes that quietly absorbed spending they were not meant for.</p>
     <div class="card">
       <h2 id="recurring-table">Recurring costs</h2>
-        <ul class="key row"><li><span class="glyph">∅</span>subscriptions, utilities and insurance</li><li><span class="glyph">÷12</span>now: twelve-month average, empty months included</li><li><span class="glyph">○</span>inactive: no charge in three months</li></ul>
+        <ul class="key row"><li>subscriptions, utilities and insurance</li><li><span class="glyph">÷12</span>now: twelve-month average, empty months included</li><li>inactive: no charge in three months</li></ul>
       <details class="how"><summary>How to read this</summary><p>Subscriptions, utilities and insurance. "Now" is the average over the last twelve budget months, including months with no charge, so an annual bill shows as a twelfth. Inactive rows have had no charge in the last three months. “Now / month” averages the last twelve budget months including months with no charge, so an annual bill shows as a twelfth of itself. Compare it with the lifetime column to see how long a cost has been running.</p></details>
       <div class="tbl"><table data-source="recurring" data-row-key="item"><thead><tr>
         <th data-field="item">Item</th><th data-field="active">Active</th><th data-field="first">First</th><th data-field="last">Last</th><th data-field="monthly_now">Now / month</th><th data-field="lifetime">Lifetime</th>
@@ -428,7 +451,7 @@
     <div class="grid">
       <div class="card">
         <h2 id="slush-chart">Catch-all envelopes</h2>
-        <ul class="key row"><li><span class="glyph">Σ</span>catch-alls: <span data-draw="slush-items" data-source="goal_config">none yet</span></li><li><span class="glyph">↑</span>a tall bar is spending under a saving label</li><li><span class="glyph">⚙</span><code>catchall_items</code> in the rules on Settings</li></ul>
+        <ul class="key row"><li><span class="glyph">Σ</span>catch-alls: <span data-draw="slush-items" data-source="goal_config">none yet</span></li><li><span class="glyph">↑</span>a tall bar is spending under a saving label</li><li><code>catchall_items</code> in the rules on Settings</li></ul>
       <details class="how"><summary>How to read this</summary><p>Spending booked to the envelopes your rules name as catch-alls; name them as <code>catchall_items</code> in the rules on the Settings page. EveryDollar envelopes named like savings can end up holding everyday spending. When a bar here is tall, real spending was hidden under a saving label that year. An empty chart means nothing was booked to these envelopes.</p></details>
         <div class="chart" data-draw="slush" data-source="slush"></div>
         <div class="legend" data-draw="slush-legend" data-source="slush"></div>
@@ -476,14 +499,14 @@
     <div class="grid">
       <div class="card">
         <h2 id="earner-chart">Income by earner</h2>
-        <ul class="key row"><li><span class="glyph">⚙</span>from the income_by_person rule</li><li><span class="glyph">⌂</span>income not tied to a person: Household</li></ul>
+        <ul class="key row"><li>from the income_by_person rule</li><li>income not tied to a person: Household</li></ul>
       <details class="how"><summary>How to read this</summary><p>Earner is assigned by item, using the income_by_person rule in Settings. Refunds, interest and other inflows not tied to a person are Household. Earner is assigned by item: the items named for each person in the income_by_person rule belong to that person, and everything else is Household. If a person is missing here, add their income items to the rule and rebuild.</p></details>
         <div class="chart" data-draw="earner" data-source="people"></div>
         <div class="legend" data-draw="earner-legend" data-source="people"></div>
       </div>
       <div class="card">
         <h2 id="payer-chart">Spend by payer</h2>
-        <ul class="key row"><li><span class="glyph">✉</span>payer means envelope owner, not who paid</li><li><span class="glyph">⌂</span>shared envelopes left out: <span data-draw="payer-shared" data-source="people">—</span></li></ul>
+        <ul class="key row"><li>payer means envelope owner, not who paid</li><li>shared envelopes left out: <span data-draw="payer-shared" data-source="people">—</span></li></ul>
       <details class="how"><summary>How to read this</summary><p>Payer is envelope ownership, the only signal EveryDollar carries: each person's discretionary envelopes versus everything shared. Expect Household to dominate. EveryDollar has no payer field, so payer here means envelope ownership, matched by the payer_prefix_by_person and payer_items_by_person rules, with the shared remainder as Household. It answers “how much discretionary money did each person direct,” not “who tapped the card.”</p></details>
         <div class="chart" data-draw="payer" data-source="people"></div>
         <div class="legend" data-draw="payer-legend" data-source="people"></div>
@@ -1050,18 +1073,20 @@ dash.draw('method-items', (el) => {
   const iy = dash.data('item_year'), cy = dash.data('cat_year');
   el.textContent = iy.status === 'ok' && iy.data.length ? `Here ${new Set(iy.data.map((r) => r.category + '|' + r.item)).size} items fall into ${new Set(cy.data.map((r) => r.category)).size} categories.` : '';
 });
+// The stored CPI source in plain words (same rules as cpi_fetch.source_display); the raw value stays on hover.
+const cpiSource = (s) => { s = s || ''; if (/carried|interpolat|estimat/i.test(s)) return 'Estimated until published'; if (s === 'FRED CPIAUCSL') return 'Published (CPI-U)'; const m = /^FRED-format series \((.+)\)$/.exec(s); return m ? `Published (${m[1]})` : s; };
 dash.draw('cpi-note', (el) => {
   const g = dash.data('cpi'); if (g.status !== 'ok' || !g.data.length) { el.textContent = ''; return; }
   const rows = [...g.data].sort((a, b) => a.month < b.month ? -1 : 1), base = rows.find((r) => r.month === el.dataset.base) || rows[rows.length - 1], first = rows.find((r) => r.month === el.dataset.first) || rows.find((r) => r.month >= (el.dataset.first || '')) || rows[0];
   const filled = rows.filter((r) => !/^FRED/.test(r.source));
   const loss = Math.round((1 - first.cpi / base.cpi) * 100);
-  el.textContent = (loss > 0 ? `A ${first.month.slice(0, 4)} dollar buys about ${loss}% less in ${base.month.slice(0, 4)}, so earlier figures grow when restated. ` : '') + (filled.length ? `${filled.length === 1 ? 'One month is' : filled.length + ' months are'} filled in rather than published (${filled.map((r) => r.month + ': ' + r.source).join('; ')}); marked in the table below.` : 'Every month uses a published value.');
+  el.textContent = (loss > 0 ? `A ${first.month.slice(0, 4)} dollar buys about ${loss}% less in ${base.month.slice(0, 4)}, so earlier figures grow when restated. ` : '') + (filled.length ? `${filled.length === 1 ? 'One month is' : filled.length + ' months are'} filled in rather than published (${filled.map((r) => r.month + ': ' + cpiSource(r.source).toLowerCase()).join('; ')}); marked in the table below.` : 'Every month uses a published value.');
 });
 dash.draw('cpi', (tb) => {
   const g = dash.data('cpi'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   const m = dash.data('monthly'), first = m.status === 'ok' && m.data.length ? m.data.map((r) => r.m).sort()[0] : '';
   const rows = g.data.filter((r) => r.month >= first).sort((a, b) => a.month < b.month ? 1 : -1);   // the months the ledger uses, newest first
-  HL.fillTable(tb, rows, [(r) => r.month, (r) => dash.fmt.dec(3)(Number(r.cpi)), (r, td) => { if (!/^FRED/.test(r.source)) td.parentElement.classList.add('filled'); return r.source; }]);
+  HL.fillTable(tb, rows, [(r) => r.month, (r) => dash.fmt.dec(3)(Number(r.cpi)), (r, td) => { if (!/^FRED/.test(r.source)) td.parentElement.classList.add('filled'); td.title = r.source; return cpiSource(r.source); }]);
 });
 dash.draw('cpi-estimated', (el) => {
   const g = dash.data('cpi'); const m = g.status === 'ok' ? g.data.filter((r) => /carried|interpolat|estimat/i.test(r.source)).map((r) => r.month) : [];
@@ -1100,23 +1125,32 @@ const drawRadar = (el, idx) => {
   const groups = radarGroups([...tot]); const cats = groups[idx];
   if (!cats) { none(); return; }
   card.querySelector('.sub').textContent = radarTitles[groups.length][idx];
-  const W = el.clientWidth || 300, H = Math.max(260, Math.min(340, W)), cx = W / 2, cy = H / 2 + 4, R = Math.min(W, H) / 2 - 46;
+  const W = el.clientWidth || 300, H = Math.max(260, Math.min(340, W)), cx = W / 2, cy = H / 2 + 4;
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
+  // Spoke labels: long names are shortened (full name on hover), and the star's radius leaves room for the widest one, so no label is clipped.
+  const short = (s) => s.length > 18 ? s.slice(0, 17).trimEnd() + '…' : s;
+  const probe = svg.append('g').selectAll('text').data(cats).join('text').text((c) => short(c));
+  const labelW = d3.max(probe.nodes(), (n) => { try { return n.getComputedTextLength(); } catch { return 0; } }) || 60; probe.remove();
+  const R = Math.max(60, Math.min(W / 2 - Math.min(labelW, W / 4) - 14, H / 2 - 26));
   const rMax = d3.max(years, (y) => d3.max(cats, (c) => Math.max(0, val.get(y + '|' + c) || 0))) || 1;
   const r = d3.scaleLinear([0, rMax], [0, R]).nice();
   const ang = (i) => (i / cats.length) * 2 * Math.PI - Math.PI / 2;
   const rings = r.ticks(3).filter((t) => t > 0);
   svg.append('g').selectAll('circle').data(rings).join('circle').attr('cx', cx).attr('cy', cy).attr('r', (t) => r(t)).attr('fill', 'none').attr('stroke', 'var(--cds-chart-grid)');
-  svg.append('g').selectAll('text').data(rings).join('text').attr('x', cx + 3).attr('y', (t) => cy - r(t) - 2).text((t) => HL.money(t));
+  // Scale labels sit between the first two spokes, so they never sit on a spoke line.
+  const mid = ang(0) + Math.PI / cats.length;
+  svg.append('g').attr('class', 'scale').selectAll('text').data(rings).join('text').attr('x', (t) => cx + r(t) * Math.cos(mid) + 3).attr('y', (t) => cy + r(t) * Math.sin(mid) - 3)
+    .attr('fill', 'var(--color-fg-muted)').attr('font-size', 11).attr('paint-order', 'stroke').attr('stroke', 'var(--color-panel)').attr('stroke-width', 3).attr('stroke-linejoin', 'round').text((t) => HL.money(t));
   svg.append('g').selectAll('line').data(cats).join('line').attr('x1', cx).attr('y1', cy).attr('x2', (c, i) => cx + R * Math.cos(ang(i))).attr('y2', (c, i) => cy + R * Math.sin(ang(i))).attr('stroke', 'var(--cds-chart-axis)');
-  svg.append('g').selectAll('text').data(cats).join('text').attr('x', (c, i) => cx + (R + 8) * Math.cos(ang(i))).attr('y', (c, i) => cy + (R + 8) * Math.sin(ang(i)) + 4)
-    .attr('text-anchor', (c, i) => { const x = Math.cos(ang(i)); return Math.abs(x) < 0.2 ? 'middle' : x > 0 ? 'start' : 'end'; }).attr('fill', 'var(--color-fg)').text((c) => c);
+  svg.append('g').attr('class', 'labels').selectAll('text').data(cats).join('text').attr('x', (c, i) => cx + (R + 8) * Math.cos(ang(i))).attr('y', (c, i) => cy + (R + 8) * Math.sin(ang(i)) + 4)
+    .attr('text-anchor', (c, i) => { const x = Math.cos(ang(i)); return Math.abs(x) < 0.2 ? 'middle' : x > 0 ? 'start' : 'end'; }).attr('fill', 'var(--color-fg)').text((c) => short(c))
+    .each(function (c) { if (short(c) !== c) d3.select(this).append('title').text(c); });
   const c = HL.colors(); const t = HL.tip(el);
   const path = d3.lineRadial().angle((d, i) => ang(i) + Math.PI / 2).radius((d) => r(Math.max(0, d))).curve(d3.curveLinearClosed);
   const shown = years.filter((y) => !window.HLradarHidden.has(y));
   svg.append('g').selectAll('path').data(shown).join('path').attr('class', 'ring').attr('transform', `translate(${cx},${cy})`).attr('d', (y) => path(cats.map((cat) => val.get(y + '|' + cat) || 0)))
-    .attr('fill', (y) => c[years.indexOf(y) % c.length]).attr('fill-opacity', (y) => y === years[years.length - 1] ? 0.18 : 0.04)
-    .attr('stroke', (y) => c[years.indexOf(y) % c.length]).attr('stroke-width', (y) => y === years[years.length - 1] ? 2.5 : 1.5).attr('stroke-opacity', (y) => 0.35 + 0.65 * (years.indexOf(y) / Math.max(1, years.length - 1))).attr('stroke-linejoin', 'round')
+    .attr('fill', (y) => c[years.indexOf(y) % c.length]).attr('fill-opacity', (y) => y === years[years.length - 1] ? 0.18 : 0.06)
+    .attr('stroke', (y) => c[years.indexOf(y) % c.length]).attr('stroke-width', (y) => y === years[years.length - 1] ? 2.5 : 1.5).attr('stroke-opacity', (y) => 0.6 + 0.4 * (years.indexOf(y) / Math.max(1, years.length - 1))).attr('stroke-linejoin', 'round')
     .on('pointermove', (pe, y) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(y)}</div>` + cats.map((cat) => `<div>${HL.esc(cat)} ${HL.esc(HL.money(val.get(y + '|' + cat) || 0))}</div>`).join('')); }).on('pointerleave', () => t.hide());
   el.style.minHeight = H + 'px';
 };

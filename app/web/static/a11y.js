@@ -20,7 +20,7 @@
       if (t.length > 1) parts.push('Axis labels run from ' + t[0] + ' to ' + t[t.length - 1] + ' (' + words(t.length, 'label', 'labels') + ').');
     }
     if (card && card.querySelector('details.datatable')) parts.push('The same figures are in a table after the chart.');
-    if (chart.classList.contains('radar')) { const c = [...svg.querySelectorAll(':scope > g:nth-of-type(4) text')].map((x) => x.textContent.trim()); if (c.length) parts.push('Categories: ' + c.join(', ') + '.'); }
+    if (chart.classList.contains('radar')) { const c = [...svg.querySelectorAll(':scope > g.labels text')].map((x) => (x.querySelector('title') || x).textContent.trim()); if (c.length) parts.push('Categories: ' + c.join(', ') + '.'); }
     return parts.join(' ');
   };
   let queued = false;

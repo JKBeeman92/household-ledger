@@ -31,7 +31,7 @@ def test_confirmation_shows_month_and_token_estimate_then_generates(client, mont
     page = client.get(f"/reviews/confirm?month={month}").text
     with db.pool.connection() as conn:
         tokens = review.estimate_tokens(conn, month)
-    assert month in page and f"{tokens:,}" in page and tokens > 100 and "anthropic" in page and http[0] == []
+    assert month in page and f"{tokens:,}" in page and tokens > 100 and "Anthropic (" in page and http[0] == []
     assert client.post("/review/generate", data={"month": month, "confirm": "yes"}).status_code == 303
     assert len(http[0]) == 1
     assert "already exists" in client.get(f"/reviews/confirm?month={month}").text

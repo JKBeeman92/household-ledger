@@ -174,7 +174,7 @@ def test_reviews_page_save_and_test(client, reset_db, cfg, http):
     r = client.post("/reviews", data={"provider": "openai", "model": "gpt-x", "base_url": "http://lm:1234/v1/"})
     assert r.status_code == 303
     page = client.get("/reviews/provider").text
-    assert "Saved." in page and "openai:gpt-x" in page and 'value="gpt-x"' in page
+    assert "Saved." in page and "OpenAI-compatible (gpt-x)" in page and 'value="gpt-x"' in page
     reply["v"] = Resp({"choices": [{"message": {"content": "ok"}}]})
     assert "Connected to openai:gpt-x" in client.get(client.post("/reviews/test").headers["location"]).text
     assert calls[-1][0] == "http://lm:1234/v1/chat/completions"

@@ -48,6 +48,18 @@ def source_label(url: str) -> str:
     return "FRED CPIAUCSL" if url == DEFAULT_URL else f"FRED-format series ({urlparse(url).netloc})"
 
 
+def source_display(source: str) -> str:
+    """The stored `source` in plain words for the screen; the stored value itself is unchanged (the pipeline keys on it)."""
+    s = (source or "").strip()
+    if is_estimate(s):
+        return "Estimated until published"
+    if s == "FRED CPIAUCSL":
+        return "Published (CPI-U)"
+    if m := re.fullmatch(r"FRED-format series \((.+)\)", s):
+        return f"Published ({m.group(1)})"
+    return s
+
+
 def parse(text: str) -> dict[str, float]:
     """FRED CSV: a header line, then `date,value` rows with dates like 2026-09-01; '.' marks an unpublished month. All or nothing."""
     rows = list(csv.reader(io.StringIO(text.strip())))

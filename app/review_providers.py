@@ -30,6 +30,11 @@ class Provider:
     def label(self) -> str:
         return f"{self.name}:{self.model}"
 
+    @property
+    def display(self) -> str:
+        """For people: the provider's name and the model, e.g. "Anthropic (claude-sonnet-5-5)"."""
+        return f"{PROVIDERS.get(self.name, self.name)} ({self.model})" if self.model else PROVIDERS.get(self.name, self.name)
+
     def problem(self) -> str | None:
         """Why this provider cannot be used, or None when it is configured."""
         if self.name not in PROVIDERS:
