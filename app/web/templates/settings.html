@@ -32,6 +32,15 @@
 <div class="stack" style="margin-top:var(--space-4)">
 <div role="tabpanel" id="sp-mapping" aria-labelledby="st-mapping">
 {% call grid("mapping", by_key.mapping, ["item","canonical_item","category","flow","note"], ["Item","Canonical item","Category","Flow","Note"], rows.mapping) %}
+  {% if unmapped %}<p class="muted" id="draft-offer" style="border-left:3px solid var(--warning);padding-left:var(--space-3)">{{ unmapped }} item{{ '' if unmapped == 1 else 's' }} in your exports {{ 'has' if unmapped == 1 else 'have' }} no mapping row yet.
+    <a class="btn" href="/settings/mapping/draft">Draft a mapping from my budget groups</a> You review the draft before anything is saved, and no existing row changes.</p>{% endif %}
+  {% if name_families %}<details class="keyhelp" id="name-families"><summary>{{ name_families|length }} name{{ '' if name_families|length == 1 else 's' }} that look like one envelope under different canonical names</summary>
+    <p class="muted">These items have the same name once a year's suffix (" 2", " Fund", " Goal") is removed, but map to different canonical names, so their charts show separate lines. If they are one envelope, give them one name; if you keep them apart on purpose, leave them. Only the canonical name changes.</p>
+    {% for fam in name_families %}<form method="post" action="/settings/mapping/family" class="family">{{ csrf_field(request) }}<input type="hidden" name="base" value="{{ fam.base }}">
+      <p><strong>{{ fam.base }}</strong>: {% for i in fam["items"] %}{{ i["item"] }} → <code>{{ i["canonical_item"] }}</code>{{ ", " if not loop.last }}{% endfor %}</p>
+      <p class="tools"><label>Use one canonical name for all <select name="canonical_item" aria-label="Canonical name for {{ fam.base }}">{% for c in fam.canonicals %}<option {% if c == fam.suggested %}selected{% endif %}>{{ c }}</option>{% endfor %}{% if fam.base not in fam.canonicals %}<option>{{ fam.base }}</option>{% endif %}</select></label>
+        <button class="btn" type="submit">Use it</button></p></form>{% endfor %}
+  </details>{% endif %}
   <details class="keyhelp"><summary>Bulk paste or export as CSV</summary>
     <p class="muted">Paste the whole mapping as CSV to replace it. Every row is checked first and errors name the line; if any row is bad, nothing is saved. Items missing from the CSV are removed.</p>
     <form method="post" action="/settings/mapping">{{ csrf_field(request) }}

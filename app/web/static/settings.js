@@ -68,6 +68,19 @@
       });
       var acts = el("td", { "class": "acts" }), sv = el("button", { type: "button", "class": "btn primary" }, "Save"), cn = el("button", { type: "button", "class": "btn" }, "Cancel");
       acts.appendChild(sv); acts.appendChild(cn); tr.appendChild(acts);
+      if (blank && kind === "mapping") {   // #106: a new item whose name drifted from one already mapped ("X 2", "X Fund") gets that row's values
+        var itemIn = tr.querySelector('input[name="item"]'), like = el("div", { "class": "hint", id: "suggest-hint" });
+        itemIn.parentNode.appendChild(like);
+        itemIn.onchange = function () {
+          var v = itemIn.value.trim(); like.textContent = ""; if (!v) return;
+          fetch("/settings/mapping/suggest?item=" + encodeURIComponent(v), { credentials: "same-origin" }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (res) {
+            var s = res && res.suggestion; if (!s || itemIn.value.trim() !== v) return;
+            [["canonical_item", s.canonical_item], ["category", s.category]].forEach(function (p) { var i = tr.querySelector('input[name="' + p[0] + '"]'); if (i && !i.value) i.value = p[1]; });
+            var fl = tr.querySelector('select[name="flow"]'); if (fl) { fl.value = s.flow; if (fl.onchange) fl.onchange(); }
+            like.textContent = "Filled in like " + s.like + ". Change anything that differs.";
+          }).catch(function () {});
+        };
+      }
       sv.onclick = function () { save(tr); };
       cn.onclick = function () { if (tr.dataset.new) tr.remove(); else show(tr, row); };
       tr.onkeydown = function (e) { if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); save(tr); } else if (e.key === "Escape") cn.click(); };

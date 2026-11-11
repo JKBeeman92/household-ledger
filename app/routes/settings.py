@@ -3,9 +3,9 @@ import csv, io, json, re
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response
 
-from .. import db, auth, schema
+from .. import db, auth, schema, mapping_hints
 from ..web_helpers import flash, render
-from pipeline.run_pipeline import norm
+from pipeline.run_pipeline import norm, unmapped_items
 
 router = APIRouter()
 
@@ -137,9 +137,13 @@ def _mapping_csv(conn) -> str:
     return out.getvalue()
 
 
-def _mapping_import(conn, body: str) -> str:
-    """Bulk CSV: every row is checked first and the errors name the line; nothing is written unless all rows are valid. Rows are upserted and
-    items absent from the CSV deleted, in one transaction, so the table is never emptied and refilled."""
+def _problems(problems: list[str]) -> ValueError:
+    return ValueError(f"{len(problems)} problem{'s' * (len(problems) != 1)}: " + "; ".join(problems[:8]) + (f"; and {len(problems) - 8} more" if len(problems) > 8 else ""))
+
+
+def _mapping_rows(body: str, existing: set[str] | None = None) -> list[dict]:
+    """Check a mapping CSV and return its clean rows; raises ValueError naming each bad line. With `existing`, an item already in the
+    mapping is a problem too (the draft only adds rows, it never overwrites one)."""
     reader = csv.DictReader(io.StringIO(body.lstrip("\ufeff")))
     rows = list(reader)
     if not rows or not {"Item", "CanonicalItem", "Category", "Flow"}.issubset(rows[0].keys()):
@@ -149,12 +153,46 @@ def _mapping_import(conn, body: str) -> str:
         c, err = check_mapping_row({k: v for k, v in r.items() if isinstance(v, str)})
         if not err and c["item"] in seen:
             err["item"] = f"duplicate of line {seen[c['item']]}"
+        if not err and existing is not None and c["item"] in existing:
+            err["item"] = "already in the mapping"
         for f, m in err.items():
             problems.append(f"line {n}: " + (f"bad Flow on: {c['item'] or '(blank)'} ({m})" if f == "flow" else f"{f} {m}" + (f" on: {c['item']}" if c["item"] else "")))
         if not err:
             seen[c["item"]] = n; clean.append(c)
     if problems:
-        raise ValueError(f"{len(problems)} problem{'s' * (len(problems) != 1)}: " + "; ".join(problems[:8]) + (f"; and {len(problems) - 8} more" if len(problems) > 8 else ""))
+        raise _problems(problems)
+    return clean
+
+
+def _mapping_add(conn, body: str) -> str:
+    """Add the rows of a mapping CSV (the reviewed draft) without touching any existing row; all or nothing, like the bulk import."""
+    existing = {r["item"] for r in conn.execute("SELECT item FROM item_mapping").fetchall()}
+    clean = _mapping_rows(body, existing)
+    conn.cursor().executemany("INSERT INTO item_mapping (item,canonical_item,category,flow,note) VALUES (%s,%s,%s,%s,%s)",
+                              [(c["item"], c["canonical_item"], c["category"], c["flow"], c["note"]) for c in clean])
+    return f"{len(clean)} drafted mapping row{'s' * (len(clean) != 1)}"
+
+
+def _mapping_list(conn) -> list[dict]:
+    return conn.execute("SELECT item, canonical_item, category, flow, note FROM item_mapping ORDER BY category, canonical_item, item").fetchall()
+
+
+def draft_mapping(conn) -> list[dict]:
+    """Draft rows for every item the exports carry that the mapping lacks (#105); see app/mapping_hints.draft."""
+    return mapping_hints.draft(unmapped_items(conn), _mapping_list(conn), db.get_setting(conn, "rules", {}) or {})
+
+
+def draft_csv(rows: list[dict]) -> str:
+    out = io.StringIO(); w = csv.writer(out); w.writerow(["Item", "CanonicalItem", "Category", "Flow", "Note"])
+    for r in rows:
+        w.writerow([r["item"], r["canonical_item"], r["category"], r["flow"], r["note"]])
+    return out.getvalue()
+
+
+def _mapping_import(conn, body: str) -> str:
+    """Bulk CSV: every row is checked first and the errors name the line; nothing is written unless all rows are valid. Rows are upserted and
+    items absent from the CSV deleted, in one transaction, so the table is never emptied and refilled."""
+    clean = _mapping_rows(body)
     cur = conn.cursor()
     cur.executemany("INSERT INTO item_mapping (item,canonical_item,category,flow,note) VALUES (%s,%s,%s,%s,%s) ON CONFLICT (item) DO UPDATE SET canonical_item=EXCLUDED.canonical_item, category=EXCLUDED.category, flow=EXCLUDED.flow, note=EXCLUDED.note, updated_at=now()",
                     [(c["item"], c["canonical_item"], c["category"], c["flow"], c["note"]) for c in clean])
@@ -255,8 +293,10 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         categories = sorted({r["category"] for r in rows["mapping"] if r["category"]})
         rules = db.get_setting(conn, "rules", {}) or {}
         household = db.get_setting(conn, "household", {}) or {}
+        name_families = mapping_hints.families(rows["mapping"], rules)
+        unmapped = len(unmapped_items(conn))
     return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP,
-                  categories=categories, rules=rules, hh=household)
+                  categories=categories, rules=rules, hh=household, name_families=name_families, unmapped=unmapped)
 
 
 @router.get("/settings/mapping.csv")
@@ -264,6 +304,54 @@ def mapping_export(user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         body = _mapping_csv(conn)
     return Response(body, media_type="text/csv", headers={"Content-Disposition": 'attachment; filename="item_mapping.csv"'})
+
+
+@router.get("/settings/mapping/draft", response_class=HTMLResponse)
+def mapping_draft_page(request: Request, user=Depends(auth.require_editor)):
+    """The draft for review (#105): nothing is saved until the editor presses Add."""
+    with db.pool.connection() as conn:
+        rows = draft_mapping(conn)
+    return render(request, "mapping_draft.html", user, active="settings", rows=rows, body=draft_csv(rows) if rows else "")
+
+
+@router.post("/settings/mapping/draft")
+def mapping_draft_save(request: Request, body: str = Form(...), user=Depends(auth.require_editor)):
+    with db.pool.connection() as conn:
+        try:
+            what = _mapping_add(conn, body)
+            db.mark_inputs_changed(conn); conn.commit()
+            flash(request, f"Added {what}. The dashboard shows them after a rebuild: press Rebuild now.")
+        except Exception as e:  # noqa: BLE001
+            conn.rollback(); flash(request, f"Not saved — {e}", "bad")
+            return RedirectResponse("/settings/mapping/draft", status_code=303)
+    return RedirectResponse("/settings#mapping", status_code=303)
+
+
+@router.get("/settings/mapping/suggest")
+def mapping_suggest(item: str = "", user=Depends(auth.require_editor)):
+    """The row an existing mapping suggests for a new item name (#106), for the inline editor. {"suggestion": null} when none."""
+    with db.pool.connection() as conn:
+        s = mapping_hints.suggest(item, _mapping_list(conn), db.get_setting(conn, "rules", {}) or {})
+    return JSONResponse({"suggestion": s})
+
+
+@router.post("/settings/mapping/family")
+async def mapping_family(request: Request, user=Depends(auth.require_editor)):
+    """Give every item of one name family (#106) the same CanonicalItem. The family is recomputed here, so only items whose base name
+    still matches change, and only their CanonicalItem: category, flow and note stay as they are."""
+    form = await request.form()
+    base, canon = norm(str(form.get("base", ""))), norm(str(form.get("canonical_item", "")))
+    with db.pool.connection() as conn:
+        rules = db.get_setting(conn, "rules", {}) or {}
+        fam = next((f for f in mapping_hints.families(_mapping_list(conn), rules) if f["base"].lower() == base.lower()), None)
+        if not fam or not canon:
+            flash(request, "Nothing changed: that group of names no longer differs (reload the page).", "bad")
+            return RedirectResponse("/settings#mapping", status_code=303)
+        items = [i["item"] for i in fam["items"] if i["canonical_item"] != canon]
+        conn.execute("UPDATE item_mapping SET canonical_item=%s, updated_at=now() WHERE item = ANY(%s)", (canon, items))
+        db.mark_inputs_changed(conn); conn.commit()
+    flash(request, f"{len(items)} item{'s' * (len(items) != 1)} now use the canonical name {canon}. The dashboard shows it after a rebuild: press Rebuild now.")
+    return RedirectResponse("/settings#mapping", status_code=303)
 
 
 @router.post("/settings/{kind}/row")

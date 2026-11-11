@@ -265,6 +265,20 @@ a group gift, a shared bill paid back by friends) shows as one month of large ne
 spending. Give those items Flow `exclude`: their rows stay in the stored exports and in reconciliation, but leave the ledger and
 every chart. The sample household's `Venmo Pass-Through` item shows the pattern.
 
+**A first mapping for a back catalogue.** Settings → Item mapping offers **Draft a mapping from my budget groups** whenever the stored
+exports carry items with no mapping row. The draft fills only those items and never changes an existing row: Category is the budget
+group; CanonicalItem is the item name without a year's suffix (` 2`, ` Fund`, ` Goal`); Flow is `income` for the `Income` group, `debt`
+for `Debt`, `transfer` for names such as `Fund Transfer`, `Transfer Funds`, `… Rebalance` or `Transfer to …`, and `expense` otherwise.
+An item whose name matches one already mapped (`Second Breakfast 3` beside `Second Breakfast`) copies that row instead. Every drafted
+row's Note starts with `drafted`, so the guesses can be found later. You review the draft as CSV before it is added; check pass-through
+money (`exclude`) and fund moves the names do not reveal.
+
+**One envelope, many names.** Budget tools rename an envelope from year to year (`Second Breakfast`, `Second Breakfast 2`,
+`Second Breakfast Fund`). If those map to different CanonicalItems, the per-item charts split one line into several. The Item
+mapping tab lists such groups under "names that look like one envelope", with a one-click fix that changes only the canonical name;
+adding a row for a new item fills it in from the matching one. The suffixes are the `item_name_suffixes` rule and the fund-move names
+the `transfer_item_names` rule, for tools that name things differently.
+
 ## Try it with the sample household
 
 `examples/sample-household/` is a synthetic household (two earners, 18 budget months, a student loan, a transfer pair, three-paycheck

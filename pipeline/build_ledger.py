@@ -21,6 +21,8 @@ RULES = {
   "debt_plug_until": None,             # "YYYY-MM": debt "Interest" rows up to here are balancing plugs, not payments
   "transfer_item_words": None,         # item-name words that mark a transfer ("Transfer to <word>"; regex), or None for the defaults
   "transfer_merchants": None,          # regex of whole merchant names that are envelope moves (e.g. "office redistribution"), tried with the defaults
+  "item_name_suffixes": None,          # regexes for the suffixes an envelope's name gains between years (" 2", " Fund", " Goal"); None = those. Settings hints and the mapping draft only
+  "transfer_item_names": None,         # regex of whole item names that are fund moves ("Fund Transfer"), drafted as Flow transfer; None = the built-in list. Mapping draft only
   "verify_transfer_prefixes": [],      # CanonicalItem prefixes whose "verify" rows are moves between envelopes, not spending
   "catchall_items": [],                # CanonicalItem names that act as catch-alls (the Where it went tab charts them)
   "paycheck_min": 500,                 # a Paycheck row above this many dollars counts as one deposit; smaller ones are deductions

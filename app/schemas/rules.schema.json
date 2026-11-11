@@ -56,6 +56,14 @@
       "type": ["string", "null"], "format": "regex",
       "description": "Regular expression of whole merchant names (case-insensitive) that are moves between envelopes, for example \"second breakfast fund|party tree rebalance\". Tried alongside the built-in transfer, rebalance and redistribution names."
     },
+    "item_name_suffixes": {
+      "type": ["array", "null"], "items": {"type": "string", "minLength": 1, "format": "regex"},
+      "description": "Regular expressions (case-insensitive) for the endings an envelope's name gains from year to year, for example [\"\\\\s+\\\\d+\", \"\\\\s+fund\", \"\\\\s+goal\"], so that \"Second Breakfast 2\" and \"Second Breakfast Fund\" are recognised as \"Second Breakfast\". Used by the Item mapping hints and the mapping draft, not by the build. Empty (null) uses those three."
+    },
+    "transfer_item_names": {
+      "type": ["string", "null"], "format": "regex",
+      "description": "Regular expression of whole item names (case-insensitive) that are moves between your own envelopes, drafted with Flow transfer, for example \"fund transfers?|transfer funds?|.*rebalance\". Used by the mapping draft only. Empty (null) uses a built-in list: Fund Transfer, Transfer Funds, anything ending in Rebalance, Transfer to/from …"
+    },
     "verify_transfer_prefixes": {
       "type": "array", "items": {"type": "string", "minLength": 1},
       "description": "CanonicalItem prefixes whose rows mapped with the verify flow are moves between envelopes rather than spending, for example [\"Slush\"]. Empty keeps every verify row on the verify list."
