@@ -19,6 +19,7 @@
     if (text != null) e.textContent = text;
     return e;
   }
+  function needRebuild(res) { var b = document.getElementById("rebuild-banner"); if (b && res.rebuild_needed) b.hidden = false; }
   function status(msg, bad) {
     var s = document.getElementById("rowstatus"); s.textContent = msg; s.className = "rowstatus " + (bad ? "bad" : "ok");
   }
@@ -68,7 +69,7 @@
       tr.querySelectorAll(".err").forEach(function (e) { e.textContent = ""; });
       tr.querySelectorAll("[aria-invalid]").forEach(function (i) { i.removeAttribute("aria-invalid"); });
       post("/settings/" + kind + "/row", body).then(function (res) {
-        if (res.ok) { delete tr.dataset.new; setOrig(tr, res.row); show(tr, res.row); status("Saved. Rebuild from the Close-a-month page to apply.", false); return; }
+        if (res.ok) { delete tr.dataset.new; setOrig(tr, res.row); show(tr, res.row); status("Saved. The dashboard shows it after a rebuild: press Rebuild now above.", false); needRebuild(res); return; }
         var errs = res.errors || {}, first = true, fieldErr = false;
         Object.keys(errs).forEach(function (f) {
           var td = tr.querySelector('td[data-f="' + f + '"]');
@@ -82,7 +83,7 @@
     function del(tr) {
       if (!confirm("Delete this row?")) return;
       post("/settings/" + kind + "/row/delete", origOf(tr)).then(function (res) {
-        if (res.ok) { tr.remove(); status("Row deleted.", false); } else status((res.errors && res.errors._) || "Row not deleted (already gone? reload the page).", true);
+        if (res.ok) { tr.remove(); status("Row deleted. The dashboard shows it after a rebuild.", false); needRebuild(res); } else status((res.errors && res.errors._) || "Row not deleted (already gone? reload the page).", true);
       }).catch(function () { status("Row not deleted: could not reach the server.", true); });
     }
     Array.prototype.forEach.call(tbody.rows, function (tr) {

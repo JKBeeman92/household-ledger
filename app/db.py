@@ -86,5 +86,20 @@ def get_setting(conn, key: str, default=None):
     return row["value"] if row else default
 
 
+INPUTS_CHANGED = "inputs_changed_at"   # settings row stamped whenever something the pipeline reads changes
+
+
+def mark_inputs_changed(conn) -> None:
+    """Mapping, goals, events, CPI or rules changed: the dashboard keeps the old figures until a build reads the new ones."""
+    put_setting(conn, INPUTS_CHANGED, "pipeline inputs changed since the last build")
+
+
+def rebuild_needed(conn) -> bool:
+    """True when the inputs changed after the start of the newest successful build (a build started later read them)."""
+    row = conn.execute("SELECT s.updated_at > coalesce((SELECT max(started_at) FROM build_log WHERE ok), '-infinity') AS due "
+                       "FROM settings s WHERE s.key=%s", (INPUTS_CHANGED,)).fetchone()
+    return bool(row and row["due"])
+
+
 def put_setting(conn, key: str, value) -> None:
     conn.execute("INSERT INTO settings (key, value) VALUES (%s, %s) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, updated_at=now()", (key, json.dumps(value)))
