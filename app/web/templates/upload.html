@@ -37,8 +37,6 @@ addEventListener('DOMContentLoaded', () => {
   </p>
   <ul id="build-problems" class="muted" style="margin:0;padding-left:var(--space-6)">{% for p in build.problems or [] %}<li>Reconciliation: {{ p }}</li>{% endfor %}</ul>
 </div>
-{% include "_findings.html" %}
-{% include "_checklist.html" %}
 {% if last_upload %}<div class="panel" id="upload-result" style="margin-top:var(--space-4)">
   <h2>Last upload</h2>
   <p class="muted">{{ last_upload.created_at.strftime('%Y-%m-%d %H:%M:%S') }} · {{ last_upload.results|selectattr('ok')|list|length }} of {{ last_upload.results|length }} files stored.</p>
@@ -65,6 +63,8 @@ addEventListener('DOMContentLoaded', () => {
     </form>
   </div>
 </div>
+{% include "_findings.html" %}
+{% include "_checklist.html" %}
 <div class="panel" style="margin-top:var(--space-4)">
   <h2>Loaded months</h2>
   <p class="muted">{{ files|length }} files · {{ months|length }} budget months{% if months %} · {{ months[-1] }} → {{ months[0] }}{% endif %}.</p>

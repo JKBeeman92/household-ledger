@@ -256,3 +256,32 @@ def test_rebuild_now_returns_where_it_was_pressed_and_hides_while_building(clien
     assert r.status_code == 303 and r.headers["location"] == "/settings#goals"
     r = client.post("/rebuild", data={"next": "https://elsewhere.example/"})
     assert r.headers["location"] == "/"   # never off-site
+
+
+@pytest.mark.parametrize("item, group, canonical, flow", [
+    ("Groceries 2", "Food", "Groceries", "expense"), ("Vacation Fund", "Saving", "Vacation", "expense"), ("Car Goal", "Saving", "Car", "expense"),
+    ("Rosie Paycheck", "Income", "Rosie Paycheck", "income"), ("Student Loan", "Debt", "Student Loan", "debt"), ("Fund Transfer", "Income", "Fund Transfer", "transfer")])
+def test_unmapped_items_get_a_first_draft(item, group, canonical, flow):
+    from app.routes.findings import guess
+    assert guess(item, group) == {"canonical_guess": canonical, "flow_guess": flow}
+
+
+def test_household_and_people_forms_save_through_the_schema(client, reset_db):
+    r = client.post("/settings/household/form", data={"name": "Bagshot Row", "title": "Bagshot Ledger", "currency": "eur", "locale": "en-GB"})
+    assert r.headers["location"] == "/settings#household"
+    with db.pool.connection() as conn:
+        hh = db.get_setting(conn, "household", {})
+    assert hh["name"] == "Bagshot Row" and hh["currency"] == "EUR" and hh["locale"] == "en-GB"
+    client.post("/settings/rules/people", data={"people": "Rosie, Sam", "emp_match": ["Hobbiton Mill", ""], "emp_name": ["Hobbiton Mill", ""]})
+    with db.pool.connection() as conn:
+        rules = db.get_setting(conn, "rules", {})
+        assert rules["people"] == ["Rosie", "Sam"] and rules["employers"] == [{"match": "hobbiton mill", "name": "Hobbiton Mill"}]   # matched lower-cased
+        assert db.rebuild_needed(conn)
+    page = client.get(client.post("/settings/household/form", data={"currency": "euro"}).headers["location"]).text
+    assert "Not saved" in page
+
+
+def test_settings_tables_sort_with_real_buttons_and_show_flow_meanings(client, reset_db):
+    t = client.get("/settings").text
+    assert '<th data-sort="item" scope="col"><button type="button" class="sortbtn">Item</button></th>' in t
+    assert "What each Flow means" in t and "money held for someone else" in t and 'id="settings-categories"' in t

@@ -19,6 +19,8 @@
     if (text != null) e.textContent = text;
     return e;
   }
+  var flowHelp = {}; try { var fh = document.getElementById && document.getElementById("flow-help"); if (fh) flowHelp = JSON.parse(fh.textContent); } catch (e) {}
+  var cats = {}; (function () { var dl = document.getElementById && document.getElementById("settings-categories"); if (dl) Array.prototype.forEach.call(dl.querySelectorAll("option"), function (o) { cats[o.value.toLowerCase()] = 1; }); })();
   function needRebuild(res) { var b = document.getElementById("rebuild-banner"); if (b && res.rebuild_needed) b.hidden = false; }
   function status(msg, bad) {
     var s = document.getElementById("rowstatus"); s.textContent = msg; s.className = "rowstatus " + (bad ? "bad" : "ok");
@@ -30,6 +32,11 @@
     var origFields = kind === "events" ? ["m", "label"] : [fields[0]];
     var tbody = table.tBodies[0];
 
+    function heading(f) { var th = table.querySelector && table.querySelector('th[data-sort="' + f + '"]'); return th ? th.textContent.trim() : f; }
+    function flash(tr, msg) {   // say it where the eye is: on the row that was saved
+      tr.className = "saved"; var acts = tr.querySelector(".acts"); if (acts) acts.appendChild(el("span", { "class": "rowmsg" }, msg));
+      setTimeout(function () { if (tr.className === "saved") tr.className = ""; var m = tr.querySelector(".rowmsg"); if (m && m.remove) m.remove(); }, 2600);
+    }
     function origOf(tr) { var o = {}; origKeys.forEach(function (k, i) { o[k] = tr.dataset["o" + i] || ""; }); return o; }
     function setOrig(tr, row) { origFields.forEach(function (f, i) { tr.dataset["o" + i] = row[f] == null ? "" : row[f]; }); }
     function show(tr, row) {
@@ -46,11 +53,14 @@
       fields.forEach(function (f) {
         var td = el("td", { "data-f": f }), inp;
         if (f === "flow") {
-          inp = el("select", { name: f, "aria-label": f });
+          inp = el("select", { name: f, "aria-label": heading(f) });
           flows.forEach(function (o) { var op = el("option", { value: o }, o); if (o === row[f]) op.selected = true; inp.appendChild(op); });
           if (blank) inp.value = "expense";
+          var hint = el("div", { "class": "hint" }, flowHelp[inp.value] || ""); inp.onchange = function () { hint.textContent = flowHelp[inp.value] || ""; };
+          td.appendChild(inp); td.appendChild(hint); td.appendChild(el("div", { "class": "err", role: "alert" })); tr.appendChild(td); return;
         } else {
-          inp = el("input", { type: "text", name: f, "aria-label": f, value: row[f] == null ? "" : row[f] });
+          inp = el("input", { type: "text", name: f, "aria-label": heading(f), value: row[f] == null ? "" : row[f] });
+          if (f === "category" && kind === "mapping") inp.setAttribute("list", "settings-categories");
           if (f === "value") inp.setAttribute("inputmode", "decimal");
           if (f === "m") inp.setAttribute("placeholder", "YYYY-MM");
         }
@@ -66,10 +76,12 @@
     function save(tr) {
       var body = origOf(tr);
       tr.querySelectorAll("input,select").forEach(function (i) { body[i.name] = i.value; });
+      if (kind === "mapping" && body.category && !cats[body.category.toLowerCase()] &&
+          !confirm('"' + body.category + '" is a new category. Charts and goals will show it on its own. Create it?')) return;
       tr.querySelectorAll(".err").forEach(function (e) { e.textContent = ""; });
       tr.querySelectorAll("[aria-invalid]").forEach(function (i) { i.removeAttribute("aria-invalid"); });
       post("/settings/" + kind + "/row", body).then(function (res) {
-        if (res.ok) { delete tr.dataset.new; setOrig(tr, res.row); show(tr, res.row); status("Saved. The dashboard shows it after a rebuild: press Rebuild now above.", false); needRebuild(res); return; }
+        if (res.ok) { delete tr.dataset.new; setOrig(tr, res.row); show(tr, res.row); flash(tr, "Saved"); if (kind === "mapping" && res.row && res.row.category) cats[String(res.row.category).toLowerCase()] = 1; status("Saved. The dashboard shows it after a rebuild: press Rebuild now above.", false); needRebuild(res); return; }
         var errs = res.errors || {}, first = true, fieldErr = false;
         Object.keys(errs).forEach(function (f) {
           var td = tr.querySelector('td[data-f="' + f + '"]');
@@ -96,7 +108,7 @@
 
     // sorting: click a header; numeric when every non-empty cell parses as a number
     table.querySelectorAll("th[data-sort]").forEach(function (th) {
-      th.tabIndex = 0; th.setAttribute("role", "button");
+      var btn = th.querySelector && th.querySelector("button.sortbtn");   // a real button inside the header keeps its column-header role
       function go() {
         var idx = fields.indexOf(th.dataset.sort), dir = th.getAttribute("aria-sort") === "ascending" ? -1 : 1;
         table.querySelectorAll("th").forEach(function (o) { o.removeAttribute("aria-sort"); });
@@ -110,7 +122,7 @@
         });
         trs.forEach(function (tr) { tbody.appendChild(tr); });
       }
-      th.onclick = go; th.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
+      if (btn) btn.onclick = go; else th.onclick = go;
     });
     var filter = document.querySelector('[data-filter="' + kind + '"]');
     if (filter) filter.oninput = function () {

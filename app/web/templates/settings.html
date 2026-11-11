@@ -13,10 +13,14 @@
 <section class="panel" id="{{ kind }}-editor">
   <h2>{{ ed.title }}</h2>
   <p class="muted">{{ ed.help }}</p>
+  {% if kind == "mapping" %}<details class="keyhelp flowhelp"><summary>What each Flow means</summary>
+    <dl class="flowlist">{% for f in flows %}<dt><code>{{ f }}</code></dt><dd>{{ flow_help[f] }}</dd>{% endfor %}</dl></details>
+  <datalist id="settings-categories">{% for c in categories %}<option value="{{ c }}">{% endfor %}</datalist>
+  <script type="application/json" id="flow-help" nonce="{{ csp_nonce(request) }}">{{ flow_help|tojson }}</script>{% endif %}
   <p class="tools"><button class="btn primary" type="button" data-add="{{ kind }}">Add row</button>
     {% if kind == "mapping" %}<input type="search" data-filter="mapping" placeholder="Filter {{ rows|length }} rows" aria-label="Filter mapping rows">{% endif %}</p>
   <div class="tablewrap"><table class="plain edit" data-kind="{{ kind }}" data-fields="{{ cols|join(',') }}"{% if kind == "mapping" %} data-flows="{{ flows|join(',') }}"{% endif %}>
-    <thead><tr>{% for c in cols %}<th data-sort="{{ c }}">{{ heads[loop.index0] }}</th>{% endfor %}<th><span class="sr">Actions</span></th></tr></thead>
+    <thead><tr>{% for c in cols %}<th data-sort="{{ c }}" scope="col"><button type="button" class="sortbtn">{{ heads[loop.index0] }}</button></th>{% endfor %}<th><span class="sr">Actions</span></th></tr></thead>
     <tbody>{% for r in rows %}<tr>{% for c in cols %}<td data-f="{{ c }}">{{ r[c] if r[c] is not none else "" }}</td>{% endfor %}
       <td class="acts"><button type="button" class="btn" data-act="edit">Edit</button> <button type="button" class="btn" data-act="del">Delete</button></td></tr>{% endfor %}</tbody>
   </table></div>
@@ -45,6 +49,32 @@
 </div>
   {% for key in ("rules", "cpi", "household") %}{% set ed = by_key[key] %}
   <div role="tabpanel" id="sp-{{ key }}" aria-labelledby="st-{{ key }}">
+  {% if key == "household" %}
+  <form class="panel" method="post" action="/settings/household/form">{{ csrf_field(request) }}
+    <h2>Household</h2>
+    <div class="formgrid">
+      <label>Household name <input type="text" name="name" value="{{ hh.name }}" required></label>
+      <label>Dashboard title <input type="text" name="title" value="{{ hh.title }}" required></label>
+      <label>Currency <input type="text" name="currency" value="{{ hh.currency or 'USD' }}" maxlength="3" pattern="[A-Za-z]{3}" title="Three letters, for example USD or EUR"></label>
+      <label>Locale <input type="text" name="locale" value="{{ hh.locale or 'en-US' }}" title="Number and date format, for example en-US or de-DE"></label>
+    </div>
+    <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save household</button></p>
+  </form>
+  {% endif %}
+  {% if key == "rules" %}
+  <form class="panel" method="post" action="/settings/rules/people">{{ csrf_field(request) }}
+    <h2>People and employers</h2>
+    <p class="muted">Who earns and spends in this household, and how to recognise each employer in a paycheck's description.</p>
+    <label>People <input type="text" name="people" value="{{ (rules.people or [])|join(', ') }}" placeholder="Rosie, Sam"></label>
+    <table class="plain"><thead><tr><th scope="col">Paycheck description contains</th><th scope="col">Employer</th></tr></thead><tbody>
+      {% for e in (rules.employers or []) + [{}] %}<tr><td><input type="text" name="emp_match" value="{{ e.match or '' }}" aria-label="Paycheck description contains" placeholder="add: words in the paycheck description"></td>
+        <td><input type="text" name="emp_name" value="{{ e.name or '' }}" aria-label="Employer" placeholder="add: employer name"></td></tr>{% endfor %}
+    </tbody></table>
+    <p class="muted">Matching ignores capitals. Clear both fields of a row to remove it; the blank row adds one.</p>
+    <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save people and employers</button></p>
+  </form>
+  {% endif %}
+  {% if key == "household" %}<details class="panel"><summary>Edit as JSON</summary>{% endif %}
   <form class="panel" method="post" action="/settings/{{ ed.key }}">{{ csrf_field(request) }}
     <h2>{{ ed.title }}</h2>
     <p class="muted">{{ ed.help }}</p>
@@ -56,6 +86,7 @@
     <textarea class="json" name="body" spellcheck="false" aria-label="{{ ed.title }} ({{ 'CSV' if ed.key == 'cpi' else 'JSON' }})">{{ ed.body }}</textarea>
     <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save {{ ed.title|lower }}</button></p>
   </form>
+  {% if key == "household" %}</details>{% endif %}
   </div>
   {% endfor %}
 </div>
