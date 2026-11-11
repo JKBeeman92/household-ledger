@@ -54,7 +54,12 @@ addEventListener('DOMContentLoaded', () => {
 <div class="row" style="margin-top:var(--space-4)">
   <form class="panel" method="post" action="/upload" enctype="multipart/form-data">{{ csrf_field(request) }}
     <h2>1 · Upload the month's two files</h2>
-    <p class="muted">Transactions and BudgetItems for the budget month that just ended, or a <code>.zip</code> of a whole back catalogue (limit {{ max_upload_mb }} MB). Filenames are read for the month; re-uploading a month replaces it. From another budget tool, upload its transactions CSV and budget CSV together: you will be asked once how their columns map (<a href="/settings/sources">Sources</a>). Files are reconciled on arrival (every envelope's transactions must sum to its Spent) and the ledger is rebuilt.</p>
+    <ul class="checks">
+      <li><b>Both EveryDollar exports</b> for the month that just ended: the files ending <code>Transactions.csv</code> and <code>BudgetItems.csv</code>.</li>
+      <li><b>Or a <code>.zip</code></b> of several months (up to {{ max_upload_mb }} MB). Re-uploading a month replaces it.</li>
+      <li><b>Another budget tool?</b> Upload its transactions and budget CSVs together; you map their columns once (<a href="/settings/sources">Sources</a>).</li>
+    </ul>
+    <p class="muted">On arrival each envelope's transactions are checked against its Spent, then the ledger rebuilds.</p>
     <label for="files">Export files</label>
     <div id="dropzone" class="dropzone"><input id="files" name="files" type="file" accept=".csv,.zip" multiple required>
       <p class="muted dz-hint" hidden>Drop CSV or zip files here, or choose them above.</p></div>
