@@ -61,7 +61,10 @@ def test_compose_app_container_is_hardened():
 def test_dockerfile_forwarded_allow_ips_is_env_configurable_with_todays_default():
     df = (ROOT / "Dockerfile").read_text()
     assert "FORWARDED_ALLOW_IPS='*'" in df
-    assert '--forwarded-allow-ips \\"${FORWARDED_ALLOW_IPS}\\"' in df
+    # since #111 the app applies X-Forwarded-* itself (app/main.py), from the same variable, and uvicorn's own handling is off
+    assert "--no-proxy-headers" in df
+    assert 'os.environ.get("FORWARDED_ALLOW_IPS"' in (ROOT / "app" / "config.py").read_text()
+    assert "trusted_hosts=settings.forwarded_allow_ips" in (ROOT / "app" / "main.py").read_text()
 
 
 def test_dependabot_does_not_group_minor_bumps_of_zero_x_packages():

@@ -162,15 +162,11 @@ only the proxy's address may connect, then set `FORWARDED_ALLOW_IPS` to that add
 not see; filter in the `DOCKER-USER` chain or on the network instead.
 
 **Finding the value for `FORWARDED_ALLOW_IPS`.** Use the address the container actually sees, which is not always the proxy's own:
-Docker can hand over a connection from its network gateway (`172.x.0.1`) instead. With the default `*`, the access log already
-shows the *browser's* address (taken from `X-Forwarded-For`, logged as `IP:0`), so it cannot tell you the proxy's. To see it:
-
-1. Set `FORWARDED_ALLOW_IPS=192.0.2.1` in `.env` (a documentation address that never connects, so no proxy is trusted) and
-   `docker compose up -d`. Leave `LOG_FORMAT` unset: the JSON access line does not carry the client address.
-2. Open the site through the proxy, then read `docker compose logs ledger`. Each request line begins with the peer, e.g.
-   `INFO:     172.18.0.1:51234 - "GET / HTTP/1.1" 200`: that address is the value.
-3. Set `FORWARDED_ALLOW_IPS` to it (a network such as `172.18.0.0/16` also works) and `docker compose up -d` again. The log now
-   shows the browser's address with `:0` as the port; uvicorn writes `0` because `X-Forwarded-For` carries no port.
+Docker can hand over a connection from its network gateway (`172.x.0.1`) instead. Open the site through the proxy and read
+`docker compose logs ledger`: each request line names the browser and the peer it came through, e.g.
+`INFO     ledger.access: 203.0.113.7 via 172.18.0.1 "GET /" 200 4.1ms` (the `client` and `peer` fields with `LOG_FORMAT=json`).
+The address after `via` is the value; a network such as `172.18.0.0/16` also works. A line with no `via` came from a peer that is not
+trusted, so its `X-Forwarded-For` was ignored and the peer is shown as the client.
 
 **A hostname that exists only in local DNS.** If `ledger.example.com` resolves only on your LAN DNS server, a client that asks
 another resolver gets "can't reach this page" and the app logs no request at all, because nothing reached it. The usual causes are
@@ -314,7 +310,7 @@ Local, against a Postgres of your own:
 ```sh
 export DATABASE_URL=postgresql://ledger:ledger@localhost:5432/ledger AUTH_DISABLED=true SESSION_SECRET=$(openssl rand -hex 32)
 export SEED_DIR=$PWD/examples/sample-household IMPORT_DIR=$PWD/examples/sample-household
-uvicorn app.main:app --port 8010
+uvicorn app.main:app --port 8010 --no-proxy-headers --no-access-log
 ```
 
 Seeding only happens into empty tables, so start from an empty database. `python -I examples/sample-household/generate.py` rebuilds
@@ -403,7 +399,7 @@ checks the limit against the model's context length (vLLM does) may need a lower
 ```sh
 python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
 export DATABASE_URL=postgresql://ledger:ledger@localhost:5432/ledger AUTH_DISABLED=true SESSION_SECRET=$(openssl rand -hex 32)
-uvicorn app.main:app --reload --port 8010
+uvicorn app.main:app --reload --port 8010 --no-proxy-headers --no-access-log
 ```
 
 Layout: `app/` (FastAPI, templates, static), `pipeline/` (the scripts and the seed data), `db/migrations/` (numbered SQL, applied at start), `examples/sample-household/` (synthetic data for a first run).

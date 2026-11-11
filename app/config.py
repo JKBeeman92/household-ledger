@@ -46,6 +46,9 @@ class Settings:
     csp_img_src: str = os.environ.get("CSP_IMG_SRC", "")
     max_upload_mb: int = int(os.environ.get("MAX_UPLOAD_MB", "50"))   # cap on any request body (uploads, zips included)
     log_format: str = os.environ.get("LOG_FORMAT", "")             # "json" for one JSON object per line with a request id; default is readable
+    # peers whose X-Forwarded-For/-Proto are believed (#111: applied inside the app, so the access log can show the peer too).
+    # uvicorn's own default; the image sets "*" (Dockerfile), and README "Finding the value for FORWARDED_ALLOW_IPS" says what to narrow it to
+    forwarded_allow_ips: str = os.environ.get("FORWARDED_ALLOW_IPS", "127.0.0.1,::1")
 
     @property
     def editors(self) -> tuple[str, ...]:

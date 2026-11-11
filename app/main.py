@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from .auth import bearer, current_user, revalidate, Forbidden
 from .config import settings
@@ -55,6 +56,7 @@ app.add_middleware(UploadLimit, limit_bytes=lambda: settings.max_upload_mb * 2**
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret or secrets.token_hex(32), https_only=settings.base_url.startswith("https"), same_site="lax", max_age=settings.session_max_age)
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_middleware(SecurityHeaders)   # CSP nonce + security headers on every response
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=settings.forwarded_allow_ips)   # here, not uvicorn --proxy-headers, so the line below still sees the peer (#111)
 app.add_middleware(RequestIdMiddleware)   # outermost, so every log line and response carries the request id
 app.mount("/static", StaticFiles(directory=ROOT / "web" / "static"), name="static")
 for module in (brand, auth, pages, upload, sources, settings_routes,   # sources before settings: its POST /settings/sources must win over /settings/{key}
