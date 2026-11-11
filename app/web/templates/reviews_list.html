@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Reviews · {{ household.title }}{% endblock %}
+{% block content %}
+<p class="eyebrow">Month-close review</p>
+<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Reviews</h1>
+<p class="linkrow muted">Written by {{ prov.label }}{% if problem %} (not configured: {{ problem }}){% endif %}.
+  <a href="/reviews/provider">Provider settings</a> <a href="/reviews/prompt">Instructions</a> <a href="/reviews/history">Prompts sent</a> <a href="/upload">Write one</a></p>
+{% if not reviews %}<div class="panel" style="margin-top:var(--space-4)"><p>No reviews yet. Write the first on <a href="/upload">Close a month</a>, after its exports are loaded.</p></div>
+{% else %}<ul class="review-list" style="margin-top:var(--space-4)">
+  {% for r in reviews %}{% set secs = (r.sections or [])|sort(attribute='order') %}<li>
+    <div><strong>{{ r.month }}</strong> <span class="meta">· {{ secs|length }} section{{ '' if secs|length == 1 else 's' }} · {{ r.model }} · {{ r.generated_at.strftime('%Y-%m-%d') }}{% if r.hand_edited_at %} · hand-edited{% endif %}</span></div>
+    {% if secs %}<p class="lead"><b>{{ secs[0].heading }}.</b> {{ secs[0].text|truncate(220) }}</p>{% endif %}
+    <details><summary>Read all of it</summary>{% for s in secs %}<h3>{{ s.heading }}</h3><p>{{ s.text }}</p>{% endfor %}</details>
+    <p class="linkrow" style="margin:var(--space-2) 0 0"><a href="/reviews/edit/{{ r.month }}">Edit</a> <a href="/reviews/confirm?month={{ r.month }}">Write again</a></p>
+  </li>{% endfor %}
+</ul>{% endif %}
+{% endblock %}

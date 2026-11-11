@@ -105,3 +105,19 @@ def test_monthly_axes_label_the_month_not_just_the_year():
     src = (ROOT / "app" / "web" / "templates" / "dashboard.html").read_text()
     assert "utcFormat('%Y')" not in src and "m.slice(0, 4)" not in src
     assert src.count("tickFormat(dash.fmt.month)") >= 3 and "xfmt: (m) => dash.fmt.month(HL.parseM(m))" in src
+
+
+def test_empty_install_shows_one_first_run_card_with_the_sample(client, reset_db):
+    html = client.get("/").text
+    assert 'class="hl empty"' in html and "Close your first month" in html and 'action="/setup/sample"' in html
+
+
+def test_sample_household_loads_only_into_an_empty_install(client, reset_db):
+    from app import db
+    r = client.post("/setup/sample")
+    assert r.headers["location"] == "/upload"   # the test client ran the import before returning
+    with db.pool.connection() as conn:
+        assert conn.execute("SELECT count(DISTINCT budget_month) n FROM source_files").fetchone()["n"] == 18
+        assert db.get_setting(conn, "household", {})["name"] == "Sample Household"
+    page = client.get(client.post("/setup/sample").headers["location"]).text
+    assert "only for an empty install" in page

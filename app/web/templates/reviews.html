@@ -3,6 +3,7 @@
 {% block content %}
 <p class="eyebrow">Month-close review</p>
 <h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Review provider</h1>
+<p><a href="/reviews">← All reviews</a></p>
 <p class="muted" style="max-width:70ch">Which model writes the month-close review. Only derived figures are sent (never transactions, merchants or notes). API keys are read from the server's environment and never shown here; blank fields below fall back to <code>REVIEW_PROVIDER</code>, <code>REVIEW_MODEL</code> and <code>REVIEW_BASE_URL</code>.</p>
 <div class="row" style="margin-top:var(--space-4)">
   <form class="panel" method="post" action="/reviews">{{ csrf_field(request) }}

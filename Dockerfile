@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 COPY pipeline ./pipeline
 COPY db ./db
+COPY examples/sample-household ./examples/sample-household
 RUN mkdir -p /data/brand && useradd -r -u 10001 ledger && chown -R ledger /data
 USER ledger
 EXPOSE 8010

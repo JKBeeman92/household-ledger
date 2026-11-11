@@ -1,3 +1,7 @@
+from pathlib import Path
+import json
+import logging
+from pipeline.run_pipeline import seed_reference_tables, import_dir
 from fastapi import APIRouter, BackgroundTasks, Request, Depends, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 
@@ -13,6 +17,7 @@ from pipeline.run_pipeline import ingest, build_running, FN_RX
 from .sources import stash
 
 router = APIRouter()
+log = logging.getLogger("ledger")
 
 
 @router.get("/upload", response_class=HTMLResponse)
@@ -120,3 +125,33 @@ def review_status(user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         job = review.latest_job(conn)
     return {"job": job and {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in job.items()}}
+
+
+SAMPLE_DIR = Path(__file__).resolve().parents[2] / "examples" / "sample-household"   # shipped in the image (Dockerfile)
+
+
+def _load_sample() -> None:
+    """Background: store the sample household's exports and rebuild once (import_dir), on a connection of its own."""
+    try:
+        with db.pool.connection() as conn:
+            import_dir(conn, SAMPLE_DIR, uploaded_by="sample")
+    except Exception as e:  # noqa: BLE001  import_dir and rebuild record their own failures in build_log
+        log.error("loading the sample household failed: %s", str(e)[:500])
+
+
+@router.post("/setup/sample")
+def setup_sample(request: Request, background: BackgroundTasks, user=Depends(auth.require_editor)):
+    """First run only: give an empty install the sample household (Rosie and Sam) to look around. Refused once any month is loaded."""
+    if not SAMPLE_DIR.is_dir():
+        flash(request, "The sample household is not included in this installation.", "bad"); return RedirectResponse("/", status_code=303)
+    with db.pool.connection() as conn:
+        if conn.execute("SELECT 1 FROM source_files LIMIT 1").fetchone():
+            flash(request, "The sample is only for an empty install; this one already has months loaded.", "bad"); return RedirectResponse("/", status_code=303)
+        conn.execute("DELETE FROM item_mapping"); conn.execute("DELETE FROM goals"); conn.execute("DELETE FROM life_events")
+        conn.execute("DELETE FROM settings WHERE key IN ('rules', 'household')")
+        seed_reference_tables(conn, SAMPLE_DIR)   # fills the tables it finds empty; the CPI table is kept
+        db.put_setting(conn, "household", json.loads((SAMPLE_DIR / "household.json").read_text()))
+        conn.commit()
+    background.add_task(_load_sample)
+    flash(request, "Loading the sample household (18 invented months); the dashboard fills in when the rebuild below finishes.")
+    return RedirectResponse("/upload", status_code=303)

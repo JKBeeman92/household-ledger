@@ -9,6 +9,7 @@
 .hl .lede { color: var(--color-fg-muted); margin: 0 0 var(--cds-gap-md); max-width: 90ch; }
 .hl .lede b { font-weight: 500; color: var(--color-fg); }
 .hl .controls { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; margin-bottom: var(--cds-gap-md); }
+.hl .ctl-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium); }
 .hl .seg { display: inline-flex; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); overflow: hidden; }
 .hl .seg button, .hl .tabs button { font: inherit; background: var(--color-panel); color: var(--color-fg-muted); border: 0; padding: var(--cds-pad-xs) var(--cds-pad-sm); cursor: pointer; }
 .hl .seg button + button { border-left: 1px solid var(--color-border-line); }
@@ -64,7 +65,8 @@
 .hl details.how p { margin: var(--cds-gap-xs) 0 0; max-width: 90ch; line-height: 1.5; }
 .hl .card h2 { border-left: 3px solid var(--brand1, var(--color-border-line)); padding-left: var(--cds-pad-sm); }
 .hl tbody tr:hover td { background: color-mix(in srgb, var(--color-fg) 6%, transparent); }
-.hl .seg button[aria-pressed="true"], .hl .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.hl .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.hl .seg button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 14%, var(--color-panel)); color: var(--color-fg); box-shadow: inset 0 0 0 2px var(--accent); }
 .hl .review h3 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: var(--cds-gap-md) 0 var(--cds-gap-xs); } .hl .review h3:first-child { margin-top: 0; } .hl .review p { margin: 0; line-height: 1.55; max-width: 70ch; }
 .hl .summary-list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--cds-gap-xs); }
 .hl .summary-list li { padding: var(--cds-pad-xs) var(--cds-pad-sm); border-left: 3px solid var(--color-border-line); }
@@ -168,10 +170,15 @@
 .hl details.how:not([open]):has(+ details.datatable), .hl details.how:not([open]) + details.datatable:not([open]) { display: inline-block; margin-right: var(--cds-gap-lg); }
 .hl details.datatable summary { cursor: pointer; color: var(--accent-2-text, var(--color-fg-muted)); font-weight: var(--cds-font-weight-medium); }
 .hl details.datatable summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* First run: one card instead of empty charts */
+.hl.empty .controls, .hl.empty .page, .hl.empty > .lede, .hl.empty #range-status, .hl.empty .masthead + .lede { display: none !important; }
+.hl .firstrun h2 { font-size: var(--cds-font-size-title); margin: 0 0 var(--cds-gap-sm); }
+.hl .firstrun .steps { margin: 0 0 var(--cds-gap-md); padding-left: 1.4em; display: grid; gap: var(--cds-gap-xs); max-width: 70ch; }
+.hl .firstrun .actions { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; } .hl .firstrun form.inline { display: inline; margin: 0; }
 .hl .foot { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-top: var(--cds-gap-lg); padding-top: var(--cds-gap-sm); border-top: 1px solid var(--color-border-line); max-width: 90ch; }
 </style>
 
-<div id="dash-root" class="hl">
+<div id="dash-root" class="hl{% if not span.has_data %} empty{% endif %}">
   {% if freshness.stale %}<div class="flash warn" id="stale-banner" role="status">{{ freshness.message }}.{% if user and user.is_editor %} <a href="/upload">Close a month</a>{% endif %}</div>{% endif %}
   <p class="eyebrow">{{ household.name or 'Household' }}{% if span.has_data %} · {{ span.years }}-year audit{% endif %}</p>
   <div class="masthead">
@@ -181,9 +188,22 @@
   <p class="lede">Over the last twelve <dfn title="EveryDollar files each transaction into the month whose budget it belonged to, which is not always its calendar month. Every figure here uses the budget month.">budget months</dfn> the household took in <b data-draw="lede-income">—</b>, spent <b data-draw="lede-spend">—</b> on <dfn title="Everything that is not income, debt principal or a transfer: housing, food, giving, insurance, projects, envelope spending.">living</dfn> and <b data-draw="lede-debt">—</b> on debt, and kept <b data-draw="lede-net">—</b>.
     <span class="aside-note">From the EveryDollar exports, with moves between envelopes and your rules' exclusions taken out (Method tab). Dotted terms have a definition: hover, focus or tap them.</span></p>
 
-  {% if not span.has_data %}<p class="note" id="empty-state">Nothing is loaded yet, so every figure below is blank. {% if user and user.is_editor %}Add your first EveryDollar Transactions and BudgetItems exports on <a href="/upload">Close a month</a>, or load the sample household described in the README.{% else %}An editor needs to load the first EveryDollar exports.{% endif %}</p>{% endif %}
+  {% if not span.has_data %}<div class="card firstrun" id="empty-state">
+    <p class="eyebrow">Nothing loaded yet</p>
+    <h2>Close your first month</h2>
+    {% if user and user.is_editor %}
+    <ol class="steps">
+      <li>Export the month from EveryDollar: <b>Transactions</b> and <b>BudgetItems</b>, two CSV files named like <code>…-06-2026-EveryDollar-Transactions.csv</code>.</li>
+      <li>Upload both on <a href="/upload">Close a month</a> (a <code>.zip</code> of several months works too). Another budget tool's files work through a column mapping.</li>
+      <li>Map any item the ledger has not seen, then the dashboard fills in.</li>
+    </ol>
+    <p class="actions"><a class="btn primary" href="/upload">Close a month</a>
+      <form method="post" action="/setup/sample" class="inline" data-confirm="Load the sample household (Rosie and Sam, 18 invented months)? It replaces this install's empty mapping, goals, events and rules; delete its months later to start over.">{{ csrf_field(request) }}<button class="btn" type="submit">Or look around with the sample household</button></form></p>
+    {% else %}<p>An editor needs to load the first month's exports; the dashboard fills in once they do.</p>{% endif %}
+  </div>{% endif %}
 
   <div class="controls">
+    <span class="ctl-label" aria-hidden="true">Dollars</span>
     <div class="seg" role="group" aria-label="Dollar basis">
       <button type="button" class="dollars" data-dollars="nominal" aria-pressed="true">Nominal</button>
       <button type="button" class="dollars" data-dollars="real" aria-pressed="false" title="{{ span.cpi_base_short }} prices (price-index adjusted)">{{ span.cpi_base_short }} prices<span class="visually-hidden"> (price-index adjusted)</span></button>
