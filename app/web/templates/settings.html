@@ -3,7 +3,7 @@
 {% block content %}
 <p class="eyebrow">Configuration</p>
 <h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Settings</h1>
-<p class="muted" style="max-width:70ch">Everything the pipeline decides from is here, as data. Edit, save, then <strong>Rebuild</strong> on the Close-a-month page so the ledger and charts reflect it. Each editor validates its format before saving.</p>
+<p class="muted" style="max-width:90ch">Everything the pipeline decides from is here, as data. Edit and save; the dashboard keeps its figures until a rebuild, and a banner with <strong>Rebuild now</strong> appears until one has run. Each editor validates its format before saving.</p>
 <p class="linkrow muted">Elsewhere: <a href="/reviews">Review provider</a> <a href="/settings/tokens">API tokens</a> <a href="/settings/sources">Other budget tools</a> <a href="/webhooks">Webhooks</a></p>
 <form id="csrf-form" hidden>{{ csrf_field(request) }}</form>
 <p id="rowstatus" class="rowstatus" role="status" aria-live="polite"></p>

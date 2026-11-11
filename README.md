@@ -53,8 +53,21 @@ database container, which sets its own ownership on first start; leave it alone.
 
 First boot applies the migrations and seeds the reference tables. Seeds come from `SEED_DIR` (`/srv/ledger/seed/` in the compose file)
 when a file is present there, else from the generic files in `pipeline/` (CPI table, empty mapping, goal keys with no values).
-A seed directory holds any of `item_mapping.csv`, `goals.json`, `events.json`, `rules.json`, `review.json`, `household.json`;
-after the first boot the database owns them and the Settings page is the editor. Keep your seed directory out of public repos —
+A seed directory holds any of `item_mapping.csv`, `cpi_u.csv`, `goals.json`, `events.json`, `rules.json`, `review.json`,
+`household.json`; after the first boot the database owns them and the Settings page is the editor. Their shapes:
+
+| File | Shape |
+|---|---|
+| `item_mapping.csv` | columns `Item,CanonicalItem,Category,Flow,Note` ([Names the pipeline relies on](#names-the-pipeline-relies-on)) |
+| `cpi_u.csv` | columns `month,cpi,source` (`month` is `YYYY-MM`) |
+| `goals.json` | list of `{"key", "label", "value", "unit", "note"}`; `value` may be `null` |
+| `events.json` | list of `{"m": "YYYY-MM", "label": "…"}` (the key is `m`, not `month`) |
+| `rules.json` | object; keys and types in [`app/schemas/rules.schema.json`](app/schemas/rules.schema.json) |
+| `household.json` | object; [`app/schemas/household.schema.json`](app/schemas/household.schema.json) |
+| `review.json` | list of `{"m", "order", "heading", "text"}`, one row per review section |
+
+[`examples/sample-household/`](examples/sample-household/) has a working copy of every file except `cpi_u.csv` (the shipped
+`pipeline/cpi_u.csv` is used when none is given) and `review.json`. Keep your seed directory out of public repos —
 it is your household's data.
 Then open the site, go to **Close a month**, and upload exports (the form takes any number of files at once, or a `.zip` of a back catalogue; drop them on the form or choose them; request bodies are capped by `MAX_UPLOAD_MB`, default 50). The rebuild runs in the
 background and the page shows its progress; only one rebuild runs at a time, even across containers.
@@ -72,12 +85,15 @@ docker compose exec ledger python -m pipeline.import_exports /data/import
 ```
 
 **Updates.** The image is `ghcr.io/jkbeeman92/household-ledger`, for `linux/amd64` and `linux/arm64`. Every push to `main`
-publishes `:latest` and `:sha-<short>`; every release (git tag `vX.Y.Z`) also publishes `:X.Y.Z`, `:X.Y` and `:X`. For anything you
-rely on, pin `docker-compose.yml` to a release (`:0.2` takes 0.2.x fixes only; `:0` takes every 0.x release, and while the version is
-below 1.0 a minor release may change behaviour) instead of `:latest`.
+publishes `:latest` and `:sha-<short>`; every release (git tag `vX.Y.Z`) also publishes `:X.Y.Z`, `:X.Y` and `:X`. The shipped
+`docker-compose.yml` is pinned to the release it came with (`:X.Y.Z`; each release bumps it). Keep it pinned: `:0.2` takes 0.2.x
+fixes only, `:0` takes every 0.x release (while the version is below 1.0 a minor release may change behaviour), and `:latest`
+follows `main`, including changes not yet released. Do not hand the container to an auto-updater such as Watchtower: an upgrade
+applies migrations that cannot be undone, so it should be a step you take after a backup.
 
 To upgrade: read the release's notes in [`docs/UPGRADING.md`](docs/UPGRADING.md), take a backup (`docker compose --profile backup
-run --rm -e BACKUP_ONCE=1 backup`, or the manual dump under [Backups](#backups)), then `docker compose pull && docker compose up -d`.
+run --rm -e BACKUP_ONCE=1 backup`, or the manual dump under [Backups](#backups)), change the tag in `docker-compose.yml`, then
+`docker compose pull && docker compose up -d`.
 Pending migrations apply themselves at start and are not reversible: to roll back, pin the previous tag and restore the dump.
 A checklist for the first run of a new install or release is in [`docs/FIRST-RUN.md`](docs/FIRST-RUN.md).
 
@@ -89,8 +105,10 @@ Run the app behind a reverse proxy that terminates TLS (Caddy, nginx, Traefik, a
 - pass the `Host` header through and set `X-Forwarded-Proto` and `X-Forwarded-For`;
 - accept request bodies at least as large as `MAX_UPLOAD_MB` (50 MB by default). nginx's default is 1 MB, so set
   `client_max_body_size 50m;`; Caddy and Traefik have no limit by default;
-- allow responses that take a while: a rebuild runs in the background, but a large upload or a month-close review can take tens
-  of seconds (raise `proxy_read_timeout` on nginx if you see 504s).
+- allow responses that take a while: a rebuild runs in the background, but a large upload takes tens of seconds and a month-close
+  review waits for the model inside the request, several minutes for one that thinks first (the app waits up to
+  `REVIEW_MAX_TOKENS` / 40 seconds, 400 s by default). Set nginx's `proxy_read_timeout` above that, or the proxy answers 504 while
+  the review is still being written.
 
 Caddy, on the same host:
 
@@ -113,7 +131,7 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_read_timeout 120s;
+        proxy_read_timeout 450s;
     }
 }
 ```
@@ -122,6 +140,30 @@ When the proxy runs on the same host, publish the port on loopback only (`"127.0
 nothing reaches the app around it, and set `FORWARDED_ALLOW_IPS` to the proxy's address (see Hardening below). Opening
 `http://<host>:8010` directly is not a supported way in: with an `https` `BASE_URL` the browser drops the session cookie and sign-in
 loops back to the login page.
+
+**A proxy that is not on this host's loopback.** If the proxy runs on another machine, or on this one but with its own LAN address
+(for example a macvlan container, which reaches the host through a shim address rather than `127.0.0.1`), a loopback-only port
+cannot reach it: keep the port published (`"8010:8010"`, or bound to the one host address the proxy connects to) and firewall it so
+only the proxy's address may connect, then set `FORWARDED_ALLOW_IPS` to that address. Point the proxy at the host's address, e.g.
+`reverse_proxy 192.168.1.20:8010`. Docker publishes ports through its own iptables rules, which a host firewall such as `ufw` does
+not see; filter in the `DOCKER-USER` chain or on the network instead.
+
+**Finding the value for `FORWARDED_ALLOW_IPS`.** Use the address the container actually sees, which is not always the proxy's own:
+Docker can hand over a connection from its network gateway (`172.x.0.1`) instead. With the default `*`, the access log already
+shows the *browser's* address (taken from `X-Forwarded-For`, logged as `IP:0`), so it cannot tell you the proxy's. To see it:
+
+1. Set `FORWARDED_ALLOW_IPS=192.0.2.1` in `.env` (a documentation address that never connects, so no proxy is trusted) and
+   `docker compose up -d`. Leave `LOG_FORMAT` unset: the JSON access line does not carry the client address.
+2. Open the site through the proxy, then read `docker compose logs ledger`. Each request line begins with the peer, e.g.
+   `INFO:     172.18.0.1:51234 - "GET / HTTP/1.1" 200`: that address is the value.
+3. Set `FORWARDED_ALLOW_IPS` to it (a network such as `172.18.0.0/16` also works) and `docker compose up -d` again. The log now
+   shows the browser's address with `:0` as the port; uvicorn writes `0` because `X-Forwarded-For` carries no port.
+
+**A hostname that exists only in local DNS.** If `ledger.example.com` resolves only on your LAN DNS server, a client that asks
+another resolver gets "can't reach this page" and the app logs no request at all, because nothing reached it. The usual causes are
+a router that hands out its ISP's IPv6 DNS servers alongside your own (clients prefer whichever answers), and browsers with DNS over
+HTTPS ("secure DNS") turned on, which skip the LAN resolver. Fix the DHCP/RA DNS settings, or turn secure DNS off or point it at
+your resolver, and test from a client (`nslookup ledger.example.com` there), not only from the server.
 
 **The container must reach the identity provider.** Sign-in exchanges the code for tokens, and the group re-check refreshes them,
 from inside the container, not from the browser. `OIDC_ISSUER` must therefore resolve and be reachable from the `ledger` container,
@@ -135,7 +177,7 @@ the connection that failed.
 `no-new-privileges`; its only writable path is a 256 MB tmpfs on `/tmp` (rebuild working folder, upload spool). If you run the
 image another way, give it a writable `/tmp` or set `TMPDIR`. The app trusts `X-Forwarded-*` headers from any address by default
 (`FORWARDED_ALLOW_IPS=*`); once the port is reachable only from your reverse proxy, set it to the proxy's IP or network in `.env`
-so a client that reaches the port directly cannot spoof its address.
+so a client that reaches the port directly cannot spoof its address (how to find it: above).
 
 ## Backups
 
@@ -194,6 +236,37 @@ Outside the app, `python -m pipeline.sources propose …` prints a starting prof
 `python -m pipeline.sources normalize --profile p.json --month YYYY-MM …` writes them as EveryDollar-named files for the standalone
 pipeline scripts.
 
+## Names the pipeline relies on
+
+The item mapping turns each raw item name from the exports (`Item`) into a `CanonicalItem`, a `Category` and a `Flow`. Most of it is
+yours to name as you like, but a few names are read literally, and renaming them empties a chart without any error:
+
+| Name | Kind | What reads it |
+|---|---|---|
+| `Paycheck` | CanonicalItem, hard-coded (`pipeline/aggregate.py`, `pipeline/build_ledger.py`) | Only rows with exactly this name get an employer (the `employers` rule) and count as deposits (`paycheck_min`). The Employer chart and the Goals tab's take-home and paycheck count are built from them, and the month-close review counts paychecks from `Paycheck` rows whose Category is `Income` (`app/review.py`). Map every earner's paycheck items to `Paycheck`; tell earners apart with `income_by_person`, not by renaming it. |
+| `Subscriptions`, `Utilities`, `Insurance` | Category, hard-coded (`pipeline/aggregate.py`) | The Recurring tab lists `expense` rows in these three categories only. |
+| `Housing`, `Debt`, `Insurance` | Category, hard-coded (`app/web/templates/dashboard.html`) | The Last month tab's suggested plan keeps the current plan for these instead of the twelve-month average. |
+| `Housing`, `Utilities` | Category, default of `goal_housing_categories` | The housing share on the Goals tab. Change the rule if your categories differ. |
+| `Giving` | Category, default of `goal_giving_categories` | The giving share on the Goals tab. |
+| `Income` | Budget group, hard-coded (`pipeline/build_ledger.py`) | An inflow whose merchant equals its item name is read as a carry-forward into a fund (a transfer), except in this group. Source profiles for other tools also default their income groups to `Income`. |
+
+**Rules take canonical names**, not the raw names in the exports: `income_by_person`, `payer_items_by_person`,
+`payer_prefix_by_person`, `catchall_items` and `verify_transfer_prefixes` all compare against `CanonicalItem`. With
+`Rosie Paycheck` and `Sam Paycheck` both mapped to `Paycheck`, `"income_by_person": {"Rosie": ["Paycheck"]}` works and
+`{"Rosie": ["Rosie Paycheck"]}` matches nothing. The `*_categories` rules take `Category` names; `goal_savings_groups` takes budget
+group names as they appear in the export. `employers[].match` is a regular expression searched in the **lower-cased** merchant, so
+write it in lower case (`"hobbiton mill"`, not `"Hobbiton Mill"`).
+
+**Fund moves recorded as income.** An item such as `Fund Transfer`, `Transfer Funds` or `End of Year Rebalance` that sits in the
+income group counts as income, and inflates every income chart, unless its Flow is `transfer`. The pipeline also treats a row as a
+transfer when its *merchant* is one of a few built-in names (`Transfer`, `Rebalance`, `Fund Transfer`, …) or matches the
+`transfer_merchants` rule, but it does not look at the item name. Set Flow `transfer` on these items.
+
+**Money you hold for someone else.** Collecting money on someone's behalf and paying it out later (donations gathered for a relative,
+a group gift, a shared bill paid back by friends) shows as one month of large negative spending and later months of inflated
+spending. Give those items Flow `exclude`: their rows stay in the stored exports and in reconciliation, but leave the ledger and
+every chart. The sample household's `Venmo Pass-Through` item shows the pattern.
+
 ## Try it with the sample household
 
 `examples/sample-household/` is a synthetic household (two earners, 18 budget months, a student loan, a transfer pair, three-paycheck
@@ -236,14 +309,18 @@ start, rather than admitting everyone the provider authenticates.
 
 **Example: Authentik.**
 
-1. Authentik → Applications → Providers → **Create** → OAuth2/OpenID Provider. Confidential client, authorization-code flow,
-   redirect URI `https://ledger.example.com/auth/callback`, signing key selected, scopes `openid email profile` plus the
-   default `groups` mapping (the app reads the `groups` claim).
-   Also select the `offline_access` scope (the app needs a refresh token for the group re-check below) and add
-   `https://ledger.example.com/signed-out` as a redirect URI: it is the `post_logout_redirect_uri` that **Sign out** sends.
-2. Applications → **Create** `ledger`, bound to that provider. Restrict it with a policy binding on the group you will put in
-   `ALLOWED_GROUPS`, for example `ledger-users` (the app enforces it too).
-3. Put the provider's client ID/secret and the issuer URL (`https://auth.example.com/application/o/ledger/`) in `.env`.
+1. Authentik → Applications → Providers → **Create** → OAuth2/OpenID Provider. Confidential client, any authorization flow,
+   signing key selected. Redirect URIs, both with matching mode **Strict**:
+   `https://ledger.example.com/auth/callback`, and `https://ledger.example.com/signed-out` (the `post_logout_redirect_uri` that
+   **Sign out** sends).
+   Scopes: the default `openid`, `email` and `profile` mappings, plus `offline_access` (the app needs a refresh token for the group
+   re-check below). There is no separate groups mapping to add: Authentik's default `profile` mapping is what puts the `groups`
+   claim in the token and userinfo. The app also asks for a `groups` scope, for providers that use one; Authentik ignores a scope
+   it has no mapping for, so that is harmless. To check, open the provider's **Preview** tab, pick a user, and look for `groups`.
+2. Applications → **Create** an application with slug `ledger` (the name can be anything), bound to that provider. Restrict it with
+   a policy binding on the group you will put in `ALLOWED_GROUPS`, for example `ledger-users` (the app enforces it too).
+3. Put the provider's client ID/secret and the issuer URL in `.env`. The path segment is the application's **slug**, not its name:
+   `https://auth.example.com/application/o/ledger/`.
 
 **Viewers and editors.** Everyone admitted by `ALLOWED_GROUPS` can see the dashboard and `/api/*`. Set `EDITOR_GROUPS` (default: same as `ALLOWED_GROUPS`) to the subset
 that may also upload, rebuild, edit settings and generate reviews; other members get no nav links for those and a 403 page if they open them. Role changes at the IdP apply at the next group re-check.
@@ -289,8 +366,10 @@ The provider is chosen by `REVIEW_PROVIDER` (default `anthropic`, which uses `AN
 endpoint, via `REVIEW_BASE_URL` such as `https://host/v1`, and `REVIEW_API_KEY` where the server wants one), `ollama`
 (`REVIEW_BASE_URL=http://ollama:11434`, no key, so a homelab can run it fully offline) or `gemini` (`REVIEW_API_KEY`). Every
 provider except Anthropic needs `REVIEW_MODEL`; none is guessed. The **Reviews** page overrides provider, model and base URL per
-household and has a Test connection button. The stored review records `provider:model`. Local models may need a larger
-`REVIEW_MAX_TOKENS` (default 2500); replies wrapped in markdown fences or prose are tolerated.
+household and has a Test connection button. The stored review records `provider:model`.
+`REVIEW_MAX_TOKENS` (default 16000) is the output limit, thinking included: a model that thinks before answering can use most of
+it (one real review used about 7,900), and a reply that stops at the limit is reported as such. An OpenAI-compatible server that
+checks the limit against the model's context length (vLLM does) may need a lower value. Replies wrapped in markdown fences or prose are tolerated.
 
 ## Local development
 

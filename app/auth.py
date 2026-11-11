@@ -32,7 +32,7 @@ SCOPE = "openid email profile groups offline_access"   # offline_access: many pr
 
 
 def make_oauth(s=settings, **client_kwargs) -> OAuth:
-    """The OIDC client registry; tests pass an httpx `transport` that routes to an in-process IdP."""
+    """The OIDC client registry; tests pass an httpx2 `transport` that routes to an in-process IdP."""
     reg = OAuth()
     if s.oidc_issuer:
         reg.register(name="idp", server_metadata_url=s.oidc_issuer.rstrip("/") + "/.well-known/openid-configuration",
