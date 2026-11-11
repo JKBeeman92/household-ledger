@@ -17,14 +17,14 @@ def snapshot(conn) -> dict:
     return {"mapping": q("SELECT item, canonical_item, category, flow, note FROM item_mapping ORDER BY item"),
             "cpi": q("SELECT month, cpi, source FROM cpi ORDER BY month"),
             "goals": q("SELECT key, value, unit, label, note FROM goals ORDER BY key"),
-            "events": q("SELECT month, label FROM life_events ORDER BY month, label"),
+            "events": q("SELECT month, label, kind, person FROM life_events ORDER BY month, label"),
             "rules": db.get_setting(conn, "rules", {}), "household": db.get_setting(conn, "household", {})}
 
 
 def customise(client):
     """Edits that differ from the golden seed, so the round trip proves more than reloading the same files."""
     for kind, data in (("mapping", {"item": "Pipe-weed", "canonical_item": "Pipe-weed", "category": "Fun", "flow": "expense", "note": "Longbottom Leaf"}),
-                       ("events", {"m": "2025-09", "label": "Party Tree replanted, \"quoted\" and, comma"}),
+                       ("events", {"m": "2025-09", "label": "Party Tree replanted, \"quoted\" and, comma", "kind": "family", "person": "Rosie"}),
                        ("goals", {"key": "giving_share", "label": "Giving", "value": "7%", "unit": "share of income", "note": ""})):
         assert client.post(f"/settings/{kind}/row", data=data).json()["ok"], kind
     client.post("/settings/rules/people", data={"people": "Rosie, Sam", "emp_match": ["hobbiton mill"], "emp_name": ["Hobbiton Mill"]})
@@ -47,7 +47,7 @@ def test_zip_round_trips_into_a_new_install(client, reset_db, tmp_path):
         seed_reference_tables(conn, seed); db.seed_household(conn, seed); conn.commit()
         after = snapshot(conn)
     assert after == before
-    assert after["household"]["name"] == "Bagshot Row" and any(e["label"].startswith("Party Tree") for e in after["events"])
+    assert after["household"]["name"] == "Bagshot Row" and any(e["label"].startswith("Party Tree") and e["kind"] == "family" and e["person"] == "Rosie" for e in after["events"])
 
 
 def test_manifest_names_version_household_and_migrations(client, reset_db):

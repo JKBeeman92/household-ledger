@@ -14,7 +14,7 @@ router = APIRouter()
 EDITORS = {
     "mapping": {"title": "Item mapping", "help": "Each EveryDollar item gets a canonical name, a category and a flow. Every item must be here, or the build lists it as unmapped.", "help_long": "One row per EveryDollar item: Item, CanonicalItem, Category, Flow, Note. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every EveryDollar item name must appear here or the build reports it UNMAPPED. Fund moves kept as income items (Fund Transfer, End of Year Rebalance) need Flow transfer, or they count as income; money held for someone else and paid out needs exclude. CanonicalItem Paycheck and the categories Subscriptions, Utilities and Insurance are read by name (README, \"Names the pipeline relies on\"); rules name canonical items, not raw ones."},
     "goals": {"title": "Goals", "help": "One row per goal: key, label, value, unit, note. The Goals tab and the month-close review read these; values are also confirmed each month in the checklist on Close a month. A share is a fraction (0.07) or a percentage (7%)."},
-    "events": {"title": "Life events", "help": "One row per event: month (YYYY-MM) and label. Drawn as markers on the timeline charts."},
+    "events": {"title": "Life events", "help": "One row per event: month (YYYY-MM), label, and optionally its kind (job, move, family, health, purchase, debt, other) and the person it concerns (one of the people in Pipeline rules). Drawn as markers on the timeline charts; the Employer chart shows job events and events with no kind."},
     "cpi": {"title": "CPI index", "help": "CSV: month, cpi, source. A price index (consumer prices, any base) used for the real-amounts toggle. US households: CPI-U, appending the newest month from FRED CPIAUCSL; mark estimates in source."},
     "rules": {"title": "Pipeline rules", "help": "JSON object of household-specific classification rules. Unknown keys and invalid regular expressions are rejected on save."},
     "household": {"title": "Household", "help": "JSON object: name, title, currency, theme. Shown in the header and page titles."},
@@ -77,14 +77,34 @@ def check_goal_row(r: dict) -> tuple[dict, dict]:
     return c, err
 
 
+EVENT_KINDS = ("job", "move", "family", "health", "purchase", "debt", "other")   # db/migrations/0109_life_event_kind.sql; a fixed list (#109)
+
+
 def check_event_row(r: dict) -> tuple[dict, dict]:
-    c = {"m": (r.get("m") or "").strip(), "label": (r.get("label") or "").strip()}
+    """{m, label, kind?, person?}: kind is one of EVENT_KINDS or empty, person is free text (checked against the people rule by
+    person_warning, which warns but never refuses). Empty kind and person are None."""
+    c = {"m": str(r.get("m") or "").strip(), "label": str(r.get("label") or "").strip(),
+         "kind": str(r.get("kind") or "").strip().lower() or None, "person": str(r.get("person") or "").strip() or None}
     err = {}
     if not MONTH_RE.match(c["m"]):
         err["m"] = "month must look like YYYY-MM"
     if not c["label"]:
         err["label"] = "required"
+    if c["kind"] and c["kind"] not in EVENT_KINDS:
+        err["kind"] = "kind must be one of " + ", ".join(EVENT_KINDS) + ", or empty"
     return c, err
+
+
+def event_out(r: dict) -> dict:
+    """An event as the JSON editor, settings.zip, seeds and events.json carry it: kind and person only when set."""
+    return {"m": r["m"], "label": r["label"], **{k: r[k] for k in ("kind", "person") if r.get(k)}}
+
+
+def person_warning(conn, people: list) -> str:
+    """A warning naming any person not in the people rule, or ''. Saved anyway: the rule may simply not be filled in yet."""
+    known = set((db.get_setting(conn, "rules", {}) or {}).get("people") or [])
+    odd = sorted({p for p in people if p and p not in known})
+    return f"{', '.join(odd)} {'is' if len(odd) == 1 else 'are'} not in the people rule (Pipeline rules); saved anyway" if odd else ""
 
 
 def _unique_err(conn, sql: str, params: tuple, err: dict, field: str, msg: str):
@@ -119,7 +139,8 @@ def _row_save(conn, kind: str, f: dict) -> tuple[dict, dict]:
         if not err:
             if om or ol:
                 conn.execute("DELETE FROM life_events WHERE month=%s AND label=%s", (om, ol))
-            conn.execute("INSERT INTO life_events (month,label) VALUES (%s,%s) ON CONFLICT DO NOTHING", (c["m"], c["label"]))
+            conn.execute("INSERT INTO life_events (month,label,kind,person) VALUES (%s,%s,%s,%s) ON CONFLICT (month,label) DO UPDATE SET kind=EXCLUDED.kind, person=EXCLUDED.person",
+                         (c["m"], c["label"], c["kind"], c["person"]))
     return c, err
 
 
@@ -240,7 +261,7 @@ def _editor_body(conn, key: str) -> str:
         rows = conn.execute("SELECT key, value, unit, label, note FROM goals ORDER BY key").fetchall()
         return json.dumps([{**r, "value": float(r["value"]) if r["value"] is not None else None} for r in rows], indent=1)
     if key == "events":
-        return json.dumps([{"m": r["month"], "label": r["label"]} for r in conn.execute("SELECT month, label FROM life_events ORDER BY month, label").fetchall()], indent=1)
+        return json.dumps([event_out(r) for r in conn.execute("SELECT month AS m, label, kind, person FROM life_events ORDER BY month, label").fetchall()], indent=1)
     return json.dumps(db.get_setting(conn, key, {}), indent=1)
 
 
@@ -270,7 +291,10 @@ def _save_editor(conn, key: str, body: str) -> str:
             conn.cursor().executemany("INSERT INTO goals (key,value,unit,label,note,confirmed_at) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, unit=EXCLUDED.unit, label=EXCLUDED.label, note=EXCLUDED.note", [(c["key"], c["value"], c["unit"], c["label"], c["note"], seen.get(c["key"])) for c, _ in checked])
         else:
             conn.execute("DELETE FROM life_events")
-            conn.cursor().executemany("INSERT INTO life_events VALUES (%s,%s) ON CONFLICT DO NOTHING", [(c["m"], c["label"]) for c, _ in checked])
+            conn.cursor().executemany("INSERT INTO life_events (month,label,kind,person) VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+                                      [(c["m"], c["label"], c["kind"], c["person"]) for c, _ in checked])
+            warn = person_warning(conn, [c["person"] for c, _ in checked])
+            return f"{len(data)} {key}" + (f" ({warn})" if warn else "")
         return f"{len(data)} {key}"
     if key in ("rules", "household"):
         problems = schema.validate(data, schema.load(key))
@@ -290,7 +314,7 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         editors = [{"key": k, "body": _editor_body(conn, k), "fields": schema.help_fields(k) if k in schema.NAMES else [], **v} for k, v in EDITORS.items()]
         rows = {"mapping": conn.execute("SELECT item, canonical_item, category, flow, note FROM item_mapping ORDER BY category, canonical_item, item").fetchall(),
                 "goals": [{**r, "value": (f"{r['value']:f}".rstrip("0").rstrip(".") if r["value"] is not None else None)} for r in conn.execute("SELECT key, value, unit, label, note FROM goals ORDER BY key").fetchall()],
-                "events": conn.execute("SELECT month AS m, label FROM life_events ORDER BY month, label").fetchall()}
+                "events": conn.execute("SELECT month AS m, label, kind, person FROM life_events ORDER BY month, label").fetchall()}
         categories = sorted({r["category"] for r in rows["mapping"] if r["category"]})
         rules = db.get_setting(conn, "rules", {}) or {}
         household = db.get_setting(conn, "household", {}) or {}
@@ -298,7 +322,8 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         unmapped = len(unmapped_items(conn))
     return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP,
                   categories=categories, rules=rules, hh=household, name_families=name_families, unmapped=unmapped,
-                  brand_problems=brand_check.check_dir(brand.BRAND_DIR))
+                  brand_problems=brand_check.check_dir(brand.BRAND_DIR),
+                  event_choices={"kind": [""] + list(EVENT_KINDS), "person": [""] + list(rules.get("people") or [])})
 
 
 @router.get("/settings/mapping.csv")
@@ -364,12 +389,13 @@ async def settings_row_save(request: Request, kind: str, user=Depends(auth.requi
     with db.pool.connection() as conn:
         try:
             row, err = _row_save(conn, kind, form)
+            warning = person_warning(conn, [row.get("person")]) if kind == "events" and not err else ""
             if not err:
                 db.mark_inputs_changed(conn)
             conn.commit()
         except Exception:  # noqa: BLE001
             conn.rollback(); raise
-    return JSONResponse({"ok": not err, "row": row, "errors": err, "rebuild_needed": not err})  # 200 with ok=false: a rejected row is an answer, not a failed request (keeps the console clean)
+    return JSONResponse({"ok": not err, "row": row, "errors": err, "rebuild_needed": not err, "warning": warning})  # 200 with ok=false: a rejected row is an answer, not a failed request (keeps the console clean)
 
 
 @router.post("/settings/{kind}/row/delete")

@@ -226,9 +226,9 @@ def export_for_pipeline(conn: psycopg.Connection, wd: Path) -> None:
             for r in cur: w.writerow([r["month"], f"{r['cpi']:.3f}", r["source"]])
         cur.execute("SELECT key, value, unit, label, note, confirmed_at FROM goals ORDER BY key")
         goals = [dict(r, value=float(r["value"]) if r["value"] is not None else None, confirmed_at=r["confirmed_at"].isoformat() if r["confirmed_at"] else None) for r in cur]
-        cur.execute("SELECT month m, label FROM life_events ORDER BY month, label")
-        with open(wd / "events.json", "w") as out:
-            json.dump([dict(r) for r in cur], out)
+        cur.execute("SELECT month m, label, kind, person FROM life_events ORDER BY month, label")
+        with open(wd / "events.json", "w") as out:   # kind and person only when set (#109), so events without them read as before
+            json.dump([{k: v for k, v in r.items() if v is not None} for r in cur], out)
         cur.execute("SELECT value FROM settings WHERE key='rules'")
         row = cur.fetchone()
     with open(wd / "rules.json", "w") as out:
@@ -507,7 +507,8 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
             with open(seed_dir / "events.json") as f:
                 events_seed = json.load(f)
             for e in events_seed:
-                cur.execute("INSERT INTO life_events VALUES (%s,%s) ON CONFLICT DO NOTHING", (e["m"], e["label"]))
+                cur.execute("INSERT INTO life_events (month,label,kind,person) VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+                            (e["m"], e["label"], (e.get("kind") or "").strip().lower() or None, (e.get("person") or "").strip() or None))
         cur.execute("SELECT count(*) FROM settings WHERE key='rules'")
         if cur.fetchone()[0] == 0 and (seed_dir / "rules.json").exists():
             cur.execute("INSERT INTO settings (key, value) VALUES ('rules', %s)", (_read(seed_dir / "rules.json"),))

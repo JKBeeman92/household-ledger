@@ -1,18 +1,24 @@
 [
  {
   "m": "2025-03",
-  "label": "Sam takes on garden contracts"
+  "label": "Sam takes on garden contracts",
+  "kind": "job",
+  "person": "Sam"
  },
  {
   "m": "2025-07",
-  "label": "Rosie promoted at Hobbiton Mill"
+  "label": "Rosie promoted at Hobbiton Mill",
+  "kind": "job",
+  "person": "Rosie"
  },
  {
   "m": "2025-10",
-  "label": "Moved to a bigger hole, rent goes up"
+  "label": "Moved to a bigger hole, rent goes up",
+  "kind": "move"
  },
  {
   "m": "2026-02",
-  "label": "Elanor is born"
+  "label": "Elanor is born",
+  "kind": "family"
  }
 ]

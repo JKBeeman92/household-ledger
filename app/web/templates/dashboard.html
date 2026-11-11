@@ -297,8 +297,8 @@
       <div class="card">
         <h2 id="employer-chart">Paycheck source, by month</h2>
         <ul class="key row"><li>employer read from the deposit text (employers rule)</li><li>deposits it cannot place: Unknown</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Employer is read from the deposit description using the employers rule in Settings; deposits it cannot place are shown as Unknown. Paycheck deposits by month, colored by employer. A change of color is a job change; a taller month has three paychecks or a bonus paid through payroll.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Employer</th><th scope="col">Paid</th><th scope="col">Deposits</th></tr></thead><tbody data-draw="dt-employer" data-source="employer"></tbody></table></div></details>
-        <div class="chart" data-draw="employer" data-source="employer"></div>
+      <details class="how"><summary>How to read this</summary><p>Employer is read from the deposit description using the employers rule in Settings; deposits it cannot place are shown as Unknown. Paycheck deposits by month, colored by employer. A change of color is a job change; a taller month has three paychecks or a bonus paid through payroll. The dotted markers are life events of kind job, and events with no kind; hover one for its label.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Employer</th><th scope="col">Paid</th><th scope="col">Deposits</th></tr></thead><tbody data-draw="dt-employer" data-source="employer"></tbody></table></div></details>
+        <div class="chart" data-draw="employer" data-source="employer events"></div>
         <div class="legend" data-draw="employer-legend" data-source="employer"></div>
       </div>
     </div>
@@ -630,6 +630,13 @@ window.HL = (() => {
       .attr('x', (d) => x(d.data.x)).attr('width', x.bandwidth()).attr('y', (d) => y(d[1])).attr('height', (d) => Math.max(0, y(d[0]) - y(d[1]))).attr('rx', 2)
       .on('pointermove', (ev, d) => { const [px, py] = d3.pointer(ev, el); const i = series.indexOf(d.key); t.show(px, py, `<div class="t">${esc(opts.xfmt ? opts.xfmt(d.data.x) : d.data.x)}</div><div><span class="sw" style="background:${col(i)}"></span>${esc(d.key)} ${esc(money(d[1] - d[0]))}</div><div class="t">Total ${esc(money(d3.sum(series, (s) => d.data[s])))}</div>`); })
       .on('pointerleave', () => t.hide());
+    const marks = (opts.markers || []).filter((e) => x(e.x) !== undefined);   // [{x, text}]: dashed line and dot over that bar, label on hover
+    if (marks.length) {
+      const cx = (e) => x(e.x) + x.bandwidth() / 2;
+      svg.append('g').selectAll('line').data(marks).join('line').attr('x1', cx).attr('x2', cx).attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '2 3').style('pointer-events', 'none');
+      svg.append('g').selectAll('circle').data(marks).join('circle').attr('class', 'ev').attr('cx', cx).attr('cy', mt + 4).attr('r', 4).attr('fill', 'var(--cds-chart-reference)').style('cursor', 'default')
+        .on('pointermove', (pe, e) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${esc(opts.xfmt ? opts.xfmt(e.x) : e.x)}</div><div>${esc(e.text)}</div>`); }).on('pointerleave', () => t.hide());
+    }
     return series;
   };
   const legend = (el, names, skip = 0) => { el.replaceChildren(...names.map((n, i) => { const s = document.createElement('span'); s.style.setProperty('--sw', colors()[(i + skip) % colors().length]); s.textContent = n; return s; })); };
@@ -833,6 +840,8 @@ for (const [sfx, calc] of [['n', 'last12'], ['r', 'last12_real']]) {
 
 <script nonce="{{ csp_nonce(request) }}">(() => {
 
+// an event as text: its label, then its kind and person when set (#109)
+HL.evText = (e) => e.label + ([e.kind, e.person].filter(Boolean).length ? ` (${[e.kind, e.person].filter(Boolean).join(' · ')})` : '');
 // ---- monthly income vs outgo line chart with event markers ----
 dash.draw('monthly', (el) => {
   const g = HL.rd('monthly'), ev = HL.rd('events');
@@ -858,7 +867,7 @@ dash.draw('monthly', (el) => {
   if (ev.status === 'ok') {
     svg.append('g').selectAll('line').data(ev.data).join('line').attr('x1', (e) => x(HL.parseM(e.m))).attr('x2', (e) => x(HL.parseM(e.m))).attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '2 3');
     svg.append('g').selectAll('circle').data(ev.data).join('circle').attr('class', 'ev').attr('cx', (e) => x(HL.parseM(e.m))).attr('cy', mt + 4).attr('r', 4).attr('fill', 'var(--cds-chart-reference)').style('cursor', 'default')
-      .on('pointermove', (pe, e) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(HL.parseM(e.m)))}</div><div>${HL.esc(e.label)}</div>`); }).on('pointerleave', () => t.hide());
+      .on('pointermove', (pe, e) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(HL.parseM(e.m)))}</div><div>${HL.esc(HL.evText(e))}</div>`); }).on('pointerleave', () => t.hide());
   }
   const hover = svg.append('g').attr('display', 'none');
   hover.append('line').attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--cds-chart-axis)');
@@ -884,7 +893,7 @@ dash.draw('event-list', (ul) => {
   if (box) { box.style.display = n ? '' : 'none'; box.querySelector('summary').textContent = `Life events in this period (${n})`; }
   if (!n) return;
   for (const e of [...g.data].sort((a, b) => a.m < b.m ? -1 : 1)) { const li = document.createElement('li'); const gl = document.createElement('span'); gl.className = 'glyph'; gl.textContent = '┊';
-    li.append(gl, `${HL.fmtM(HL.parseM(e.m))}: ${e.label}`); ul.append(li); }
+    li.append(gl, `${HL.fmtM(HL.parseM(e.m))}: ${HL.evText(e)}`); ul.append(li); }
 });
 dash.draw('annual', (el) => {
   const g = HL.rd('yearly'); el.replaceChildren();
@@ -929,7 +938,9 @@ let employerOrder = [];
 dash.draw('employer', (el) => {
   const g = HL.rd('employer'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
   const rows = g.data.map((r) => ({ m: r.m, employer: r.employer, amount: Number(r.amount) }));
-  employerOrder = HL.stackChart(el, rows, 'm', 'employer', 'amount', { order: [...d3.rollup(rows, (v) => d3.sum(v, (r) => r.amount), (r) => r.employer)].filter((d) => d[0] !== 'Unknown').sort((a, b) => b[1] - a[1]).map((d) => d[0]).concat(rows.some((r) => r.employer === 'Unknown') ? ['Unknown'] : []), xfmt: (m) => dash.fmt.month(HL.parseM(m)) });
+  const ev = HL.rd('events');   // job changes, plus events with no kind so nothing disappears on upgrade (#109)
+  const markers = ev.status === 'ok' ? ev.data.filter((e) => !e.kind || e.kind === 'job').map((e) => ({ x: e.m, text: HL.evText(e) })) : [];
+  employerOrder = HL.stackChart(el, rows, 'm', 'employer', 'amount', { order: [...d3.rollup(rows, (v) => d3.sum(v, (r) => r.amount), (r) => r.employer)].filter((d) => d[0] !== 'Unknown').sort((a, b) => b[1] - a[1]).map((d) => d[0]).concat(rows.some((r) => r.employer === 'Unknown') ? ['Unknown'] : []), xfmt: (m) => dash.fmt.month(HL.parseM(m)), markers });
 });
 dash.draw('employer-legend', (el) => { const g = dash.data('employer'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, employerOrder); });
 
