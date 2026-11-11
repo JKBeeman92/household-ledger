@@ -11,6 +11,14 @@ first thing to read. The short version:
 - **No colours outside the theme.** `app.css` and the page use contract tokens only (`docs/BRANDING.md`).
 - **No household data in the repo.** Fixtures are synthetic. `.env` is ignored. If you paste a build log into an issue, scrub it.
 
+## Is it in scope?
+
+This app is a monthly check-in, not a full financial tracker ([README, "What this is, and isn't"](README.md#what-this-is-and-isnt)).
+Before proposing a feature, ask: **would a household use it during its monthly (or quarterly) sit-down?** If it is only useful
+daily, it belongs in the budgeting tool, not here. Out of scope, whatever the implementation: bank or account syncing, daily
+budgeting or editing individual transactions, investment performance or allocation, reminders or notifications that want you in
+the app more than once a month, and tax preparation.
+
 ## Running it locally
 
 ```sh
