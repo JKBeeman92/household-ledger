@@ -254,7 +254,8 @@ def test_default_limit_and_timeout_leave_room_for_thinking(http):
     assert rp.read_timeout(prov("anthropic", max_tokens=1000)) == 120
 
 
-def test_review_message_says_where_to_read_it_and_warns_on_section_count(client, reset_db, cfg, http):
+def test_review_runs_in_the_background_and_the_page_says_where_to_read_it(client, reset_db, cfg, http):
+    """Issue #124: the request returns at once; Close a month shows the job, then where to read the review, with the section-count check."""
     reset_db(SAMPLE)
     client.post("/upload", files=[("files", (p.name, p.read_bytes(), "text/csv")) for p in sorted(SAMPLE.glob("*EveryDollar*.csv"))])
     _, reply = http
@@ -263,7 +264,30 @@ def test_review_message_says_where_to_read_it_and_warns_on_section_count(client,
     from app import db
     with db.pool.connection() as conn:
         months = [r["budget_month"] for r in conn.execute("SELECT DISTINCT budget_month FROM source_files ORDER BY 1").fetchall()]
-    page = client.get(client.post("/review/generate", data={"month": months[-2], "confirm": "yes"}).headers["location"]).text
-    assert f"Review written for {months[-2]} (1 section)." in page and "Past reviews" in page and "ask for 5 to 7" in page
-    page = client.get(client.post("/review/generate", data={"month": months[-1], "confirm": "yes"}).headers["location"]).text
-    assert "Last month tab" in page
+    r = client.post("/review/generate", data={"month": months[-2], "confirm": "yes"})
+    assert r.status_code == 303 and r.headers["location"] == "/upload#review-job"
+    page = client.get("/upload").text   # the test client ran the background task before returning
+    assert f"The {months[-2]} review (1 section): read it on Reviews → Past reviews ({months[-2]})" in page and "ask for 5 to 7" in page
+    client.post("/review/generate", data={"month": months[-1], "confirm": "yes"})
+    assert "the dashboard&#39;s Last month tab" in client.get("/upload").text or "the dashboard's Last month tab" in client.get("/upload").text
+    assert client.get("/review/status").json()["job"]["state"] == "stored"
+
+
+def test_one_review_in_flight_per_month_and_failures_are_kept(client, reset_db, cfg, http):
+    from app import db, review as rv
+    cfg(review_provider="ollama", review_base_url="http://o:11434", review_model_explicit="llama-x")
+    with db.pool.connection() as conn:
+        assert rv.start_job(conn, "2026-05", "frodo@shire.test") is not None
+        assert rv.start_job(conn, "2026-05", "frodo@shire.test") is None   # a second click cannot send (and pay for) it again
+        assert rv.start_job(conn, "2026-04", "frodo@shire.test") is not None
+        conn.execute("UPDATE review_jobs SET created_at = now() - interval '2 hours' WHERE month='2026-04'"); conn.commit()
+        job = rv.latest_job(conn)   # newest is 2026-04, cut off long ago: closed as interrupted
+    assert job["state"] == "failed" and job["error"].startswith("interrupted")
+    _, reply = http
+    reply["v"] = Resp({"message": {"content": "Sorry, no."}})
+    with db.pool.connection() as conn:
+        jid = rv.start_job(conn, "2026-03", "frodo@shire.test")
+    rv.run_job(jid)
+    with db.pool.connection() as conn:
+        row = conn.execute("SELECT state, error FROM review_jobs WHERE id=%s", (jid,)).fetchone()
+    assert row["state"] == "failed" and "2026-03 is not a built month" in row["error"]   # the reason is kept for the page

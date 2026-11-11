@@ -32,7 +32,9 @@ def upload_page(request: Request, user=Depends(auth.require_editor)):
         checklist = checklist_goals(conn)
         review_ok = review.providers.is_configured(conn)
         last = conn.execute("SELECT created_at, results FROM upload_batches ORDER BY id DESC LIMIT 1").fetchone()
-    return render(request, "upload.html", user, active="upload", findings=findings, checklist=checklist, files=files, months=months, build=build, review_enabled=review_ok, last_upload=last, max_upload_mb=settings.max_upload_mb, import_dir_set=bool(settings.import_dir))
+    with db.pool.connection() as conn:
+        review_job = review.latest_job(conn)
+    return render(request, "upload.html", user, active="upload", review_job=review_job, findings=findings, checklist=checklist, files=files, months=months, build=build, review_enabled=review_ok, last_upload=last, max_upload_mb=settings.max_upload_mb, import_dir_set=bool(settings.import_dir))
 
 
 async def _read_capped(f: UploadFile) -> bytes | None:
@@ -105,21 +107,24 @@ def rebuild_now(request: Request, background: BackgroundTasks, next: str = Form(
 
 
 @router.post("/review/generate")
-def review_generate(request: Request, month: str = Form(...), confirm: str = Form(""), user=Depends(auth.require_editor)):
+def review_generate(request: Request, background: BackgroundTasks, month: str = Form(...), confirm: str = Form(""), user=Depends(auth.require_editor)):
     if confirm != "yes":   # the cost guard: a provider call only follows the confirmation page
         return RedirectResponse(f"/reviews/confirm?month={month}", status_code=303)
+    with db.pool.connection() as conn:   # the model can take minutes: queue it and return; Close a month shows progress (issue #124)
+        if (why := review.providers.resolve(conn).problem()):
+            flash(request, f"Review not started: no review provider is configured: {why}", "bad")
+        elif (job := review.start_job(conn, month, user.get("email", ""))) is None:
+            flash(request, f"A review of {month} is already being written; its progress is below.")
+        else:
+            background.add_task(review.run_job, job)
+    return RedirectResponse("/upload#review-job", status_code=303)
+
+
+@router.get("/review/status")
+def review_status(user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
-        try:
-            res = review.generate(conn, month)
-            n = len(res["sections"])
-            latest = conn.execute("SELECT max(budget_month) m FROM source_files").fetchone()["m"]
-            where = "See the dashboard's Last month tab." if month == latest else f"Read it under Reviews → Past reviews ({month})."   # Last month shows only the latest month
-            flash(request, f"Review written for {month} ({n} section{'' if n == 1 else 's'}). {where}")
-            if not 5 <= n <= 7:
-                flash(request, f"The model wrote {n} section{'' if n == 1 else 's'}; the instructions ask for 5 to 7. Read it before relying on it, or generate again.", "warn")
-        except Exception as e:  # noqa: BLE001
-            conn.rollback(); flash(request, f"Review failed: {str(e)[:800]}", "bad")
-    return RedirectResponse("/upload", status_code=303)
+        job = review.latest_job(conn)
+    return {"job": job and {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in job.items()}}
 
 
 SAMPLE_DIR = Path(__file__).resolve().parents[2] / "examples" / "sample-household"   # shipped in the image (Dockerfile)

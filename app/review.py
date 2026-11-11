@@ -135,3 +135,52 @@ def save_agent(conn, month: str, sections: list[dict], who: str) -> None:
     refresh_dataset(conn)
     conn.commit()
     hooks.notify_async(conn, "review.stored", month, sections=len(sections))
+
+
+# ---------------------------------------------------------------- background jobs (issue #124)
+STALE_MINUTES = 30   # longer than any provider wait (REVIEW_MAX_TOKENS / 40 s, 400 s by default): a job still "running" after this was cut off by a restart
+
+
+def start_job(conn, month: str, who: str) -> int | None:
+    """Queue a review of `month`; None when one is already queued or running for it (the unique index says so)."""
+    try:
+        row = conn.execute("INSERT INTO review_jobs (month, state, requested_by, provider) VALUES (%s, 'queued', %s, %s) RETURNING id",
+                           (month, who, providers.resolve(conn).label)).fetchone()
+        conn.commit(); return row["id"]
+    except Exception as e:  # noqa: BLE001
+        conn.rollback()
+        if "review_jobs_one_active" in str(e):
+            return None
+        raise
+
+
+def run_job(job_id: int) -> None:
+    """Body of the background task: write the review on a connection of its own and record how it went. Never raises."""
+    try:
+        with db.pool.connection() as conn:
+            month = conn.execute("UPDATE review_jobs SET state='running', started_at=now() WHERE id=%s RETURNING month", (job_id,)).fetchone()["month"]
+            conn.commit()
+            try:
+                res = generate(conn, month)
+                conn.execute("UPDATE review_jobs SET state='stored', finished_at=now(), sections=%s WHERE id=%s", (len(res["sections"]), job_id))
+            except Exception as e:  # noqa: BLE001  generate() logs the reply excerpt; the page shows the reason
+                conn.rollback()
+                conn.execute("UPDATE review_jobs SET state='failed', finished_at=now(), error=%s WHERE id=%s", (str(e)[:800], job_id))
+            conn.commit()
+    except Exception:  # noqa: BLE001
+        log.exception("review job %s could not be recorded", job_id)
+
+
+def latest_job(conn) -> dict | None:
+    """The newest review job, for Close a month; a job cut off by a restart is closed as interrupted."""
+    conn.execute("UPDATE review_jobs SET state='failed', finished_at=now(), error='interrupted: the app restarted while the review was being written; generate it again' "
+                 "WHERE state IN ('queued', 'running') AND created_at < now() - make_interval(mins => %s)", (STALE_MINUTES,))
+    conn.commit()
+    row = conn.execute("SELECT id, month, state, provider, created_at, started_at, finished_at, sections, error FROM review_jobs ORDER BY id DESC LIMIT 1").fetchone()
+    if not row:
+        return None
+    job = dict(row)
+    latest = conn.execute("SELECT max(budget_month) m FROM source_files").fetchone()["m"]
+    job["where"] = "the dashboard's Last month tab" if job["month"] == latest else f"Reviews → Past reviews ({job['month']})"
+    job["odd_count"] = job["state"] == "stored" and job["sections"] is not None and not 5 <= job["sections"] <= 7
+    return job
