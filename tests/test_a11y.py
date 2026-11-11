@@ -48,3 +48,13 @@ def test_print_stylesheet_hides_chrome_and_uses_tokens_only():
 def test_accent_2_text_variant_used_for_small_text(client, reset_db):
     assert "color: var(--accent-2-text" in CSS
     assert "var(--accent-2-text" in client.get("/").text
+
+
+def test_charts_without_a_table_get_one_and_say_their_span():
+    """Issue #122: the figures behind each chart are reachable without a mouse, and the label states the data's own range."""
+    html = (ROOT / "app" / "web" / "templates" / "dashboard.html").read_text()
+    for name in ("monthly", "annual", "employer", "goal-lines", "debts", "net"):
+        assert f'data-draw="dt-{name}"' in html, name
+    assert html.count('<details class="datatable"><summary>Show the figures as a table</summary>') == 6
+    assert "if (chart.dataset.span) parts.push('Figures from ' + chart.dataset.span + '.');" in JS
+    assert "The same figures are in a table after the chart." in JS

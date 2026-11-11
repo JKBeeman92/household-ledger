@@ -14,10 +14,12 @@
     const parts = ['Chart: ' + title + '.'];
     const legend = [...(card || document).querySelectorAll('.legend span')].map((s) => s.textContent.trim()).filter(Boolean);
     if (legend.length) parts.push((chart.classList.contains('radar') ? 'Years: ' : 'Series: ') + legend.join(', ') + '.');
-    for (const g of svg.querySelectorAll(':scope > g')) {
+    if (chart.dataset.span) parts.push('Figures from ' + chart.dataset.span + '.');   // the data's own range, not the first and last tick
+    else for (const g of svg.querySelectorAll(':scope > g')) {
       const t = [...g.querySelectorAll('.tick text')].map((x) => x.textContent.trim()).filter(Boolean);
       if (t.length > 1) parts.push('Axis labels run from ' + t[0] + ' to ' + t[t.length - 1] + ' (' + words(t.length, 'label', 'labels') + ').');
     }
+    if (card && card.querySelector('details.datatable')) parts.push('The same figures are in a table after the chart.');
     if (chart.classList.contains('radar')) { const c = [...svg.querySelectorAll(':scope > g:nth-of-type(4) text')].map((x) => x.textContent.trim()); if (c.length) parts.push('Categories: ' + c.join(', ') + '.'); }
     return parts.join(' ');
   };
