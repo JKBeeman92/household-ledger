@@ -42,7 +42,8 @@ of `docker compose logs ledger` (check them for anything private first).
 - [ ] **Review** (optional). With a provider configured, generate one review (it asks for confirmation and shows an approximate
       input-token count), open `/reviews/history` to see the prompt that was sent, then hand-edit a section and save it.
 - [ ] **Price index.** **Fetch latest CPI** on the CPI page reaches the source and reports months added or replaced.
-- [ ] **Exports.** Download `ledger.csv`, `datasets.zip` and `sources.zip` from **Close a month**.
+- [ ] **Exports.** Download `ledger.csv`, `datasets.zip`, `sources.zip` and `settings.zip` from **Close a month**. Keep the
+      `settings.zip`: it is your mapping, goals, events and rules as seed files, the way back if a later upgrade's migration goes wrong.
 - [ ] **API token and metrics.** Create a `read` token on Settings → API tokens;
       `curl -H "Authorization: Bearer hl_…" https://ledger.example.com/metrics` returns Prometheus text; revoke the token and the
       same call returns 401.

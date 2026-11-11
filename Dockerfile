@@ -12,6 +12,7 @@ COPY app ./app
 COPY pipeline ./pipeline
 COPY db ./db
 COPY examples/sample-household ./examples/sample-household
+COPY version.txt ./
 RUN mkdir -p /data/brand && useradd -r -u 10001 ledger && chown -R ledger /data
 USER ledger
 EXPOSE 8010

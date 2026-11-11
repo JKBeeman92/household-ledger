@@ -100,7 +100,7 @@ addEventListener('DOMContentLoaded', () => {
 </div>
 <div class="panel" style="margin-top:var(--space-4)">
   <h2>Take your data out, or scan for new files</h2>
-  <p class="muted">Downloads: <a href="/export/ledger.csv">ledger.csv</a> · <a href="/export/datasets.zip">datasets.zip</a> · <a href="/export/sources.zip">sources.zip</a> (the raw exports: EveryDollar files in their shape and original filenames, other sources exactly as uploaded).</p>
+  <p class="muted">Downloads: <a href="/export/ledger.csv">ledger.csv</a> · <a href="/export/datasets.zip">datasets.zip</a> · <a href="/export/sources.zip">sources.zip</a> (the raw exports: EveryDollar files in their shape and original filenames, other sources exactly as uploaded) · <a href="/export/settings.zip">settings.zip</a> (mapping, CPI, goals, events, rules and household as seed files: unzip into <code>SEED_DIR</code> to start a new install with them; no secrets).</p>
   {% if import_dir_set %}  <form method="post" action="/import/scan">{{ csrf_field(request) }}<button class="btn" type="submit">Scan import directory now</button> <span class="muted">loads new or changed exports from IMPORT_DIR without a restart</span></form>{% endif %}
 </div>
 {% endblock %}
