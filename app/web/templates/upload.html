@@ -29,6 +29,8 @@ addEventListener('DOMContentLoaded', () => {
 <div class="panel" id="build-panel" style="margin-top:var(--space-4)" data-state="{{ build.state }}">
   <h2>Build status</h2>
   <p id="build-line" role="status" aria-live="polite" style="margin:0 0 var(--space-2);border-left:3px solid var({{ '--info' if build.state in ('running', 'never') else '--success' if build.state == 'ok' else '--danger' }});padding-left:var(--space-3)">
+    {%- set chip = {'running': ('info', 'Rebuilding'), 'never': ('info', 'No build yet'), 'ok': ('ok' if not build.problems else 'warn', 'Up to date' if not build.problems else 'Needs a look'), 'failed': ('bad', 'Needs attention'), 'interrupted': ('bad', 'Interrupted')}[build.state] %}
+    <span class="status-chip {{ chip[0] }}">{{ chip[1] }}</span>
     {%- if build.state == 'running' %}<strong>Rebuilding</strong>{% if build.started_at %} since {{ build.started_at.strftime('%H:%M:%S') }}{% endif %}. This page updates when it finishes.
     {%- elif build.state == 'never' %}No build yet.
     {%- else %}<strong>{{ {'ok': 'Last build finished', 'failed': 'Last build failed', 'interrupted': 'Last build was interrupted'}[build.state] }}</strong>{% if build.finished_at %} at {{ build.finished_at.strftime('%Y-%m-%d %H:%M:%S') }}{% endif %}: {{ build.summary }}{% endif -%}

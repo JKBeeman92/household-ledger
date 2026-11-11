@@ -138,6 +138,31 @@
   radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--color-fg) 18%, transparent), transparent) bottom / 100% .8rem no-repeat scroll; }
 .hl table[data-source="goals"] td:nth-child(3) { white-space: normal; min-width: 12rem; }
 .hl .key.events li { white-space: nowrap; }
+/* Headline summaries: one figure, one plain takeaway, then status chips; detail stays a click away. */
+.hl .headline { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: var(--cds-gap-xs) var(--cds-gap-lg); align-items: end; margin-bottom: var(--cds-gap-md); }
+.hl .headline .eyebrow { margin: 0; } .hl .headline .aside-note { grid-column: 1 / -1; color: var(--color-fg-muted); margin: 0; }
+.hl .headline .fig { font-family: var(--font-anthropic-serif); font-size: calc(var(--cds-font-size-title) * 1.7); font-weight: 600; line-height: 1.05; }
+.hl .fig.good { color: var(--color-ok); } .hl .fig.off { color: var(--color-bad); }
+.hl .headline .take { font-size: var(--cds-font-size-heading); margin: 0 0 .3em; }
+.hl .chips { list-style: none; display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs); margin: var(--cds-gap-xs) 0 0; padding: 0; grid-column: 1 / -1; }
+.hl .chip { display: inline-flex; align-items: center; gap: .4em; border: 1px solid var(--color-border-line); border-radius: 999px; padding: 3px 12px 3px 10px; font-size: var(--cds-font-size-caption); background: var(--color-panel); white-space: nowrap; }
+.hl .chip::before { content: ""; width: .55em; height: .55em; border-radius: 50%; background: var(--color-fg-muted); flex: none; }
+.hl .chip.good { border-color: color-mix(in srgb, var(--color-ok) 55%, transparent); } .hl .chip.good::before { background: var(--color-ok); }
+.hl .chip.off { border-color: color-mix(in srgb, var(--color-bad) 55%, transparent); } .hl .chip.off::before { background: var(--color-bad); }
+.hl .chip b { font-weight: var(--cds-font-weight-medium); }
+@media (max-width: 700px) { .hl .headline { grid-template-columns: minmax(0, 1fr); } }
+.hl .spark { margin-top: var(--cds-gap-xs); height: 28px; }
+.hl .gauge { display: flex; align-items: center; gap: var(--cds-gap-sm); margin-top: var(--cds-gap-xs); }
+.hl .gauge .track, .hl .sumrow .vsplan { position: relative; flex: 1 1 auto; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--color-fg) 8%, transparent); }
+.hl .gauge .track i, .hl .sumrow .vsplan i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--color-fg-muted); }
+.hl .gauge .track i.good { background: var(--color-ok); } .hl .gauge .track i.off { background: var(--color-bad); }
+.hl .gauge .track b, .hl .sumrow .vsplan b { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--color-fg); }
+.hl .sumrows { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--cds-gap-xs); }
+.hl .sumrow { display: grid; grid-template-columns: minmax(7rem, 11rem) minmax(4rem, 1fr) auto minmax(6.5rem, auto); align-items: center; gap: var(--cds-gap-sm); }
+.hl .sumrow.off .vsplan i { background: var(--color-bad); } .hl .sumrow.good .vsplan i { background: var(--color-ok); }
+.hl .sumrow .usual { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); text-align: right; }
+.hl .key .tick { display: inline-block; width: 2px; height: .9em; background: var(--color-fg); margin: 0 .55rem; }
+@media (max-width: 600px) { .hl .sumrow { grid-template-columns: minmax(0, 1fr) auto; } .hl .sumrow .vsplan { grid-column: 1 / -1; order: 3; } .hl .sumrow .usual { grid-column: 1 / -1; text-align: left; order: 4; } }
 .hl .foot { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-top: var(--cds-gap-lg); padding-top: var(--cds-gap-sm); border-top: 1px solid var(--color-border-line); max-width: 90ch; }
 </style>
 
@@ -180,16 +205,16 @@
   <section id="overview" class="page" role="tabpanel" aria-labelledby="tab-overview" tabindex="0">
     <p class="intro">Is the household gaining or losing ground, and what changed when? {% if span.has_data %}Start here for the shape of {{ span.years }} {{ 'year' if span.years == 1 else 'years' }}.{% endif %}</p>
     <div class="tiles basis-nominal">
-      <div class="card tile"><div class="k">Income, last 12 months</div><div class="v" data-draw="t-inc-n" data-source="last12" data-field="income">—</div><div class="d" data-draw="d-inc-n" data-source="last12" data-field="income_delta">—</div></div>
-      <div class="card tile"><div class="k">Living spend, last 12 months</div><div class="v" data-draw="t-sp-n" data-source="last12" data-field="spend">—</div><div class="d" data-draw="d-sp-n" data-source="last12" data-field="spend_delta">—</div></div>
-      <div class="card tile"><div class="k">Debt payments, last 12 months</div><div class="v" data-draw="t-db-n" data-source="last12" data-field="debt">—</div><div class="d" data-draw="d-db-n" data-source="last12" data-field="debt_delta">—</div></div>
-      <div class="card tile"><div class="k">Net kept, last 12 months</div><div class="v" data-draw="t-net-n" data-source="last12" data-field="net">—</div><div class="d" data-draw="d-sr-n" data-source="last12" data-field="savings_rate">—</div></div>
+      <div class="card tile"><div class="k">Income, last 12 months</div><div class="v" data-draw="t-inc-n" data-source="last12" data-field="income">—</div><div class="d" data-draw="d-inc-n" data-source="last12" data-field="income_delta">—</div><div class="spark" data-draw="sp-inc-n" data-source="monthly" data-field="income" aria-hidden="true"></div></div>
+      <div class="card tile"><div class="k">Living spend, last 12 months</div><div class="v" data-draw="t-sp-n" data-source="last12" data-field="spend">—</div><div class="d" data-draw="d-sp-n" data-source="last12" data-field="spend_delta">—</div><div class="spark" data-draw="sp-sp-n" data-source="monthly" data-field="spend" aria-hidden="true"></div></div>
+      <div class="card tile"><div class="k">Debt payments, last 12 months</div><div class="v" data-draw="t-db-n" data-source="last12" data-field="debt">—</div><div class="d" data-draw="d-db-n" data-source="last12" data-field="debt_delta">—</div><div class="spark" data-draw="sp-db-n" data-source="monthly" data-field="debt" aria-hidden="true"></div></div>
+      <div class="card tile"><div class="k">Net kept, last 12 months</div><div class="v" data-draw="t-net-n" data-source="last12" data-field="net">—</div><div class="d" data-draw="d-sr-n" data-source="last12" data-field="savings_rate">—</div><div class="spark" data-draw="sp-net-n" data-source="monthly" data-field="net" aria-hidden="true"></div></div>
     </div>
     <div class="tiles basis-real" hidden>
-      <div class="card tile"><div class="k">Income, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-inc-r" data-source="last12_real" data-field="income">—</div><div class="d" data-draw="d-inc-r" data-source="last12_real" data-field="income_delta">—</div></div>
-      <div class="card tile"><div class="k">Living spend, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-sp-r" data-source="last12_real" data-field="spend">—</div><div class="d" data-draw="d-sp-r" data-source="last12_real" data-field="spend_delta">—</div></div>
-      <div class="card tile"><div class="k">Debt payments, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-db-r" data-source="last12_real" data-field="debt">—</div><div class="d" data-draw="d-db-r" data-source="last12_real" data-field="debt_delta">—</div></div>
-      <div class="card tile"><div class="k">Net kept, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-net-r" data-source="last12_real" data-field="net">—</div><div class="d" data-draw="d-sr-r" data-source="last12_real" data-field="savings_rate">—</div></div>
+      <div class="card tile"><div class="k">Income, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-inc-r" data-source="last12_real" data-field="income">—</div><div class="d" data-draw="d-inc-r" data-source="last12_real" data-field="income_delta">—</div><div class="spark" data-draw="sp-inc-r" data-source="monthly" data-field="income" aria-hidden="true"></div></div>
+      <div class="card tile"><div class="k">Living spend, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-sp-r" data-source="last12_real" data-field="spend">—</div><div class="d" data-draw="d-sp-r" data-source="last12_real" data-field="spend_delta">—</div><div class="spark" data-draw="sp-sp-r" data-source="monthly" data-field="spend" aria-hidden="true"></div></div>
+      <div class="card tile"><div class="k">Debt payments, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-db-r" data-source="last12_real" data-field="debt">—</div><div class="d" data-draw="d-db-r" data-source="last12_real" data-field="debt_delta">—</div><div class="spark" data-draw="sp-db-r" data-source="monthly" data-field="debt" aria-hidden="true"></div></div>
+      <div class="card tile"><div class="k">Net kept, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-net-r" data-source="last12_real" data-field="net">—</div><div class="d" data-draw="d-sr-r" data-source="last12_real" data-field="savings_rate">—</div><div class="spark" data-draw="sp-net-r" data-source="monthly" data-field="net" aria-hidden="true"></div></div>
     </div>
 
     <div class="card">
@@ -234,13 +259,11 @@
 
   <!-- ===================== LAST MONTH ===================== -->
   <section id="lastmonth" class="page" role="tabpanel" aria-labelledby="tab-lastmonth" tabindex="0" hidden>
-    <p class="intro">How <b data-draw="lm-name">—</b> went against its plan and against the twelve months before it, and which envelopes to move before the next one is set.
-      <span class="aside-note">Planned and spent are EveryDollar's own figures, so transfers between envelopes count here as they did in the app.</span></p>
-    <div class="tiles">
-      <div class="card tile"><div class="k">Income</div><div class="v" data-draw="lm-inc" data-source="lm_totals" data-field="income_actual" data-where="row=last">—</div><div class="d" data-draw="lm-inc-d" data-source="lm_totals" data-field="income_vs_plan" data-where="row=last">—</div></div>
-      <div class="card tile"><div class="k">Living spend</div><div class="v" data-draw="lm-sp" data-source="lm_totals" data-field="spend_actual" data-where="row=last">—</div><div class="d" data-draw="lm-sp-d" data-source="lm_totals" data-field="spend_vs_plan" data-where="row=last">—</div></div>
-      <div class="card tile"><div class="k">Debt payments</div><div class="v" data-draw="lm-db" data-source="lm_totals" data-field="debt_actual" data-where="row=last">—</div><div class="d" data-draw="lm-db-d" data-source="lm_totals" data-field="debt_vs_plan" data-where="row=last">—</div></div>
-      <div class="card tile"><div class="k">Left over</div><div class="v" data-draw="lm-net" data-source="lm_totals" data-field="net_actual" data-where="row=last">—</div><div class="d" data-draw="lm-net-d" data-source="lm_totals" data-field="net_vs_avg" data-where="row=last">—</div></div>
+    <div class="card headline" id="lm-headline">
+      <div class="lead"><p class="eyebrow"><b data-draw="lm-name">—</b> · against its plan</p><div class="fig" data-draw="lm-fig" data-source="lm_totals">—</div></div>
+      <p class="take" data-draw="lm-take" data-source="lm_totals">—</p>
+      <ul class="chips" data-draw="lm-chips" data-source="lm_totals lm_cats" aria-label="The month at a glance"></ul>
+      <p class="aside-note">Planned and spent are EveryDollar's own figures, so moves between envelopes count as they did in the app; the other tabs use the cleaned ledger.</p>
     </div>
     <div class="card">
       <div class="aside">
@@ -254,14 +277,14 @@
     <div class="card split">
       <div class="aside">
         <h2 id="lm-summary">Before setting next month</h2>
-        <ul class="key"><li><span class="bar" style="--k: var(--color-bad)"></span>Three most over plan</li><li><span class="bar" style="--k: var(--color-ok)"></span>Three most under plan</li><li><span class="glyph">~</span>Each against its own twelve-month average</li></ul>
+        <ul class="key"><li><span class="bar" style="--k: var(--color-bad)"></span>needs a look</li><li><span class="bar" style="--k: var(--color-ok)"></span>room to spare</li><li><span class="tick"></span>the plan</li></ul>
       </div>
-      <ul class="summary-list two" data-draw="lm-summary" data-source="lm_cats"></ul>
+      <ul class="sumrows" data-draw="lm-summary" data-source="lm_cats"></ul>
     </div>
     <div class="grid">
       <div class="card">
         <h2 id="lm-var-chart">Over and under plan, by category</h2>
-        <ul class="key row"><li><span class="bar r" style="--k: var(--color-bad)"></span>over the envelope</li><li><span class="bar l" style="--k: var(--color-ok)"></span>under it</li><li><span class="glyph">⇄</span>income reversed</li></ul>
+        <ul class="key row"><li><span class="bar" style="--k: var(--color-bad)"></span>needs a look</li><li><span class="bar" style="--k: var(--color-ok)"></span>room to spare</li><li>for income, savings, giving and debt, more is better</li></ul>
         <details class="how"><summary>How to read this</summary><p>Spent minus planned for the month. Red bars went over their envelope; green came in under. A large red bar on a planned-zero category means an unplanned expense, not an overrun. Income is shown as received minus expected, so red means less arrived than expected.</p></details>
         <div class="chart" data-draw="lm-var" data-source="lm_cats"></div>
       </div>
@@ -299,9 +322,9 @@
     <p class="intro">Where the household stands against its standing targets: a giving floor, a savings share and a housing cap.
       <span class="aside-note">Targets are shares of gross or take-home pay, so they move with income, not with the plan. Which categories and groups count is set in the rules on the Settings page.</span></p>
     <div class="tiles">
-      <div class="card tile"><div class="k">Giving, last 12 months</div><div class="v" data-draw="g-giving" data-source="goal_summary" data-field="giving_share" data-where="row=last12">—</div><div class="d" data-draw="g-giving-d" data-source="goal_summary" data-field="giving_vs_floor" data-where="row=last12">—</div></div>
-      <div class="card tile"><div class="k">Planned into savings groups, last 12 months</div><div class="v" data-draw="g-joy" data-source="goal_summary" data-field="joy_share" data-where="row=last12">—</div><div class="d" data-draw="g-joy-d" data-source="goal_summary" data-field="joy_vs_target" data-where="row=last12">—</div></div>
-      <div class="card tile"><div class="k">Housing + utilities, last 12 months</div><div class="v" data-draw="g-house" data-source="goal_summary" data-field="housing_share" data-where="row=last12">—</div><div class="d" data-draw="g-house-d" data-source="goal_summary" data-field="housing_vs_cap" data-where="row=last12">—</div></div>
+      <div class="card tile"><div class="k">Giving, last 12 months</div><div class="v" data-draw="g-giving" data-source="goal_summary" data-field="giving_share" data-where="row=last12">—</div><div class="d" data-draw="g-giving-d" data-source="goal_summary" data-field="giving_vs_floor" data-where="row=last12">—</div><div class="gauge" data-draw="gg-giving" data-source="goal_summary goals" aria-hidden="true"></div></div>
+      <div class="card tile"><div class="k">Planned into savings groups, last 12 months</div><div class="v" data-draw="g-joy" data-source="goal_summary" data-field="joy_share" data-where="row=last12">—</div><div class="d" data-draw="g-joy-d" data-source="goal_summary" data-field="joy_vs_target" data-where="row=last12">—</div><div class="gauge" data-draw="gg-joy" data-source="goal_summary goals" aria-hidden="true"></div></div>
+      <div class="card tile"><div class="k">Housing + utilities, last 12 months</div><div class="v" data-draw="g-house" data-source="goal_summary" data-field="housing_share" data-where="row=last12">—</div><div class="d" data-draw="g-house-d" data-source="goal_summary" data-field="housing_vs_cap" data-where="row=last12">—</div><div class="gauge" data-draw="gg-house" data-source="goal_summary goals" aria-hidden="true"></div></div>
       <div class="card tile"><div class="k">Take-home as share of gross</div><div class="v" data-draw="g-th" data-source="goal_summary" data-field="takehome_share" data-where="row=last12">—</div><div class="d" data-draw="g-th-d" data-source="goal_summary" data-field="takehome_note" data-where="row=last12">—</div></div>
     </div>
     <div class="card">
@@ -386,7 +409,7 @@
       </div>
       <div class="card">
         <h2 id="excl-table">What was removed from the totals</h2>
-        <ul class="key row"><li><span class="glyph">−</span>taken out before any total</li><li><span class="glyph">#</span>rows and dollars per adjustment</li></ul>
+        <ul class="key row"><li><span class="glyph">−</span>taken out before any total</li><li><span class="glyph">Σ</span><span data-draw="excl-context" data-source="exclusions">—</span></li></ul>
       <details class="how"><summary>How to read this</summary><p>Rows and dollars taken out so income and spend mean what they say. These rows and dollars exist in the raw exports but were removed before any total was computed. Dollar rows show the amount removed; row counts show how many transactions the rule touched.</p></details>
         <div class="tbl"><table data-source="exclusions" data-row-key="key"><thead><tr><th data-field="key">Adjustment</th><th data-field="value">Amount</th></tr></thead><tbody data-draw="exclusions"></tbody></table></div>
       </div>
@@ -434,7 +457,7 @@
       </div>
       <div class="card">
         <h2 id="payer-chart">Spend by payer</h2>
-        <ul class="key row"><li><span class="glyph">✉</span>payer means envelope owner, not who paid</li><li><span class="glyph">⌂</span>shared envelopes: Household</li></ul>
+        <ul class="key row"><li><span class="glyph">✉</span>payer means envelope owner, not who paid</li><li><span class="glyph">⌂</span>shared envelopes left out: <span data-draw="payer-shared" data-source="people">—</span></li></ul>
       <details class="how"><summary>How to read this</summary><p>Payer is envelope ownership, the only signal EveryDollar carries: each person's discretionary envelopes versus everything shared. Expect Household to dominate. EveryDollar has no payer field, so payer here means envelope ownership, matched by the payer_prefix_by_person and payer_items_by_person rules, with the shared remainder as Household. It answers “how much discretionary money did each person direct,” not “who tapped the card.”</p></details>
         <div class="chart" data-draw="payer" data-source="people"></div>
         <div class="legend" data-draw="payer-legend" data-source="people"></div>
@@ -552,7 +575,7 @@ window.HL = (() => {
     for (const v of xs) { probeX.text(opts.xfmt ? opts.xfmt(v) : keyX === 'y' ? HL.yearLabel(v) : v); lw = Math.max(lw, probeX.node().getComputedTextLength()); } probeX.remove();
     const every = Math.ceil(xs.length / Math.max(1, Math.floor((W - ml) / (lw + 28))));
     svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).tickValues(xs.filter((_, i) => i % every === 0)).tickFormat(opts.xfmt || ((d) => keyX === 'y' ? HL.yearLabel(d) : d)).tickSize(0)).call((g) => { g.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); g.attr('font-size', null).attr('font-family', null); edgeTicks(g, ml, W - 8); });
-    const col = (i) => colors()[i % colors().length];
+    const col = (i) => colors()[(i + (opts.skip || 0)) % colors().length];   // skip: start later in the palette (people avoid the good/bad hues)
     const t = tip(el);
     svg.append('g').selectAll('g').data(stacked).join('g').attr('fill', (d, i) => col(i)).selectAll('rect').data((d) => d.map((p) => ({ ...p, key: d.key }))).join('rect').attr('class', 'b')
       .attr('x', (d) => x(d.data.x)).attr('width', x.bandwidth()).attr('y', (d) => y(d[1])).attr('height', (d) => Math.max(0, y(d[0]) - y(d[1]))).attr('rx', 2)
@@ -560,7 +583,7 @@ window.HL = (() => {
       .on('pointerleave', () => t.hide());
     return series;
   };
-  const legend = (el, names) => { el.replaceChildren(...names.map((n, i) => { const s = document.createElement('span'); s.style.setProperty('--sw', colors()[i % colors().length]); s.textContent = n; return s; })); };
+  const legend = (el, names, skip = 0) => { el.replaceChildren(...names.map((n, i) => { const s = document.createElement('span'); s.style.setProperty('--sw', colors()[(i + skip) % colors().length]); s.textContent = n; return s; })); };
   const fillTable = (tbody, rows, cells) => {
     tbody.replaceChildren(...rows.map((r) => { const tr = document.createElement('tr'); for (const c of cells) { const td = document.createElement('td'); tr.appendChild(td); const v = c(r, td); td.textContent = v == null ? '—' : v; } return tr; }));
   };
@@ -642,7 +665,8 @@ dash.calc('lm_totals', { inputs: ['budget_items'], title: 'Last month totals vs 
   const net = inc - sp - db, anet = ainc - asp - adb;
   return [{ row: 'last', month: last, income_actual: inc, income_planned: incp, income_vs_plan: inc - incp, spend_actual: sp, spend_planned: spp, spend_vs_plan: sp - spp, debt_actual: db, debt_planned: dbp, debt_vs_plan: db - dbp, net_actual: net, net_avg: anet, net_vs_avg: net - anet, income_avg: ainc, spend_avg: asp, debt_avg: adb }];
 } });
-dash.calc('lm_cats', { inputs: ['budget_items'], title: 'Last month by category vs plan and trailing average', description: 'For the latest budget month, per category: planned, spent, gap to plan, average of the twelve months before, gap to that average, and a suggested plan (12-month average rounded up to the nearest 10; Housing, Debt and Insurance keep the current plan).', fn: (budget_items) => {
+dash.calc('lm_cats', { inputs: ['budget_items', 'goal_config'], title: 'Last month by category vs plan and trailing average', description: 'For the latest budget month, per category: planned, spent, gap to plan, average of the twelve months before, gap to that average, and a suggested plan (12-month average rounded up to the nearest 10; Housing, Debt and Insurance keep the current plan).', fn: (budget_items, goal_config) => {
+  const gc = (goal_config && goal_config[0]) || {}, saveGroups = new Set(gc.savings_groups || []), giveCats = new Set(gc.giving_categories || ['Giving']);
   const months = [...new Set(budget_items.map((r) => r.m))].sort(); const last = months[months.length - 1]; const prev = months.slice(-13, -1); const n = prev.length || 1;
   const keep = ['Housing', 'Debt', 'Insurance'];
   const cats = [...new Set(budget_items.map((r) => r.category))];
@@ -651,7 +675,8 @@ dash.calc('lm_cats', { inputs: ['budget_items'], title: 'Last month by category 
     const planned = d3.sum(cur, (r) => Number(r.planned)), actual = d3.sum(cur, (r) => Number(r.actual));
     const avg12 = d3.sum(budget_items.filter((r) => prev.includes(r.m) && r.category === c), (r) => Number(r.actual)) / n;
     const suggest = keep.includes(c) ? planned : Math.ceil(avg12 / 10) * 10;
-    return { category: c, flow, planned, actual, vs_plan: actual - planned, avg12, vs_avg: actual - avg12, suggest };
+    const want_more = flow === 'income' || flow === 'debt' || giveCats.has(c) || cur.some((r) => saveGroups.has(r.group));   // more than planned is good
+    return { category: c, flow, planned, actual, vs_plan: actual - planned, avg12, vs_avg: actual - avg12, suggest, want_more };
   }).filter((r) => r.planned || r.actual || r.avg12).sort((a, b) => Math.abs(b.vs_plan) - Math.abs(a.vs_plan));
 } });
 dash.calc('lm_items', { inputs: ['budget_items'], title: 'Last month envelopes by gap to plan', description: 'For the latest budget month, every EveryDollar item with planned, spent and the gap (spent minus planned), largest absolute gap first.', fn: (budget_items) => {
@@ -659,6 +684,8 @@ dash.calc('lm_items', { inputs: ['budget_items'], title: 'Last month envelopes b
   return budget_items.filter((r) => r.m === last && r.flow !== 'income').map((r) => ({ item: r.item, category: r.category, planned: Number(r.planned), actual: Number(r.actual), gap: Number(r.actual) - Number(r.planned) })).filter((r) => Math.abs(r.gap) >= 1).sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap)).slice(0, 25);
 } });
 // what counts as giving, housing and savings: the goal_config dataset (from rules.json), or the pipeline defaults before a rebuild has emitted it
+// "good", "off" or "neutral" for a gap: under plan is good for spending, but a shortfall for savings, giving and debt
+HL.tone = (r, gap) => Math.abs(gap) < 0.5 ? 'neutral' : ((r.want_more ? gap > 0 : gap < 0) ? 'good' : 'off');
 const goalConfig = HL.goalConfig = () => { const g = dash.data('goal_config'); const c = g.status === 'ok' && g.data[0] ? g.data[0] : {};
   return { giving_categories: c.giving_categories || ['Giving'], housing_categories: c.housing_categories || ['Housing', 'Utilities'], savings_groups: c.savings_groups || [], catchall_items: c.catchall_items || [] }; };
 dash.calc('goal_month', { inputs: ['budget_items', 'employer', 'cat_month', 'goals'], title: 'Goal ratios by month', description: 'Per budget month: net paychecks (take-home) and paycheck count (deposits over the rules\u2019 paycheck_min) from employer; giving spend and housing spend from cat_month, by the categories goal_config names; money planned into goal_config\u2019s savings groups from budget_items; each as a share of gross (goals.gross_annual / 12) or of take-home; plus twelve-month trailing shares.', fn: (budget_items, employer, cat_month, goals) => {
@@ -730,6 +757,15 @@ const ledeDraw = (name, field, fmt) => dash.draw(name, (el) => {
 });
 ledeDraw('lede-income', 'income', HL.money); ledeDraw('lede-spend', 'spend', HL.money); ledeDraw('lede-debt', 'debt', HL.money); ledeDraw('lede-net', 'net', HL.money);
 
+// a quiet twelve-month line under each Overview figure: the shape behind the number
+HL.spark = (el, values) => { el.replaceChildren(); if (values.length < 2) return; const W = el.clientWidth || 160, H = 28, x = d3.scaleLinear([0, values.length - 1], [1, W - 1]), y = d3.scaleLinear(d3.extent(values).map((v, i) => v + (i ? 1e-9 : 0)), [H - 3, 3]);
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%').attr('height', H);
+  svg.append('path').attr('d', d3.area().x((_, i) => x(i)).y0(H).y1((v) => y(v))(values)).attr('fill', 'color-mix(in srgb, var(--brand0, var(--color-fg)) 10%, transparent)');
+  svg.append('path').attr('d', d3.line().x((_, i) => x(i)).y((v) => y(v))(values)).attr('fill', 'none').attr('stroke', 'var(--brand0, var(--color-fg))').attr('stroke-width', 1.5);
+  svg.append('circle').attr('cx', x(values.length - 1)).attr('cy', y(values[values.length - 1])).attr('r', 2.5).attr('fill', 'var(--brand0, var(--color-fg))'); };
+for (const [k, f] of [['inc', 'income'], ['sp', 'spend'], ['db', 'debt'], ['net', 'net']]) for (const [b, sfx] of [['n', ''], ['r', '_real']])
+  dash.draw(`sp-${k}-${b}`, (el) => { const g = dash.data('monthly'); if (g.status !== 'ok') { el.replaceChildren(); return; }
+    const ms = [...g.data].sort((a, c) => a.m < c.m ? -1 : 1).slice(-12); HL.spark(el, ms.map((r) => Number(r[f + sfx]))); });
 const tile = (name, calc, field, fmt) => dash.draw(name, (el) => { const g = dash.data(calc); el.textContent = g.status === 'ok' && g.data[0] ? fmt(g.data[0][field]) : '—'; });
 const delta = (name, calc, field, goodUp) => dash.draw(name, (el) => {
   const g = dash.data(calc); el.classList.remove('up', 'down');
@@ -896,10 +932,14 @@ dash.draw('slush', (el) => {
 });
 dash.draw('slush-items', (el) => { const items = HL.goalConfig().catchall_items; el.textContent = items.length ? items.join(', ') : 'none yet'; });
 dash.draw('slush-legend', (el) => { const g = HL.rd('slush'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, slushOrder); });
+dash.draw('excl-context', (el) => { const g = dash.data('exclusions'); if (g.status !== 'ok') { el.textContent = '—'; return; }
+  const v = (k) => Number((g.data.find((r) => r.kind === k) || {}).value); const n = v('rows_in_totals'), m = v('months');
+  el.textContent = Number.isFinite(n) ? `${dash.fmt.num(n)} rows count in the totals${Number.isFinite(m) ? ` over ${m} months` : ''}` : 'rows and dollars per adjustment'; });
 dash.draw('exclusions', (tb) => {
   const g = dash.data('exclusions'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
-  const totals = ['rows_in_totals', 'rows_total', 'months'];   // rows for rules that removed nothing stay out of the table
-  HL.fillTable(tb, g.data.filter((r) => Number(r.value) !== 0 || totals.includes(r.kind)), [(r) => r.key + (r.detail ? ' (' + r.detail + ')' : ''), (r) => r.unit === 'usd' ? HL.usd0(Number(r.value)) : dash.fmt.num(Number(r.value)) + ' ' + r.unit]);
+  const totals = ['rows_in_totals', 'rows_total', 'months'];   // context, not removals: shown in the card's key instead
+  HL.fillTable(tb, g.data.filter((r) => Number(r.value) !== 0 && !totals.includes(r.kind)), [(r) => r.key.replace(/ rows excluded$/, '') + (r.detail ? ' (' + r.detail + ')' : ''),
+    (r) => r.unit === 'usd' ? HL.usd0(Number(r.value)) : r.amount != null ? HL.usd0(Number(r.amount)) + ' moved in ' + dash.fmt.num(Number(r.value)) + ' rows' : dash.fmt.num(Number(r.value)) + ' ' + r.unit]);
 });
 
 })();</script>
@@ -940,11 +980,14 @@ dash.draw('debts', (el) => {
 // ---- people ----
 let earnerOrder = [], payerOrder = [];
 dash.draw('earner', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
-  earnerOrder = HL.stackChart(el, g.data.filter((r) => r.role === 'earner').map((r) => ({ y: r.y, who: r.who, v: Number(r.amount) })), 'y', 'who', 'v', { order: [...peopleNames(g.data), 'Household'] }); });
-dash.draw('earner-legend', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, earnerOrder); });
+  earnerOrder = HL.stackChart(el, g.data.filter((r) => r.role === 'earner').map((r) => ({ y: r.y, who: r.who, v: Number(r.amount) })), 'y', 'who', 'v', { order: [...peopleNames(g.data), 'Household'], skip: 2 }); });
+dash.draw('earner-legend', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, earnerOrder, 2); });
 dash.draw('payer', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
-  payerOrder = HL.stackChart(el, g.data.filter((r) => r.role === 'payer').map((r) => ({ y: r.y, who: r.who, v: Number(r.amount) })), 'y', 'who', 'v', { order: [...peopleNames(g.data), 'Household'] }); });
-dash.draw('payer-legend', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, payerOrder); });
+  payerOrder = HL.stackChart(el, g.data.filter((r) => r.role === 'payer' && r.who !== 'Household').map((r) => ({ y: r.y, who: r.who, v: Number(r.amount) })), 'y', 'who', 'v', { order: peopleNames(g.data), skip: 2 }); });   // shared spending dwarfs personal envelopes; it is the caption
+dash.draw('payer-shared', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.textContent = '—'; return; }
+  const sh = d3.sum(g.data.filter((r) => r.role === 'payer' && r.who === 'Household'), (r) => Number(r.amount)), all = d3.sum(g.data.filter((r) => r.role === 'payer'), (r) => Number(r.amount));
+  el.textContent = all ? `${HL.money(sh)} (${dash.fmt.pct(0)(sh / all)} of spending)` : '—'; });
+dash.draw('payer-legend', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, payerOrder, 2); });
 dash.draw('people-pivot', (tb) => {
   const g = dash.data('people_pivot'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   const names = peopleNames(dash.data('people').data), pct = dash.fmt.pct(1);
@@ -1066,6 +1109,20 @@ dash.draw('radar-legend', (el) => {
 
 // ---- last month ----
 const lmName = () => { const g = dash.data('lm_totals'); return g.status === 'ok' && g.data[0] ? HL.fmtM(HL.parseM(g.data[0].month)) : null; };
+const lmRow = () => { const g = dash.data('lm_totals'); return g.status === 'ok' ? g.data[0] : null; };
+dash.draw('lm-fig', (el) => { const r = lmRow(); if (!r) { el.textContent = '—'; return; }
+  el.textContent = r.net_actual >= 0 ? 'Kept ' + HL.usd0(r.net_actual) : 'Drew ' + HL.usd0(-r.net_actual); el.className = 'fig ' + (r.net_actual >= 0 ? 'good' : 'off'); });
+dash.draw('lm-take', (el) => { const r = lmRow(); if (!r) { el.textContent = '—'; return; }
+  const plannedNet = r.income_planned - r.spend_planned - r.debt_planned, vsPlan = r.net_actual - plannedNet, vsAvg = r.net_vs_avg;
+  const p = Math.abs(vsPlan) < 0.5 ? 'exactly as planned' : `${HL.usd0(Math.abs(vsPlan))} ${vsPlan > 0 ? 'more' : 'less'} than planned`;
+  const a = Math.abs(vsAvg) < 25 ? 'about your usual month' : `${HL.usd0(Math.abs(vsAvg))} ${vsAvg > 0 ? 'above' : 'below'} your usual month`;
+  el.textContent = `${p}, ${a}.`; });
+dash.draw('lm-chips', (ul) => { const r = lmRow(); const c = dash.data('lm_cats'); if (!r) { ul.replaceChildren(); return; }
+  const chip = (label, value, gap, wantMore) => { const li = document.createElement('li'); const tone = HL.tone({ want_more: wantMore }, gap); li.className = 'chip ' + tone;
+    const b = document.createElement('b'); b.textContent = label; li.append(b, ' ' + HL.usd0(value) + ' · ' + (Math.abs(gap) < 0.5 ? 'on plan' : (gap > 0 ? '+' : '−') + HL.usd0(Math.abs(gap)) + ' vs plan')); return li; };
+  const out = [chip('Income', r.income_actual, r.income_vs_plan, true), chip('Living spend', r.spend_actual, r.spend_vs_plan, false), chip('Debt', r.debt_actual, r.debt_vs_plan, true)];
+  if (c.status === 'ok') for (const x of c.data.filter((x) => x.want_more && x.flow === 'expense' && x.vs_plan <= -0.5)) out.push(chip(x.category, x.actual, x.vs_plan, true));   // a savings or giving shortfall is named
+  ul.replaceChildren(...out); });
 dash.draw('lm-name', (el) => { el.textContent = lmName() || '—'; });
 const lmTile = (name, field) => dash.draw(name, (el) => { const g = dash.data('lm_totals'); el.textContent = g.status === 'ok' && g.data[0] ? HL.usd0(g.data[0][field]) : '—'; });
 lmTile('lm-inc', 'income_actual'); lmTile('lm-sp', 'spend_actual'); lmTile('lm-db', 'debt_actual'); lmTile('lm-net', 'net_actual');
@@ -1089,7 +1146,7 @@ const divergingBars = (el, rows, field, labelOf) => {
   const grp = svg.append('g').selectAll('g').data(data).join('g').attr('transform', (d, i) => `translate(0,${mt + i * rowH})`);
   grp.append('text').attr('x', ml - 8).attr('y', rowH / 2 + 4).attr('text-anchor', 'end').attr('fill', 'var(--color-fg)').text(labelOf);
   grp.append('rect').attr('class', (d) => d[field] < 0 ? 'b h neg' : 'b h').style('animation-delay', (d, i) => Math.min(i, 16) * 25 + 'ms').attr('x', (d) => Math.min(x(0), x(d[field]))).attr('width', (d) => Math.max(1, Math.abs(x(d[field]) - x(0)))).attr('y', 4).attr('height', rowH - 8).attr('rx', 2)
-    .attr('fill', (d) => (d.flow === 'income' ? d[field] >= 0 : d[field] <= 0) ? 'var(--color-ok)' : 'var(--color-bad)')
+    .attr('fill', (d) => ({ good: 'var(--color-ok)', off: 'var(--color-bad)', neutral: 'var(--color-fg-muted)' })[HL.tone(d.want_more == null ? { want_more: d.flow === 'income' } : d, d[field])])
     .on('pointermove', (pe, d) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(labelOf(d))}</div><div>${(d[field] >= 0 ? '+' : '−') + HL.esc(HL.usd0(Math.abs(d[field])))}</div>`); }).on('pointerleave', () => t.hide());
   el.style.minHeight = H + 'px';
 };
@@ -1098,7 +1155,7 @@ dash.draw('lm-avg', (el) => { const g = dash.data('lm_cats'); if (g.status !== '
 const signed = (v, td, badWhenPositive) => { if (badWhenPositive ? v > 0.5 : v < -0.5) td.classList.add('neg'); return (v >= 0 ? '+' : '−') + HL.usd0(Math.abs(v)); };
 dash.draw('lm-cats', (tb) => {
   const g = dash.data('lm_cats'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
-  HL.fillTable(tb, g.data, [(r) => r.category, (r) => HL.usd0(r.planned), (r) => HL.usd0(r.actual), (r, td) => signed(r.vs_plan, td, r.flow !== 'income'), (r) => HL.usd0(r.avg12), (r, td) => signed(r.vs_avg, td, r.flow !== 'income'), (r) => HL.usd0(r.suggest)]);
+  HL.fillTable(tb, g.data, [(r) => r.category, (r) => HL.usd0(r.planned), (r) => HL.usd0(r.actual), (r, td) => signed(r.vs_plan, td, !r.want_more), (r) => HL.usd0(r.avg12), (r, td) => signed(r.vs_avg, td, !r.want_more), (r) => HL.usd0(r.suggest)]);
 });
 
 
@@ -1116,16 +1173,23 @@ dash.draw('lm-review', (el) => {
     el.append(sec);
   }
 });
-dash.draw('lm-summary', (ul) => {
+dash.draw('lm-summary', (ul) => {   // the three that need a look and the three with room, each as a bar against its plan
   const g = dash.data('lm_cats'); if (g.status !== 'ok') { ul.replaceChildren(); return; }
-  const rows = g.data.filter((r) => r.flow !== 'income');
-  const over = [...rows].filter((r) => r.vs_plan > 0).sort((a, b) => b.vs_plan - a.vs_plan).slice(0, 3);
-  const under = [...rows].filter((r) => r.vs_plan < 0).sort((a, b) => a.vs_plan - b.vs_plan).slice(0, 3);
-  const li = (r, cls) => { const el = document.createElement('li'); el.className = cls;
-    const planWord = cls === 'over' ? 'over plan by ' : 'under plan by ';
-    const avgWord = Math.abs(r.vs_avg) < 25 ? 'about its twelve-month average' : (r.vs_avg > 0 ? HL.usd0(r.vs_avg) + ' above its twelve-month average' : HL.usd0(-r.vs_avg) + ' below its twelve-month average');
-    el.textContent = `${r.category}: ${planWord}${HL.usd0(Math.abs(r.vs_plan))}, ${avgWord}.`; return el; };
-  ul.replaceChildren(...over.map((r) => li(r, 'over')), ...under.map((r) => li(r, 'under')));
+  const rows = g.data.filter((r) => r.flow !== 'income' && Math.abs(r.vs_plan) >= 0.5);
+  const bad = (r) => HL.tone(r, r.vs_plan) === 'off';
+  const look = rows.filter(bad).sort((a, b) => Math.abs(b.vs_plan) - Math.abs(a.vs_plan)).slice(0, 3);
+  const room = rows.filter((r) => !bad(r)).sort((a, b) => Math.abs(b.vs_plan) - Math.abs(a.vs_plan)).slice(0, 3);
+  const row = (r) => { const li = document.createElement('li'); const tone = HL.tone(r, r.vs_plan); li.className = 'sumrow ' + tone;
+    const name = document.createElement('span'); name.className = 'cat'; name.textContent = r.category;
+    const bar = document.createElement('span'); bar.className = 'vsplan'; const max = Math.max(r.planned, r.actual, 1);
+    const fill = document.createElement('i'); fill.style.width = (100 * r.actual / max) + '%'; const tick = document.createElement('b'); tick.style.left = (100 * r.planned / max) + '%';
+    bar.append(fill, tick); bar.setAttribute('aria-hidden', 'true');
+    const chip = document.createElement('span'); chip.className = 'chip ' + tone;
+    chip.textContent = HL.usd0(Math.abs(r.vs_plan)) + (r.want_more ? (r.vs_plan < 0 ? ' short' : ' extra') : (r.vs_plan > 0 ? ' over' : ' under'));
+    const usual = document.createElement('span'); usual.className = 'usual';
+    usual.textContent = Math.abs(r.vs_avg) < 25 ? '≈ usual' : (r.vs_avg > 0 ? '▲ ' : '▼ ') + HL.usd0(Math.abs(r.vs_avg)) + ' vs usual';
+    li.append(name, bar, chip, usual); li.setAttribute('aria-label', `${r.category}: spent ${HL.usd0(r.actual)} of ${HL.usd0(r.planned)} planned, ${chip.textContent}; ${usual.textContent}`); return li; };
+  ul.replaceChildren(...look.map(row), ...room.map(row));
 });
 dash.draw('lm-items', (tb) => {
   const g = dash.data('lm_items'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
@@ -1138,6 +1202,16 @@ dash.draw('lm-items', (tb) => {
 
 // ---- goals ----
 const pct1 = dash.fmt.pct(1);
+// each goal as a bar from 0 with its line marked: the bar is the last twelve months, the tick is the goal
+const gGauge = (name, field, goalKey, goodBelow) => dash.draw(name, (el) => { el.replaceChildren(); const g = dash.data('goal_summary'); const G = dash.data('goals');
+  const v = g.status === 'ok' && g.data[0] ? Number(g.data[0][field]) : NaN; const goal = G.status === 'ok' ? Number((G.data.find((x) => x.key === goalKey) || {}).value) : NaN;
+  if (!Number.isFinite(v)) return; const max = Math.max(v, Number.isFinite(goal) ? goal : 0) * 1.25 || 1;
+  const track = document.createElement('span'); track.className = 'track'; const fill = document.createElement('i'); fill.style.width = Math.min(100, 100 * v / max) + '%';
+  const ok = !Number.isFinite(goal) ? null : goodBelow ? v <= goal : v >= goal; fill.className = ok == null ? '' : ok ? 'good' : 'off'; track.append(fill);
+  if (Number.isFinite(goal)) { const t = document.createElement('b'); t.style.left = Math.min(100, 100 * goal / max) + '%'; track.append(t); }
+  const chip = document.createElement('span'); chip.className = 'chip ' + (ok == null ? 'neutral' : ok ? 'good' : 'off'); chip.textContent = ok == null ? 'no goal set' : ok ? 'on track' : goodBelow ? 'over the cap' : 'below the line';
+  el.append(track, chip); });
+gGauge('gg-giving', 'giving_share', 'giving_floor', false); gGauge('gg-joy', 'joy_share', 'joy_target', false); gGauge('gg-house', 'housing_share', 'housing_cap', true);
 const gTile = (name, field) => dash.draw(name, (el) => { const g = dash.data('goal_summary'); el.textContent = g.status === 'ok' && g.data[0] && g.data[0][field] != null ? pct1(g.data[0][field]) : '—'; });
 gTile('g-giving', 'giving_share'); gTile('g-joy', 'joy_share'); gTile('g-house', 'housing_share'); gTile('g-th', 'takehome_share');
 const goalPct = (key) => { const G = dash.data('goals'); const r = G.status === 'ok' ? G.data.find((x) => x.key === key) : null; const v = r ? Number(r.value) : NaN; return Number.isFinite(v) ? dash.fmt.pct(Number.isInteger(v * 100) ? 0 : 1)(v) : null; };

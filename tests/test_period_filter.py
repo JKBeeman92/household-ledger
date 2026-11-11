@@ -38,3 +38,15 @@ def test_presets_cover_the_requested_periods():
     for key, label in [("all", "All time"), ("12m", "Last 12 months"), ("ytd", "This year"), ("ly", "Last year"), ("5y", "Last 5 years")]:
         assert f"['{key}', '{label}']" in SRC
     assert "since:" in SRC and "custom:" in SRC
+
+
+def test_more_is_better_for_income_savings_giving_and_debt():
+    """Last month colours: a shortfall on savings, giving or debt is not "under budget, good" (issue #121)."""
+    assert "dash.calc('lm_cats', { inputs: ['budget_items', 'goal_config']" in SRC
+    assert "const want_more = flow === 'income' || flow === 'debt' || giveCats.has(c) || cur.some((r) => saveGroups.has(r.group))" in SRC
+    assert "HL.tone = (r, gap) => Math.abs(gap) < 0.5 ? 'neutral' : ((r.want_more ? gap > 0 : gap < 0) ? 'good' : 'off');" in SRC
+
+
+def test_people_charts_avoid_the_good_and_bad_hues_and_shared_spend_is_a_caption():
+    assert "r.role === 'payer' && r.who !== 'Household'" in SRC and 'data-draw="payer-shared"' in SRC
+    assert SRC.count("skip: 2 }") == 2 and "HL.legend(el, payerOrder, 2)" in SRC and "HL.legend(el, earnerOrder, 2)" in SRC

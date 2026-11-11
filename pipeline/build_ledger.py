@@ -89,13 +89,13 @@ for fn in sorted(os.listdir("txns")):
                          "Group": norm(r["Group"]), "Item": norm(r["Item"]), "Type": r["Type"],
                          "Date": r["Date"], "Merchant": norm(r["Merchant"]), "Amount": D(r["Amount"]), "Note": r.get("Note","")})
 
-excluded = collections.Counter()
+excluded = collections.Counter(); excluded_amt = collections.defaultdict(float)
 out = []
 for r in rows:
     mp = mapping.get(r["Item"])
     if mp is None: raise SystemExit(f"unmapped item: {r['Item']!r}")
     flow = mp["Flow"]
-    if flow == "exclude": excluded[r["Item"]] += 1; continue
+    if flow == "exclude": excluded[r["Item"]] += 1; excluded_amt[r["Item"]] += abs(float(r["Amount"])); continue
     mm, dd, yy = r["Date"].split("/")
     cal = f"{yy}-{mm}"
     amt = float(r["Amount"])
@@ -145,6 +145,7 @@ with open("ledger.csv","w",newline="") as f:
     w = csv.DictWriter(f, fieldnames=cols); w.writeheader(); w.writerows(out)
 
 json.dump(dict(excluded), open("excluded.json", "w"))
+json.dump({k: round(v, 2) for k, v in excluded_amt.items()}, open("excluded_amounts.json", "w"))   # gross dollars moved per excluded item (pass-through money nets to about zero)
 print(f"rows in: {len(rows)}  excluded: {dict(excluded)}  rows out: {len(out)}")
 print(f"transfers: {sum(o['IsTransfer'] for o in out)}  paired: {sum(1 for o in out if o['TransferPair'])}  plugs: {sum(o['IsPlug'] for o in out)}")
 print(f"in totals: {sum(o['InTotals'] for o in out)}  CPI base {CPI_BASE_MONTH}={CPI_BASE}")

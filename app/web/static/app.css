@@ -172,3 +172,7 @@ table.edit tr.saved td { background: color-mix(in srgb, var(--success) 14%, tran
 table.edit .rowmsg { margin-left: var(--space-2); color: var(--success); font-weight: 600; }
 th .sortbtn { all: unset; cursor: pointer; font: inherit; color: inherit; } th .sortbtn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 th[aria-sort="ascending"] .sortbtn::after { content: " ▲"; } th[aria-sort="descending"] .sortbtn::after { content: " ▼"; }
+/* Status chip: the one-word answer before the detail (Close a month's build status). */
+.status-chip { display: inline-flex; align-items: center; gap: .4em; border: 1px solid var(--line-strong); border-radius: var(--radius-full); padding: 2px 12px 2px 10px; margin-right: var(--space-2); font-weight: 600; font-size: .9em; background: var(--surface-100); }
+.status-chip::before { content: ""; width: .6em; height: .6em; border-radius: 50%; background: var(--info); }
+.status-chip.ok::before { background: var(--success); } .status-chip.warn::before { background: var(--warning); } .status-chip.bad::before { background: var(--danger); }
