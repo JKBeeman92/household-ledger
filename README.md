@@ -84,6 +84,21 @@ The same import is available by hand:
 docker compose exec ledger python -m pipeline.import_exports /data/import
 ```
 
+**Without a browser.** The Settings editors and the rebuild have a command-line twin, run inside the container. Each command calls the
+function the Settings page calls, so it checks its input the same way, prints the same error, and exits non-zero without saving anything
+when the input is refused:
+
+```sh
+docker compose exec -T ledger python -m app.admin import-mapping - < item_mapping.csv
+```
+
+Commands: `import-mapping`, `set-rules`, `set-events`, `set-goals`, `set-cpi` and `set-household` replace one editor's contents from a file
+(`-` reads standard input); `export <mapping|rules|events|goals|cpi|household>` and `export-mapping` print them; `draft-mapping` prints the
+[drafted mapping](#names-the-pipeline-relies-on) for unmapped items and `add-mapping FILE` adds a reviewed draft without touching existing
+rows; `rebuild` exits 0 when the build reconciles, 1 when it fails or does not reconcile, and 75 when another rebuild is running. Every
+write is logged as a `ledger.admin` line naming the command. API tokens stay read-only: shell access to the container already means
+full control, so the command line adds no new way in.
+
 **Updates.** The image is `ghcr.io/jkbeeman92/household-ledger`, for `linux/amd64` and `linux/arm64`. Every push to `main`
 publishes `:latest` and `:sha-<short>`; every release (git tag `vX.Y.Z`) also publishes `:X.Y.Z`, `:X.Y` and `:X`. The shipped
 `docker-compose.yml` is pinned to the release it came with (`:X.Y.Z`; each release bumps it). Keep it pinned: `:0.2` takes 0.2.x
