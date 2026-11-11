@@ -126,6 +126,11 @@
 .hl tbody td { transition: background-color 120ms ease-out; }
 @media (prefers-reduced-motion: no-preference) { .hl .tip:not([hidden]) { animation: hl-in 140ms ease-out backwards; } }
 @media (prefers-reduced-motion: reduce) { .hl .chart svg rect.b, .hl .chart svg path.ring, .hl tbody td { transition: none; } }
+.hl .range { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--cds-gap-xs); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.hl .range label { display: inline; margin: 0; font-weight: var(--cds-font-weight-medium); }
+.hl .range select { width: auto; min-height: 36px; margin: 0; }
+.hl .range #range-custom:not([hidden]) { display: inline-flex; align-items: center; gap: var(--cds-gap-xs); }
+.hl .range-status { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: calc(-1 * var(--cds-gap-sm)) 0 var(--cds-gap-md); padding-left: var(--cds-pad-sm); border-left: 3px solid var(--accent-2, var(--color-border-line)); }
 .hl .foot { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-top: var(--cds-gap-lg); padding-top: var(--cds-gap-sm); border-top: 1px solid var(--color-border-line); max-width: 90ch; }
 </style>
 
@@ -146,6 +151,10 @@
       <button type="button" class="dollars" data-dollars="nominal" aria-pressed="true">Nominal</button>
       <button type="button" class="dollars" data-dollars="real" aria-pressed="false">{{ span.cpi_base_short }} prices (price-index adjusted)</button>
     </div>
+    <div class="range" data-draw="range-pick" data-source="monthly events">
+      <label for="range-pick">Period</label> <select id="range-pick"></select>
+      <span id="range-custom" hidden><label for="range-from">from</label> <select id="range-from"></select> <label for="range-to">to</label> <select id="range-to"></select></span>
+    </div>
     <div class="tabs" role="tablist" aria-label="Dashboard sections" aria-orientation="horizontal">
       <button type="button" class="tab" id="tab-overview" data-tab="overview" role="tab" aria-controls="overview" aria-selected="true" tabindex="0">Overview</button>
       <button type="button" class="tab" id="tab-lastmonth" data-tab="lastmonth" role="tab" aria-controls="lastmonth" aria-selected="false" tabindex="-1">Last month</button>
@@ -157,6 +166,8 @@
       <button type="button" class="tab" id="tab-method" data-tab="method" role="tab" aria-controls="method" aria-selected="false" tabindex="-1">Method</button>
     </div>
   </div>
+
+  <p id="range-status" class="range-status" role="status" aria-live="polite" hidden></p>
 
   <!-- ===================== OVERVIEW ===================== -->
   <section id="overview" class="page" role="tabpanel" aria-labelledby="tab-overview" tabindex="0">
@@ -547,6 +558,36 @@ window.HL = (() => {
   };
   return { money, pct, basis, fld, parseM, fmtM, colors, tip, esc, margins, stackChart, legend, fillTable, usd0, edgeTicks };
 })();
+// ---- period filter (issue #116): one range for every timeline, resolved against the LOADED months, not today's date ----
+(() => {
+  const addM = (m, n) => { const [y, mo] = m.split('-').map(Number); const t = y * 12 + (mo - 1) + n; return `${Math.floor(t / 12)}-${String(t % 12 + 1).padStart(2, '0')}`; };
+  const span = (a, b) => { const [y1, m1] = a.split('-').map(Number), [y2, m2] = b.split('-').map(Number); return (y2 - y1) * 12 + (m2 - m1) + 1; };
+  const yearOf = (ym) => ym.substring(0, 4);   // for range comparison only; axes label months (see test_dashboard_copy)
+  const loaded = () => { const g = dash.data('monthly'); return g.status === 'ok' ? g.data.map((r) => r.m).sort() : []; };
+  HL.presets = [['all', 'All time'], ['12m', 'Last 12 months'], ['24m', 'Last 24 months'], ['ytd', 'This year'], ['ly', 'Last year'], ['3y', 'Last 3 years'], ['5y', 'Last 5 years']];
+  HL.range = (key = dash.params().range || 'all') => {
+    const ms = loaded(); if (!ms.length) return { all: true, key: 'all' };
+    const first = ms[0], last = ms[ms.length - 1]; let from = first, to = last;
+    const back = (n) => addM(last, -(n - 1));
+    if (key === '12m') from = back(12); else if (key === '24m') from = back(24); else if (key === '3y') from = back(36); else if (key === '5y') from = back(60);
+    else if (key === 'ytd') from = yearOf(last) + '-01';
+    else if (key === 'ly') { const y = String(Number(yearOf(last)) - 1); from = y + '-01'; to = y + '-12'; }
+    else if (key.startsWith('since:')) from = key.slice(6);
+    else if (key.startsWith('custom:')) [from, to] = key.slice(7).split('..');
+    else if (key !== 'all') return { all: true, key: 'all' };
+    if (!/^\d{4}-\d{2}$/.test(from) || !/^\d{4}-\d{2}$/.test(to)) return { all: true, key: 'all' };
+    if (from < first) from = first; if (to > last) to = last;
+    if (from > to) return { all: true, key: 'all', empty: true };
+    return { key, from, to, first, last, n: span(from, to), all: from === first && to === last };
+  };
+  const inR = (r, R) => r.m != null ? r.m >= R.from && r.m <= R.to
+    : r.first != null && r.last != null ? r.last >= R.from && r.first <= R.to       // debts: any overlap
+    : r.y != null ? String(r.y) >= yearOf(R.from) && String(r.y) <= yearOf(R.to) : true;   // years: any overlap
+  HL.rd = (id) => { const g = dash.data(id); if (g.status !== 'ok') return g; const R = HL.range(); return R.all ? g : { ...g, data: g.data.filter((r) => inR(r, R)) }; };
+  HL.rangeKeyAvailable = (k) => k === 'all' || !HL.range(k).all;
+  HL.span = span;
+})();
+
 
 })();</script>
 
@@ -698,7 +739,7 @@ for (const [sfx, calc] of [['n', 'last12'], ['r', 'last12_real']]) {
 
 // ---- monthly income vs outgo line chart with event markers ----
 dash.draw('monthly', (el) => {
-  const g = dash.data('monthly'), ev = dash.data('events');
+  const g = HL.rd('monthly'), ev = HL.rd('events');
   el.replaceChildren();
   if (g.status !== 'ok') { el.textContent = '—'; return; }
   const f = HL.fld; const rows = [...g.data].sort((a, b) => a.m < b.m ? -1 : 1).map((r) => ({ d: HL.parseM(r.m), m: r.m, income: Number(r[f('income')]), spend: Number(r[f('spend')]), outgo: Number(r[f('spend')]) + Number(r[f('debt')]) }));
@@ -739,7 +780,7 @@ dash.draw('monthly', (el) => {
 
 // ---- annual grouped bars, net bars, employer stack ----
 dash.draw('annual', (el) => {
-  const g = dash.data('yearly'); el.replaceChildren();
+  const g = HL.rd('yearly'); el.replaceChildren();
   if (g.status !== 'ok') { el.textContent = '—'; return; }
   const f = HL.fld; const rows = [...g.data].sort((a, b) => a.y < b.y ? -1 : 1);
   const keys = ['income', 'spend', 'debt'], names = ['Income', 'Living spend', 'Debt payments'], ci = [0, 1, 3];
@@ -757,7 +798,7 @@ dash.draw('annual', (el) => {
 });
 
 dash.draw('net', (el) => {
-  const g = dash.data('yearly'); el.replaceChildren();
+  const g = HL.rd('yearly'); el.replaceChildren();
   if (g.status !== 'ok') { el.textContent = '—'; return; }
   const f = HL.fld; const rows = [...g.data].sort((a, b) => a.y < b.y ? -1 : 1).map((r) => ({ y: r.y, v: Number(r[f('net')]) }));
   const W = el.clientWidth || 600, H = 260, mt = 8, mb = 28;
@@ -779,7 +820,7 @@ dash.draw('net', (el) => {
 
 let employerOrder = [];
 dash.draw('employer', (el) => {
-  const g = dash.data('employer'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
+  const g = HL.rd('employer'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
   const rows = g.data.map((r) => ({ m: r.m, employer: r.employer, amount: Number(r.amount) }));
   employerOrder = HL.stackChart(el, rows, 'm', 'employer', 'amount', { order: [...d3.rollup(rows, (v) => d3.sum(v, (r) => r.amount), (r) => r.employer)].filter((d) => d[0] !== 'Unknown').sort((a, b) => b[1] - a[1]).map((d) => d[0]).concat(rows.some((r) => r.employer === 'Unknown') ? ['Unknown'] : []), xfmt: (m) => dash.fmt.month(HL.parseM(m)) });
 });
@@ -792,11 +833,11 @@ dash.draw('employer-legend', (el) => { const g = dash.data('employer'); if (g.st
 // ---- where it went ----
 let catOrder = [];
 dash.draw('cat-stack', (el) => {
-  const g = dash.data('cat_year'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
+  const g = HL.rd('cat_year'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
   const f = HL.basis() === 'real' ? 'amount_real' : 'amount';
   catOrder = HL.stackChart(el, g.data.map((r) => ({ y: r.y, category: r.category, v: Number(r[f]) })), 'y', 'category', 'v');
 });
-dash.draw('cat-legend', (el) => { const g = dash.data('cat_year'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, catOrder); });
+dash.draw('cat-legend', (el) => { const g = HL.rd('cat_year'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, catOrder); });
 
 const yearHead = (tb, years) => { const tr = tb.parentElement.tHead.rows[0]; const old = [...tr.children]; tr.replaceChildren(old[0], ...years.map((y) => Object.assign(document.createElement('th'), { textContent: y })), Object.assign(document.createElement('th'), { textContent: 'Total' })); };
 const yearsOf = (rows) => [...new Set(rows.map((r) => r.y))].sort();
@@ -833,11 +874,11 @@ dash.draw('recurring', (tb) => {
 });
 let slushOrder = [];
 dash.draw('slush', (el) => {
-  const g = dash.data('slush'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
+  const g = HL.rd('slush'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
   slushOrder = HL.stackChart(el, g.data.map((r) => ({ y: r.y, item: r.item, v: Number(r.amount) })), 'y', 'item', 'v');
 });
 dash.draw('slush-items', (el) => { const items = HL.goalConfig().catchall_items; el.textContent = items.length ? items.join(', ') : 'none yet'; });
-dash.draw('slush-legend', (el) => { const g = dash.data('slush'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, slushOrder); });
+dash.draw('slush-legend', (el) => { const g = HL.rd('slush'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, slushOrder); });
 dash.draw('exclusions', (tb) => {
   const g = dash.data('exclusions'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   const totals = ['rows_in_totals', 'rows_total', 'months'];   // rows for rules that removed nothing stay out of the table
@@ -858,7 +899,7 @@ dash.draw('yearly', (tb) => {
     (r) => HL.usd0(Number(r.income_real)), (r) => HL.usd0(Number(r.spend_real)), (r, td) => neg(r.net_real, td)]);
 });
 dash.draw('debts', (el) => {
-  const g = dash.data('debts'); el.replaceChildren();
+  const g = HL.rd('debts'); el.replaceChildren();
   if (g.status !== 'ok') { el.textContent = '—'; return; }
   const rows = [...g.data].sort((a, b) => a.first < b.first ? -1 : 1).map((r) => ({ ...r, d0: HL.parseM(r.first), d1: d3.utcMonth.offset(HL.parseM(r.last), 1), total: Number(r.total) }));
   const W = el.clientWidth || 600, rowH = 26, mt = 22, mb = 8, H = mt + rows.length * rowH + mb;
@@ -881,12 +922,12 @@ dash.draw('debts', (el) => {
 
 // ---- people ----
 let earnerOrder = [], payerOrder = [];
-dash.draw('earner', (el) => { const g = dash.data('people'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
+dash.draw('earner', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
   earnerOrder = HL.stackChart(el, g.data.filter((r) => r.role === 'earner').map((r) => ({ y: r.y, who: r.who, v: Number(r.amount) })), 'y', 'who', 'v', { order: [...peopleNames(g.data), 'Household'] }); });
-dash.draw('earner-legend', (el) => { const g = dash.data('people'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, earnerOrder); });
-dash.draw('payer', (el) => { const g = dash.data('people'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
+dash.draw('earner-legend', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, earnerOrder); });
+dash.draw('payer', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
   payerOrder = HL.stackChart(el, g.data.filter((r) => r.role === 'payer').map((r) => ({ y: r.y, who: r.who, v: Number(r.amount) })), 'y', 'who', 'v', { order: [...peopleNames(g.data), 'Household'] }); });
-dash.draw('payer-legend', (el) => { const g = dash.data('people'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, payerOrder); });
+dash.draw('payer-legend', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, payerOrder); });
 dash.draw('people-pivot', (tb) => {
   const g = dash.data('people_pivot'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   const names = peopleNames(dash.data('people').data), pct = dash.fmt.pct(1);
@@ -961,7 +1002,7 @@ const radarGroups = (totals) => {
 };
 const radarTitles = { 1: ['All categories'], 2: ['Larger categories', 'Smaller categories'], 3: ['Largest categories', 'Mid-sized categories', 'Smallest categories'] };
 const drawRadar = (el, idx) => {
-  const g = dash.data('cat_year'); el.replaceChildren(); const card = el.parentElement; card.style.display = '';
+  const g = HL.rd('cat_year'); el.replaceChildren(); const card = el.parentElement; card.style.display = '';
   const none = () => { if (idx) card.style.display = 'none'; else { card.querySelector('.sub').textContent = ''; el.textContent = 'No category spending to compare yet.'; } };
   if (g.status !== 'ok') { none(); return; }
   const f = HL.basis() === 'real' ? 'amount_real' : 'amount';
@@ -993,7 +1034,7 @@ const drawRadar = (el, idx) => {
 };
 RADAR_NAMES.forEach((name, i) => dash.draw(name, (el) => drawRadar(el, i)));
 dash.draw('radar-legend', (el) => {
-  const g = dash.data('cat_year'); if (g.status !== 'ok') { el.replaceChildren(); return; }
+  const g = HL.rd('cat_year'); if (g.status !== 'ok') { el.replaceChildren(); return; }
   const years = [...new Set(g.data.map((r) => r.y))].sort(); const c = HL.colors();
   el.replaceChildren(...years.map((y, i) => { const sp = document.createElement('span'); sp.style.setProperty('--sw', c[i % c.length]); sp.textContent = y; sp.setAttribute('role', 'button'); sp.tabIndex = 0; sp.setAttribute('aria-pressed', String(!window.HLradarHidden.has(y)));
     const flip = () => { if (window.HLradarHidden.has(y)) window.HLradarHidden.delete(y); else window.HLradarHidden.add(y); for (const n of RADAR_NAMES) dash.draw(n); dash.draw('radar-legend'); };
@@ -1090,7 +1131,7 @@ const gDelta = (name, field, words, goodUp) => dash.draw(name, (el) => {
 gDelta('g-giving-d', 'giving_vs_floor', () => 'against the ' + (goalPct('giving_floor') || '') + ' floor', true); gDelta('g-joy-d', 'joy_vs_target', () => 'against the ' + (goalPct('joy_target') || '') + ' target', true); gDelta('g-house-d', 'housing_vs_cap', () => 'against the ' + (goalPct('housing_cap') || '') + ' cap', false); gDelta('g-th-d', 'takehome_note', '', true);
 
 dash.draw('goal-lines', (el) => {
-  const g = dash.data('goal_month'), G = dash.data('goals'); el.replaceChildren();
+  const g = HL.rd('goal_month'), G = dash.data('goals'); el.replaceChildren();
   if (g.status !== 'ok' || G.status !== 'ok') { el.textContent = '—'; return; }
   const gv = (k) => { const r = G.data.find((x) => x.key === k); return r && r.value != null && Number.isFinite(Number(r.value)) ? Number(r.value) : null; };
   const first = g.data.findIndex((r) => r.giving_share_12 != null || r.joy_share_12 != null || r.housing_share_12 != null);   // start where there is something to draw
@@ -1141,4 +1182,37 @@ document.addEventListener('click', (e) => {
   }
 });
 </script>
+
+<script nonce="{{ csp_nonce(request) }}">(() => {
+// Period control: presets computed from the loaded months; one that would equal "All time" is disabled, not silently identical.
+const q = new URLSearchParams(location.search).get('range');
+if (q) dash.setParams({ range: q === 'all' ? null : q });
+const fmtM = (m) => HL.fmtM(HL.parseM(m));
+const apply = (key) => {
+  dash.setParams({ range: key === 'all' ? null : key });
+  const u = new URL(location.href); if (key === 'all') u.searchParams.delete('range'); else u.searchParams.set('range', key); history.replaceState(null, '', u);
+};
+dash.draw('range-pick', (box) => {
+  const sel = box.querySelector('#range-pick'), custom = box.querySelector('#range-custom'), fromS = box.querySelector('#range-from'), toS = box.querySelector('#range-to');
+  const g = dash.data('monthly');   // hide with a style, not [hidden]: the shim never draws inside [hidden], so the control could not come back
+  if (g.status !== 'ok' || !g.data.length) { box.style.display = 'none'; return; } box.style.display = '';
+  const ms = g.data.map((r) => r.m).sort(); const cur = HL.range(); const key = dash.params().range || 'all';
+  const opt = (v, t, dis) => { const o = document.createElement('option'); o.value = v; o.textContent = t + (dis ? ' (more than is loaded)' : ''); o.disabled = !!dis; return o; };
+  const presets = HL.presets.map(([k, t]) => opt(k, t, !HL.rangeKeyAvailable(k)));
+  const ev = dash.data('events'); const evs = ev.status === 'ok' ? [...ev.data].filter((e) => e.m > ms[0] && e.m <= ms[ms.length - 1]).sort((a, b) => a.m < b.m ? -1 : 1) : [];
+  const group = (label, kids) => { const og = document.createElement('optgroup'); og.label = label; og.append(...kids); return og; };
+  sel.replaceChildren(group('Period', presets), ...(evs.length ? [group('Since a life event', evs.map((e) => opt('since:' + e.m, `Since ${e.label} (${fmtM(e.m)})`)))] : []), group('Other', [opt('custom', 'Custom range…')]));
+  sel.value = key.startsWith('custom:') ? 'custom' : ([...sel.options].some((o) => o.value === key && !o.disabled) ? key : 'all');
+  const months = ms.map((m) => opt(m, fmtM(m)));
+  fromS.replaceChildren(...months.map((o) => o.cloneNode(true))); toS.replaceChildren(...months);
+  fromS.value = cur.all ? ms[0] : cur.from; toS.value = cur.all ? ms[ms.length - 1] : cur.to;
+  custom.hidden = sel.value !== 'custom';
+  sel.onchange = () => { if (sel.value === 'custom') { custom.hidden = false; fromS.focus(); apply(`custom:${fromS.value}..${toS.value}`); } else apply(sel.value); };
+  const onCustom = () => { if (fromS.value > toS.value) [fromS.value, toS.value] = [toS.value, fromS.value]; apply(`custom:${fromS.value}..${toS.value}`); };
+  fromS.onchange = onCustom; toS.onchange = onCustom;
+  const st = document.getElementById('range-status');
+  if (cur.all) { st.hidden = true; st.textContent = ''; }
+  else { st.hidden = false; st.textContent = `Charts show ${fmtM(cur.from)} – ${fmtM(cur.to)} (${cur.n} month${cur.n === 1 ? '' : 's'}; yearly charts show every year it touches). The tiles, Last month and the tables are not filtered.`; }
+});
+})();</script>
 {% endblock %}
