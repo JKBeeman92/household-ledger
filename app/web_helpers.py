@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 
 from fastapi import Request
+from pipeline.run_pipeline import build_running
 from fastapi.templating import Jinja2Templates
 
 from . import db
@@ -33,7 +34,8 @@ def render(request: Request, name: str, user, **ctx):
     flashes = request.session.pop("flashes", []) if hasattr(request, "session") else []
     with db.pool.connection() as conn:
         household = db.get_setting(conn, "household", {})
-        rebuild_needed = bool(user and user.get("is_editor")) and db.rebuild_needed(conn)
+        # not while a build runs: that build already reads the change, and "Rebuild now" beside "Rebuilding…" contradicts itself
+        rebuild_needed = bool(user and user.get("is_editor")) and db.rebuild_needed(conn) and not build_running(conn)
     return templates.TemplateResponse(request, name, {"household": household, "fmt": _format_settings(household), "user": user, "get_flashes": lambda: flashes, "theme_mode": None,
                                                       "rebuild_needed": rebuild_needed, **ctx})
 

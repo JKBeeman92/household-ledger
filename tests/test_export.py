@@ -87,9 +87,12 @@ def test_scan_without_import_dir_says_so(client, reset_db):
     assert r.status_code == 303 and "IMPORT_DIR is not set" in client.get("/upload").text
 
 
-def test_upload_page_has_the_scan_form(client, reset_db):
+def test_upload_page_offers_the_scan_only_with_an_import_dir(client, reset_db, monkeypatch, tmp_path):
+    from app.routes import upload
     t = client.get("/upload").text
-    assert 'action="/import/scan"' in t and "/export/sources.zip" in t
+    assert 'action="/import/scan"' not in t and "/export/sources.zip" in t   # no IMPORT_DIR: nothing to scan, so no button
+    monkeypatch.setattr(upload, "settings", dataclasses.replace(upload.settings, import_dir=str(tmp_path)))
+    assert 'action="/import/scan"' in client.get("/upload").text
 
 
 def test_scan_survives_one_bad_file_and_says_which(client, reset_db, monkeypatch, tmp_path):

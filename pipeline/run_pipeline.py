@@ -364,12 +364,45 @@ def rebuild(conn: psycopg.Connection) -> dict:
     return res
 
 
+def describe_problems(problems: list[dict], conn: psycopg.Connection) -> list[str]:
+    """Reconciliation problems as sentences, status code last (the Method tab and the findings use the code). A month whose
+    BudgetItems file is missing makes every envelope "not in summary": that is said once, not once per envelope."""
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute("SELECT budget_month FROM source_files GROUP BY 1 HAVING bool_and(kind = 'transactions')")
+        no_budget = {r["budget_month"] for r in cur.fetchall()}
+    money = lambda v: f"{v:,.2f}" if v is not None else "—"
+    out, collapsed = [], {}
+    for p in problems:
+        m, item, st = p.get("budget_month"), p.get("item"), p.get("status")
+        if st == "ITEM_NOT_IN_SUMMARY" and m in no_budget:
+            collapsed[m] = collapsed.get(m, 0) + 1; continue
+        if st == "ITEM_NOT_IN_SUMMARY":
+            out.append(f"{m} {item}: {p.get('txn_count') or 0} transaction(s) totalling {money(p.get('txn_sum'))}, but no line for it in the budget file ({st})")
+        elif st == "NO_TXNS_BUT_SPENT":
+            out.append(f"{m} {item}: the budget file says {money(p.get('spent'))} was spent, but there are no transactions ({st})")
+        else:
+            out.append(f"{m} {item}: transactions total {money(p.get('txn_sum'))}, the budget file says {money(p.get('spent'))} ({st})")
+    return [f"{m}: {n} envelope(s) have transactions but no budget line, because the BudgetItems file is missing (ITEM_NOT_IN_SUMMARY)"
+            for m, n in sorted(collapsed.items())] + out
+
+
+def incomplete_months_note(conn: psycopg.Connection) -> str:
+    """'2026-06: the BudgetItems file is missing (upload it to finish this month). ' for every month with only one of its two files."""
+    with conn.cursor(row_factory=dict_row) as cur:   # the app's pool and the CLI's plain connection return different row shapes
+        cur.execute("""SELECT budget_month, bool_or(kind = 'transactions') AS has_txns FROM source_files
+                       GROUP BY 1 HAVING count(DISTINCT kind) < 2 ORDER BY 1""")
+        rows = cur.fetchall()
+    return "".join(f"{r['budget_month']}: the {'BudgetItems' if r['has_txns'] else 'Transactions'} file is missing "
+                   "(upload it to finish this month). " for r in rows)
+
+
 def _rebuild(conn: psycopg.Connection) -> dict:
     with conn.cursor(row_factory=tuple_row) as cur:
         # holding the lock, so any row still unfinished belongs to a process that died mid-build
         cur.execute("UPDATE build_log SET finished_at=now(), ok=false, summary='interrupted: the process stopped before this build finished' WHERE finished_at IS NULL")
         cur.execute("INSERT INTO build_log DEFAULT VALUES RETURNING id"); bid = cur.fetchone()[0]
     conn.commit()
+    note = incomplete_months_note(conn)   # half a month reconciles as every envelope wrong: name the missing file first
     sources = source_fingerprint(conn)   # what this pass builds from; rebuild() compares it with the files once the pass is over
     wd = Path(tempfile.mkdtemp(prefix="ledger-build-"))
     try:
@@ -382,8 +415,10 @@ def _rebuild(conn: psycopg.Connection) -> dict:
             export_for_pipeline(conn, wd)
             log = run_scripts(wd)
             counts = load_outputs(conn, wd)
-        summary = f"ledger rows {counts.get('ledger')}; reconciliation {rec['counts']}; {'clean' if rec['clean'] else str(len(rec['problems'])) + ' problems'}"
-        detail = log + "".join(f"\nReconciliation: {p}" for p in rec.get("problems", []))
+        n_ok = sum(v for k, v in rec["counts"].items() if k.startswith("OK"))
+        summary = note + (f"{counts.get('ledger')} ledger rows; " + (f"all {n_ok} envelope-months reconcile" if rec["clean"]
+                   else f"{len(rec['problems'])} envelope-month(s) do not reconcile (listed below)"))
+        detail = log + "".join(f"\nReconciliation: {line}" for line in describe_problems(rec.get("problems", []), conn))
         with conn.cursor(row_factory=tuple_row) as cur:
             cur.execute("UPDATE build_log SET finished_at=now(), ok=true, summary=%s, detail=%s WHERE id=%s", (summary, detail, bid))
         conn.commit()
@@ -391,7 +426,7 @@ def _rebuild(conn: psycopg.Connection) -> dict:
     except Exception as e:  # noqa: BLE001
         conn.rollback()
         with conn.cursor(row_factory=tuple_row) as cur:
-            cur.execute("UPDATE build_log SET finished_at=now(), ok=false, summary=%s, detail=%s WHERE id=%s", (str(e)[:500], str(e), bid))
+            cur.execute("UPDATE build_log SET finished_at=now(), ok=false, summary=%s, detail=%s WHERE id=%s", ((note + str(e))[:500], note + str(e), bid))
         conn.commit()
         raise
     finally:

@@ -37,19 +37,32 @@ def check_mapping_row(r: dict) -> tuple[dict, dict]:
     return c, err
 
 
+def parse_goal_value(raw, unit: str) -> tuple[float | None, str | None]:
+    """A goal's value from what was typed: blank is "not known yet"; "7%" is 0.07; a "share of …" must lie between 0 and 1,
+    because the Goals tab and the review read it as a fraction (7 would be 700%)."""
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        return None, None
+    text = str(raw).strip().replace(",", "")
+    pct = text.endswith("%")
+    try:
+        v = float(text.rstrip("%").strip())
+        if v != v or abs(v) == float("inf") or abs(v) >= 1e10:
+            raise ValueError
+    except ValueError:
+        return None, "must be a number (or a percentage such as 7%) or blank"
+    if pct:
+        v /= 100
+    if (unit or "").lower().startswith("share") and not 0 <= v <= 1:
+        return None, f"a share is between 0 and 1; for {v:g}% write {v:g}%" if v > 1 else "a share is between 0 and 1"
+    return v, None
+
+
 def check_goal_row(r: dict) -> tuple[dict, dict]:
     c = {"key": (r.get("key") or "").strip(), "unit": (r.get("unit") or "").strip(), "label": (r.get("label") or "").strip(), "note": (r.get("note") or "").strip()}
     err = {k: "required" for k in ("key", "label") if not c[k]}
-    v = r.get("value")
-    if v is None or (isinstance(v, str) and not v.strip()):
-        c["value"] = None
-    else:
-        try:
-            c["value"] = float(v)
-            if c["value"] != c["value"] or abs(c["value"]) == float("inf"):
-                raise ValueError
-        except (TypeError, ValueError):
-            c["value"] = None; err["value"] = "must be a number or blank"
+    c["value"], problem = parse_goal_value(r.get("value"), c["unit"])
+    if problem:
+        err["value"] = problem
     return c, err
 
 
