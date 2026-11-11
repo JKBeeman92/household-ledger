@@ -45,7 +45,18 @@ class Provider:
         return None
 
     def complete(self, system: str, user: str) -> str:
-        return _CALLS[self.name](self, system, user)
+        text, cut = _CALLS[self.name](self, system, user)
+        if cut:   # the JSON cannot be complete: say so instead of a parse error
+            raise ReplyCutOff(f"the model stopped at the output limit ({self.max_tokens} tokens) before finishing its reply; "
+                              f"raise REVIEW_MAX_TOKENS (now {self.max_tokens}) and generate again", text)
+        return text
+
+
+class ReplyCutOff(RuntimeError):
+    """The provider reports the reply stopped at max_tokens. `text` is what arrived, for the log."""
+    def __init__(self, message: str, text: str = ""):
+        super().__init__(message)
+        self.text = text
 
 
 def resolve(conn=None, override: dict | None = None) -> Provider:
@@ -79,7 +90,7 @@ def _anthropic(p: Provider, system: str, user: str) -> str:
     j = _post(p, "https://api.anthropic.com/v1/messages",
               {"x-api-key": p.api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
               {"model": p.model, "max_tokens": p.max_tokens, "system": system, "messages": [{"role": "user", "content": user}]})
-    return "".join(b.get("text", "") for b in j.get("content", []) if b.get("type") == "text")
+    return "".join(b.get("text", "") for b in j.get("content", []) if b.get("type") == "text"), j.get("stop_reason") == "max_tokens"
 
 
 def _openai(p: Provider, system: str, user: str) -> str:
@@ -87,8 +98,8 @@ def _openai(p: Provider, system: str, user: str) -> str:
     j = _post(p, f"{p.base_url}/chat/completions", headers,
               {"model": p.model, "max_tokens": p.max_tokens, "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]})
     try:
-        return j["choices"][0]["message"]["content"] or ""
-    except (KeyError, IndexError, TypeError):
+        return j["choices"][0]["message"]["content"] or "", j["choices"][0].get("finish_reason") == "length"
+    except (KeyError, IndexError, TypeError, AttributeError):
         raise RuntimeError("openai-compatible response had no choices[0].message.content") from None
 
 
@@ -97,7 +108,7 @@ def _ollama(p: Provider, system: str, user: str) -> str:
               {"model": p.model, "stream": False, "options": {"num_predict": p.max_tokens},
                "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]})
     try:
-        return j["message"]["content"] or ""
+        return j["message"]["content"] or "", j.get("done_reason") == "length"
     except (KeyError, TypeError):
         raise RuntimeError("ollama response had no message.content") from None
 
@@ -108,7 +119,8 @@ def _gemini(p: Provider, system: str, user: str) -> str:
               {"systemInstruction": {"parts": [{"text": system}]}, "contents": [{"role": "user", "parts": [{"text": user}]}],
                "generationConfig": {"maxOutputTokens": p.max_tokens}})
     try:
-        return "".join(x.get("text", "") for x in j["candidates"][0]["content"]["parts"])
+        c = j["candidates"][0]
+        return "".join(x.get("text", "") for x in c["content"]["parts"]), c.get("finishReason") == "MAX_TOKENS"
     except (KeyError, IndexError, TypeError):
         raise RuntimeError("gemini response had no candidates[0].content.parts") from None
 
@@ -137,4 +149,7 @@ def parse_sections(text: str) -> list[dict]:
                 out.append({"order": order, "heading": str(s["heading"]), "text": str(s["text"])})
             return out
         i += 1
-    raise ValueError("the model's reply did not contain a JSON object with a non-empty \"sections\" list")
+    if '"sections"' in text:
+        raise ValueError("the model's reply has a \"sections\" object, but it is not valid JSON (often an unescaped double quote inside "
+                         "a text, or a reply cut short); the reply is in the server log")
+    raise ValueError("the model's reply did not contain a JSON object with a non-empty \"sections\" list; the reply is in the server log")
