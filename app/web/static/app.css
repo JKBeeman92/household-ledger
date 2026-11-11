@@ -162,3 +162,7 @@ table.edit [aria-invalid=true] { border-color: var(--danger); }
   .topbar nav[data-more="start"], #dash-root.hl .tabs[data-more="start"] { mask-image: linear-gradient(to left, black calc(100% - 32px), transparent); }
   .topbar nav[data-more="both"], #dash-root.hl .tabs[data-more="both"] { mask-image: linear-gradient(to right, transparent, black 32px, black calc(100% - 32px), transparent); }
 }
+/* Status chip: the one-word answer before the detail (Close a month's build status). */
+.status-chip { display: inline-flex; align-items: center; gap: .4em; border: 1px solid var(--line-strong); border-radius: var(--radius-full); padding: 2px 12px 2px 10px; margin-right: var(--space-2); font-weight: 600; font-size: .9em; background: var(--surface-100); }
+.status-chip::before { content: ""; width: .6em; height: .6em; border-radius: 50%; background: var(--info); }
+.status-chip.ok::before { background: var(--success); } .status-chip.warn::before { background: var(--warning); } .status-chip.bad::before { background: var(--danger); }
