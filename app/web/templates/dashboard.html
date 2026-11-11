@@ -163,6 +163,11 @@
 .hl .sumrow .usual { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); text-align: right; }
 .hl .key .tick { display: inline-block; width: 2px; height: .9em; background: var(--color-fg); margin: 0 .55rem; }
 @media (max-width: 600px) { .hl .sumrow { grid-template-columns: minmax(0, 1fr) auto; } .hl .sumrow .vsplan { grid-column: 1 / -1; order: 3; } .hl .sumrow .usual { grid-column: 1 / -1; text-align: left; order: 4; } }
+.hl details.datatable { margin-top: var(--cds-gap-sm); font-size: var(--cds-font-size-caption); }
+/* closed, "How to read this" and the table sit side by side on one line; open, each takes the full width */
+.hl details.how:not([open]):has(+ details.datatable), .hl details.how:not([open]) + details.datatable:not([open]) { display: inline-block; margin-right: var(--cds-gap-lg); }
+.hl details.datatable summary { cursor: pointer; color: var(--accent-2-text, var(--color-fg-muted)); font-weight: var(--cds-font-weight-medium); }
+.hl details.datatable summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .hl .foot { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-top: var(--cds-gap-lg); padding-top: var(--cds-gap-sm); border-top: 1px solid var(--color-border-line); max-width: 90ch; }
 </style>
 
@@ -220,7 +225,7 @@
     <div class="card">
       <h2 id="monthly-chart">Income against outgo, by budget month</h2>
         <ul class="key row"><li><span class="glyph">=</span>outgo is living spend plus debt payments</li><li><span class="glyph">−</span>transfers and exclusions left out (Method tab)</li><li><span class="glyph">┊</span>dotted markers are life events, listed below the chart</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Outgo is living spend plus debt payments. Income and outgo leave out transfers between envelopes and the other exclusions listed on the Method tab. Dotted markers are life events; hover for the label. The gap between the income line and the dotted spend-plus-debt line is the month’s net. Months where the dotted line sits above income were funded from savings or a one-off inflow. Spikes in income are bonuses, tax refunds, stimulus or severance; spikes in spend are usually a tax bill, a trip or a project. Hover a dot along the top for the event behind a step change.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Outgo is living spend plus debt payments. Income and outgo leave out transfers between envelopes and the other exclusions listed on the Method tab. Dotted markers are life events; hover for the label. The gap between the income line and the dotted spend-plus-debt line is the month’s net. Months where the dotted line sits above income were funded from savings or a one-off inflow. Spikes in income are bonuses, tax refunds, stimulus or severance; spikes in spend are usually a tax bill, a trip or a project. Hover a dot along the top for the event behind a step change.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Spend + debt</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-monthly" data-source="monthly events"></tbody></table></div></details>
       <div class="chart" data-draw="monthly" data-source="monthly events"></div>
       <ul class="key row events" data-draw="event-list" data-source="events" aria-label="Life events"></ul>
       <div class="legend"><span data-c="0">Income</span><span data-c="1">Living spend</span><span data-c="2">Spend + debt</span></div>
@@ -242,14 +247,14 @@
       <div class="card">
         <h2 id="annual-chart">By year</h2>
         <ul class="key row"><li><span class="glyph">=</span>net is income − spend − debt</li><li><span class="glyph">◔</span>the latest year may be partial (Position tab)</li></ul>
-      <details class="how"><summary>How to read this</summary><p>The latest year may cover only part of a year; the Months column on the Position tab says how many. Net is income minus spend minus debt payments. Three bars per year. When the income bar clears the other two combined, the year was positive. A year with fewer than twelve months loaded has shorter bars than a full year would.</p></details>
+      <details class="how"><summary>How to read this</summary><p>The latest year may cover only part of a year; the Months column on the Position tab says how many. Net is income minus spend minus debt payments. Three bars per year. When the income bar clears the other two combined, the year was positive. A year with fewer than twelve months loaded has shorter bars than a full year would.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Year</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Debt payments</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-annual" data-source="yearly"></tbody></table></div></details>
         <div class="chart" data-draw="annual" data-source="yearly"></div>
         <div class="legend"><span data-c="0">Income</span><span data-c="1">Living spend</span><span data-c="3">Debt payments</span></div>
       </div>
       <div class="card">
         <h2 id="employer-chart">Paycheck source, by month</h2>
         <ul class="key row"><li><span class="glyph">⌕</span>employer read from the deposit text (employers rule)</li><li><span class="glyph">?</span>deposits it cannot place: Unknown</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Employer is read from the deposit description using the employers rule in Settings; deposits it cannot place are shown as Unknown. Paycheck deposits by month, colored by employer. A change of color is a job change; a taller month has three paychecks or a bonus paid through payroll.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Employer is read from the deposit description using the employers rule in Settings; deposits it cannot place are shown as Unknown. Paycheck deposits by month, colored by employer. A change of color is a job change; a taller month has three paychecks or a bonus paid through payroll.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Employer</th><th scope="col">Paid</th><th scope="col">Deposits</th></tr></thead><tbody data-draw="dt-employer" data-source="employer"></tbody></table></div></details>
         <div class="chart" data-draw="employer" data-source="employer"></div>
         <div class="legend" data-draw="employer-legend" data-source="employer"></div>
       </div>
@@ -331,6 +336,7 @@
       <h2 id="goal-chart">The three ratios, month by month</h2>
         <ul class="key row"><li><span class="glyph">—</span>solid: twelve-month trailing share</li><li><span class="glyph">- -</span>dashed: target, floor or cap</li><li><span class="glyph">↑</span>above target is good for giving and savings, bad for housing</li></ul>
       <div class="chart" data-draw="goal-lines" data-source="goal_month goals"></div>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Giving / gross</th><th scope="col">Savings / gross</th><th scope="col">Housing / take-home</th></tr></thead><tbody data-draw="dt-goal-lines" data-source="goal_month"></tbody></table></div></details>
       <div class="legend"><span data-c="0">Giving / gross</span><span data-c="1">Savings funding / gross</span><span data-c="2">Housing + utilities / take-home</span></div>
       <details class="how"><summary>How to read this</summary><p>Giving as a share of gross (floor and target lines), savings-group funding as a share of gross (target line), and housing plus utilities as a share of take-home (cap line). Twelve-month trailing averages, so a three-paycheck month or a lump payment does not whip the line around. A solid line above its dashed target is good for giving and savings, and bad for housing. The lines are twelve-month trailing averages, so a change in behaviour takes a few months to show. Gross is the stated annual salary spread evenly across months; take-home is the net paychecks that actually landed, so the housing ratio is honest about months with two versus three paychecks only in the trailing view.</p></details>
     </div>
@@ -431,13 +437,13 @@
       <div class="card">
         <h2 id="debt-chart">Debt timeline</h2>
         <ul class="key row"><li><span class="glyph">↔</span>first to last payment month</li><li><span class="glyph">Σ</span>label: total paid, interest included</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Each bar spans the months a debt item received payments; the label is the total paid. Bars run from first to last payment month. Total paid includes principal and interest as EveryDollar recorded them, not the original loan balance.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Each bar spans the months a debt item received payments; the label is the total paid. Bars run from first to last payment month. Total paid includes principal and interest as EveryDollar recorded them, not the original loan balance.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Debt</th><th scope="col">First payment</th><th scope="col">Last payment</th><th scope="col">Months</th><th scope="col">Total paid</th></tr></thead><tbody data-draw="dt-debts" data-source="debts"></tbody></table></div></details>
         <div class="chart" data-draw="debts" data-source="debts"></div>
       </div>
       <div class="card">
         <h2 id="net-chart">Net kept, by year</h2>
         <ul class="key row"><li><span class="bar " style="--k: var(--color-ok)"></span>added to savings</li><li><span class="bar " style="--k: var(--color-bad)"></span>drawn from savings</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Income minus living spend minus debt payments. Below zero means the year was funded from savings or one-off inflows. Green years added to savings; red years drew on them. A deep red bar usually means taxes, giving or savings-envelope spending landed in a year with lower income.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Income minus living spend minus debt payments. Below zero means the year was funded from savings or one-off inflows. Green years added to savings; red years drew on them. A deep red bar usually means taxes, giving or savings-envelope spending landed in a year with lower income.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Year</th><th scope="col">Net kept</th><th scope="col">Savings rate</th></tr></thead><tbody data-draw="dt-net" data-source="yearly"></tbody></table></div></details>
         <div class="chart" data-draw="net" data-source="yearly"></div>
       </div>
     </div>
@@ -1307,5 +1313,22 @@ dash.draw('range-pick', (box) => {
   if (cur.all) { st.hidden = true; st.textContent = ''; }
   else { st.hidden = false; st.textContent = `Charts show ${fmtM(cur.from)} – ${fmtM(cur.to)} (${cur.n} month${cur.n === 1 ? '' : 's'}; yearly charts show every year it touches). The tiles, Last month and the tables are not filtered.`; }
 });
+})();</script>
+
+<script nonce="{{ csp_nonce(request) }}">(() => {
+// ---- the figures behind each chart, as a table (follows the period filter); each also tells its chart the span it covers ----
+const span = (chart, a, b) => { const el = document.querySelector(`.chart[data-draw="${chart}"]`); if (el) el.dataset.span = a && b ? (a === b ? a : `${a} – ${b}`) : ''; };
+const M = (m) => HL.fmtM(HL.parseM(m)), $ = (v) => HL.usd0(Number(v)), P1 = (v) => v == null || !Number.isFinite(Number(v)) ? '—' : dash.fmt.pct(1)(Number(v));
+const table = (name, ds, prep, cells, sp) => dash.draw('dt-' + name, (tb) => { const g = HL.rd(ds); if (g.status !== 'ok') { tb.replaceChildren(); return; }
+  const rows = prep(g.data); HL.fillTable(tb, rows, cells); const s = sp(rows); span(name, s[0], s[1]); });
+const byM = (rows) => [...rows].sort((a, b) => a.m < b.m ? 1 : -1), byY = (rows) => [...rows].sort((a, b) => Number(b.y) - Number(a.y));
+const mSpan = (rows) => rows.length ? [M(rows[rows.length - 1].m), M(rows[0].m)] : [], ySpan = (rows) => rows.length ? [HL.yearLabel(rows[rows.length - 1].y), HL.yearLabel(rows[0].y)] : [];
+table('monthly', 'monthly', byM, [(r) => M(r.m), (r) => $(r[HL.fld('income')]), (r) => $(r[HL.fld('spend')]), (r) => $(Number(r[HL.fld('spend')]) + Number(r[HL.fld('debt')])), (r) => $(r[HL.fld('net')])], mSpan);
+table('annual', 'yearly', byY, [(r) => HL.yearLabel(r.y), (r) => $(r[HL.fld('income')]), (r) => $(r[HL.fld('spend')]), (r) => $(r[HL.fld('debt')]), (r) => $(r[HL.fld('net')])], ySpan);
+table('employer', 'employer', byM, [(r) => M(r.m), (r) => r.employer || 'Unknown', (r) => $(r.amount), (r) => String(r.n ?? '—')], (rows) => { const u = [...new Set(rows.map((r) => r.m))]; return u.length ? [M(u[u.length - 1]), M(u[0])] : []; });
+table('goal-lines', 'goal_month', byM, [(r) => M(r.m), (r) => P1(r.giving_share_12), (r) => P1(r.joy_share_12), (r) => P1(r.housing_share_12)], mSpan);
+table('debts', 'debts', (rows) => [...rows].sort((a, b) => a.first < b.first ? -1 : 1), [(r) => r.item, (r) => M(r.first), (r) => M(r.last), (r) => String(r.months), (r) => $(r.total)],
+  (rows) => rows.length ? [M(rows.map((r) => r.first).sort()[0]), M(rows.map((r) => r.last).sort().pop())] : []);
+table('net', 'yearly', byY, [(r) => HL.yearLabel(r.y), (r) => $(r[HL.fld('net')]), (r) => P1(r.savings_rate)], ySpan);
 })();</script>
 {% endblock %}
