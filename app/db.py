@@ -7,7 +7,7 @@ from psycopg_pool import ConnectionPool
 from psycopg.rows import dict_row
 
 from .config import settings
-from pipeline.run_pipeline import seed_reference_tables, import_dir, BuildBusy, HERE as PIPELINE_DIR
+from pipeline.run_pipeline import seed_reference_tables, import_dir, BuildBusy, ImportRebuildFailed, HERE as PIPELINE_DIR
 
 log = logging.getLogger("ledger")
 ROOT = Path(__file__).resolve().parent.parent
@@ -69,9 +69,12 @@ def init() -> None:
                 res = import_dir(conn, Path(settings.import_dir))
                 log.info("import dir %s: %s", settings.import_dir, res)
             except BuildBusy:
-                log.warning("import dir %s: another rebuild is running; start-up import skipped", settings.import_dir)
+                log.warning("import dir %s: files stored; another rebuild is running and rebuilds again when it sees them", settings.import_dir)
             except Exception as e:  # noqa: BLE001  a bad import must never stop the app from starting
-                log.error("import dir %s failed: %s", settings.import_dir, str(e)[:800])
+                if isinstance(e, ImportRebuildFailed):   # the files are stored; only the rebuild after them failed
+                    log.error("import dir %s: %s", settings.import_dir, e)
+                else:
+                    log.error("import dir %s failed: %s", settings.import_dir, str(e)[:800])
                 try:
                     conn.rollback()
                     if conn.execute("SELECT 1 FROM build_log WHERE id > %s", (last_build_id,)).fetchone() is None:  # rebuild() records its own failures
@@ -84,6 +87,21 @@ def init() -> None:
 def get_setting(conn, key: str, default=None):
     row = conn.execute("SELECT value FROM settings WHERE key=%s", (key,)).fetchone()
     return row["value"] if row else default
+
+
+INPUTS_CHANGED = "inputs_changed_at"   # settings row stamped whenever something the pipeline reads changes
+
+
+def mark_inputs_changed(conn) -> None:
+    """Mapping, goals, events, CPI or rules changed: the dashboard keeps the old figures until a build reads the new ones."""
+    put_setting(conn, INPUTS_CHANGED, "pipeline inputs changed since the last build")
+
+
+def rebuild_needed(conn) -> bool:
+    """True when the inputs changed after the start of the newest successful build (a build started later read them)."""
+    row = conn.execute("SELECT s.updated_at > coalesce((SELECT max(started_at) FROM build_log WHERE ok), '-infinity') AS due "
+                       "FROM settings s WHERE s.key=%s", (INPUTS_CHANGED,)).fetchone()
+    return bool(row and row["due"])
 
 
 def put_setting(conn, key: str, value) -> None:

@@ -12,7 +12,7 @@
       {% for k, v in providers.items() %}<option value="{{ k }}" {% if saved.get('provider') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></p>
     <p><label for="model">Model</label><br><input type="text" id="model" name="model" value="{{ saved.get('model', '') }}" placeholder="required for every provider except Anthropic" autocomplete="off"></p>
     <p><label for="base_url">Base URL</label><br><input type="text" id="base_url" name="base_url" value="{{ saved.get('base_url', '') }}" placeholder="OpenAI-compatible: https://host/v1 · Ollama: http://ollama:11434" autocomplete="off"></p>
-    <p class="muted">Local models may need a larger <code>REVIEW_MAX_TOKENS</code> (now {{ prov.max_tokens }}). Replies wrapped in markdown fences or lead-in prose are tolerated.</p>
+    <p class="muted"><code>REVIEW_MAX_TOKENS</code> (now {{ prov.max_tokens }}) is the reply's output limit, thinking included; a review that stops at it says so. Replies wrapped in markdown fences or lead-in prose are tolerated.</p>
     <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save provider</button></p>
   </form>
   <div class="panel">
