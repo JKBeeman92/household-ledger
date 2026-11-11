@@ -14,8 +14,9 @@ of `docker compose logs ledger` (check them for anything private first).
 - [ ] **Through the proxy.** `https://ledger.example.com/healthz` answers through the reverse proxy, and the certificate is valid.
       Test from a client (a phone and a laptop), not only from the server: a hostname that exists only in local DNS fails on a
       client that resolves through another server (an ISP's IPv6 DNS, or the browser's secure DNS), and the app logs nothing
-      (README, "A hostname that exists only in local DNS"). Then set `FORWARDED_ALLOW_IPS` to the address the container sees for
-      the proxy (README, "Finding the value for `FORWARDED_ALLOW_IPS`").
+      (README, "A hostname that exists only in local DNS"). Then set `FORWARDED_ALLOW_IPS` to the address after `via` in a
+      `ledger.access` line of `docker compose logs ledger` (README, "Finding the value for `FORWARDED_ALLOW_IPS`"), restart, and
+      check that a request through the proxy still shows `<browser address> via <that address>`.
 - [ ] **Sign-in and sign-out.** Sign in through your OIDC provider; **Sign out** also ends the provider session and lands on
       `/signed-out`. This needs the `offline_access` scope and the `/signed-out` redirect URI (README, "Sign-in").
 - [ ] **Group re-check.** Remove a test account from the allowed group at the provider; within `GROUP_RECHECK_SECONDS` (default
@@ -23,8 +24,10 @@ of `docker compose logs ledger` (check them for anything private first).
 - [ ] **Import and rebuild.** With `IMPORT_DIR` set, `docker compose logs ledger | grep "import dir"` shows one line with the
       number of files loaded, and the container starts whatever happens. `import dir … failed` means the import stopped before any
       rebuild (a single unreadable file does not do that: it is skipped and named in the build log); `… N file(s) stored, … the rebuild after them failed` means the files are in and the rebuild stopped. On a
-      first start with an empty mapping that is expected: it names the unmapped items; add them on Settings → Item mapping, then
-      press **Rebuild without uploading**.
+      first start with an empty mapping that is expected: it names the unmapped items. On Settings → Item mapping press **Draft a
+      mapping from my budget groups**, check the draft (pass-through money needs `exclude`), add it, then press **Rebuild without
+      uploading**. Without a browser: `docker compose exec ledger python -m app.admin draft-mapping > draft.csv`, review it, then
+      `add-mapping` and `rebuild` (README, "Without a browser").
       Upload one month on **Close a month** (a `.zip` works too): the page returns at once, shows the build running, then a
       "Last upload" panel and a clean reconciliation. Upload a file of a few MB through the proxy too: a 413 from the proxy (not the
       app) means its body-size limit is below `MAX_UPLOAD_MB`.
@@ -32,7 +35,10 @@ of `docker compose logs ledger` (check them for anything private first).
       opens, and confirming it stores the month (README, "Other budget tools").
 - [ ] **Dashboard.** All eight tabs draw on a desktop and on a phone.
 - [ ] **Settings.** Edit and save one mapping row, one goal and one event; a deliberate typo in the rules JSON is refused with the
-      key named.
+      key named. If Item mapping lists "names that look like one envelope", decide for each: one canonical name, or apart on purpose.
+- [ ] **Own brand kit** (optional). With a `theme.css` in `BRAND_DIR`, `docker compose logs ledger | grep "brand:"` shows either
+      "passes every contrast check" or one line per failing pair, and Settings shows the same count (docs/BRANDING.md).
+- [ ] **Command line.** `docker compose exec ledger python -m app.admin export rules` prints the rules JSON.
 - [ ] **Review** (optional). With a provider configured, generate one review (it asks for confirmation and shows an approximate
       input-token count), open `/reviews/history` to see the prompt that was sent, then hand-edit a section and save it.
 - [ ] **Price index.** **Fetch latest CPI** on the CPI page reaches the source and reports months added or replaced.
