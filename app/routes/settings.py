@@ -83,12 +83,12 @@ EVENT_KINDS = ("job", "move", "family", "health", "purchase", "debt", "other")  
 def check_event_row(r: dict) -> tuple[dict, dict]:
     """{m, label, kind?, person?}: kind is one of EVENT_KINDS or empty, person is free text (checked against the people rule by
     person_warning, which warns but never refuses). Empty kind and person are None."""
-    c = {"m": str(r.get("m") or "").strip(), "label": str(r.get("label") or "").strip(),
-         "kind": str(r.get("kind") or "").strip().lower() or None, "person": str(r.get("person") or "").strip() or None}
-    err = {}
-    if not MONTH_RE.match(c["m"]):
+    err = {f: "must be text" for f in ("m", "label", "kind", "person") if r.get(f) is not None and not isinstance(r.get(f), str)}
+    txt = lambda f: "" if f in err else (r.get(f) or "").strip()
+    c = {"m": txt("m"), "label": txt("label"), "kind": txt("kind").lower() or None, "person": txt("person") or None}
+    if "m" not in err and not MONTH_RE.match(c["m"]):
         err["m"] = "month must look like YYYY-MM"
-    if not c["label"]:
+    if "label" not in err and not c["label"]:
         err["label"] = "required"
     if c["kind"] and c["kind"] not in EVENT_KINDS:
         err["kind"] = "kind must be one of " + ", ".join(EVENT_KINDS) + ", or empty"
@@ -323,7 +323,7 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
     return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP,
                   categories=categories, rules=rules, hh=household, name_families=name_families, unmapped=unmapped,
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR),
-                  event_choices={"kind": [""] + list(EVENT_KINDS), "person": [""] + list(rules.get("people") or [])})
+                  event_choices={"kind": [""] + list(EVENT_KINDS)}, people=list(rules.get("people") or []))
 
 
 @router.get("/settings/mapping.csv")

@@ -37,7 +37,31 @@ def test_row_editor_takes_kind_and_person_and_warns_on_unknown_person(client, re
         got = {e["label"]: (e["kind"], e["person"]) for e in events(conn)}
     assert got["Rosie joins the mill"] == ("other", None) and got["Pippin visits"] == (None, "Pippin") and "Party" not in got
     page = client.get("/settings").text
-    assert 'data-fields="m,label,kind,person"' in page and "&#34;job&#34;" in page and "&#34;Rosie&#34;" in page
+    assert 'data-fields="m,label,kind,person"' in page and "&#34;job&#34;" in page and '<datalist id="settings-people"><option value="Rosie">' in page
+
+
+def test_non_text_values_are_refused_not_stringified(client, reset_db):
+    from app.routes.settings import check_event_row
+    _, err = check_event_row({"m": "2025-01", "label": "y", "person": ["Rosie", "Sam"], "kind": 5})
+    assert err == {"person": "must be text", "kind": "must be text"}
+    r = client.post("/settings/events", data={"body": json.dumps([{"m": "2025-01", "label": {"x": 1}}])})
+    assert "item 1: label must be text" in client.get(r.headers["location"]).text
+
+
+def test_a_bad_seed_kind_names_the_event_instead_of_a_constraint_error(tmp_path, client, reset_db):
+    from pipeline.run_pipeline import seed_reference_tables
+    (tmp_path / "events.json").write_text(json.dumps([{"m": "2025-01", "label": "Shire moot", "kind": "Career"}]))
+    with db.pool.connection() as conn:
+        conn.execute("DELETE FROM life_events")
+        with pytest.raises(ValueError, match=r"event 2025-01 'Shire moot': kind 'career' is not one of job"):
+            seed_reference_tables(conn, tmp_path)
+        conn.rollback()
+    (tmp_path / "events.json").write_text(json.dumps([{"m": "2025-01", "label": "x", "person": 5}]))
+    with db.pool.connection() as conn:
+        conn.execute("DELETE FROM life_events")
+        with pytest.raises(ValueError, match="person must be text"):
+            seed_reference_tables(conn, tmp_path)
+        conn.rollback()
 
 
 def test_json_editor_and_cli_round_trip(client, reset_db, tmp_path, capsys):

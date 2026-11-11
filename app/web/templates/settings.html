@@ -57,6 +57,7 @@
 {% call grid("goals", by_key.goals, ["key","label","value","unit","note"], ["Key","Label","Value","Unit","Note"], rows.goals) %}{% endcall %}
 </div>
 <div role="tabpanel" id="sp-events" aria-labelledby="st-events">
+<datalist id="settings-people">{% for p in people %}<option value="{{ p }}">{% endfor %}</datalist>
 {% call grid("events", by_key.events, ["m","label","kind","person"], ["Month","Label","Kind","Person"], rows.events, event_choices) %}{% endcall %}
 </div>
   {% for key in ("rules", "cpi", "household") %}{% set ed = by_key[key] %}

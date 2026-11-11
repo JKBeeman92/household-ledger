@@ -474,6 +474,22 @@ def import_dir(conn: psycopg.Connection, import_dir: Path, uploaded_by: str = "i
 
 
 # ---------------------------------------------------------------- seed
+EVENT_KINDS = ("job", "move", "family", "health", "purchase", "debt", "other")   # the CHECK in db/migrations/0109_life_event_kind.sql
+
+
+def _seed_event_fields(e: dict, path) -> tuple[str | None, str | None]:
+    """A seed event's kind and person, checked as the Settings editor checks them; a bad one stops seeding with a message naming it,
+    rather than a bare constraint error."""
+    where = f"{path}: event {e.get('m')} {e.get('label')!r}"
+    for f in ("kind", "person"):
+        if e.get(f) is not None and not isinstance(e.get(f), str):
+            raise ValueError(f"{where}: {f} must be text")
+    kind = (e.get("kind") or "").strip().lower() or None
+    if kind and kind not in EVENT_KINDS:
+        raise ValueError(f"{where}: kind {kind!r} is not one of {', '.join(EVENT_KINDS)} (or leave it out)")
+    return kind, (e.get("person") or "").strip() or None
+
+
 def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> None:
     """First boot: load the mapping, CPI, goals, rules, events and past reviews, only into empty tables.
     Each file is taken from seed_dir when present there, else from the generic files shipped next to this module."""
@@ -507,8 +523,9 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
             with open(seed_dir / "events.json") as f:
                 events_seed = json.load(f)
             for e in events_seed:
+                kind, person = _seed_event_fields(e, seed_dir / "events.json")
                 cur.execute("INSERT INTO life_events (month,label,kind,person) VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING",
-                            (e["m"], e["label"], (e.get("kind") or "").strip().lower() or None, (e.get("person") or "").strip() or None))
+                            (e["m"], e["label"], kind, person))
         cur.execute("SELECT count(*) FROM settings WHERE key='rules'")
         if cur.fetchone()[0] == 0 and (seed_dir / "rules.json").exists():
             cur.execute("INSERT INTO settings (key, value) VALUES ('rules', %s)", (_read(seed_dir / "rules.json"),))

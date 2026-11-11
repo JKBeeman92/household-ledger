@@ -66,6 +66,7 @@
         } else {
           inp = el("input", { type: "text", name: f, "aria-label": heading(f), value: row[f] == null ? "" : row[f] });
           if (f === "category" && kind === "mapping") inp.setAttribute("list", "settings-categories");
+          if (f === "person" && kind === "events") inp.setAttribute("list", "settings-people");   // suggested, not required: an unknown person is a warning (#109)
           if (f === "value") inp.setAttribute("inputmode", "decimal");
           if (f === "m") inp.setAttribute("placeholder", "YYYY-MM");
         }
