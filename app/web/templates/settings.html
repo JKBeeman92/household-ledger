@@ -37,7 +37,7 @@
 {% call grid("mapping", by_key.mapping, ["item","canonical_item","category","flow","note"], ["Item","Canonical item","Category","Flow","Note"], rows.mapping) %}
   {% if unmapped %}<p class="muted" id="draft-offer" style="border-left:3px solid var(--warning);padding-left:var(--space-3)">{{ unmapped }} item{{ '' if unmapped == 1 else 's' }} in your exports {{ 'has' if unmapped == 1 else 'have' }} no mapping row yet.
     <a class="btn" href="/settings/mapping/draft">Draft a mapping from my budget groups</a> You review the draft before anything is saved, and no existing row changes.</p>{% endif %}
-  {% if name_families %}<details class="keyhelp" id="name-families"><summary>{{ name_families|length }} name{{ '' if name_families|length == 1 else 's' }} that look like one envelope under different canonical names</summary>
+  {% if name_families %}<details class="keyhelp" id="name-families"><summary>{{ name_families|length }} name{{ ' that looks' if name_families|length == 1 else 's that look' }} like one envelope under different canonical names</summary>
     <p class="muted">These items have the same name once a year's suffix (" 2", " Fund", " Goal") is removed, but map to different canonical names, so their charts show separate lines. If they are one envelope, give them one name; if you keep them apart on purpose, leave them. Only the canonical name changes.</p>
     {% for fam in name_families %}<form method="post" action="/settings/mapping/family" class="family">{{ csrf_field(request) }}<input type="hidden" name="base" value="{{ fam.base }}">
       <p><strong>{{ fam.base }}</strong>: {% for i in fam["items"] %}{{ i["item"] }} → <code>{{ i["canonical_item"] }}</code>{{ ", " if not loop.last }}{% endfor %}</p>
