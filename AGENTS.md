@@ -31,7 +31,7 @@ A change that adds a dataset, or a reference or raw table, is done only when its
 2. **Review**: in `build_context` (`app/review.py`), or a stated reason why not (e.g. balances are sent, account names are not).
 3. **MCP**: in the `DATASETS` allow-list (`app/mcp_endpoint.py`) with `tests/test_mcp.py` updated, or a stated reason why not.
 4. **Exports**: a dataset is in `datasets.zip`, a raw table in `sources.zip` (`app/routes/export.py`); a reference table is in
-   `settings.zip` (`app/settings_export.py`) and read back by the seed loader (`seed_household`, `app/db.py`).
+   `settings.zip` (`app/settings_export.py`) and read back by the seed loader (`seed_reference_tables`, `pipeline/run_pipeline.py`).
 5. **CLI**: anything an editor can set on a page can be set with `python -m app.admin`.
 6. **Webhooks**: whether `figures` in `build.completed` should carry it (`docs/WEBHOOKS.md`); usually not.
 7. **Sample household**: `examples/sample-household/generate.py` produces data that exercises it, so the first-run dashboard shows
