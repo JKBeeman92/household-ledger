@@ -34,8 +34,7 @@
     const t0 = Date.now(), label = status.dataset.label;
     const tick = () => {
       const s = Math.floor((Date.now() - t0) / 1000), mm = Math.floor(s / 60), ss = String(s % 60).padStart(2, '0');
-      status.textContent = `Waiting for ${label} to write the review: ${mm}:${ss}. A model that thinks first can take several minutes; ` +
-                           'keep this page open. The page changes when the reply arrives.';
+      status.textContent = `Starting the review with ${label}… ${mm}:${ss}`;
     };
     tick(); status.hidden = false; timer = setInterval(tick, 1000);
   });

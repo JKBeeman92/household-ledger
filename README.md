@@ -105,10 +105,8 @@ Run the app behind a reverse proxy that terminates TLS (Caddy, nginx, Traefik, a
 - pass the `Host` header through and set `X-Forwarded-Proto` and `X-Forwarded-For`;
 - accept request bodies at least as large as `MAX_UPLOAD_MB` (50 MB by default). nginx's default is 1 MB, so set
   `client_max_body_size 50m;`; Caddy and Traefik have no limit by default;
-- allow responses that take a while: a rebuild runs in the background, but a large upload takes tens of seconds and a month-close
-  review waits for the model inside the request, several minutes for one that thinks first (the app waits up to
-  `REVIEW_MAX_TOKENS` / 40 seconds, 400 s by default). Set nginx's `proxy_read_timeout` above that, or the proxy answers 504 while
-  the review is still being written.
+- allow responses that take a while: rebuilds and month-close reviews run in the background (the page shows their progress),
+  but a large upload can take tens of seconds; raise nginx's `proxy_read_timeout` if you see 504s on upload.
 
 Caddy, on the same host:
 
@@ -131,7 +129,7 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_read_timeout 450s;
+        proxy_read_timeout 120s;
     }
 }
 ```
