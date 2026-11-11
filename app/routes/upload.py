@@ -27,7 +27,7 @@ def upload_page(request: Request, user=Depends(auth.require_editor)):
         checklist = checklist_goals(conn)
         review_ok = review.providers.is_configured(conn)
         last = conn.execute("SELECT created_at, results FROM upload_batches ORDER BY id DESC LIMIT 1").fetchone()
-    return render(request, "upload.html", user, active="upload", findings=findings, checklist=checklist, files=files, months=months, build=build, review_enabled=review_ok, last_upload=last, max_upload_mb=settings.max_upload_mb)
+    return render(request, "upload.html", user, active="upload", findings=findings, checklist=checklist, files=files, months=months, build=build, review_enabled=review_ok, last_upload=last, max_upload_mb=settings.max_upload_mb, import_dir_set=bool(settings.import_dir))
 
 
 async def _read_capped(f: UploadFile) -> bytes | None:

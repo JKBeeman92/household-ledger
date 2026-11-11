@@ -134,3 +134,15 @@ def test_a_lock_held_in_another_database_is_not_our_build(loaded):
 def test_status_page_renders_while_locked_before_any_build_row(client, reset_db, other_session):
     hold_lock(other_session)
     assert client.get("/upload").status_code == 200 and client.get("/api/build").json()["state"] == "running"
+
+
+def test_a_month_with_one_file_names_the_missing_file(client, reset_db, tmp_path):
+    """Half a month reconciles as every envelope wrong; the build summary leads with which file is missing."""
+    from pipeline.run_pipeline import rebuild
+    from app import db
+    upload_files(client, GOLDEN / "exports")
+    with db.pool.connection() as conn:
+        m = conn.execute("SELECT max(budget_month) m FROM source_files").fetchone()["m"]
+        conn.execute("DELETE FROM source_files WHERE budget_month=%s AND kind='budget_items'", (m,)); conn.commit()
+        res = rebuild(conn)   # the other months still build (README: a month that fails still loads, and the page says so)
+    assert res["summary"].startswith(f"{m}: the BudgetItems file is missing (upload it to finish this month). ")

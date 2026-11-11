@@ -40,6 +40,11 @@
     if (next === 'light') document.documentElement.setAttribute('data-theme', 'light'); else document.documentElement.removeAttribute('data-theme');
     try { localStorage.setItem('theme', next); } catch (e) {}
   });
+  // horizontal scrollers say where more is hidden (CSS fades that edge)
+  const more = (el) => { const l = el.scrollLeft > 4, r = el.scrollWidth - el.clientWidth - el.scrollLeft > 4; if (l || r) el.dataset.more = l && r ? 'both' : l ? 'start' : 'end'; else delete el.dataset.more; };
+  const scrollers = () => document.querySelectorAll('.topbar nav, #dash-root .tabs');
+  addEventListener('load', () => scrollers().forEach((el) => { more(el); el.addEventListener('scroll', () => more(el), { passive: true }); }));
+  addEventListener('resize', () => scrollers().forEach(more));
   // forms that need a second thought carry data-confirm (inline handlers are blocked by the CSP)
   document.addEventListener('submit', (e) => { const m = e.target.getAttribute('data-confirm'); if (m && !confirm(m)) e.preventDefault(); });
   // honour the OS when no choice is stored

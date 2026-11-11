@@ -195,3 +195,24 @@ def test_cpi_save_cannot_drop_the_month_the_rules_name(client, reset_db):
     assert "Not saved" in page and base in page and "cpi_base_month" in page
     with db.pool.connection() as conn:
         assert _cpi(conn) == before
+
+
+@pytest.mark.parametrize("raw, unit, value, ok", [
+    ("0.07", "share of gross", 0.07, True), ("7%", "share of gross", 0.07, True), ("7", "share of gross", None, False),
+    ("1.5", "share of take-home", None, False), ("78,000", "usd", 78000.0, True), ("", "share of gross", None, True), ("lots", "usd", None, False)])
+def test_goal_values_are_checked_against_their_unit(raw, unit, value, ok):
+    from app.routes.settings import parse_goal_value
+    v, problem = parse_goal_value(raw, unit)
+    assert (problem is None) is ok and (v == value or (v is not None and abs(v - value) < 1e-12))
+
+
+def test_a_share_typed_as_a_whole_number_is_refused_in_both_editors(client, reset_db):
+    r = client.post("/settings/goals/row", data={"key": "giving_target", "label": "Giving target", "value": "7", "unit": "share of gross", "note": ""}).json()
+    assert r["ok"] is False and "write 7%" in r["errors"]["value"]
+    with db.pool.connection() as conn:
+        conn.execute("INSERT INTO goals (key, value, unit, label, note) VALUES ('giving_target', 0.07, 'share of gross', 'Giving target', '') ON CONFLICT (key) DO UPDATE SET value=0.07"); conn.commit()
+    page = client.get(client.post("/goals/giving_target/confirm", data={"value": "7"}).headers["location"]).text
+    assert "a share is between 0 and 1" in page
+    client.post("/goals/giving_target/confirm", data={"value": "8%"})
+    with db.pool.connection() as conn:
+        assert float(conn.execute("SELECT value FROM goals WHERE key='giving_target'").fetchone()["value"]) == 0.08

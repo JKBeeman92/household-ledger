@@ -7,6 +7,7 @@ from fastapi import APIRouter, BackgroundTasks, Request, Depends, Form
 from fastapi.responses import RedirectResponse
 
 from .. import db, auth
+from .settings import parse_goal_value
 from ..web_helpers import flash
 from ..builds import run_background
 from pipeline.run_pipeline import build_running
@@ -26,15 +27,18 @@ def confirm_goal(key: str, request: Request, background: BackgroundTasks, value:
     back = RedirectResponse("/upload#checklist", status_code=303)
     value = value.strip()
     with db.pool.connection() as conn:
-        g = conn.execute("SELECT label, value FROM goals WHERE key=%s", (key,)).fetchone()
+        g = conn.execute("SELECT label, value, unit FROM goals WHERE key=%s", (key,)).fetchone()
         if not g:
             flash(request, f"No goal {key!r}.", "bad"); return back
-        try:
-            new = Decimal(value) if value else g["value"]
-            if new is None or not new.is_finite() or abs(new) >= Decimal(10) ** 10:
-                raise InvalidOperation
-        except InvalidOperation:
+        if value:
+            v, problem = parse_goal_value(value, g["unit"] or "")   # the same rule as the Settings editor
+            if problem or v is None:
+                flash(request, f"{g['label']}: {problem or 'enter a number'}.", "bad"); return back
+            new = Decimal(str(v))
+        elif g["value"] is None:
             flash(request, f"{g['label']}: enter a number.", "bad"); return back
+        else:
+            new = g["value"]
         changed = new != g["value"]
         conn.execute("UPDATE goals SET value=%s, confirmed_at=now(), updated_at=now() WHERE key=%s", (new, key))
         conn.commit()
