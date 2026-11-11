@@ -33,7 +33,9 @@ def render(request: Request, name: str, user, **ctx):
     flashes = request.session.pop("flashes", []) if hasattr(request, "session") else []
     with db.pool.connection() as conn:
         household = db.get_setting(conn, "household", {})
-    return templates.TemplateResponse(request, name, {"household": household, "fmt": _format_settings(household), "user": user, "get_flashes": lambda: flashes, "theme_mode": None, **ctx})
+        rebuild_needed = bool(user and user.get("is_editor")) and db.rebuild_needed(conn)
+    return templates.TemplateResponse(request, name, {"household": household, "fmt": _format_settings(household), "user": user, "get_flashes": lambda: flashes, "theme_mode": None,
+                                                      "rebuild_needed": rebuild_needed, **ctx})
 
 
 def _span(conn) -> dict:

@@ -146,3 +146,22 @@ def test_a_month_with_one_file_names_the_missing_file(client, reset_db, tmp_path
         conn.execute("DELETE FROM source_files WHERE budget_month=%s AND kind='budget_items'", (m,)); conn.commit()
         res = rebuild(conn)   # the other months still build (README: a month that fails still loads, and the page says so)
     assert res["summary"].startswith(f"{m}: the BudgetItems file is missing (upload it to finish this month). ")
+
+
+def test_startup_import_says_files_stored_and_names_the_unmapped_item(client, reset_db, tmp_path, monkeypatch, caplog):
+    """The files are committed before the rebuild: the log must say so and name the fix, not 'import dir … failed'."""
+    from app import db
+    d = tmp_path / "imp"; d.mkdir()
+    for f in (GOLDEN / "exports").glob("c0ffee-01-*.csv"):
+        (d / f.name).write_text(f.read_text().replace("Rent", "Elevenses Fund"))
+    monkeypatch.setattr(db, "settings", dataclasses.replace(db.settings, import_dir=str(d)))
+    with caplog.at_level("ERROR", logger="ledger"):
+        db.init()
+    msg = " ".join(r.getMessage() for r in caplog.records if "import dir" in r.getMessage())
+    assert "failed:" not in msg.split("rebuild after them failed")[0]
+    assert "2 file(s) stored, 0 unchanged; the rebuild after them failed" in msg
+    assert "'Elevenses Fund'" in msg and "Settings → Item mapping" in msg
+    with db.pool.connection() as conn:
+        assert conn.execute("SELECT count(*) n FROM source_files").fetchone()["n"] == 2
+        row = conn.execute("SELECT ok FROM build_log ORDER BY id DESC LIMIT 1").fetchone()
+    assert row["ok"] is False

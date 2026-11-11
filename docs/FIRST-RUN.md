@@ -12,12 +12,19 @@ of `docker compose logs ledger` (check them for anything private first).
 - [ ] **Health.** `curl -s http://localhost:8010/healthz` returns `{"ok":true,"last_build":"none"}` on an empty database, and
       `"last_build":"ok"` after the first successful rebuild.
 - [ ] **Through the proxy.** `https://ledger.example.com/healthz` answers through the reverse proxy, and the certificate is valid.
+      Test from a client (a phone and a laptop), not only from the server: a hostname that exists only in local DNS fails on a
+      client that resolves through another server (an ISP's IPv6 DNS, or the browser's secure DNS), and the app logs nothing
+      (README, "A hostname that exists only in local DNS"). Then set `FORWARDED_ALLOW_IPS` to the address the container sees for
+      the proxy (README, "Finding the value for `FORWARDED_ALLOW_IPS`").
 - [ ] **Sign-in and sign-out.** Sign in through your OIDC provider; **Sign out** also ends the provider session and lands on
       `/signed-out`. This needs the `offline_access` scope and the `/signed-out` redirect URI (README, "Sign-in").
 - [ ] **Group re-check.** Remove a test account from the allowed group at the provider; within `GROUP_RECHECK_SECONDS` (default
       five minutes) its next page load is signed out.
 - [ ] **Import and rebuild.** With `IMPORT_DIR` set, `docker compose logs ledger | grep "import dir"` shows one line with the
-      number of files loaded; a line reading `import dir … failed` names what went wrong and the container still starts.
+      number of files loaded, and the container starts whatever happens. `import dir … failed` means the import stopped before any
+      rebuild (a single unreadable file does not do that: it is skipped and named in the build log); `… N file(s) stored, … the rebuild after them failed` means the files are in and the rebuild stopped. On a
+      first start with an empty mapping that is expected: it names the unmapped items; add them on Settings → Item mapping, then
+      press **Rebuild without uploading**.
       Upload one month on **Close a month** (a `.zip` works too): the page returns at once, shows the build running, then a
       "Last upload" panel and a clean reconciliation. Upload a file of a few MB through the proxy too: a 413 from the proxy (not the
       app) means its body-size limit is below `MAX_UPLOAD_MB`.

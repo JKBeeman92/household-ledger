@@ -216,3 +216,29 @@ def test_a_share_typed_as_a_whole_number_is_refused_in_both_editors(client, rese
     client.post("/goals/giving_target/confirm", data={"value": "8%"})
     with db.pool.connection() as conn:
         assert float(conn.execute("SELECT value FROM goals WHERE key='giving_target'").fetchone()["value"]) == 0.08
+
+
+def _banner_shown(page: str) -> bool:
+    i = page.find('id="rebuild-banner"')
+    return i != -1 and "hidden" not in page[i:page.find(">", i)]
+
+
+def test_a_saved_goal_says_a_rebuild_is_needed_until_one_has_run(client, reset_db):
+    """The dashboard reads only what a build wrote: a saved goal must say so, offer the rebuild, and stop saying so after it."""
+    from conftest import GOLDEN, upload_files
+    upload_files(client, GOLDEN / "exports")   # the test client runs the background rebuild before returning
+    assert not _banner_shown(client.get("/").text)
+    g = {"key": "second_breakfast", "label": "Second breakfast fund", "value": "12.5", "unit": "usd", "note": ""}
+    assert client.post("/settings/goals/row", data=g).json()["rebuild_needed"] is True
+    for path in ("/", "/settings", "/upload"):
+        page = client.get(path).text
+        assert _banner_shown(page) and 'action="/rebuild"' in page, path
+    client.post("/rebuild")
+    assert not _banner_shown(client.get("/").text)
+
+
+def test_a_rejected_row_and_the_household_editor_do_not_ask_for_a_rebuild(client, reset_db):
+    assert client.post("/settings/goals/row", data={"key": "", "label": ""}).json()["rebuild_needed"] is False
+    client.post("/settings/household", data={"body": json.dumps({"name": "Bagshot Row", "title": "Ledger"})})
+    with db.pool.connection() as conn:
+        assert db.rebuild_needed(conn) is False

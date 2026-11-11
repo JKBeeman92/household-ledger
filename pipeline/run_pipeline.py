@@ -291,6 +291,27 @@ class BuildBusy(RuntimeError):
     """Another rebuild holds the lock (this process or another one)."""
 
 
+class ImportRebuildFailed(RuntimeError):
+    """import_dir stored its files, then the rebuild after them failed. The message says both, and what to do about it."""
+    def __init__(self, message: str, loaded: int, skipped: int):
+        super().__init__(message)
+        self.loaded, self.skipped = loaded, skipped
+
+
+def _rebuild_failure(conn: psycopg.Connection, loaded: int, skipped: int, e: Exception) -> str:
+    head = f"{loaded} file(s) stored, {skipped} unchanged; the rebuild after them failed"
+    try:
+        um = unmapped_items(conn)
+    except Exception:  # noqa: BLE001  the message must not hide the original failure
+        conn.rollback(); um = []
+    if um:
+        names = ", ".join(repr(x["item"]) for x in um[:3]) + (f" and {len(um) - 3} more" if len(um) > 3 else "")
+        return (f"{head}: {len(um)} item(s) have no mapping ({names}). The files are kept; add the items on Settings → Item mapping, "
+                "then press Rebuild without uploading on Close a month.")
+    last = next((ln.strip() for ln in reversed(str(e).splitlines()) if ln.strip()), type(e).__name__)
+    return f"{head}: {last[:500]}. The files are kept; fix the cause, then press Rebuild without uploading on Close a month."
+
+
 def build_running(conn: psycopg.Connection) -> bool:
     """True while some session holds the build lock. A crashed process drops its session, and with it the lock."""
     with conn.cursor(row_factory=tuple_row) as cur:
@@ -439,6 +460,10 @@ def import_dir(conn: psycopg.Connection, import_dir: Path, uploaded_by: str = "i
     conn.commit()
     try:
         res = rebuild(conn) if loaded else None
+    except BuildBusy:
+        raise
+    except Exception as e:  # noqa: BLE001  the files are committed above: say so, rather than "import failed"
+        raise ImportRebuildFailed(_rebuild_failure(conn, loaded, skipped, e), loaded, skipped) from e
     finally:
         if failed:   # after the rebuild, so this is the newest build_log row and the failure shows on the dashboard and the build log
             lines = "".join(f"\n{x['file']}: {x['error']}" for x in failed)

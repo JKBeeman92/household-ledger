@@ -4,7 +4,8 @@ Every upgrade, whatever the version:
 
 1. Read the section for each release between yours and the new one, below.
 2. Take a backup: `docker compose --profile backup run --rm -e BACKUP_ONCE=1 backup` (or the manual dump in the README, "Backups").
-3. `docker compose pull && docker compose up -d`, then `docker compose logs -f ledger`. Pending migrations apply at start, in
+3. Change the image tag in `docker-compose.yml` to the new release, then `docker compose pull && docker compose up -d`, then
+   `docker compose logs -f ledger`. Pending migrations apply at start, in
    order, each in its own transaction; a failed one stops the start-up and is named in the log.
 4. Run the checklist in [`FIRST-RUN.md`](FIRST-RUN.md).
 

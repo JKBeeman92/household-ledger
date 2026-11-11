@@ -114,3 +114,13 @@ def test_scan_survives_one_bad_file_and_says_which(client, reset_db, monkeypatch
         last = conn.execute("SELECT ok, summary, detail FROM build_log ORDER BY id DESC LIMIT 1").fetchone()
     assert loaded == 7 and {"2025-01", "2025-03", "2025-04"} <= months
     assert last["ok"] is False and "c0ffee-02-2025-EveryDollar-Transactions.csv" in last["summary"] and "c0ffee-02-2025-EveryDollar-Transactions.csv" in last["detail"]
+
+
+def test_scan_with_an_unmapped_item_says_the_files_are_stored(client, reset_db, monkeypatch, tmp_path):
+    from app.routes import export
+    for p in sorted((GOLDEN / "exports").glob("c0ffee-01-*.csv")):
+        (tmp_path / p.name).write_text(p.read_text().replace("Rent", "Elevenses Fund"))
+    monkeypatch.setattr(export, "settings", dataclasses.replace(export.settings, import_dir=str(tmp_path)))
+    page = client.get(client.post("/import/scan").headers["location"]).text
+    assert "Scan failed" not in page
+    assert "2 file(s) stored, 0 unchanged; the rebuild after them failed" in page and "Elevenses Fund" in page

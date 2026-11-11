@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 EDITORS = {
-    "mapping": {"title": "Item mapping", "help": "One row per EveryDollar item: Item, CanonicalItem, Category, Flow, Note. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every EveryDollar item name must appear here or the build reports it UNMAPPED."},
+    "mapping": {"title": "Item mapping", "help": "One row per EveryDollar item: Item, CanonicalItem, Category, Flow, Note. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every EveryDollar item name must appear here or the build reports it UNMAPPED. Fund moves kept as income items (Fund Transfer, End of Year Rebalance) need Flow transfer, or they count as income; money held for someone else and paid out needs exclude. CanonicalItem Paycheck and the categories Subscriptions, Utilities and Insurance are read by name (README, \"Names the pipeline relies on\"); rules name canonical items, not raw ones."},
     "goals": {"title": "Goals", "help": "One row per goal: key, label, value, unit, note. The Goals tab and the month-close review read these. value may be null when not yet known."},
     "events": {"title": "Life events", "help": "One row per event: month (YYYY-MM) and label. Drawn as markers on the timeline charts."},
     "cpi": {"title": "CPI index", "help": "CSV: month, cpi, source. A price index (consumer prices, any base) used for the real-amounts toggle. US households: CPI-U, appending the newest month from FRED CPIAUCSL; mark estimates in source."},
@@ -22,6 +22,9 @@ EDITORS = {
 
 FLOWS = ("income", "expense", "debt", "transfer", "plug", "zero", "exclude", "verify")
 MONTH_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
+
+
+PIPELINE_INPUTS = {"mapping", "goals", "events", "cpi", "rules"}   # read by the pipeline: the dashboard changes only after a rebuild
 
 
 def check_mapping_row(r: dict) -> tuple[dict, dict]:
@@ -256,10 +259,13 @@ async def settings_row_save(request: Request, kind: str, user=Depends(auth.requi
     form = {k: v for k, v in (await request.form()).items() if isinstance(v, str)}
     with db.pool.connection() as conn:
         try:
-            row, err = _row_save(conn, kind, form); conn.commit()
+            row, err = _row_save(conn, kind, form)
+            if not err:
+                db.mark_inputs_changed(conn)
+            conn.commit()
         except Exception:  # noqa: BLE001
             conn.rollback(); raise
-    return JSONResponse({"ok": not err, "row": row, "errors": err})  # 200 with ok=false: a rejected row is an answer, not a failed request (keeps the console clean)
+    return JSONResponse({"ok": not err, "row": row, "errors": err, "rebuild_needed": not err})  # 200 with ok=false: a rejected row is an answer, not a failed request (keeps the console clean)
 
 
 @router.post("/settings/{kind}/row/delete")
@@ -268,8 +274,11 @@ async def settings_row_delete(request: Request, kind: str, user=Depends(auth.req
         raise HTTPException(404)
     form = {k: v for k, v in (await request.form()).items() if isinstance(v, str)}
     with db.pool.connection() as conn:
-        n = _row_delete(conn, kind, form); conn.commit()
-    return JSONResponse({"ok": n > 0, "deleted": n}, status_code=200 if n else 404)
+        n = _row_delete(conn, kind, form)
+        if n:
+            db.mark_inputs_changed(conn)
+        conn.commit()
+    return JSONResponse({"ok": n > 0, "deleted": n, "rebuild_needed": n > 0}, status_code=200 if n else 404)
 
 
 @router.post("/settings/{key}")
@@ -278,8 +287,11 @@ def settings_save(request: Request, key: str, body: str = Form(...), user=Depend
         raise HTTPException(404)
     with db.pool.connection() as conn:
         try:
-            what = _save_editor(conn, key, body); conn.commit()
-            flash(request, f"Saved {what}. Rebuild from the Close-a-month page to apply.")
+            what = _save_editor(conn, key, body)
+            if key in PIPELINE_INPUTS:
+                db.mark_inputs_changed(conn)
+            conn.commit()
+            flash(request, f"Saved {what}." + (" The dashboard shows it after a rebuild: press Rebuild now." if key in PIPELINE_INPUTS else ""))
         except Exception as e:  # noqa: BLE001
             conn.rollback(); flash(request, f"Not saved — {e}", "bad")
     return RedirectResponse(f"/settings#{key}", status_code=303)   # back to the tab that was saved
