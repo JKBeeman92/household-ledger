@@ -148,3 +148,11 @@ def test_customised_prompt_is_kept_and_preview_shows_continuity(client, month):
         assert review.instructions(conn) == "Emphasise debt payoff."
     page = client.get(f"/reviews/prompt?month={month}").text
     assert "Second breakfast habit" in page and "prior_review" in page and "input tokens" in page
+
+
+def test_confirm_page_shows_waiting_state_and_guards_a_second_send(client, month, http):
+    """The POST waits for the whole reply: the page must say it is waiting, and a second click must not send (and pay for) it again."""
+    t = client.get(f"/reviews/confirm?month={month}").text
+    assert 'id="gen-form"' in t and 'id="gen-btn"' in t
+    assert 'id="gen-status" class="muted" role="status" aria-live="polite" hidden' in t
+    assert "form.dataset.sent" in t and "e.preventDefault()" in t and "nonce=" in t.split("form.dataset.sent")[0].rsplit("<script", 1)[1]

@@ -188,3 +188,66 @@ def test_reviews_page_needs_editor(client, reset_db, monkeypatch):
     monkeypatch.setattr(auth, "settings", dataclasses.replace(auth.settings, auth_disabled=False))
     assert client.get("/reviews").status_code == 307
     assert client.post("/reviews/test").status_code in (303, 401, 403)
+
+
+CUT = '{"sections":[{"order":1,"heading":"The month","text":"Rosie and Sam spent'
+
+
+@pytest.mark.parametrize("name, kw, body", [
+    ("anthropic", {"api_key": "k"}, {"content": [{"type": "text", "text": CUT}], "stop_reason": "max_tokens"}),
+    ("openai", {"base_url": "http://lm/v1"}, {"choices": [{"message": {"content": CUT}, "finish_reason": "length"}]}),
+    ("ollama", {"base_url": "http://o:11434"}, {"message": {"content": CUT}, "done_reason": "length"}),
+    ("gemini", {"api_key": "gk"}, {"candidates": [{"content": {"parts": [{"text": CUT}]}, "finishReason": "MAX_TOKENS"}]}),
+])
+def test_a_reply_stopped_at_the_token_limit_says_so(http, name, kw, body):
+    """A cut-off reply used to surface as 'did not contain a JSON object', which hides the fix (REVIEW_MAX_TOKENS)."""
+    _, reply = http
+    reply["v"] = Resp(body)
+    with pytest.raises(rp.ReplyCutOff, match="REVIEW_MAX_TOKENS \\(now 3000\\)") as e:
+        prov(name, **kw).complete("S", "U")
+    assert e.value.text == CUT
+
+
+def test_a_normal_stop_is_not_a_cut_off(http):
+    _, reply = http
+    reply["v"] = Resp({"content": [{"type": "text", "text": "ok"}], "stop_reason": "end_turn"})
+    assert prov("anthropic", api_key="k").complete("S", "U") == "ok"
+
+
+def test_parse_error_tells_invalid_json_from_no_sections():
+    with pytest.raises(ValueError, match="not valid JSON"):
+        rp.parse_sections('{"sections":[{"order":1,"heading":"Month","text":"In "EveryDollar\'s view" spend rose."}]}')
+    with pytest.raises(ValueError, match="did not contain a JSON object"):
+        rp.parse_sections("I cannot write this review.")
+
+
+def test_failed_generate_logs_an_excerpt_of_the_reply(client, reset_db, cfg, http, caplog):
+    from app import db
+    reset_db(SAMPLE)
+    client.post("/upload", files=[("files", (p.name, p.read_bytes(), "text/csv")) for p in sorted(SAMPLE.glob("*EveryDollar*.csv"))])
+    _, reply = http
+    cfg(review_provider="ollama", review_base_url="http://o:11434", review_model_explicit="llama-x")
+    reply["v"] = Resp({"message": {"content": "Sorry, the figures look incomplete."}})
+    with db.pool.connection() as conn, caplog.at_level("WARNING", logger="ledger"):
+        with pytest.raises(ValueError):
+            review.generate(conn, _first_month(conn))
+    msg = " ".join(r.getMessage() for r in caplog.records)
+    assert "from ollama:llama-x failed" in msg and "Sorry, the figures look incomplete." in msg
+
+
+def test_a_limit_spent_on_thinking_says_no_text_was_written(http):
+    """A model that thinks first can use the whole limit and return only a thinking block (stop_reason max_tokens, no text)."""
+    _, reply = http
+    reply["v"] = Resp({"content": [{"type": "thinking", "thinking": "Rosie's paycheck…"}], "stop_reason": "max_tokens"})
+    with pytest.raises(rp.ReplyCutOff, match="before writing any reply text"):
+        prov("anthropic", api_key="k", max_tokens=2500).complete("S", "U")
+
+
+def test_default_limit_and_timeout_leave_room_for_thinking(http):
+    from app.config import Settings
+    assert Settings().review_max_tokens == 16000 or "REVIEW_MAX_TOKENS" in __import__("os").environ
+    calls, reply = http
+    reply["v"] = Resp({"content": [{"type": "text", "text": "ok"}], "stop_reason": "end_turn"})
+    prov("anthropic", api_key="k", max_tokens=16000).complete("S", "U")
+    assert calls[0][1]["timeout"] == 400 and calls[0][1]["json"]["max_tokens"] == 16000
+    assert rp.read_timeout(prov("anthropic", max_tokens=1000)) == 120

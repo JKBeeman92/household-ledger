@@ -4,7 +4,7 @@ import dataclasses, re
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
-import httpx
+import httpx2   # what authlib's client uses once it is installed (requirements.txt)
 import pytest
 
 from app import auth, security
@@ -22,7 +22,7 @@ def idp(client, reset_db, monkeypatch):
     s = dataclasses.replace(auth.settings, auth_disabled=False, oidc_issuer=ISSUER, oidc_client_id=fake.client_id, oidc_client_secret=fake.client_secret,
                             allowed_groups=("admins",), group_recheck_seconds=RECHECK, session_max_age=12 * 3600, base_url="http://testserver")
     monkeypatch.setattr(auth, "settings", s)
-    monkeypatch.setattr(auth, "oauth", auth.make_oauth(s, transport=httpx.ASGITransport(app=fake.app)))
+    monkeypatch.setattr(auth, "oauth", auth.make_oauth(s, transport=httpx2.ASGITransport(app=fake.app)))
     fake.add_user("frodo", "frodo@shire.test", ["admins", "hobbits"])
     fake.add_user("lobelia", "lobelia@shire.test", ["hobbits"])
     return fake
@@ -273,11 +273,10 @@ def test_a_form_post_after_the_session_ended_lands_on_the_login_page(idp, browse
 def test_unreachable_provider_at_sign_in_start_is_a_readable_error_not_a_500(client, monkeypatch):
     """The discovery document is fetched on the first sign-in: a provider the container cannot reach (split DNS, no hairpin NAT)
     must land on the login page with a message, and be logged, rather than a bare 500."""
-    import httpx
     from app import auth as auth_mod
 
     async def boom(request, nxt):
-        raise httpx.ConnectError("name or service not known")
+        raise httpx2.ConnectError("name or service not known")
     monkeypatch.setattr(auth_mod, "start_login", boom)
     r = client.get("/auth/start?next=/", follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"].startswith("/login?error=")

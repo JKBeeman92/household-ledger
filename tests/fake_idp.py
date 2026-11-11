@@ -1,6 +1,6 @@
 """An in-process OpenID provider shaped like Authentik's: discovery, JWKS, authorization code + rotating refresh tokens,
 userinfo with a live `groups` claim, an end-session URL. No network: the app's authlib client reaches it through
-httpx.ASGITransport, and a test plays the browser by handing the authorize URL to `authorize()`."""
+httpx2.ASGITransport, and a test plays the browser by handing the authorize URL to `authorize()`."""
 from __future__ import annotations
 import base64, secrets, time
 from urllib.parse import parse_qs, urlsplit
