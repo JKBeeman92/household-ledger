@@ -149,3 +149,9 @@ table.edit [aria-invalid=true] { border-color: var(--danger); }
 .subtabs [role=tab][aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .subtabs [role=tab]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .linkrow { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; }
+/* Motion on the other pages: panels and settings tabs rise in; nothing moves with reduced motion. */
+@keyframes app-in { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: no-preference) {
+  .panel, .subtabs ~ .stack [role=tabpanel]:not([hidden]) { animation: app-in 280ms cubic-bezier(.2, .7, .2, 1) backwards; }
+  .flash { animation: app-in 220ms ease-out backwards; }
+}

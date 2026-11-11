@@ -6,7 +6,7 @@
 /* Layout: a short header with the takeaway, one control row (dollar basis + tabs), then one section per question. */
 .hl { font-family: var(--font-anthropic-sans); font-variant-numeric: tabular-nums; }
 .hl h1 { font-family: var(--font-anthropic-serif); font-weight: 600; letter-spacing: 0.02em; font-size: var(--cds-font-size-title); margin: 0 0 var(--cds-gap-xs); }
-.hl .lede { color: var(--color-fg-muted); margin: 0 0 var(--cds-gap-md); max-width: 70ch; }
+.hl .lede { color: var(--color-fg-muted); margin: 0 0 var(--cds-gap-md); max-width: 90ch; }
 .hl .lede b { font-weight: 500; color: var(--color-fg); }
 .hl .controls { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; margin-bottom: var(--cds-gap-md); }
 .hl .seg { display: inline-flex; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); overflow: hidden; }
@@ -37,7 +37,7 @@
 .hl .legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs) var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: var(--cds-gap-sm); }
 .hl .legend.years span { cursor: pointer; } .hl .legend.years span:focus-visible, .hl dfn:focus-visible, .hl .page:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; } .hl .legend.years span[aria-pressed="false"] { opacity: .4; text-decoration: line-through; }
 .hl .legend span::before { content: ""; display: inline-block; width: .6em; height: .6em; border-radius: 50%; margin-right: .4em; background: var(--sw); vertical-align: middle; }
-.hl .tbl { overflow-x: auto; max-height: 28rem; overflow-y: auto; }
+.hl .tbl { overflow-x: auto; max-height: 28rem; overflow-y: auto; } .hl .tbl.short { max-height: 20rem; }   /* scrolls inside its card, header stays */
 .hl table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-caption); }
 .hl th, .hl td { text-align: right; padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
 .hl th:first-child, .hl td:first-child { text-align: left; }
@@ -56,12 +56,12 @@
 .hl .mark { width: 28px; height: 28px; flex: none; }
 .hl .mark polygon { fill: none; stroke: var(--brand1, var(--color-fg-muted)); stroke-width: 2; }
 .hl .mark path { fill: none; stroke: var(--brand0, var(--color-fg)); stroke-width: 2; stroke-linecap: round; }
-.hl .intro { color: var(--color-fg-muted); margin: 0 0 var(--cds-gap-md); max-width: 70ch; }
+.hl .intro { color: var(--color-fg-muted); margin: 0 0 var(--cds-gap-md); max-width: 90ch; }
 .hl .intro dfn, .hl .lede dfn, .hl .prose dfn { font-style: normal; border-bottom: 1px dotted var(--brand1, var(--color-fg-muted)); cursor: help; }
 .hl details.how { margin: var(--cds-gap-sm) 0 0; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
 .hl details.how summary { cursor: pointer; color: var(--accent-2-text, var(--color-fg-muted)); font-weight: var(--cds-font-weight-medium); letter-spacing: .04em; }
 .hl details.how summary:focus-visible { outline: 2px solid var(--brand0, var(--color-fg)); outline-offset: 2px; }
-.hl details.how p { margin: var(--cds-gap-xs) 0 0; max-width: 70ch; line-height: 1.5; }
+.hl details.how p { margin: var(--cds-gap-xs) 0 0; max-width: 90ch; line-height: 1.5; }
 .hl .card h2 { border-left: 3px solid var(--brand1, var(--color-border-line)); padding-left: var(--cds-pad-sm); }
 .hl tbody tr:hover td { background: color-mix(in srgb, var(--color-fg) 6%, transparent); }
 .hl .seg button[aria-pressed="true"], .hl .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
@@ -82,11 +82,51 @@
 .hl .key .bar.l { clip-path: polygon(20% 0, 100% 0, 100% 100%, 20% 100%, 0 50%); }
 .hl .review { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--cds-gap-md); }
 .hl .review .rv { border-top: 2px solid var(--brand1, var(--color-border-line)); padding-top: var(--cds-gap-xs); }
-.hl .review .rv h3 { margin: 0 0 var(--cds-gap-xs); } .hl .review .rv p { max-width: none; }
+.hl .review { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); align-items: start; }
+.hl .review .rv h3 { margin: 0 0 var(--cds-gap-xs); } .hl .review .rv p { max-width: none; margin: 0; }
+.hl .review summary { cursor: pointer; list-style: none; } .hl .review summary::-webkit-details-marker { display: none; }
+.hl .review summary h3::after { content: " ▸"; color: var(--accent-2-text, var(--color-fg-muted)); } .hl .review details[open] summary h3::after { content: " ▾"; }
+.hl .review summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.hl .review .more { margin-top: var(--cds-gap-xs); color: var(--color-fg-muted); }
+.hl .review details[open] { grid-column: span 2; }
 .hl .summary-list.two { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
 .hl .card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--cds-gap-sm); }
 .hl .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.hl .foot { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-top: var(--cds-gap-lg); padding-top: var(--cds-gap-sm); border-top: 1px solid var(--color-border-line); max-width: 70ch; }
+.hl .topics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: var(--cds-gap-sm) var(--cds-gap-md); margin-top: var(--cds-gap-sm); }
+.hl details.topic { border-top: 1px solid var(--color-border-line); padding-top: var(--cds-gap-xs); }
+.hl details.topic summary { cursor: pointer; display: grid; gap: 2px; } .hl details.topic summary span { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.hl details.topic summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.hl details.topic[open] { grid-column: 1 / -1; } .hl details.topic .prose { max-width: 90ch; }
+/* Motion: content rises in, bars grow from their baseline, timelines reveal left to right, stars open from the centre.
+   CSS animations restart whenever a chart's SVG is redrawn or its tab is shown; none run with reduced motion or in print. */
+@keyframes hl-in { from { opacity: 0; transform: translateY(6px); } }
+@keyframes hl-grow-y { from { transform: scaleY(0); } }
+@keyframes hl-grow-x { from { transform: scaleX(0); } }
+@keyframes hl-wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes hl-open { from { opacity: 0; transform: scale(.6); } }
+@media (prefers-reduced-motion: no-preference) {
+  .hl .page:not([hidden]) > * { animation: hl-in 320ms cubic-bezier(.2, .7, .2, 1) backwards; }
+  .hl .page:not([hidden]) > :nth-child(2) { animation-delay: 40ms; } .hl .page:not([hidden]) > :nth-child(3) { animation-delay: 80ms; }
+  .hl .page:not([hidden]) > :nth-child(4) { animation-delay: 120ms; } .hl .page:not([hidden]) > :nth-child(n+5) { animation-delay: 160ms; }
+  .hl .chart svg rect.b { transform-box: fill-box; transform-origin: 50% 100%; animation: hl-grow-y 600ms cubic-bezier(.2, .7, .2, 1) backwards; }
+  .hl .chart svg rect.b.neg { transform-origin: 50% 0; }
+  .hl .chart svg rect.b.h { transform-origin: 0 50%; animation-name: hl-grow-x; }
+  .hl .chart svg rect.b.h.neg { transform-origin: 100% 50%; }
+  .hl .chart[data-draw="monthly"] svg, .hl .chart[data-draw="goal-lines"] svg { animation: hl-wipe 900ms cubic-bezier(.3, .6, .2, 1) backwards; }
+  .hl .chart.radar svg { transform-origin: 50% 50%; animation: hl-open 600ms cubic-bezier(.2, .7, .2, 1) backwards; }
+  .hl .review .rv { animation: hl-in 320ms cubic-bezier(.2, .7, .2, 1) backwards; }
+}
+@media print { .hl *, .hl *::before { animation: none !important; } }
+/* Hover: the mark under the pointer stays bright and its neighbours dim, so the tooltip clearly belongs to it. */
+.hl .chart svg rect.b, .hl .chart svg path.ring { transition: opacity 150ms ease-out, filter 150ms ease-out, stroke-width 150ms ease-out; }
+.hl .chart svg:hover rect.b { opacity: .45; }
+.hl .chart svg rect.b:hover { opacity: 1; filter: brightness(1.12) saturate(1.1); }
+.hl .chart.radar svg:hover path.ring { opacity: .35; }
+.hl .chart.radar svg path.ring:hover { opacity: 1; stroke-width: 3px; }
+.hl tbody td { transition: background-color 120ms ease-out; }
+@media (prefers-reduced-motion: no-preference) { .hl .tip:not([hidden]) { animation: hl-in 140ms ease-out backwards; } }
+@media (prefers-reduced-motion: reduce) { .hl .chart svg rect.b, .hl .chart svg path.ring, .hl tbody td { transition: none; } }
+.hl .foot { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-top: var(--cds-gap-lg); padding-top: var(--cds-gap-sm); border-top: 1px solid var(--color-border-line); max-width: 90ch; }
 </style>
 
 <div id="dash-root" class="hl">
@@ -96,7 +136,8 @@
     <img class="mark" src="/brand/mark.svg" alt="">
     <h1>{{ household.title or 'Household Ledger' }}{% if span.has_data %} {{ span.first_year }}{% if span.last_year != span.first_year %}–{{ span.last_year }}{% endif %}{% endif %}</h1>
   </div>
-  <p class="lede">Over the last twelve <dfn title="EveryDollar files each transaction into the month whose budget it belonged to, which is not always its calendar month. Every figure here uses the budget month.">budget months</dfn> the household took in <b data-draw="lede-income">—</b>, spent <b data-draw="lede-spend">—</b> on <dfn title="Everything that is not income, debt principal or a transfer: housing, food, giving, insurance, projects, envelope spending.">living</dfn> and <b data-draw="lede-debt">—</b> on debt, and kept <b data-draw="lede-net">—</b>. Every figure comes from the EveryDollar exports, with moves between envelopes and anything else your rules exclude taken out (the Method tab lists what). Dotted terms carry a definition: hover, focus or tap them; each card has a <em>How to read this</em> note.</p>
+  <p class="lede">Over the last twelve <dfn title="EveryDollar files each transaction into the month whose budget it belonged to, which is not always its calendar month. Every figure here uses the budget month.">budget months</dfn> the household took in <b data-draw="lede-income">—</b>, spent <b data-draw="lede-spend">—</b> on <dfn title="Everything that is not income, debt principal or a transfer: housing, food, giving, insurance, projects, envelope spending.">living</dfn> and <b data-draw="lede-debt">—</b> on debt, and kept <b data-draw="lede-net">—</b>.
+    <span class="aside-note">From the EveryDollar exports, with moves between envelopes and your rules' exclusions taken out (Method tab). Dotted terms have a definition: hover, focus or tap them.</span></p>
 
   {% if not span.has_data %}<p class="note" id="empty-state">Nothing is loaded yet, so every figure below is blank. {% if user and user.is_editor %}Add your first EveryDollar Transactions and BudgetItems exports on <a href="/upload">Close a month</a>, or load the sample household described in the README.{% else %}An editor needs to load the first EveryDollar exports.{% endif %}</p>{% endif %}
 
@@ -135,8 +176,8 @@
 
     <div class="card">
       <h2 id="monthly-chart">Income against outgo, by budget month</h2>
-      <p class="note">Outgo is living spend plus debt payments. Income and outgo leave out transfers between envelopes and the other exclusions listed on the Method tab. Dotted markers are life events; hover for the label.</p>
-      <details class="how"><summary>How to read this</summary><p>The gap between the income line and the dotted spend-plus-debt line is the month’s net. Months where the dotted line sits above income were funded from savings or a one-off inflow. Spikes in income are bonuses, tax refunds, stimulus or severance; spikes in spend are usually a tax bill, a trip or a project. Hover a dot along the top for the event behind a step change.</p></details>
+        <ul class="key row"><li><span class="glyph">=</span>outgo is living spend plus debt payments</li><li><span class="glyph">−</span>transfers and exclusions left out (Method tab)</li><li><span class="glyph">┊</span>dotted markers are life events: hover for the label</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Outgo is living spend plus debt payments. Income and outgo leave out transfers between envelopes and the other exclusions listed on the Method tab. Dotted markers are life events; hover for the label. The gap between the income line and the dotted spend-plus-debt line is the month’s net. Months where the dotted line sits above income were funded from savings or a one-off inflow. Spikes in income are bonuses, tax refunds, stimulus or severance; spikes in spend are usually a tax bill, a trip or a project. Hover a dot along the top for the event behind a step change.</p></details>
       <div class="chart" data-draw="monthly" data-source="monthly events"></div>
       <div class="legend"><span data-c="0">Income</span><span data-c="1">Living spend</span><span data-c="2">Spend + debt</span></div>
     </div>
@@ -144,8 +185,8 @@
 
     <div class="card">
       <h2 id="radar-chart">Category shape, year over year</h2>
-      <p class="note">Up to three stars so the small categories are readable: each has its own dollar scale. A spoke is a category, a ring is a year. The current year is drawn solid; earlier years fade with age. Click a year in the legend to hide or show it on every star.</p>
-      <details class="how"><summary>How to read this</summary><p>Read a star as a fingerprint: the current year’s solid outline against the faded outlines of earlier years. A spoke that grows year over year is a category whose share of life grew; a spoke that shrinks is one that was tamed. The stars are made from your own categories: those with spending are ranked by their total over all years and dealt into the largest third, the middle third and the smallest third (fewer stars when there are fewer than nine categories, and never one with fewer than three spokes). Scales differ between stars, so compare shapes within a star, not across them. Switch to real dollars to see whether a growing spoke is more than inflation.</p></details>
+        <ul class="key row"><li><span class="glyph">★</span>up to three stars, each on its own scale</li><li><span class="glyph">✳</span>a spoke is a category, a ring a year</li><li><span class="glyph">◐</span>current year solid, older years fade</li><li><span class="glyph">⊙</span>click a year in the legend to hide it</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Up to three stars so the small categories are readable: each has its own dollar scale. A spoke is a category, a ring is a year. The current year is drawn solid; earlier years fade with age. Click a year in the legend to hide or show it on every star. Read a star as a fingerprint: the current year’s solid outline against the faded outlines of earlier years. A spoke that grows year over year is a category whose share of life grew; a spoke that shrinks is one that was tamed. The stars are made from your own categories: those with spending are ranked by their total over all years and dealt into the largest third, the middle third and the smallest third (fewer stars when there are fewer than nine categories, and never one with fewer than three spokes). Scales differ between stars, so compare shapes within a star, not across them. Switch to real dollars to see whether a growing spoke is more than inflation.</p></details>
       <div class="legend years" data-draw="radar-legend" data-source="cat_year"></div>
       <div class="grid radars">
         <div><h3 class="sub">Categories</h3><div class="chart radar" data-draw="radar-a" data-source="cat_year"></div></div>
@@ -156,15 +197,15 @@
     <div class="grid">
       <div class="card">
         <h2 id="annual-chart">By year</h2>
-        <p class="note">The latest year may cover only part of a year; the Months column on the Position tab says how many. Net is income minus spend minus debt payments.</p>
-      <details class="how"><summary>How to read this</summary><p>Three bars per year. When the income bar clears the other two combined, the year was positive. A year with fewer than twelve months loaded has shorter bars than a full year would.</p></details>
+        <ul class="key row"><li><span class="glyph">=</span>net is income − spend − debt</li><li><span class="glyph">◔</span>the latest year may be partial (Position tab)</li></ul>
+      <details class="how"><summary>How to read this</summary><p>The latest year may cover only part of a year; the Months column on the Position tab says how many. Net is income minus spend minus debt payments. Three bars per year. When the income bar clears the other two combined, the year was positive. A year with fewer than twelve months loaded has shorter bars than a full year would.</p></details>
         <div class="chart" data-draw="annual" data-source="yearly"></div>
         <div class="legend"><span data-c="0">Income</span><span data-c="1">Living spend</span><span data-c="3">Debt payments</span></div>
       </div>
       <div class="card">
         <h2 id="employer-chart">Paycheck source, by month</h2>
-        <p class="note">Employer is read from the deposit description using the employers rule in Settings; deposits it cannot place are shown as Unknown.</p>
-      <details class="how"><summary>How to read this</summary><p>Paycheck deposits by month, colored by employer. A change of color is a job change; a taller month has three paychecks or a bonus paid through payroll.</p></details>
+        <ul class="key row"><li><span class="glyph">⌕</span>employer read from the deposit text (employers rule)</li><li><span class="glyph">?</span>deposits it cannot place: Unknown</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Employer is read from the deposit description using the employers rule in Settings; deposits it cannot place are shown as Unknown. Paycheck deposits by month, colored by employer. A change of color is a job change; a taller month has three paychecks or a bonus paid through payroll.</p></details>
         <div class="chart" data-draw="employer" data-source="employer"></div>
         <div class="legend" data-draw="employer-legend" data-source="employer"></div>
       </div>
@@ -182,11 +223,11 @@
       <div class="card tile"><div class="k">Debt payments</div><div class="v" data-draw="lm-db" data-source="lm_totals" data-field="debt_actual" data-where="row=last">—</div><div class="d" data-draw="lm-db-d" data-source="lm_totals" data-field="debt_vs_plan" data-where="row=last">—</div></div>
       <div class="card tile"><div class="k">Left over</div><div class="v" data-draw="lm-net" data-source="lm_totals" data-field="net_actual" data-where="row=last">—</div><div class="d" data-draw="lm-net-d" data-source="lm_totals" data-field="net_vs_avg" data-where="row=last">—</div></div>
     </div>
-    <div class="card split">
+    <div class="card">
       <div class="aside">
         <p class="eyebrow">Month-close review</p>
         <h2 id="lm-review">Reading the month</h2>
-        <ul class="key"><li><span class="glyph">✎</span>Written by the model from the figures on this tab</li><li><span class="glyph">↻</span>Rewritten when the month is regenerated</li><li><span class="glyph">✓</span>Every number it quotes is in the tables below</li></ul>
+        <ul class="key row"><li><span class="glyph">✎</span>written by the model from the figures on this tab</li><li><span class="glyph">✓</span>every number it quotes is in the tables below</li><li><span class="glyph">▸</span>open a section to read all of it</li></ul>
         <details class="how"><summary>How this is made</summary><p>After each month's exports are added, Claude reads the planned-versus-spent table, the category gaps against plan and against the trailing average, and the ledger's clean monthly totals, then writes this section. It is analysis, not a record: the numbers it quotes come from the datasets, and the judgments are a starting point for your own.</p></details>
       </div>
       <div class="review" data-draw="lm-review" data-source="review"></div>
@@ -219,14 +260,14 @@
       </div>
       <div id="lm-t-cats">
         <ul class="key row"><li><span class="glyph">Σ</span>Planned, spent, 12-month average</li><li><span class="glyph">↑10</span>Suggested plan: the average rounded up to the next $10</li><li><span class="glyph">=</span>Housing, Debt, Insurance keep their plan</li></ul>
-        <div class="tbl"><table data-source="lm_cats" data-row-key="category"><thead><tr>
+        <div class="tbl short"><table data-source="lm_cats" data-row-key="category"><thead><tr>
           <th data-field="category">Category</th><th data-field="planned">Planned</th><th data-field="actual">Spent</th><th data-field="vs_plan">vs plan</th><th data-field="avg12">12-mo avg</th><th data-field="vs_avg">vs avg</th><th data-field="suggest">Suggested plan</th>
         </tr></thead><tbody data-draw="lm-cats"></tbody></table></div>
       </div>
       <div id="lm-t-items" hidden>
         <h3 class="visually-hidden" id="lm-items">Envelopes that missed by the most</h3>
         <ul class="key row"><li><span class="glyph">25</span>Largest gaps, either way</li><li><span class="glyph">+</span>spent more than planned</li><li><span class="glyph">&lt;$1</span>hidden</li></ul>
-        <div class="tbl"><table data-source="lm_items" data-row-key="item"><thead><tr>
+        <div class="tbl short"><table data-source="lm_items" data-row-key="item"><thead><tr>
           <th data-field="item">Envelope</th><th data-field="category">Category</th><th data-field="planned">Planned</th><th data-field="actual">Spent</th><th data-field="gap">Gap</th>
         </tr></thead><tbody data-draw="lm-items"></tbody></table></div>
       </div>
@@ -236,7 +277,8 @@
 
   <!-- ===================== GOALS ===================== -->
   <section id="goals" class="page" role="tabpanel" aria-labelledby="tab-goals" tabindex="0" hidden>
-    <p class="intro">Where the household stands against the standing targets: a giving floor, a savings share, and a housing cap. Which categories count as giving and housing, and which budget groups count as savings, are rules on the Settings page. Targets are shares of gross or take-home pay, so they move with income rather than with the plan.</p>
+    <p class="intro">Where the household stands against its standing targets: a giving floor, a savings share and a housing cap.
+      <span class="aside-note">Targets are shares of gross or take-home pay, so they move with income, not with the plan. Which categories and groups count is set in the rules on the Settings page.</span></p>
     <div class="tiles">
       <div class="card tile"><div class="k">Giving, last 12 months</div><div class="v" data-draw="g-giving" data-source="goal_summary" data-field="giving_share" data-where="row=last12">—</div><div class="d" data-draw="g-giving-d" data-source="goal_summary" data-field="giving_vs_floor" data-where="row=last12">—</div></div>
       <div class="card tile"><div class="k">Planned into savings groups, last 12 months</div><div class="v" data-draw="g-joy" data-source="goal_summary" data-field="joy_share" data-where="row=last12">—</div><div class="d" data-draw="g-joy-d" data-source="goal_summary" data-field="joy_vs_target" data-where="row=last12">—</div></div>
@@ -245,24 +287,25 @@
     </div>
     <div class="card">
       <h2 id="goal-chart">The three ratios, month by month</h2>
-      <p class="note">Giving as a share of gross (floor and target lines), savings-group funding as a share of gross (target line), and housing plus utilities as a share of take-home (cap line). Twelve-month trailing averages, so a three-paycheck month or a lump payment does not whip the line around.</p>
+        <ul class="key row"><li><span class="glyph">—</span>solid: twelve-month trailing share</li><li><span class="glyph">- -</span>dashed: target, floor or cap</li><li><span class="glyph">↑</span>above target is good for giving and savings, bad for housing</li></ul>
       <div class="chart" data-draw="goal-lines" data-source="goal_month goals"></div>
       <div class="legend"><span data-c="0">Giving / gross</span><span data-c="1">Savings funding / gross</span><span data-c="2">Housing + utilities / take-home</span></div>
-      <details class="how"><summary>How to read this</summary><p>A solid line above its dashed target is good for giving and savings, and bad for housing. The lines are twelve-month trailing averages, so a change in behaviour takes a few months to show. Gross is the stated annual salary spread evenly across months; take-home is the net paychecks that actually landed, so the housing ratio is honest about months with two versus three paychecks only in the trailing view.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Giving as a share of gross (floor and target lines), savings-group funding as a share of gross (target line), and housing plus utilities as a share of take-home (cap line). Twelve-month trailing averages, so a three-paycheck month or a lump payment does not whip the line around. A solid line above its dashed target is good for giving and savings, and bad for housing. The lines are twelve-month trailing averages, so a change in behaviour takes a few months to show. Gross is the stated annual salary spread evenly across months; take-home is the net paychecks that actually landed, so the housing ratio is honest about months with two versus three paychecks only in the trailing view.</p></details>
     </div>
     <div class="grid">
       <div class="card">
         <h2 id="goal-table">Latest months in detail</h2>
-        <p class="note">Single-month figures, newest first. Expect the housing share to drop in three-paycheck months and rise in two-paycheck months.</p>
+        <ul class="key row"><li><span class="glyph">1</span>single months, newest first</li><li><span class="glyph">3×</span>three-paycheck months lower the housing share</li></ul>
+        <details class="how"><summary>How to read this</summary><p>Single-month figures, newest first. Expect the housing share to drop in three-paycheck months and rise in two-paycheck months.</p></details>
         <div class="tbl"><table data-source="goal_month" data-row-key="m"><thead><tr>
           <th data-field="m">Month</th><th data-field="paychecks">Paychecks</th><th data-field="takehome">Take-home</th><th data-field="giving">Giving</th><th data-field="giving_share">/ gross</th><th data-field="joy_planned">Savings planned</th><th data-field="joy_share">/ gross</th><th data-field="housing">Housing + util.</th><th data-field="housing_share">/ take-home</th>
         </tr></thead><tbody data-draw="goal-table"></tbody></table></div>
       </div>
       <div class="card">
         <h2 id="goal-params">The targets as recorded</h2>
-        <p class="note">These are the user's stated figures, not derived from the data. Gross salary is asked for at every month-close; the others change only when the user says so.</p>
+        <ul class="key row"><li><span class="glyph">✎</span>your stated figures, not derived from data</li><li><span class="glyph">↻</span>gross salary is asked for at every month-close</li></ul>
         <div class="tbl"><table data-source="goals" data-row-key="key"><thead><tr><th data-field="label">Target</th><th data-field="value">Value</th><th data-field="note">Note</th><th data-field="confirmed_at">Last confirmed</th></tr></thead><tbody data-draw="goal-params"></tbody></table></div>
-        <details class="how"><summary>What is not here yet</summary><p>Investing that is deposited outside EveryDollar never appears in the exports, so this page cannot see it. Once the amount is recorded in the targets table it can be shown as a share of gross alongside the others, and it should be: it is the one goal this page currently cannot check.</p></details>
+        <details class="how"><summary>What is not here yet</summary><p>These are the user's stated figures, not derived from the data. Gross salary is asked for at every month-close; the others change only when the user says so. Investing that is deposited outside EveryDollar never appears in the exports, so this page cannot see it. Once the amount is recorded in the targets table it can be shown as a share of gross alongside the others, and it should be: it is the one goal this page currently cannot check.</p></details>
       </div>
     </div>
   </section>
@@ -272,27 +315,34 @@
     <p class="intro">Which categories carry the spending, how each has grown, and what sits inside any one of them.</p>
     <div class="card">
       <h2 id="cat-chart">Spend by category, by year</h2>
-      <p class="note">Stacked by category. Debt payments, taxes, large purchases and savings-envelope spending are included and labelled; transfers and plugs are not.</p>
-      <details class="how"><summary>How to read this</summary><p>Each column is a year; each band a category, largest at the bottom. A band that suddenly grows or appears marks a year when that category changed size, such as a one-off purchase or two years of one bill paid in one budget year.</p></details>
+        <ul class="key row"><li><span class="glyph">▤</span>stacked by category, largest at the bottom</li><li><span class="glyph">+</span>debt, taxes, large purchases and savings spending included</li><li><span class="glyph">−</span>transfers and plugs left out</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Stacked by category. Debt payments, taxes, large purchases and savings-envelope spending are included and labelled; transfers and plugs are not. Each column is a year; each band a category, largest at the bottom. A band that suddenly grows or appears marks a year when that category changed size, such as a one-off purchase or two years of one bill paid in one budget year.</p></details>
       <div class="chart" data-draw="cat-stack" data-source="cat_year"></div>
       <div class="legend" data-draw="cat-legend" data-source="cat_year"></div>
     </div>
     <div class="card">
-      <h2 id="cat-table">Category by year</h2>
-      <p class="note">Same figures as the chart. Columns are budget years; the last column is the {{ span.years }}-year total.</p>
-      <details class="how"><summary>How to read this</summary><p>Dashes mean nothing was booked to that category that year. Negative numbers are possible where refunds or inbound transfers outweighed spending in an envelope.</p></details>
+      <div class="card-head">
+        <h2 id="cat-table">Tables</h2>
+        <div class="seg" role="group" aria-label="Which table" data-switch="where-tables"><button type="button" aria-pressed="true" data-show="w-t-cats">Category by year</button><button type="button" aria-pressed="false" data-show="w-t-items">Items inside a category</button></div>
+      </div>
+      <div id="w-t-cats">
+        <ul class="key row"><li><span class="glyph">Σ</span>last column: the {{ span.years }}-year total</li><li><span class="glyph">—</span>nothing booked that year</li></ul>
+      
+      <details class="how"><summary>How to read this</summary><p>Same figures as the chart. Columns are budget years; the last column is the {{ span.years }}-year total. Dashes mean nothing was booked to that category that year. Negative numbers are possible where refunds or inbound transfers outweighed spending in an envelope.</p></details>
       <div class="tbl"><table data-source="cat_pivot" data-row-key="category"><thead><tr>
         <th data-field="category">Category</th><th data-field="total">Total</th>
       </tr></thead><tbody data-draw="cat-pivot"></tbody></table></div>
     </div>
-    <div class="card">
-      <h2 id="item-table">Items inside a category</h2>
-      <p class="note">Pick a category to see its canonical items by year. Item names are the merged names from the mapping, not EveryDollar's originals.</p>
-      <details class="how"><summary>How to read this</summary><p>Items are EveryDollar envelopes after merging renamed copies (Grocery 2 and Grocery are one item). Pick a category above to change the list.</p></details>
+      <div id="w-t-items" hidden>
+        <h3 class="visually-hidden" id="item-table">Items inside a category</h3>
+        <ul class="key row"><li><span class="glyph">⇲</span>pick a category</li><li><span class="glyph">≡</span>merged names from the mapping</li></ul>
+      
+      <details class="how"><summary>How to read this</summary><p>Pick a category to see its canonical items by year. Item names are the merged names from the mapping, not EveryDollar's originals. Items are EveryDollar envelopes after merging renamed copies (Grocery 2 and Grocery are one item). Pick a category above to change the list.</p></details>
       <div class="controls"><select class="cat-pick" aria-label="Category" data-draw="cat-pick" data-source="cat_year"></select></div>
       <div class="tbl"><table data-source="item_pivot" data-row-key="item"><thead><tr>
         <th data-field="item">Item</th><th data-field="total">Total</th>
       </tr></thead><tbody data-draw="item-pivot"></tbody></table></div>
+    </div>
     </div>
   </section>
 
@@ -301,8 +351,8 @@
     <p class="intro">Costs that recur without a decision, and envelopes that quietly absorbed spending they were not meant for.</p>
     <div class="card">
       <h2 id="recurring-table">Recurring costs</h2>
-      <p class="note">Subscriptions, utilities and insurance. "Now" is the average over the last twelve budget months, including months with no charge, so an annual bill shows as a twelfth. Inactive rows have had no charge in the last three months.</p>
-      <details class="how"><summary>How to read this</summary><p>“Now / month” averages the last twelve budget months including months with no charge, so an annual bill shows as a twelfth of itself. Compare it with the lifetime column to see how long a cost has been running.</p></details>
+        <ul class="key row"><li><span class="glyph">∅</span>subscriptions, utilities and insurance</li><li><span class="glyph">÷12</span>now: twelve-month average, empty months included</li><li><span class="glyph">○</span>inactive: no charge in three months</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Subscriptions, utilities and insurance. "Now" is the average over the last twelve budget months, including months with no charge, so an annual bill shows as a twelfth. Inactive rows have had no charge in the last three months. “Now / month” averages the last twelve budget months including months with no charge, so an annual bill shows as a twelfth of itself. Compare it with the lifetime column to see how long a cost has been running.</p></details>
       <div class="tbl"><table data-source="recurring" data-row-key="item"><thead><tr>
         <th data-field="item">Item</th><th data-field="active">Active</th><th data-field="first">First</th><th data-field="last">Last</th><th data-field="monthly_now">Now / month</th><th data-field="lifetime">Lifetime</th>
       </tr></thead><tbody data-draw="recurring"></tbody></table></div>
@@ -310,15 +360,15 @@
     <div class="grid">
       <div class="card">
         <h2 id="slush-chart">Catch-all envelopes</h2>
-        <p class="note">Spending booked to the envelopes your rules name as catch-alls (<span data-draw="slush-items" data-source="goal_config">none yet</span>). High bars mean real spending sitting under a saving label. Name them as <code>catchall_items</code> in the rules on the Settings page.</p>
-      <details class="how"><summary>How to read this</summary><p>EveryDollar envelopes named like savings can end up holding everyday spending. When a bar here is tall, real spending was hidden under a saving label that year. An empty chart means nothing was booked to these envelopes.</p></details>
+        <ul class="key row"><li><span class="glyph">Σ</span>catch-alls: <span data-draw="slush-items" data-source="goal_config">none yet</span></li><li><span class="glyph">↑</span>a tall bar is spending under a saving label</li><li><span class="glyph">⚙</span><code>catchall_items</code> in the rules on Settings</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Spending booked to the envelopes your rules name as catch-alls; name them as <code>catchall_items</code> in the rules on the Settings page. EveryDollar envelopes named like savings can end up holding everyday spending. When a bar here is tall, real spending was hidden under a saving label that year. An empty chart means nothing was booked to these envelopes.</p></details>
         <div class="chart" data-draw="slush" data-source="slush"></div>
         <div class="legend" data-draw="slush-legend" data-source="slush"></div>
       </div>
       <div class="card">
         <h2 id="excl-table">What was removed from the totals</h2>
-        <p class="note">Rows and dollars taken out so income and spend mean what they say.</p>
-      <details class="how"><summary>How to read this</summary><p>These rows and dollars exist in the raw exports but were removed before any total was computed. Dollar rows show the amount removed; row counts show how many transactions the rule touched.</p></details>
+        <ul class="key row"><li><span class="glyph">−</span>taken out before any total</li><li><span class="glyph">#</span>rows and dollars per adjustment</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Rows and dollars taken out so income and spend mean what they say. These rows and dollars exist in the raw exports but were removed before any total was computed. Dollar rows show the amount removed; row counts show how many transactions the rule touched.</p></details>
         <div class="tbl"><table data-source="exclusions" data-row-key="key"><thead><tr><th data-field="key">Adjustment</th><th data-field="value">Amount</th></tr></thead><tbody data-draw="exclusions"></tbody></table></div>
       </div>
     </div>
@@ -329,8 +379,8 @@
     <p class="intro">The year-end view: what came in, what went out, what was kept, and the debts that were paid down and taken on.</p>
     <div class="card">
       <h2 id="yearly-table">Year by year</h2>
-      <p class="note">Savings rate is net divided by income. Real columns restate each month in {{ span.cpi_base_long }} prices using the price index; see Method.</p>
-      <details class="how"><summary>How to read this</summary><p>Savings rate is net divided by income: positive means the year added to savings, negative means it drew them down. Real columns restate every month in {{ span.cpi_base_long }} prices; the Method tab explains the index used.</p></details>
+        <ul class="key row"><li><span class="glyph">%</span>savings rate is net ÷ income</li><li><span class="glyph">$</span>real columns in {{ span.cpi_base_long }} prices (Method)</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Savings rate is net divided by income. Real columns restate each month in {{ span.cpi_base_long }} prices using the price index; see Method. Savings rate is net divided by income: positive means the year added to savings, negative means it drew them down. Real columns restate every month in {{ span.cpi_base_long }} prices; the Method tab explains the index used.</p></details>
       <div class="tbl"><table data-source="yearly" data-row-key="y"><thead><tr>
         <th data-field="y">Year</th><th data-field="months">Months</th><th data-field="income">Income</th><th data-field="spend">Living spend</th><th data-field="debt">Debt paid</th><th data-field="net">Net</th><th data-field="savings_rate">Savings rate</th><th data-field="income_real">Income (real)</th><th data-field="spend_real">Spend (real)</th><th data-field="net_real">Net (real)</th>
       </tr></thead><tbody data-draw="yearly"></tbody></table></div>
@@ -338,14 +388,14 @@
     <div class="grid">
       <div class="card">
         <h2 id="debt-chart">Debt timeline</h2>
-        <p class="note">Each bar spans the months a debt item received payments; the label is the total paid.</p>
-      <details class="how"><summary>How to read this</summary><p>Bars run from first to last payment month. Total paid includes principal and interest as EveryDollar recorded them, not the original loan balance.</p></details>
+        <ul class="key row"><li><span class="glyph">↔</span>first to last payment month</li><li><span class="glyph">Σ</span>label: total paid, interest included</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Each bar spans the months a debt item received payments; the label is the total paid. Bars run from first to last payment month. Total paid includes principal and interest as EveryDollar recorded them, not the original loan balance.</p></details>
         <div class="chart" data-draw="debts" data-source="debts"></div>
       </div>
       <div class="card">
         <h2 id="net-chart">Net kept, by year</h2>
-        <p class="note">Income minus living spend minus debt payments. Below zero means the year was funded from savings or one-off inflows.</p>
-      <details class="how"><summary>How to read this</summary><p>Green years added to savings; red years drew on them. A deep red bar usually means taxes, giving or savings-envelope spending landed in a year with lower income.</p></details>
+        <ul class="key row"><li><span class="bar " style="--k: var(--color-ok)"></span>added to savings</li><li><span class="bar " style="--k: var(--color-bad)"></span>drawn from savings</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Income minus living spend minus debt payments. Below zero means the year was funded from savings or one-off inflows. Green years added to savings; red years drew on them. A deep red bar usually means taxes, giving or savings-envelope spending landed in a year with lower income.</p></details>
         <div class="chart" data-draw="net" data-source="yearly"></div>
       </div>
     </div>
@@ -353,26 +403,28 @@
 
   <!-- ===================== PEOPLE ===================== -->
   <section id="people" class="page" role="tabpanel" aria-labelledby="tab-people" tabindex="0" hidden>
-    <p class="intro">Who earned the income and whose envelopes spent it. People and their items come from the rules in Settings; anything not assigned to a person is Household.</p>
+    <p class="intro">Who earned the income and whose envelopes spent it.
+      <span class="aside-note">People and their items come from the rules on the Settings page; anything not assigned to a person is Household.</span></p>
     <div class="grid">
       <div class="card">
         <h2 id="earner-chart">Income by earner</h2>
-        <p class="note">Earner is assigned by item, using the income_by_person rule in Settings. Refunds, interest and other inflows not tied to a person are Household.</p>
-      <details class="how"><summary>How to read this</summary><p>Earner is assigned by item: the items named for each person in the income_by_person rule belong to that person, and everything else is Household. If a person is missing here, add their income items to the rule and rebuild.</p></details>
+        <ul class="key row"><li><span class="glyph">⚙</span>from the income_by_person rule</li><li><span class="glyph">⌂</span>income not tied to a person: Household</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Earner is assigned by item, using the income_by_person rule in Settings. Refunds, interest and other inflows not tied to a person are Household. Earner is assigned by item: the items named for each person in the income_by_person rule belong to that person, and everything else is Household. If a person is missing here, add their income items to the rule and rebuild.</p></details>
         <div class="chart" data-draw="earner" data-source="people"></div>
         <div class="legend" data-draw="earner-legend" data-source="people"></div>
       </div>
       <div class="card">
         <h2 id="payer-chart">Spend by payer</h2>
-        <p class="note">Payer is envelope ownership, the only signal EveryDollar carries: each person's discretionary envelopes versus everything shared. Expect Household to dominate.</p>
-      <details class="how"><summary>How to read this</summary><p>EveryDollar has no payer field, so payer here means envelope ownership, matched by the payer_prefix_by_person and payer_items_by_person rules, with the shared remainder as Household. It answers “how much discretionary money did each person direct,” not “who tapped the card.”</p></details>
+        <ul class="key row"><li><span class="glyph">✉</span>payer means envelope owner, not who paid</li><li><span class="glyph">⌂</span>shared envelopes: Household</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Payer is envelope ownership, the only signal EveryDollar carries: each person's discretionary envelopes versus everything shared. Expect Household to dominate. EveryDollar has no payer field, so payer here means envelope ownership, matched by the payer_prefix_by_person and payer_items_by_person rules, with the shared remainder as Household. It answers “how much discretionary money did each person direct,” not “who tapped the card.”</p></details>
         <div class="chart" data-draw="payer" data-source="people"></div>
         <div class="legend" data-draw="payer-legend" data-source="people"></div>
       </div>
     </div>
     <div class="card">
       <h2 id="people-table">Earner and payer shares by year</h2>
-      <p class="note">Shares are of that year's total income or total spend.</p>
+        <ul class="key row"><li><span class="glyph">%</span>share of that year's total income or spend</li></ul>
+        <details class="how"><summary>How to read this</summary><p>Shares are of that year's total income or total spend.</p></details>
       <div class="tbl"><table data-source="people_pivot" data-row-key="y"><thead><tr>
         <th data-field="y">Year</th></tr></thead><tbody data-draw="people-pivot"></tbody></table></div>
     </div>
@@ -381,38 +433,24 @@
   <!-- ===================== METHOD ===================== -->
   <section id="method" class="page" role="tabpanel" aria-labelledby="tab-method" tabindex="0" hidden>
     <p class="intro">How the numbers were made, what was removed, and the choices to revisit if a figure looks wrong.</p>
-    <div class="card prose">
-      <h2>How to read this</h2>
-      <h3>Budget month, not calendar month</h3>
-      <p>EveryDollar files transactions into budget months, and about one row in thirteen sits in a different budget month than its calendar date. Everything here uses the budget month, so a late-January rent payment filed into February stays in February, matching what the budget showed at the time.</p>
-      <h3>Nominal versus real amounts</h3>
-      <p>Nominal is what the bank saw. Real restates each month's amounts in {{ span.cpi_base_long }} prices by multiplying by the ratio of the {{ span.cpi_base_long }} price index to that month's price index. For US households the documented source is CPI-U (all urban consumers, all items, seasonally adjusted, series CPIAUCSL from FRED); other countries use their own consumer price index, entered on the Settings page. Use real to compare lifestyle across years; use nominal to reconcile against statements. <span data-draw="cpi-note" data-source="cpi" data-base="{{ span.cpi_base_iso }}" data-first="{{ span.first_month or '' }}"></span></p>
-      <h3>What was taken out</h3>
-      <p>Transfers between envelopes appear in EveryDollar as a negative row in one item and a positive row in another, so summing them would inflate both income and spend. They are recognised by merchant text, by item name and by amount pairing, and removed. What follows is generated from the data loaded, so it lists only what this household's rules actually removed.</p>
-      <div id="method-exclusions" data-draw="method-exclusions" data-source="exclusions verify"></div>
-      <h3>Item names</h3>
-      <p>EveryDollar items get renamed and recreated, so the same envelope can appear under several names. Each original name is mapped to a canonical item and a category; the mapping file lives beside the ledger and is the thing to edit (Settings) if a category looks wrong. <span data-draw="method-items" data-source="item_year cat_year"></span></p>
-      <h3>Refreshing</h3>
-      <p>Each month the two EveryDollar exports for the closed budget month are added to the set, the ledger and these files are rebuilt, and the page redraws from them. Nothing on the page is typed in by hand, so a corrected export changes every dependent figure at once.</p>
-      <h3>Reading the colors</h3>
-      <p>Green and red mark direction, not judgment: green is money kept or a category under its envelope, red is money drawn down or an envelope exceeded. Chart series take the brand palette in order (series 1 through 8 in the theme).</p>
-      <h3>Notes</h3>
-      <p>The ledger carries every EveryDollar note, but notes are not shown on this page, because they can hold private details such as medication and people's names.</p>
+    <div class="card">
+      <h2>How the numbers are made</h2>
+      <div class="topics">
+        <details class="topic"><summary><b>Budget month, not calendar month</b><span>Rows count in the budget month EveryDollar filed them in.</span></summary><div class="prose"><p>EveryDollar files transactions into budget months, and about one row in thirteen sits in a different budget month than its calendar date. Everything here uses the budget month, so a late-January rent payment filed into February stays in February, matching what the budget showed at the time.</p></div></details>
+        <details class="topic"><summary><b>Nominal versus real amounts</b><span>Real restates every month in one month's prices.</span></summary><div class="prose"><p>Nominal is what the bank saw. Real restates each month's amounts in {{ span.cpi_base_long }} prices by multiplying by the ratio of the {{ span.cpi_base_long }} price index to that month's price index. For US households the documented source is CPI-U (all urban consumers, all items, seasonally adjusted, series CPIAUCSL from FRED); other countries use their own consumer price index, entered on the Settings page. Use real to compare lifestyle across years; use nominal to reconcile against statements. <span data-draw="cpi-note" data-source="cpi" data-base="{{ span.cpi_base_iso }}" data-first="{{ span.first_month or '' }}"></span></p></div></details>
+        <details class="topic" open><summary><b>What was taken out</b><span>Transfers and other non-spending rows removed before any total.</span></summary><div class="prose"><p>Transfers between envelopes appear in EveryDollar as a negative row in one item and a positive row in another, so summing them would inflate both income and spend. They are recognised by merchant text, by item name and by amount pairing, and removed. What follows is generated from the data loaded, so it lists only what this household's rules actually removed.</p>
+      <div id="method-exclusions" data-draw="method-exclusions" data-source="exclusions verify"></div></div></details>
+        <details class="topic"><summary><b>Item names</b><span>Renamed envelopes are merged through the mapping.</span></summary><div class="prose"><p>EveryDollar items get renamed and recreated, so the same envelope can appear under several names. Each original name is mapped to a canonical item and a category; the mapping file lives beside the ledger and is the thing to edit (Settings) if a category looks wrong. <span data-draw="method-items" data-source="item_year cat_year"></span></p></div></details>
+        <details class="topic"><summary><b>Refreshing</b><span>Every figure is rebuilt from the stored exports.</span></summary><div class="prose"><p>Each month the two EveryDollar exports for the closed budget month are added to the set, the ledger and these files are rebuilt, and the page redraws from them. Nothing on the page is typed in by hand, so a corrected export changes every dependent figure at once.</p></div></details>
+        <details class="topic"><summary><b>Reading the colors</b><span>Green and red mark direction, not judgment.</span></summary><div class="prose"><p>Green and red mark direction, not judgment: green is money kept or a category under its envelope, red is money drawn down or an envelope exceeded. Chart series take the brand palette in order (series 1 through 8 in the theme).</p></div></details>
+        <details class="topic"><summary><b>Notes</b><span>EveryDollar notes are kept in the ledger, never shown here.</span></summary><div class="prose"><p>The ledger carries every EveryDollar note, but notes are not shown on this page, because they can hold private details such as medication and people's names.</p></div></details>
+      </div>
     </div>
     <div class="card" id="recon-card">
       <h2>Reconciliation</h2>
       <p class="note" data-draw="reconciliation-note">Every envelope's transactions should sum to its Spent in the BudgetItems export; any that do not are listed here.</p>
       <div class="tbl"><table data-source="reconciliation" data-row-key="item"><thead><tr><th data-field="m">Month</th><th data-field="item">Envelope</th><th data-field="txn_sum">Σ transactions</th><th data-field="spent">Spent</th><th data-field="delta">Delta</th><th data-field="status">Status</th></tr></thead><tbody data-draw="reconciliation"></tbody></table></div>
-      <script nonce="{{ csp_nonce(request) }}">
-// Segmented switches inside a card ([data-switch]): each button shows its own panel (data-show) and hides its siblings'.
-document.addEventListener('click', (e) => {
-  const b = e.target.closest('[data-switch] button[data-show]'); if (!b) return;
-  for (const o of b.parentElement.querySelectorAll('button[data-show]')) {
-    const on = o === b; o.setAttribute('aria-pressed', String(on)); const t = document.getElementById(o.dataset.show); if (t) t.hidden = !on;
-  }
-});
-</script>
-<script nonce="{{ csp_nonce(request) }}">(() => {
+      <script nonce="{{ csp_nonce(request) }}">(() => {
         const rows = () => { const g = dash.data('reconciliation'); return g.status === 'ok' ? g.data : null; };
         dash.draw('reconciliation-note', (el) => { const d = rows(); if (d) el.textContent = d.length ? d.length + ' envelope' + (d.length === 1 ? '' : 's') + ' do not reconcile. Fix or re-upload the month, then rebuild.' : 'All envelopes reconcile: every month\'s transactions sum to the budget\'s Spent.'; });
         dash.draw('reconciliation', (tb) => {
@@ -421,19 +459,20 @@ document.addEventListener('click', (e) => {
         });
       })();</script>
     </div>
-    <div class="grid">
-      <div class="card">
-        <h2 id="cpi-table">Price index used</h2>
+    <div class="card">
+      <div class="card-head">
+        <h2 id="cpi-table">Price index and open items</h2>
+        <div class="seg" role="group" aria-label="Which table" data-switch="method-tables"><button type="button" aria-pressed="true" data-show="m-t-cpi">Price index used</button><button type="button" aria-pressed="false" data-show="cpi-estimated">Estimated CPI months</button><button type="button" aria-pressed="false" data-show="m-t-verify">Unverified inflows</button></div>
+      </div>
+      <div id="m-t-cpi">
         <p class="note">Filled months are marked in the Source column and shown in the warning color.</p>
         <div class="tbl"><table data-source="cpi" data-row-key="month"><thead><tr><th data-field="month">Month</th><th data-field="cpi">Price index</th><th data-field="source">Source</th></tr></thead><tbody data-draw="cpi"></tbody></table></div>
       </div>
-      <div class="card" id="cpi-estimated">
-        <h2>Estimated CPI months</h2>
+      <div id="cpi-estimated" hidden>
         <p class="note">Not yet published by the index; the value is carried forward, interpolated or estimated. <b>Fetch latest</b> on the CPI page replaces them once published.</p>
         <p data-draw="cpi-estimated"></p>
       </div>
-      <div class="card">
-        <h2 id="verify-table">Unverified inflows</h2>
+      <div id="m-t-verify" hidden><h3 class="visually-hidden" id="verify-table">Unverified inflows</h3>
         <p class="note">Booked as income in EveryDollar but not yet identified. Kept out of every total until confirmed.</p>
         <div class="tbl"><table data-source="verify" data-row-key="m,item"><thead><tr><th data-field="m">Month</th><th data-field="item">Item</th><th data-field="merchant">Merchant</th><th data-field="amount">Amount</th></tr></thead><tbody data-draw="verify"></tbody></table></div>
       </div>
@@ -496,7 +535,7 @@ window.HL = (() => {
     svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).tickValues(xs.filter((_, i) => i % every === 0)).tickFormat(opts.xfmt || ((d) => d)).tickSize(0)).call((g) => { g.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); g.attr('font-size', null).attr('font-family', null); edgeTicks(g, ml, W - 8); });
     const col = (i) => colors()[i % colors().length];
     const t = tip(el);
-    svg.append('g').selectAll('g').data(stacked).join('g').attr('fill', (d, i) => col(i)).selectAll('rect').data((d) => d.map((p) => ({ ...p, key: d.key }))).join('rect')
+    svg.append('g').selectAll('g').data(stacked).join('g').attr('fill', (d, i) => col(i)).selectAll('rect').data((d) => d.map((p) => ({ ...p, key: d.key }))).join('rect').attr('class', 'b')
       .attr('x', (d) => x(d.data.x)).attr('width', x.bandwidth()).attr('y', (d) => y(d[1])).attr('height', (d) => Math.max(0, y(d[0]) - y(d[1]))).attr('rx', 2)
       .on('pointermove', (ev, d) => { const [px, py] = d3.pointer(ev, el); const i = series.indexOf(d.key); t.show(px, py, `<div class="t">${esc(opts.xfmt ? opts.xfmt(d.data.x) : d.data.x)}</div><div><span class="sw" style="background:${col(i)}"></span>${esc(d.key)} ${esc(money(d[1] - d[0]))}</div><div class="t">Total ${esc(money(d3.sum(series, (s) => d.data[s])))}</div>`); })
       .on('pointerleave', () => t.hide());
@@ -712,7 +751,7 @@ dash.draw('annual', (el) => {
   svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
   svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x0).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); });
   const c = HL.colors(); const t = HL.tip(el);
-  svg.append('g').selectAll('g').data(rows).join('g').attr('transform', (r) => `translate(${x0(r.y)},0)`).selectAll('rect').data((r) => keys.map((k, i) => ({ y: r.y, k, i, v: Number(r[f(k)]) }))).join('rect')
+  svg.append('g').selectAll('g').data(rows).join('g').attr('transform', (r) => `translate(${x0(r.y)},0)`).selectAll('rect').data((r) => keys.map((k, i) => ({ y: r.y, k, i, v: Number(r[f(k)]) }))).join('rect').attr('class', (d) => d.v < 0 ? 'b neg' : 'b')
     .attr('x', (d) => x1(d.k)).attr('width', x1.bandwidth()).attr('y', (d) => y(d.v)).attr('height', (d) => y(0) - y(d.v)).attr('rx', 2).attr('fill', (d) => c[ci[d.i]])
     .on('pointermove', (pe, d) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(d.y)}</div><div><span class="sw" style="background:${c[ci[d.i]]}"></span>${names[d.i]} ${HL.esc(HL.usd0(d.v))}</div>`); }).on('pointerleave', () => t.hide());
 });
@@ -730,7 +769,7 @@ dash.draw('net', (el) => {
   svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--cds-chart-axis)');
   svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).tickSize(0)).call((a) => { a.select('.domain').remove(); a.attr('font-size', null).attr('font-family', null); });
   const t = HL.tip(el);
-  svg.append('g').selectAll('rect').data(rows).join('rect').attr('x', (r) => x(r.y)).attr('width', x.bandwidth()).attr('y', (r) => Math.min(y(0), y(r.v))).attr('height', (r) => Math.abs(y(0) - y(r.v))).attr('rx', 2)
+  svg.append('g').selectAll('rect').data(rows).join('rect').attr('class', (r) => r.v < 0 ? 'b neg' : 'b').attr('x', (r) => x(r.y)).attr('width', x.bandwidth()).attr('y', (r) => Math.min(y(0), y(r.v))).attr('height', (r) => Math.abs(y(0) - y(r.v))).attr('rx', 2)
     .attr('fill', (r) => r.v >= 0 ? 'var(--color-ok)' : 'var(--color-bad)')
     .on('pointermove', (pe, r) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(r.y)}</div><div>Net ${HL.esc(HL.usd0(r.v))}</div>`); }).on('pointerleave', () => t.hide());
   const labels = svg.append('g').selectAll('text').data(rows).join('text').attr('x', (r) => x(r.y) + x.bandwidth() / 2).attr('y', (r) => r.v >= 0 ? y(r.v) - 4 : y(r.v) + 12).attr('text-anchor', 'middle').text((r) => HL.money(r.v));
@@ -830,7 +869,7 @@ dash.draw('debts', (el) => {
   const c = HL.colors(); const t = HL.tip(el);
   const grp = svg.append('g').selectAll('g').data(rows).join('g').attr('transform', (r, i) => `translate(0,${mt + i * rowH})`);
   grp.append('text').attr('x', ml - 8).attr('y', rowH / 2 + 4).attr('text-anchor', 'end').attr('fill', 'var(--color-fg)').text((r) => r.item);
-  grp.append('rect').attr('x', (r) => x(r.d0)).attr('width', (r) => Math.max(3, x(r.d1) - x(r.d0))).attr('y', 5).attr('height', rowH - 10).attr('rx', 3).attr('fill', (r, i) => c[i % c.length])
+  grp.append('rect').attr('class', 'b h').style('animation-delay', (r, i) => Math.min(i, 12) * 30 + 'ms').attr('x', (r) => x(r.d0)).attr('width', (r) => Math.max(3, x(r.d1) - x(r.d0))).attr('y', 5).attr('height', rowH - 10).attr('rx', 3).attr('fill', (r, i) => c[i % c.length])
     .on('pointermove', (pe, r) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(r.item)}</div><div>${HL.esc(HL.fmtM(r.d0))} – ${HL.esc(HL.fmtM(HL.parseM(r.last)))}, ${HL.esc(String(r.months))} months</div><div>Paid ${HL.esc(HL.usd0(r.total))}</div>`); }).on('pointerleave', () => t.hide());
   grp.append('text').attr('x', (r) => x(r.d1) + 6).attr('y', rowH / 2 + 4).text((r) => HL.money(r.total));
   el.style.minHeight = H + 'px';
@@ -946,7 +985,7 @@ const drawRadar = (el, idx) => {
   const c = HL.colors(); const t = HL.tip(el);
   const path = d3.lineRadial().angle((d, i) => ang(i) + Math.PI / 2).radius((d) => r(Math.max(0, d))).curve(d3.curveLinearClosed);
   const shown = years.filter((y) => !window.HLradarHidden.has(y));
-  svg.append('g').selectAll('path').data(shown).join('path').attr('transform', `translate(${cx},${cy})`).attr('d', (y) => path(cats.map((cat) => val.get(y + '|' + cat) || 0)))
+  svg.append('g').selectAll('path').data(shown).join('path').attr('class', 'ring').attr('transform', `translate(${cx},${cy})`).attr('d', (y) => path(cats.map((cat) => val.get(y + '|' + cat) || 0)))
     .attr('fill', (y) => c[years.indexOf(y) % c.length]).attr('fill-opacity', (y) => y === years[years.length - 1] ? 0.18 : 0.04)
     .attr('stroke', (y) => c[years.indexOf(y) % c.length]).attr('stroke-width', (y) => y === years[years.length - 1] ? 2.5 : 1.5).attr('stroke-opacity', (y) => 0.35 + 0.65 * (years.indexOf(y) / Math.max(1, years.length - 1))).attr('stroke-linejoin', 'round')
     .on('pointermove', (pe, y) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(y)}</div>` + cats.map((cat) => `<div>${HL.esc(cat)} ${HL.esc(HL.money(val.get(y + '|' + cat) || 0))}</div>`).join('')); }).on('pointerleave', () => t.hide());
@@ -989,7 +1028,7 @@ const divergingBars = (el, rows, field, labelOf) => {
   const t = HL.tip(el);
   const grp = svg.append('g').selectAll('g').data(data).join('g').attr('transform', (d, i) => `translate(0,${mt + i * rowH})`);
   grp.append('text').attr('x', ml - 8).attr('y', rowH / 2 + 4).attr('text-anchor', 'end').attr('fill', 'var(--color-fg)').text(labelOf);
-  grp.append('rect').attr('x', (d) => Math.min(x(0), x(d[field]))).attr('width', (d) => Math.max(1, Math.abs(x(d[field]) - x(0)))).attr('y', 4).attr('height', rowH - 8).attr('rx', 2)
+  grp.append('rect').attr('class', (d) => d[field] < 0 ? 'b h neg' : 'b h').style('animation-delay', (d, i) => Math.min(i, 16) * 25 + 'ms').attr('x', (d) => Math.min(x(0), x(d[field]))).attr('width', (d) => Math.max(1, Math.abs(x(d[field]) - x(0)))).attr('y', 4).attr('height', rowH - 8).attr('rx', 2)
     .attr('fill', (d) => (d.flow === 'income' ? d[field] >= 0 : d[field] <= 0) ? 'var(--color-ok)' : 'var(--color-bad)')
     .on('pointermove', (pe, d) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(labelOf(d))}</div><div>${(d[field] >= 0 ? '+' : '−') + HL.esc(HL.usd0(Math.abs(d[field])))}</div>`); }).on('pointerleave', () => t.hide());
   el.style.minHeight = H + 'px';
@@ -1008,7 +1047,14 @@ dash.draw('lm-review', (el) => {
   if (g.status !== 'ok') { el.textContent = '—'; return; }
   const last = [...new Set(g.data.map((r) => r.m))].sort().pop();
   const rows = g.data.filter((r) => r.m === last).sort((a, b) => Number(a.order) - Number(b.order));
-  for (const r of rows) { const sec = document.createElement('div'); sec.className = 'rv'; const h = document.createElement('h3'); h.textContent = r.heading; const p = document.createElement('p'); p.textContent = r.text; sec.append(h, p); el.append(sec); }
+  for (const r of rows) {   // a card per section: heading and first sentence, opening to the rest
+    const text = String(r.text || ''), cut = text.search(/[.!?](\s|$)/), first = cut < 0 ? text : text.slice(0, cut + 1), rest = text.slice(first.length).trim();
+    const sec = document.createElement(rest ? 'details' : 'div'); sec.className = 'rv';
+    const head = document.createElement(rest ? 'summary' : 'div'); const h = document.createElement('h3'); h.textContent = r.heading;
+    const lead = document.createElement('p'); lead.textContent = first; head.append(h, lead); sec.append(head);
+    if (rest) { const more = document.createElement('p'); more.className = 'more'; more.textContent = rest; sec.append(more); }
+    el.append(sec);
+  }
 });
 dash.draw('lm-summary', (ul) => {
   const g = dash.data('lm_cats'); if (g.status !== 'ok') { ul.replaceChildren(); return; }
@@ -1086,4 +1132,13 @@ dash.draw('goal-params', (tb) => {
 
 <script src="/static/a11y.js"></script>
 {% endblock %}
-{% block head %}<meta name="ledger-currency" content="{{ fmt.currency }}"><meta name="ledger-locale" content="{{ fmt.locale }}"><script src="/static/dash-shim.js"></script>{% endblock %}
+{% block head %}<meta name="ledger-currency" content="{{ fmt.currency }}"><meta name="ledger-locale" content="{{ fmt.locale }}"><script src="/static/dash-shim.js"></script><script nonce="{{ csp_nonce(request) }}">
+// Segmented switches inside a card ([data-switch]): each button shows its own panel (data-show) and hides its siblings'.
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-switch] button[data-show]'); if (!b) return;
+  for (const o of b.parentElement.querySelectorAll('button[data-show]')) {
+    const on = o === b; o.setAttribute('aria-pressed', String(on)); const t = document.getElementById(o.dataset.show); if (t) t.hidden = !on;
+  }
+});
+</script>
+{% endblock %}
