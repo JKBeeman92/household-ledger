@@ -89,8 +89,10 @@ Run the app behind a reverse proxy that terminates TLS (Caddy, nginx, Traefik, a
 - pass the `Host` header through and set `X-Forwarded-Proto` and `X-Forwarded-For`;
 - accept request bodies at least as large as `MAX_UPLOAD_MB` (50 MB by default). nginx's default is 1 MB, so set
   `client_max_body_size 50m;`; Caddy and Traefik have no limit by default;
-- allow responses that take a while: a rebuild runs in the background, but a large upload or a month-close review can take tens
-  of seconds (raise `proxy_read_timeout` on nginx if you see 504s).
+- allow responses that take a while: a rebuild runs in the background, but a large upload takes tens of seconds and a month-close
+  review waits for the model inside the request, several minutes for one that thinks first (the app waits up to
+  `REVIEW_MAX_TOKENS` / 40 seconds, 400 s by default). Set nginx's `proxy_read_timeout` above that, or the proxy answers 504 while
+  the review is still being written.
 
 Caddy, on the same host:
 
@@ -113,7 +115,7 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_read_timeout 120s;
+        proxy_read_timeout 450s;
     }
 }
 ```
@@ -289,8 +291,10 @@ The provider is chosen by `REVIEW_PROVIDER` (default `anthropic`, which uses `AN
 endpoint, via `REVIEW_BASE_URL` such as `https://host/v1`, and `REVIEW_API_KEY` where the server wants one), `ollama`
 (`REVIEW_BASE_URL=http://ollama:11434`, no key, so a homelab can run it fully offline) or `gemini` (`REVIEW_API_KEY`). Every
 provider except Anthropic needs `REVIEW_MODEL`; none is guessed. The **Reviews** page overrides provider, model and base URL per
-household and has a Test connection button. The stored review records `provider:model`. Local models may need a larger
-`REVIEW_MAX_TOKENS` (default 2500); replies wrapped in markdown fences or prose are tolerated.
+household and has a Test connection button. The stored review records `provider:model`.
+`REVIEW_MAX_TOKENS` (default 16000) is the output limit, thinking included: a model that thinks before answering can use most of
+it (one real review used about 7,900), and a reply that stops at the limit is reported as such. An OpenAI-compatible server that
+checks the limit against the model's context length (vLLM does) may need a lower value. Replies wrapped in markdown fences or prose are tolerated.
 
 ## Local development
 

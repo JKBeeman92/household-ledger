@@ -233,3 +233,21 @@ def test_failed_generate_logs_an_excerpt_of_the_reply(client, reset_db, cfg, htt
             review.generate(conn, _first_month(conn))
     msg = " ".join(r.getMessage() for r in caplog.records)
     assert "from ollama:llama-x failed" in msg and "Sorry, the figures look incomplete." in msg
+
+
+def test_a_limit_spent_on_thinking_says_no_text_was_written(http):
+    """A model that thinks first can use the whole limit and return only a thinking block (stop_reason max_tokens, no text)."""
+    _, reply = http
+    reply["v"] = Resp({"content": [{"type": "thinking", "thinking": "Rosie's paycheck…"}], "stop_reason": "max_tokens"})
+    with pytest.raises(rp.ReplyCutOff, match="before writing any reply text"):
+        prov("anthropic", api_key="k", max_tokens=2500).complete("S", "U")
+
+
+def test_default_limit_and_timeout_leave_room_for_thinking(http):
+    from app.config import Settings
+    assert Settings().review_max_tokens == 16000 or "REVIEW_MAX_TOKENS" in __import__("os").environ
+    calls, reply = http
+    reply["v"] = Resp({"content": [{"type": "text", "text": "ok"}], "stop_reason": "end_turn"})
+    prov("anthropic", api_key="k", max_tokens=16000).complete("S", "U")
+    assert calls[0][1]["timeout"] == 400 and calls[0][1]["json"]["max_tokens"] == 16000
+    assert rp.read_timeout(prov("anthropic", max_tokens=1000)) == 120

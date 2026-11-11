@@ -47,7 +47,9 @@ class Provider:
     def complete(self, system: str, user: str) -> str:
         text, cut = _CALLS[self.name](self, system, user)
         if cut:   # the JSON cannot be complete: say so instead of a parse error
-            raise ReplyCutOff(f"the model stopped at the output limit ({self.max_tokens} tokens) before finishing its reply; "
+            what = ("before writing any reply text (a model that thinks first can spend the whole limit thinking)" if not text.strip()
+                    else "before finishing its reply")
+            raise ReplyCutOff(f"the model stopped at the output limit ({self.max_tokens} tokens) {what}; "
                               f"raise REVIEW_MAX_TOKENS (now {self.max_tokens}) and generate again", text)
         return text
 
@@ -73,9 +75,15 @@ def is_configured(conn) -> bool:
     return resolve(conn).problem() is None
 
 
+def read_timeout(p: Provider) -> float:
+    """Seconds to wait for a non-streamed reply: nothing arrives until the model has finished, so this bounds generation.
+    Scaled with the output limit at a slow 40 tokens/s (400 s for the default 16000), never under 120 s."""
+    return max(120.0, p.max_tokens / 40)
+
+
 def _post(p: Provider, url: str, headers: dict, body: dict) -> dict:
     try:
-        r = httpx.post(url, headers=headers, json=body, timeout=120)
+        r = httpx.post(url, headers=headers, json=body, timeout=read_timeout(p))
         r.raise_for_status()
         return r.json()
     except httpx.HTTPStatusError as e:
