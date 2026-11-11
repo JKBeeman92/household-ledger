@@ -3,7 +3,8 @@ import csv, io, json, re
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response
 
-from .. import db, auth, schema, mapping_hints
+from .. import db, auth, schema, mapping_hints, brand_check
+from . import brand
 from ..web_helpers import flash, render
 from pipeline.run_pipeline import norm, unmapped_items
 
@@ -296,7 +297,8 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         name_families = mapping_hints.families(rows["mapping"], rules)
         unmapped = len(unmapped_items(conn))
     return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP,
-                  categories=categories, rules=rules, hh=household, name_families=name_families, unmapped=unmapped)
+                  categories=categories, rules=rules, hh=household, name_families=name_families, unmapped=unmapped,
+                  brand_problems=brand_check.check_dir(brand.BRAND_DIR))
 
 
 @router.get("/settings/mapping.csv")

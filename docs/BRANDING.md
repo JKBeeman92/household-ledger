@@ -56,9 +56,21 @@ system (`--accent: var(--brand-green-600);`), then, for each failing pair, overr
 with a darker or lighter step of the same hue from the design system. A series colour that cannot reach 3:1 in one mode can be
 swapped for another step in that mode only; keep the order of hues so a series keeps its colour family across modes.
 
-To check a kit, add it to `THEMES` in `tests/test_contrast.py` for a local run (`python -m pytest -q tests/test_contrast.py`): it
-lists every pair below its ratio, for both modes. The test reads 6-digit hex values and `var()` chains between them; write the
-final values as `#rrggbb` for it to resolve them. The app does not check a mounted kit at start, so this is the only check.
+**The app checks a mounted kit for you.** At start, and whenever `theme.css` in `BRAND_DIR` changes (no restart needed), it logs
+one `WARNING` per problem and lists them on the Settings page for editors ("Your theme fails N contrast checks"). It never refuses
+to start. A line names the mode, the pair, its ratio and where the pair is drawn:
+
+```
+brand: theme.css light: line-strong on surface-300 = 2.41 (< 3.0) for input borders
+brand: theme.css dark: --accent-2-text is not defined
+brand: theme.css dark: --series-3: could not evaluate color-mix(in srgb, var(--a), var(--b))
+```
+
+Values may be `#rgb`, `#rrggbb`, `rgb()`, `hsl()`, `oklab()`, `oklch()`, or `var()` chains of them. `color-mix()`, keywords and
+translucent colours cannot be judged on their own and are reported as such: give those tokens a final opaque value. Local
+`@import`s inside `BRAND_DIR` are followed, so a design system's own token file can sit beside `theme.css`; remote imports (fonts)
+are not. The same check (`app/brand_check.py`) runs in the test suite for the shipped theme and the example kits; to run it on a
+kit locally, add it to `THEMES` in `tests/test_contrast.py`.
 
 ## The logo
 

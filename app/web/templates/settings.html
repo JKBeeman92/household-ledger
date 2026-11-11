@@ -5,6 +5,9 @@
 <h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Settings</h1>
 <p class="muted" style="max-width:90ch">Everything the pipeline decides from is here, as data. Edit and save; the dashboard keeps its figures until a rebuild, and a banner with <strong>Rebuild now</strong> appears until one has run. Each editor validates its format before saving.</p>
 <p class="linkrow muted">Elsewhere: <a href="/reviews">Review provider</a> <a href="/settings/tokens">API tokens</a> <a href="/settings/sources">Other budget tools</a> <a href="/webhooks">Webhooks</a></p>
+{% if brand_problems %}<details class="keyhelp" id="brand-problems" style="border-left:3px solid var(--warning);padding-left:var(--space-3);max-width:90ch"><summary>Your theme fails {{ brand_problems|length }} contrast check{{ '' if brand_problems|length == 1 else 's' }}</summary>
+  <p class="muted">The <code>theme.css</code> in <code>BRAND_DIR</code> leaves some text or marks too faint to read, or lacks a token the app draws with. Override those tokens per mode in the kit's own <code>theme.css</code> (docs/BRANDING.md, "Building a kit from an existing design system"). The same lines are in the container log.</p>
+  <ul>{% for p in brand_problems %}<li class="mono">{{ p }}</li>{% endfor %}</ul></details>{% endif %}
 <form id="csrf-form" hidden>{{ csrf_field(request) }}</form>
 <p id="rowstatus" class="rowstatus" role="status" aria-live="polite"></p>
 {% set by_key = {} %}{% for ed in editors %}{% if by_key.update({ed.key: ed}) %}{% endif %}{% endfor %}
