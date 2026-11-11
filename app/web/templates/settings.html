@@ -87,8 +87,9 @@
   </form>
   <form class="panel" method="post" action="/settings/rules/roles">{{ csrf_field(request) }}
     <h2>Roles</h2>
-    <p class="muted">Which of your names play a part the charts rely on. Call your categories and items what you like, then say here which ones these are. Separate names with commas; a blank field uses the default shown.</p>
-    {% for key, label, help in role_fields %}<label>{{ label }} <input type="text" name="{{ key }}" value="{{ (rules.get(key) or [])|join(', ') }}" placeholder="{{ role_defaults[key]|join(', ') }}" aria-describedby="role-{{ key }}"></label>
+    <p class="muted">Which of your names play a part the charts rely on. Call your categories and items what you like, then say here which ones these are. One name per line; a blank field uses the default shown. To say "none", set the rule to <code>[]</code> in the JSON below.</p>
+    {% for key, label, help in role_fields %}{% set cur = rules.get(key) %}<label>{{ label }}{% if cur == [] %} <span class="muted">(none: set to [] in the JSON)</span>{% endif %} <textarea name="{{ key }}" rows="{{ [((cur or [])|length), (role_defaults[key]|length), 1]|max }}" placeholder="{{ role_defaults[key]|join('\n') }}" aria-describedby="role-{{ key }}">{{ (cur or [])|join('\n') }}</textarea></label>
+    <input type="hidden" name="{{ key }}__was" value="{{ (cur or [])|join('\n') }}">
     <p class="muted" id="role-{{ key }}">{{ help }}</p>{% endfor %}
     <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save roles</button></p>
   </form>

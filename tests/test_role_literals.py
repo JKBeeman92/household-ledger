@@ -132,9 +132,19 @@ def test_roles_form_saves_names_and_blank_means_default(client, reset_db):
     from app import db
     page = client.get("/settings").text
     assert 'action="/settings/rules/roles"' in page and "Items that are paychecks" in page and 'placeholder="Paycheck"' in page
-    r = client.post("/settings/rules/roles", data={"paycheck_items": "Salary, Contract Income", "debt_groups": " "})
+    with db.pool.connection() as conn:   # an explicit [] ("none") set in the JSON editor, and a name with a comma
+        db.put_setting(conn, "rules", {**(db.get_setting(conn, "rules", {}) or {}), "debt_groups": [], "recurring_categories": ["Bills, monthly"]}); conn.commit()
+    page = client.get("/settings").text
+    assert "(none: set to [] in the JSON)" in page and ">Bills, monthly</textarea>" in page
+    r = client.post("/settings/rules/roles", data={"paycheck_items": "Salary\nContract Income", "paycheck_items__was": "",
+                                                   "debt_groups": "", "debt_groups__was": "",
+                                                   "recurring_categories": "Bills, monthly", "recurring_categories__was": "Bills, monthly",
+                                                   "income_groups": " ", "income_groups__was": ""})
     assert r.status_code == 303
     with db.pool.connection() as conn:
         rules = db.get_setting(conn, "rules", {})
-    assert rules["paycheck_items"] == ["Salary", "Contract Income"] and "debt_groups" not in rules and "income_groups" not in rules
-    assert 'value="Salary, Contract Income"' in client.get("/settings").text
+    assert rules["paycheck_items"] == ["Salary", "Contract Income"] and rules["debt_groups"] == [] and "income_groups" not in rules
+    assert rules["recurring_categories"] == ["Bills, monthly"]
+    client.post("/settings/rules/roles", data={"recurring_categories": "", "recurring_categories__was": "Bills, monthly"})   # cleared: back to the default
+    with db.pool.connection() as conn:
+        assert "recurring_categories" not in db.get_setting(conn, "rules", {})

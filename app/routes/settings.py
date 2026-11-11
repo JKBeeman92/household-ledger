@@ -442,12 +442,16 @@ ROLE_DEFAULTS = {   # shown as placeholders; equal to build_ledger.RULES (tests/
 
 @router.post("/settings/rules/roles")
 async def rules_roles_form(request: Request, user=Depends(auth.require_editor)):
-    """The role rules as plain comma-separated fields; a blank field means the default."""
+    """The role rules as one name per line (a name may contain a comma); a blank field means the default. Only fields whose text
+    changed are written, so a rule set to [] ("none") in the JSON editor survives a save of the other fields."""
     form = await request.form()
+    lines = lambda v: [n.strip() for n in str(v or "").splitlines() if n.strip()]
     with db.pool.connection() as conn:
         rules = {**(db.get_setting(conn, "rules", {}) or {})}
         for key, _, _ in ROLE_FIELDS:
-            names = [n.strip() for n in str(form.get(key, "")).split(",") if n.strip()]
+            names = lines(form.get(key))
+            if names == lines(form.get(f"{key}__was")):
+                continue   # untouched
             if names:
                 rules[key] = names
             else:
