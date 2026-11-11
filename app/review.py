@@ -4,10 +4,12 @@ Only derived numbers go out (planned vs spent per envelope, category totals, the
 transactions, merchants or notes. The prompt is stored alongside the result so a review can always be audited.
 """
 from __future__ import annotations
-import json
+import json, logging
 from statistics import mean
 
 from . import db, hooks, review_providers as providers
+
+log = logging.getLogger("ledger")
 
 SETTING = "review_instructions"
 SYSTEM = (
@@ -95,12 +97,24 @@ def refresh_dataset(conn) -> None:
     conn.execute("INSERT INTO datasets (name, rows, row_count) VALUES ('review',%s,%s) ON CONFLICT (name) DO UPDATE SET rows=EXCLUDED.rows, row_count=EXCLUDED.row_count, built_at=now()", (json.dumps(review_rows), len(review_rows)))
 
 
+def _excerpt(text: str, n: int = 400) -> str:
+    """Start and end of a reply for the log: enough to see prose instead of JSON, a cut-off tail or a stray quote."""
+    t = text.replace("\n", "\\n")
+    return repr(t) if len(t) <= 2 * n else repr(t[:n]) + " … " + repr(t[-n:])
+
+
 def generate(conn, month: str) -> dict:
     prov = providers.resolve(conn)
     if (why := prov.problem()):
         raise RuntimeError(f"no review provider is configured: {why}")
     prompt = prompt_for(conn, month)
-    sections = providers.parse_sections(prov.complete(instructions(conn), prompt))
+    try:
+        reply = prov.complete(instructions(conn), prompt)
+        sections = providers.parse_sections(reply)
+    except (providers.ReplyCutOff, ValueError) as e:
+        text = e.text if isinstance(e, providers.ReplyCutOff) else reply
+        log.warning("review %s from %s failed: %s; reply was %d chars: %s", month, prov.label, e, len(text), _excerpt(text))
+        raise
     conn.execute(
         "INSERT INTO reviews (month, model, sections, prompt, hand_edited_at) VALUES (%s,%s,%s,%s,NULL) ON CONFLICT (month) DO UPDATE SET generated_at=now(), model=EXCLUDED.model, sections=EXCLUDED.sections, prompt=EXCLUDED.prompt, hand_edited_at=NULL",
         (month, prov.label, json.dumps(sections), prompt),
