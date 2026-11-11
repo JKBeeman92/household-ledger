@@ -242,3 +242,17 @@ def test_a_rejected_row_and_the_household_editor_do_not_ask_for_a_rebuild(client
     client.post("/settings/household", data={"body": json.dumps({"name": "Bagshot Row", "title": "Ledger"})})
     with db.pool.connection() as conn:
         assert db.rebuild_needed(conn) is False
+
+
+def test_rebuild_now_returns_where_it_was_pressed_and_hides_while_building(client, reset_db, monkeypatch):
+    from conftest import GOLDEN, upload_files
+    from app import web_helpers
+    upload_files(client, GOLDEN / "exports")
+    client.post("/settings/goals/row", data={"key": "second_breakfast", "label": "Second breakfast", "value": "12", "unit": "usd", "note": ""})
+    monkeypatch.setattr(web_helpers, "build_running", lambda conn: True)   # a build is already running: no "Rebuild now" beside it
+    assert not _banner_shown(client.get("/settings").text)
+    monkeypatch.undo()
+    r = client.post("/rebuild", data={"next": "/settings#goals"})
+    assert r.status_code == 303 and r.headers["location"] == "/settings#goals"
+    r = client.post("/rebuild", data={"next": "https://elsewhere.example/"})
+    assert r.headers["location"] == "/"   # never off-site

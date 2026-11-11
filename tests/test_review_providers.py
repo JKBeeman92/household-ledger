@@ -251,3 +251,18 @@ def test_default_limit_and_timeout_leave_room_for_thinking(http):
     prov("anthropic", api_key="k", max_tokens=16000).complete("S", "U")
     assert calls[0][1]["timeout"] == 400 and calls[0][1]["json"]["max_tokens"] == 16000
     assert rp.read_timeout(prov("anthropic", max_tokens=1000)) == 120
+
+
+def test_review_message_says_where_to_read_it_and_warns_on_section_count(client, reset_db, cfg, http):
+    reset_db(SAMPLE)
+    client.post("/upload", files=[("files", (p.name, p.read_bytes(), "text/csv")) for p in sorted(SAMPLE.glob("*EveryDollar*.csv"))])
+    _, reply = http
+    cfg(review_provider="ollama", review_base_url="http://o:11434", review_model_explicit="llama-x")
+    reply["v"] = Resp({"message": {"content": json.dumps({"sections": [{"order": 1, "heading": "The month", "text": "Calm."}]})}})
+    from app import db
+    with db.pool.connection() as conn:
+        months = [r["budget_month"] for r in conn.execute("SELECT DISTINCT budget_month FROM source_files ORDER BY 1").fetchall()]
+    page = client.get(client.post("/review/generate", data={"month": months[-2], "confirm": "yes"}).headers["location"]).text
+    assert f"Review written for {months[-2]} (1 section)." in page and "Past reviews" in page and "ask for 5 to 7" in page
+    page = client.get(client.post("/review/generate", data={"month": months[-1], "confirm": "yes"}).headers["location"]).text
+    assert "Last month tab" in page

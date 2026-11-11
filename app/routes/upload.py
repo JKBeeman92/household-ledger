@@ -88,15 +88,15 @@ async def upload(request: Request, background: BackgroundTasks, files: list[Uplo
 
 
 @router.post("/rebuild")
-def rebuild_now(request: Request, background: BackgroundTasks, user=Depends(auth.require_editor)):
+def rebuild_now(request: Request, background: BackgroundTasks, next: str = Form(""), user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         busy = build_running(conn)
     if busy:
         flash(request, "A rebuild is already running; wait for it to finish.", "bad")
     else:
         background.add_task(run_background)
-        flash(request, "Rebuilding in the background; progress is shown below.")
-    return RedirectResponse("/upload", status_code=303)
+        flash(request, "Rebuilding in the background; the dashboard updates when it finishes." if next else "Rebuilding in the background; progress is shown below.")
+    return RedirectResponse(auth._safe_next(next) if next else "/upload", status_code=303)   # the banner's button returns where it was pressed
 
 
 @router.post("/review/generate")
@@ -106,7 +106,12 @@ def review_generate(request: Request, month: str = Form(...), confirm: str = For
     with db.pool.connection() as conn:
         try:
             res = review.generate(conn, month)
-            flash(request, f"Review written for {month} ({len(res['sections'])} sections). See the dashboard's Last month tab.")
+            n = len(res["sections"])
+            latest = conn.execute("SELECT max(budget_month) m FROM source_files").fetchone()["m"]
+            where = "See the dashboard's Last month tab." if month == latest else f"Read it under Reviews → Past reviews ({month})."   # Last month shows only the latest month
+            flash(request, f"Review written for {month} ({n} section{'' if n == 1 else 's'}). {where}")
+            if not 5 <= n <= 7:
+                flash(request, f"The model wrote {n} section{'' if n == 1 else 's'}; the instructions ask for 5 to 7. Read it before relying on it, or generate again.", "warn")
         except Exception as e:  # noqa: BLE001
             conn.rollback(); flash(request, f"Review failed: {str(e)[:800]}", "bad")
     return RedirectResponse("/upload", status_code=303)

@@ -30,7 +30,7 @@
     </nav>
   </header>
   {% if user and user.is_editor %}<div class="flash warn" id="rebuild-banner" role="status" {% if not rebuild_needed %}hidden{% endif %}>
-    <form method="post" action="/rebuild" class="rebuild-banner">{{ csrf_field(request) }}<span><strong>Settings changed since the last rebuild.</strong>
+    <form method="post" action="/rebuild" class="rebuild-banner">{{ csrf_field(request) }}<input type="hidden" name="next" value="{{ request.url.path }}" data-here><span><strong>Settings changed since the last rebuild.</strong>
     The dashboard still shows the old figures.</span> <button class="btn primary" type="submit">Rebuild now</button></form></div>{% endif %}
   {% with flashes = get_flashes() %}{% for f in flashes %}<div class="flash {{ f.kind }}">{{ f.text }}</div>{% endfor %}{% endwith %}
   {% block content %}{% endblock %}
@@ -48,6 +48,8 @@
   const scrollers = () => document.querySelectorAll('.topbar nav, #dash-root .tabs');
   addEventListener('load', () => scrollers().forEach((el) => { more(el); el.addEventListener('scroll', () => more(el), { passive: true }); }));
   addEventListener('resize', () => scrollers().forEach(more));
+  // a form that returns where it was sent from keeps the URL's hash too (Settings tabs), which the server never sees
+  document.addEventListener('submit', (e) => { const n = e.target.querySelector('input[name=next][data-here]'); if (n) n.value = location.pathname + location.search + location.hash; });
   // forms that need a second thought carry data-confirm (inline handlers are blocked by the CSP)
   document.addEventListener('submit', (e) => { const m = e.target.getAttribute('data-confirm'); if (m && !confirm(m)) e.preventDefault(); });
   // honour the OS when no choice is stored
