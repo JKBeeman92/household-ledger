@@ -42,6 +42,24 @@ cp my-brand/* "$LEDGER_DATA"/brand/
 and restart nothing — the files are read on each request. The built-in theme, `app/web/static/brand/theme.css`, is the reference
 for every token a kit has to define.
 
+## Building a kit from an existing design system
+
+A design system's palette was not chosen for this app's surfaces, so mapping its tokens straight onto the contract often fails a
+few of the pairs the app draws. The ones that fail most often:
+
+- `--line-strong` on `--surface-300`: input borders (3:1);
+- a dark or slate series colour (`--series-N`) on the dark panel surface (`--surface-200`, 3:1);
+- a pale series colour on the light panel surface (3:1).
+
+Keep the design system's file as it is and do the fixing in the kit's own `theme.css`: define each contract token from the design
+system (`--accent: var(--brand-green-600);`), then, for each failing pair, override that contract token in the mode that fails,
+with a darker or lighter step of the same hue from the design system. A series colour that cannot reach 3:1 in one mode can be
+swapped for another step in that mode only; keep the order of hues so a series keeps its colour family across modes.
+
+To check a kit, add it to `THEMES` in `tests/test_contrast.py` for a local run (`python -m pytest -q tests/test_contrast.py`): it
+lists every pair below its ratio, for both modes. The test reads 6-digit hex values and `var()` chains between them; write the
+final values as `#rrggbb` for it to resolve them. The app does not check a mounted kit at start, so this is the only check.
+
 ## The logo
 
 `mark.svg` is the logo everywhere: the header, the dashboard masthead, the login card and the browser tab (favicon). Drop your
