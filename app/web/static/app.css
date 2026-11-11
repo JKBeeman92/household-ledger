@@ -143,3 +143,9 @@ table.edit [aria-invalid=true] { border-color: var(--danger); }
   #dash-root.hl dfn { border-bottom: 0; }
   #dash-root.hl .lede a, #dash-root.hl .note a { text-decoration: none; color: inherit; }
 }
+/* Sub-tabs (Settings): one editor at a time. */
+.subtabs { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); border-bottom: 1px solid var(--line); padding-bottom: var(--space-2); }
+.subtabs [role=tab] { font: inherit; background: var(--surface-200); color: var(--ink-muted); border: 1px solid var(--line-strong); border-radius: var(--radius-full); padding: var(--space-1) var(--space-4); cursor: pointer; min-height: 44px; }
+.subtabs [role=tab][aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.subtabs [role=tab]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.linkrow { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; }

@@ -69,6 +69,23 @@
 .hl .summary-list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--cds-gap-xs); }
 .hl .summary-list li { padding: var(--cds-pad-xs) var(--cds-pad-sm); border-left: 3px solid var(--color-border-line); }
 .hl .summary-list li.over { border-left-color: var(--color-bad); } .hl .summary-list li.under { border-left-color: var(--color-ok); }
+/* Explanation beside what it explains: a narrow aside (heading, a visual key, the accordion) and the content in the rest. */
+.hl .split { display: grid; grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr); gap: var(--cds-gap-lg); align-items: start; }
+@media (max-width: 900px) { .hl .split { grid-template-columns: minmax(0, 1fr); gap: var(--cds-gap-sm); } }
+.hl .aside-note { display: block; font-size: var(--cds-font-size-caption); margin-top: var(--cds-gap-xs); }
+.hl .key { list-style: none; margin: var(--cds-gap-sm) 0; padding: 0; display: grid; gap: var(--cds-gap-xs); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.hl .key.row { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs) var(--cds-gap-md); }
+.hl .key li { display: flex; align-items: center; gap: var(--cds-gap-xs); }
+.hl .key .glyph { flex: none; min-width: 1.6rem; text-align: center; font-weight: var(--cds-font-weight-medium); color: var(--accent-2-text, var(--color-fg)); }
+.hl .key .bar { flex: none; width: 1.6rem; height: .6rem; border-radius: 2px; background: var(--k); }
+.hl .key .bar.r { clip-path: polygon(0 0, 80% 0, 100% 50%, 80% 100%, 0 100%); }
+.hl .key .bar.l { clip-path: polygon(20% 0, 100% 0, 100% 100%, 20% 100%, 0 50%); }
+.hl .review { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--cds-gap-md); }
+.hl .review .rv { border-top: 2px solid var(--brand1, var(--color-border-line)); padding-top: var(--cds-gap-xs); }
+.hl .review .rv h3 { margin: 0 0 var(--cds-gap-xs); } .hl .review .rv p { max-width: none; }
+.hl .summary-list.two { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
+.hl .card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--cds-gap-sm); }
+.hl .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .hl .foot { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-top: var(--cds-gap-lg); padding-top: var(--cds-gap-sm); border-top: 1px solid var(--color-border-line); max-width: 70ch; }
 </style>
 
@@ -157,55 +174,62 @@
 
   <!-- ===================== LAST MONTH ===================== -->
   <section id="lastmonth" class="page" role="tabpanel" aria-labelledby="tab-lastmonth" tabindex="0" hidden>
-    <p class="intro">How did the month that just closed compare with its plan and with the year behind it, and which envelopes should move before the next one is set?</p>
-    <p class="lede">How <b data-draw="lm-name">—</b> went against the EveryDollar plan, and against the twelve months before it. Planned and spent are EveryDollar's own figures for that budget month, so transfers between envelopes show here as they did in the app.</p>
+    <p class="intro">How <b data-draw="lm-name">—</b> went against its plan and against the twelve months before it, and which envelopes to move before the next one is set.
+      <span class="aside-note">Planned and spent are EveryDollar's own figures, so transfers between envelopes count here as they did in the app.</span></p>
     <div class="tiles">
       <div class="card tile"><div class="k">Income</div><div class="v" data-draw="lm-inc" data-source="lm_totals" data-field="income_actual" data-where="row=last">—</div><div class="d" data-draw="lm-inc-d" data-source="lm_totals" data-field="income_vs_plan" data-where="row=last">—</div></div>
       <div class="card tile"><div class="k">Living spend</div><div class="v" data-draw="lm-sp" data-source="lm_totals" data-field="spend_actual" data-where="row=last">—</div><div class="d" data-draw="lm-sp-d" data-source="lm_totals" data-field="spend_vs_plan" data-where="row=last">—</div></div>
       <div class="card tile"><div class="k">Debt payments</div><div class="v" data-draw="lm-db" data-source="lm_totals" data-field="debt_actual" data-where="row=last">—</div><div class="d" data-draw="lm-db-d" data-source="lm_totals" data-field="debt_vs_plan" data-where="row=last">—</div></div>
       <div class="card tile"><div class="k">Left over</div><div class="v" data-draw="lm-net" data-source="lm_totals" data-field="net_actual" data-where="row=last">—</div><div class="d" data-draw="lm-net-d" data-source="lm_totals" data-field="net_vs_avg" data-where="row=last">—</div></div>
     </div>
-    <div class="card">
-      <p class="eyebrow">Month-close review · written by Claude from the figures on this page</p>
-      <h2 id="lm-review">Reading the month</h2>
-      <p class="note">Prose analysis of the closed month against the month before it and the twelve-month trend, with plan changes to consider. Regenerated each month when the new exports are loaded; every number it cites is in the tables below.</p>
+    <div class="card split">
+      <div class="aside">
+        <p class="eyebrow">Month-close review</p>
+        <h2 id="lm-review">Reading the month</h2>
+        <ul class="key"><li><span class="glyph">✎</span>Written by the model from the figures on this tab</li><li><span class="glyph">↻</span>Rewritten when the month is regenerated</li><li><span class="glyph">✓</span>Every number it quotes is in the tables below</li></ul>
+        <details class="how"><summary>How this is made</summary><p>After each month's exports are added, Claude reads the planned-versus-spent table, the category gaps against plan and against the trailing average, and the ledger's clean monthly totals, then writes this section. It is analysis, not a record: the numbers it quotes come from the datasets, and the judgments are a starting point for your own.</p></details>
+      </div>
       <div class="review" data-draw="lm-review" data-source="review"></div>
-      <details class="how"><summary>How this is made</summary><p>After each month's exports are added, Claude reads the planned-versus-spent table, the category gaps against plan and against the trailing average, and the ledger's clean monthly totals, then writes this section. It is analysis, not a record: the numbers it quotes come from the datasets, and the judgments are a starting point for your own.</p></details>
     </div>
-    <div class="card">
-      <h2 id="lm-summary">What to look at before setting next month</h2>
-      <p class="note">The three categories most over plan and the three most under, with how far each sat from its own twelve-month average.</p>
-      <ul class="summary-list" data-draw="lm-summary" data-source="lm_cats"></ul>
+    <div class="card split">
+      <div class="aside">
+        <h2 id="lm-summary">Before setting next month</h2>
+        <ul class="key"><li><span class="bar" style="--k: var(--color-bad)"></span>Three most over plan</li><li><span class="bar" style="--k: var(--color-ok)"></span>Three most under plan</li><li><span class="glyph">~</span>Each against its own twelve-month average</li></ul>
+      </div>
+      <ul class="summary-list two" data-draw="lm-summary" data-source="lm_cats"></ul>
     </div>
     <div class="grid">
       <div class="card">
         <h2 id="lm-var-chart">Over and under plan, by category</h2>
-        <p class="note">Spent minus planned for the month. Bars to the right went over the envelope; bars to the left came in under. Income is shown as received minus expected.</p>
-      <details class="how"><summary>How to read this</summary><p>Red bars went over their envelope; green came in under. A large red bar on a planned-zero category means an unplanned expense, not an overrun. Income is reversed: red means less arrived than expected.</p></details>
+        <ul class="key row"><li><span class="bar r" style="--k: var(--color-bad)"></span>over the envelope</li><li><span class="bar l" style="--k: var(--color-ok)"></span>under it</li><li><span class="glyph">⇄</span>income reversed</li></ul>
+        <details class="how"><summary>How to read this</summary><p>Spent minus planned for the month. Red bars went over their envelope; green came in under. A large red bar on a planned-zero category means an unplanned expense, not an overrun. Income is shown as received minus expected, so red means less arrived than expected.</p></details>
         <div class="chart" data-draw="lm-var" data-source="lm_cats"></div>
       </div>
       <div class="card">
         <h2 id="lm-avg-chart">Against the trailing twelve months</h2>
-        <p class="note">Spent this month minus the average of the twelve months before it, by category. This is the signal for whether a plan number should move.</p>
-      <details class="how"><summary>How to read this</summary><p>This compares the month with its own recent history rather than with the plan. A category that is over plan but at its twelve-month average has a plan problem; one that is at plan but far above its average had an unusual month.</p></details>
+        <ul class="key row"><li><span class="bar r" style="--k: var(--color-bad)"></span>above its average</li><li><span class="bar l" style="--k: var(--color-ok)"></span>below it</li><li><span class="glyph">→</span>should the plan move?</li></ul>
+        <details class="how"><summary>How to read this</summary><p>Spent this month minus the average of the twelve months before it, by category. This compares the month with its own recent history rather than with the plan. A category that is over plan but at its twelve-month average has a plan problem; one that is at plan but far above its average had an unusual month.</p></details>
         <div class="chart" data-draw="lm-avg" data-source="lm_cats"></div>
       </div>
     </div>
     <div class="card">
-      <h2 id="lm-table">Category detail</h2>
-      <p class="note">Planned and spent for the month, the trailing twelve-month average, and a suggested plan for next month: the twelve-month average rounded up to the nearest ten, except for Housing, Debt and Insurance, which keep the current plan.</p>
-      <details class="how"><summary>How to read this</summary><p>Suggested plan is the twelve-month average rounded up to the nearest ten dollars, so a plan set from it would have covered a typical month. Housing, Debt and Insurance are contractual and keep their current plan. Treat it as a starting number, not a rule.</p></details>
-      <div class="tbl"><table data-source="lm_cats" data-row-key="category"><thead><tr>
-        <th data-field="category">Category</th><th data-field="planned">Planned</th><th data-field="actual">Spent</th><th data-field="vs_plan">vs plan</th><th data-field="avg12">12-mo avg</th><th data-field="vs_avg">vs avg</th><th data-field="suggest">Suggested plan</th>
-      </tr></thead><tbody data-draw="lm-cats"></tbody></table></div>
-    </div>
-    <div class="card">
-      <h2 id="lm-items">Envelopes that missed by the most</h2>
-      <p class="note">Individual EveryDollar items, largest gap from plan first. Positive gap means spent more than planned.</p>
-      <details class="how"><summary>How to read this</summary><p>The twenty-five envelopes with the largest gap between planned and spent, in either direction. Small gaps under a dollar are hidden.</p></details>
-      <div class="tbl"><table data-source="lm_items" data-row-key="item"><thead><tr>
-        <th data-field="item">Envelope</th><th data-field="category">Category</th><th data-field="planned">Planned</th><th data-field="actual">Spent</th><th data-field="gap">Gap</th>
-      </tr></thead><tbody data-draw="lm-items"></tbody></table></div>
+      <div class="card-head">
+        <h2 id="lm-table">Detail</h2>
+        <div class="seg" role="group" aria-label="Which table" data-switch="lm-tables"><button type="button" aria-pressed="true" data-show="lm-t-cats">By category</button><button type="button" aria-pressed="false" data-show="lm-t-items">Envelopes that missed most</button></div>
+      </div>
+      <div id="lm-t-cats">
+        <ul class="key row"><li><span class="glyph">Σ</span>Planned, spent, 12-month average</li><li><span class="glyph">↑10</span>Suggested plan: the average rounded up to the next $10</li><li><span class="glyph">=</span>Housing, Debt, Insurance keep their plan</li></ul>
+        <div class="tbl"><table data-source="lm_cats" data-row-key="category"><thead><tr>
+          <th data-field="category">Category</th><th data-field="planned">Planned</th><th data-field="actual">Spent</th><th data-field="vs_plan">vs plan</th><th data-field="avg12">12-mo avg</th><th data-field="vs_avg">vs avg</th><th data-field="suggest">Suggested plan</th>
+        </tr></thead><tbody data-draw="lm-cats"></tbody></table></div>
+      </div>
+      <div id="lm-t-items" hidden>
+        <h3 class="visually-hidden" id="lm-items">Envelopes that missed by the most</h3>
+        <ul class="key row"><li><span class="glyph">25</span>Largest gaps, either way</li><li><span class="glyph">+</span>spent more than planned</li><li><span class="glyph">&lt;$1</span>hidden</li></ul>
+        <div class="tbl"><table data-source="lm_items" data-row-key="item"><thead><tr>
+          <th data-field="item">Envelope</th><th data-field="category">Category</th><th data-field="planned">Planned</th><th data-field="actual">Spent</th><th data-field="gap">Gap</th>
+        </tr></thead><tbody data-draw="lm-items"></tbody></table></div>
+      </div>
     </div>
   </section>
 
@@ -379,7 +403,16 @@
       <h2>Reconciliation</h2>
       <p class="note" data-draw="reconciliation-note">Every envelope's transactions should sum to its Spent in the BudgetItems export; any that do not are listed here.</p>
       <div class="tbl"><table data-source="reconciliation" data-row-key="item"><thead><tr><th data-field="m">Month</th><th data-field="item">Envelope</th><th data-field="txn_sum">Σ transactions</th><th data-field="spent">Spent</th><th data-field="delta">Delta</th><th data-field="status">Status</th></tr></thead><tbody data-draw="reconciliation"></tbody></table></div>
-      <script nonce="{{ csp_nonce(request) }}">(() => {
+      <script nonce="{{ csp_nonce(request) }}">
+// Segmented switches inside a card ([data-switch]): each button shows its own panel (data-show) and hides its siblings'.
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-switch] button[data-show]'); if (!b) return;
+  for (const o of b.parentElement.querySelectorAll('button[data-show]')) {
+    const on = o === b; o.setAttribute('aria-pressed', String(on)); const t = document.getElementById(o.dataset.show); if (t) t.hidden = !on;
+  }
+});
+</script>
+<script nonce="{{ csp_nonce(request) }}">(() => {
         const rows = () => { const g = dash.data('reconciliation'); return g.status === 'ok' ? g.data : null; };
         dash.draw('reconciliation-note', (el) => { const d = rows(); if (d) el.textContent = d.length ? d.length + ' envelope' + (d.length === 1 ? '' : 's') + ' do not reconcile. Fix or re-upload the month, then rebuild.' : 'All envelopes reconcile: every month\'s transactions sum to the budget\'s Spent.'; });
         dash.draw('reconciliation', (tb) => {
@@ -975,7 +1008,7 @@ dash.draw('lm-review', (el) => {
   if (g.status !== 'ok') { el.textContent = '—'; return; }
   const last = [...new Set(g.data.map((r) => r.m))].sort().pop();
   const rows = g.data.filter((r) => r.m === last).sort((a, b) => Number(a.order) - Number(b.order));
-  for (const r of rows) { const h = document.createElement('h3'); h.textContent = r.heading; const p = document.createElement('p'); p.textContent = r.text; el.append(h, p); }
+  for (const r of rows) { const sec = document.createElement('div'); sec.className = 'rv'; const h = document.createElement('h3'); h.textContent = r.heading; const p = document.createElement('p'); p.textContent = r.text; sec.append(h, p); el.append(sec); }
 });
 dash.draw('lm-summary', (ul) => {
   const g = dash.data('lm_cats'); if (g.status !== 'ok') { ul.replaceChildren(); return; }
