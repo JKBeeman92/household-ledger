@@ -106,6 +106,7 @@ excl = {
  "offbudget_outflows_unpaired": round(-sum(r["amt"] for r in L if r["IsTransfer"]=="1" and not r["TransferPair"] and r["amt"]<0 and r["Group"]!="Debt" and r["BudgetMonth"]>=OFFBUDGET_SINCE),2),
  "verify_rows": [{"m":r["BudgetMonth"],"item":r["Item"],"merchant":r["Merchant"],"amt":r["amt"]} for r in L if r["Flow"]=="verify"],
  "excluded_items": json.load(open("excluded.json")) if os.path.exists("excluded.json") else {},
+ "excluded_amounts": json.load(open("excluded_amounts.json")) if os.path.exists("excluded_amounts.json") else {},
 }
 
 # --- life events (dated markers) ---

@@ -41,7 +41,7 @@ ex = D["exclusions"]
 RU = json.load(open("rules.json")) if os.path.exists("rules.json") else {}
 # kind: what the row is, so the Method tab can tell the story from data; detail: the rule window that produced it, if any
 def xr(key, value, unit, kind, **extra): return {"key":key,"value":value,"unit":unit,"kind":kind, **extra}
-rows = [xr(f"{item} rows excluded", n, "rows", "excluded_item", item=item) for item,n in sorted(ex["excluded_items"].items())] + [
+rows = [xr(f"{item} rows excluded", n, "rows", "excluded_item", item=item, amount=ex.get("excluded_amounts", {}).get(item)) for item,n in sorted(ex["excluded_items"].items())] + [
         xr("Inter-item transfers tagged", ex["transfers_tagged"], "rows", "transfers_tagged"),
         xr("Transfers matched as pairs", ex["transfers_paired"], "rows", "transfers_paired"),
         xr("Balancing plugs dropped", ex["plugs"], "rows", "plugs", detail=f"through {RU['debt_plug_until']}" if RU.get("debt_plug_until") else ""),
