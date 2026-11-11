@@ -13,9 +13,9 @@ A profile is plain JSON, so it can be exported and imported:
                     "type": null},
                     "date_format": "YYYY-MM-DD", "decimal": ".", "thousands": ",",
                     "amount_mode": "signed" | "split" | "type", "expense_sign": "negative" | "positive",
-                    "income_values": ["income"], "income_groups": ["Income"]},
+                    "income_values": ["income"], "income_groups": ["Wages"]},
    "budget": {"headers": [...], "columns": {"group": ..., "item": ..., "planned": ..., "spent": ...},
-              "decimal": ".", "thousands": ",", "spent_sign": "negative" | "positive", "income_groups": ["Income"]}}
+              "decimal": ".", "thousands": ",", "spent_sign": "negative" | "positive", "income_groups": ["Wages"]}}
 
 Standalone: `python -m pipeline.sources normalize --profile p.json --month 2026-03 --transactions t.csv --budget b.csv --out DIR`
 writes the pair as EveryDollar-named files, which the pipeline scripts then read like any other export.
@@ -127,8 +127,13 @@ def _guess_separators(values: list[str]) -> tuple[str, str]:
     return ".", ","
 
 
-def propose(kind: str, data: bytes) -> dict:
-    """A starting profile section for one file, from its headers and values; the user confirms or corrects it."""
+DEFAULT_INCOME_GROUPS = ["Income"]   # role default: build_ledger.RULES["income_groups"]; the app passes the household's rule
+
+
+def propose(kind: str, data: bytes, income_groups: list[str] | None = None) -> dict:
+    """A starting profile section for one file, from its headers and values; the user confirms or corrects it. income_groups is the
+    income_groups rule (default DEFAULT_INCOME_GROUPS): the budget groups that hold income."""
+    groups = list(income_groups) if income_groups is not None else DEFAULT_INCOME_GROUPS
     header, rows = read_csv(data)
     cols = guess_columns(header, kind)
     col = lambda f: [r.get(cols[f], "") for r in rows] if cols.get(f) else []
@@ -141,14 +146,14 @@ def propose(kind: str, data: bytes) -> dict:
             mode = "type"
         return {"headers": header, "columns": cols, "date_format": _guess_date_format(col("date")), "decimal": dec, "thousands": th,
                 "amount_mode": mode, "expense_sign": "negative" if any(a < 0 for a in amounts) or mode != "signed" else "positive",
-                "income_values": ["income", "credit", "deposit"], "income_groups": ["Income"]}
+                "income_values": ["income", "credit", "deposit"], "income_groups": groups}
     dec, th = _guess_separators(col("planned") + col("spent"))
     # how spending is signed: by the majority of the non-income rows (one refund or balancing entry must not decide it)
     signs = [parse_money(r.get(cols["spent"], ""), dec, th) for r in rows if cols.get("spent") and cols.get("group")
-             and r.get(cols["group"], "").strip().lower() != "income" and r.get(cols["spent"], "").strip()]
+             and r.get(cols["group"], "").strip().lower() not in {g.lower() for g in groups} and r.get(cols["spent"], "").strip()]
     neg, pos = sum(1 for v in signs if v < 0), sum(1 for v in signs if v > 0)
     return {"headers": header, "columns": cols, "decimal": dec, "thousands": th,
-            "spent_sign": "negative" if neg > pos else "positive", "income_groups": ["Income"]}
+            "spent_sign": "negative" if neg > pos else "positive", "income_groups": groups}
 
 
 def which_kind(header: list[str], profile: dict) -> str | None:
@@ -260,14 +265,14 @@ def apply(kind: str, data: bytes, profile: dict) -> list[dict]:
                     continue   # a blank or summary line
                 # Type is EveryDollar's: the kind of budget line (income or expense), not the sign of this row
                 income = (mode == "type" and get(r, "type").lower() in {v.lower() for v in sec.get("income_values", [])}) or \
-                         get(r, "group").lower() in {g.lower() for g in sec.get("income_groups", ["Income"])}
-                out.append({"Group": get(r, "group"), "Item": get(r, "item"), "Type": "Income" if income else "Expense",
+                         get(r, "group").lower() in {g.lower() for g in sec.get("income_groups", DEFAULT_INCOME_GROUPS)}
+                out.append({"Group": get(r, "group"), "Item": get(r, "item"), "Type": "Income" if income else "Expense",   # format value, not a role
                             "Date": parse_date(get(r, "date"), sec.get("date_format", "MM/DD/YYYY")), "Merchant": get(r, "merchant"),
                             "Account": get(r, "account"), "Amount": _money(amt), "Note": get(r, "note")})
             else:
                 if not get(r, "item"):
                     continue
-                income = get(r, "group").lower() in {g.lower() for g in sec.get("income_groups", ["Income"])}
+                income = get(r, "group").lower() in {g.lower() for g in sec.get("income_groups", DEFAULT_INCOME_GROUPS)}
                 planned = parse_money(get(r, "planned"), dec, th).copy_abs()
                 spent = parse_money(get(r, "spent"), dec, th)
                 if not income and sec.get("spent_sign", "negative") == "positive":

@@ -25,10 +25,16 @@ RULES = {
   "transfer_item_names": None,         # regex of whole item names that are fund moves ("Fund Transfer"), drafted as Flow transfer; None = the built-in list. Mapping draft only
   "verify_transfer_prefixes": [],      # CanonicalItem prefixes whose "verify" rows are moves between envelopes, not spending
   "catchall_items": [],                # CanonicalItem names that act as catch-alls (the Where it went tab charts them)
-  "paycheck_min": 500,                 # a Paycheck row above this many dollars counts as one deposit; smaller ones are deductions
+  "paycheck_min": 500,                 # a paycheck row (paycheck_items) above this many dollars counts as one deposit; smaller ones are deductions
   "goal_giving_categories": ["Giving"],              # categories whose spend is giving, for the Goals tab
   "goal_housing_categories": ["Housing", "Utilities"],  # categories counted against the housing cap
   "goal_savings_groups": [],           # budget groups whose planned amounts count toward the savings target
+  # ---- roles: names the pipeline and the page act on (issue #162); the only place these defaults live outside the schema ----
+  "paycheck_items": ["Paycheck"],      # CanonicalItems that are paychecks: employers, deposits (paycheck_min), the Employer chart, the review's count
+  "recurring_categories": ["Subscriptions", "Utilities", "Insurance"],   # categories whose expense rows the Recurring tab lists
+  "plan_keep_categories": ["Housing", "Debt", "Insurance"],              # categories whose suggested plan stays the current plan (Last month tab)
+  "income_groups": ["Income"],         # budget groups that hold income: no carry-forward-into-a-fund there; source profiles and the draft default to them
+  "debt_groups": ["Debt"],             # budget groups that hold debt payments: the debt-plug rule and the off-budget outflow count
   "offbudget_since": None,             # "YYYY-MM": count unpaired off-budget outflows from here (exclusions table)
   "merchant_rules": [                  # [regex, display name]; household extras go in rules.json and are tried first
     [r"^(amzn|amazon)", "Amazon"], [r"^wal-?mart|^wm supercenter", "Walmart"], [r"^sams ?club", "Sam's Club"], [r"^costco", "Costco"],
@@ -43,6 +49,7 @@ if os.path.exists("rules.json"):
     if _r.get("merchant_rules"): _r["merchant_rules"] = list(_r["merchant_rules"]) + RULES["merchant_rules"]
     RULES.update({k: v for k, v in _r.items() if v is not None})
 CPI_BASE_MONTH = RULES["cpi_base_month"] or max(cpi); CPI_BASE = cpi[CPI_BASE_MONTH]
+PAYCHECK_ITEMS, INCOME_GROUPS, DEBT_GROUPS = set(RULES["paycheck_items"]), set(RULES["income_groups"]), set(RULES["debt_groups"])
 
 def employer(bm, merchant):
     m = merchant.lower()
@@ -101,11 +108,11 @@ for r in rows:
     mm, dd, yy = r["Date"].split("/")
     cal = f"{yy}-{mm}"
     amt = float(r["Amount"])
-    is_plug = (flow == "plug") or (r["Group"] == "Debt" and flow == "debt" and amt > 0 and r["BudgetMonth"] <= (RULES["debt_plug_until"] or "0000-00"))
+    is_plug = (flow == "plug") or (r["Group"] in DEBT_GROUPS and flow == "debt" and amt > 0 and r["BudgetMonth"] <= (RULES["debt_plug_until"] or "0000-00"))
     # merchant == item name only counts as a transfer when it is an inflow (carry-forward/rebalance into a fund);
     # 2018 hand-typed outflows ("Rent"/"Rent", "Spotify"/"Spotify") are real bills.
     is_transfer = (flow == "transfer") or is_transfer_merchant(r["Merchant"]) or \
-                  (norm(r["Merchant"]).lower() == r["Item"].lower() and amt > 0 and r["Group"] != "Income")
+                  (norm(r["Merchant"]).lower() == r["Item"].lower() and amt > 0 and r["Group"] not in INCOME_GROUPS)
     ci = mp["CanonicalItem"]
     if flow == "verify" and RULES["verify_transfer_prefixes"] and ci.startswith(tuple(RULES["verify_transfer_prefixes"])):
         flow, is_transfer = "transfer", True; ci = "Transfer"
@@ -116,7 +123,7 @@ for r in rows:
     if flow in ("expense","debt"):
         payer = next((p for p, pre in RULES["payer_prefix_by_person"].items() if ci.startswith(tuple(pre))), None) \
              or next((p for p, items in RULES["payer_items_by_person"].items() if ci in items), None) or "Household"
-    emp = employer(r["BudgetMonth"], r["Merchant"]) if ci == "Paycheck" else ""
+    emp = employer(r["BudgetMonth"], r["Merchant"]) if ci in PAYCHECK_ITEMS else ""
     c = cpi.get(cal) or cpi.get(r["BudgetMonth"]) or CPI_BASE
     out.append({
         "BudgetMonth": r["BudgetMonth"], "CalendarMonth": cal, "Date": f"{yy}-{mm}-{dd}",

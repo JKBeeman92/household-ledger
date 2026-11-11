@@ -39,7 +39,8 @@ def test_no_rules_means_no_catchalls_and_generic_goal_config(tmp_path):
     wd = build(tmp_path, {})
     assert ds(wd, "slush") == []
     assert ds(wd, "goal_config") == [{"giving_categories": ["Giving"], "housing_categories": ["Housing", "Utilities"],
-                                      "savings_groups": [], "catchall_items": [], "paycheck_min": 500}]
+                                      "savings_groups": [], "catchall_items": [], "paycheck_min": 500,
+                                      "plan_keep_categories": ["Housing", "Debt", "Insurance"]}]
 
 
 def test_catchall_items_and_goal_groups_come_from_the_rules(tmp_path):

@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 EDITORS = {
-    "mapping": {"title": "Item mapping", "help": "Each EveryDollar item gets a canonical name, a category and a flow. Every item must be here, or the build lists it as unmapped.", "help_long": "One row per EveryDollar item: Item, CanonicalItem, Category, Flow, Note. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every EveryDollar item name must appear here or the build reports it UNMAPPED. Fund moves kept as income items (Fund Transfer, End of Year Rebalance) need Flow transfer, or they count as income; money held for someone else and paid out needs exclude. CanonicalItem Paycheck and the categories Subscriptions, Utilities and Insurance are read by name (README, \"Names the pipeline relies on\"); rules name canonical items, not raw ones."},
+    "mapping": {"title": "Item mapping", "help": "Each EveryDollar item gets a canonical name, a category and a flow. Every item must be here, or the build lists it as unmapped.", "help_long": "One row per EveryDollar item: Item, CanonicalItem, Category, Flow, Note. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every EveryDollar item name must appear here or the build reports it UNMAPPED. Fund moves kept as income items (Fund Transfer, End of Year Rebalance) need Flow transfer, or they count as income; money held for someone else and paid out needs exclude. No name is read literally: the parts names play (which items are paychecks, which categories are recurring bills, and so on) are set under Pipeline rules, Roles (README, \"Roles\"); rules name canonical items, not raw ones."},
     "goals": {"title": "Goals", "help": "One row per goal: key, label, value, unit, note. The Goals tab and the month-close review read these; values are also confirmed each month in the checklist on Close a month. A share is a fraction (0.07) or a percentage (7%)."},
     "events": {"title": "Life events", "help": "One row per event: month (YYYY-MM) and label. Drawn as markers on the timeline charts."},
     "cpi": {"title": "CPI index", "help": "CSV: month, cpi, source. A price index (consumer prices, any base) used for the real-amounts toggle. US households: CPI-U, appending the newest month from FRED CPIAUCSL; mark estimates in source."},
@@ -298,7 +298,7 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         unmapped = len(unmapped_items(conn))
     return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP,
                   categories=categories, rules=rules, hh=household, name_families=name_families, unmapped=unmapped,
-                  brand_problems=brand_check.check_dir(brand.BRAND_DIR))
+                  brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS)
 
 
 @router.get("/settings/mapping.csv")
@@ -423,6 +423,42 @@ async def household_form(request: Request, user=Depends(auth.require_editor)):
         else:
             conn.commit(); flash(request, "Saved the household's name and display settings.")
     return RedirectResponse("/settings#household", status_code=303)
+
+
+ROLE_FIELDS = [   # (rules key, plain label, what it changes) for the Roles form (issue #162); defaults are build_ledger.RULES'
+    ("paycheck_items", "Items that are paychecks", "Canonical items. The Employer chart, the Goals tab's take-home and the review's paycheck count read them."),
+    ("recurring_categories", "Categories of recurring bills", "The Recurring tab lists their spending."),
+    ("plan_keep_categories", "Categories whose plan is kept", "On the Last month tab, their suggested plan stays the current plan instead of the twelve-month average."),
+    ("income_groups", "Budget groups that hold income", "As named in the export. New source profiles and the mapping draft start from these."),
+    ("debt_groups", "Budget groups that hold debt payments", "As named in the export. The debt-plug rule and the off-budget count read them."),
+]
+
+
+ROLE_DEFAULTS = {   # shown as placeholders; equal to build_ledger.RULES (tests/test_role_literals.py checks it)
+    "paycheck_items": ["Paycheck"], "recurring_categories": ["Subscriptions", "Utilities", "Insurance"],   # role default
+    "plan_keep_categories": ["Housing", "Debt", "Insurance"], "income_groups": ["Income"], "debt_groups": ["Debt"],   # role default
+}
+
+
+@router.post("/settings/rules/roles")
+async def rules_roles_form(request: Request, user=Depends(auth.require_editor)):
+    """The role rules as plain comma-separated fields; a blank field means the default."""
+    form = await request.form()
+    with db.pool.connection() as conn:
+        rules = {**(db.get_setting(conn, "rules", {}) or {})}
+        for key, _, _ in ROLE_FIELDS:
+            names = [n.strip() for n in str(form.get(key, "")).split(",") if n.strip()]
+            if names:
+                rules[key] = names
+            else:
+                rules.pop(key, None)
+        problems = _save_setting(conn, "rules", rules)
+        if problems:
+            conn.rollback(); flash(request, "Not saved — " + "; ".join(problems[:4]), "bad")
+        else:
+            db.mark_inputs_changed(conn); conn.commit()
+            flash(request, "Saved the roles. The dashboard shows them after a rebuild: press Rebuild now.")
+    return RedirectResponse("/settings#rules", status_code=303)
 
 
 @router.post("/settings/rules/people")

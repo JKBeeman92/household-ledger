@@ -9,6 +9,12 @@ for r in L:
 T = [r for r in L if r["in"]]
 RU = json.load(open("rules.json")) if os.path.exists("rules.json") else {}
 PAYCHECK_MIN = float(RU.get("paycheck_min") if RU.get("paycheck_min") is not None else 500)   # same default as build_ledger.RULES
+def _role(key, default): return set(RU.get(key) if RU.get(key) is not None else default)
+# roles (issue #162): same defaults as build_ledger.RULES
+PAYCHECK_ITEMS = _role("paycheck_items", ["Paycheck"])   # role default
+RECURRING_CATEGORIES = _role("recurring_categories", ["Subscriptions", "Utilities", "Insurance"])   # role default
+INCOME_GROUPS = _role("income_groups", ["Income"])   # role default
+DEBT_GROUPS = _role("debt_groups", ["Debt"])   # role default
 months = sorted({r["BudgetMonth"] for r in L})
 years = sorted({m[:4] for m in months})
 
@@ -68,7 +74,7 @@ earner_payer = {"earner":{y:{k:round(v,2) for k,v in earner[y].items()} for y in
 # --- employer by month (paychecks) ---
 emp = collections.defaultdict(lambda: collections.defaultdict(float)); empn = collections.defaultdict(lambda: collections.defaultdict(int))
 for r in T:
-    if r["CanonicalItem"]=="Paycheck":
+    if r["CanonicalItem"] in PAYCHECK_ITEMS:
         emp[r["BudgetMonth"]][r["Employer"] or "Unknown"] += r["amt"]
         if r["amt"] > PAYCHECK_MIN: empn[r["BudgetMonth"]][r["Employer"] or "Unknown"] += 1   # deposits; small ones are deductions
 employer = {m:{k:{"amount":round(v,2),"n":empn[m][k]} for k,v in emp[m].items()} for m in months}
@@ -85,7 +91,7 @@ debts.sort(key=lambda d:d["first"])
 # --- recurring subscriptions: last 12 months monthly avg vs first 12 of the item ---
 subs=collections.defaultdict(lambda: collections.defaultdict(float))
 for r in T:
-    if r["Category"] in ("Subscriptions","Utilities","Insurance") and r["Flow"]=="expense": subs[r["CanonicalItem"]][r["BudgetMonth"]] += -r["amt"]
+    if r["Category"] in RECURRING_CATEGORIES and r["Flow"]=="expense": subs[r["CanonicalItem"]][r["BudgetMonth"]] += -r["amt"]
 recurring=[]
 last12=months[-12:]
 for k,v in subs.items():
@@ -100,10 +106,10 @@ excl = {
  "transfers_tagged": sum(1 for r in L if r["IsTransfer"]=="1"),
  "transfers_paired": sum(1 for r in L if r["TransferPair"]),
  "plugs": sum(1 for r in L if r["IsPlug"]=="1"),
- "income_typed_transfers_total": round(sum(r["amt"] for r in L if r["IsTransfer"]=="1" and r["Group"]=="Income" and r["amt"]>0),2),
+ "income_typed_transfers_total": round(sum(r["amt"] for r in L if r["IsTransfer"]=="1" and r["Group"] in INCOME_GROUPS and r["amt"]>0),2),
  "family_loan_in": round(sum(r["amt"] for r in L if r["Category"]=="Family Loan" and r["amt"]>0),2),
  "family_loan_out": round(-sum(r["amt"] for r in L if r["Category"]=="Family Loan" and r["amt"]<0),2),
- "offbudget_outflows_unpaired": round(-sum(r["amt"] for r in L if r["IsTransfer"]=="1" and not r["TransferPair"] and r["amt"]<0 and r["Group"]!="Debt" and r["BudgetMonth"]>=OFFBUDGET_SINCE),2),
+ "offbudget_outflows_unpaired": round(-sum(r["amt"] for r in L if r["IsTransfer"]=="1" and not r["TransferPair"] and r["amt"]<0 and r["Group"] not in DEBT_GROUPS and r["BudgetMonth"]>=OFFBUDGET_SINCE),2),
  "verify_rows": [{"m":r["BudgetMonth"],"item":r["Item"],"merchant":r["Merchant"],"amt":r["amt"]} for r in L if r["Flow"]=="verify"],
  "excluded_items": json.load(open("excluded.json")) if os.path.exists("excluded.json") else {},
  "excluded_amounts": json.load(open("excluded_amounts.json")) if os.path.exists("excluded_amounts.json") else {},

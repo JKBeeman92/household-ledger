@@ -89,7 +89,7 @@
     },
     "paycheck_min": {
       "type": ["number", "null"], "minimum": 0,
-      "description": "A Paycheck row above this many dollars counts as one deposit (paycheck counts on the Goals tab and the employer chart); smaller ones are deductions. Empty (null) means 500."
+      "description": "A paycheck row (paycheck_items) above this many dollars counts as one deposit (paycheck counts on the Goals tab and the employer chart); smaller ones are deductions. Empty (null) means 500."
     },
     "goal_giving_categories": {
       "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
@@ -102,6 +102,26 @@
     "goal_savings_groups": {
       "type": "array", "items": {"type": "string", "minLength": 1},
       "description": "Budget groups whose planned amounts count toward the savings target on the Goals tab, for example [\"Long-expected Party\"]. Empty leaves that ratio blank."
+    },
+    "paycheck_items": {
+      "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
+      "description": "Items that are paychecks: CanonicalItem names whose rows get an employer (the employers rule), count as deposits (paycheck_min), and make up the Employer chart, the Goals tab's take-home and the review's paycheck count. A list, so Salary and Contract Income can stay apart. Empty (null) means [\"Paycheck\"]."
+    },
+    "recurring_categories": {
+      "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
+      "description": "Categories the Recurring tab lists: their expense rows, by canonical item. Empty (null) means [\"Subscriptions\", \"Utilities\", \"Insurance\"]."
+    },
+    "plan_keep_categories": {
+      "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
+      "description": "Categories whose suggested plan on the Last month tab stays the current plan instead of the twelve-month average. Empty (null) means [\"Housing\", \"Debt\", \"Insurance\"]."
+    },
+    "income_groups": {
+      "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
+      "description": "Budget groups that hold income, as they appear in the export. An inflow whose merchant equals its item name is a carry-forward into a fund everywhere except in these groups; new source profiles and the mapping draft start from them. Empty (null) means [\"Income\"]."
+    },
+    "debt_groups": {
+      "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
+      "description": "Budget groups that hold debt payments, as they appear in the export: the debt_plug_until rule looks at these groups, the off-budget outflow count leaves them out, and the mapping draft gives their items Flow debt. Empty (null) means [\"Debt\"]."
     }
   }
 }

@@ -12,7 +12,7 @@
     <code>debt</code> for Debt, <code>transfer</code> for names that move money between your own envelopes, and <code>expense</code> otherwise. An item whose name
     matches one you have already mapped copies that row. Every row's note says it was drafted, so you can find them later.</p>
   <p class="muted" style="max-width:90ch">Check two things before adding: money you hold for someone else and pay out needs Flow <code>exclude</code>, and a fund move the
-    names did not reveal needs <code>transfer</code> (README, "Names the pipeline relies on").</p>
+    names did not reveal needs <code>transfer</code> (README, "Roles").</p>
   <div class="tablewrap"><table class="plain"><thead><tr><th scope="col">Item</th><th scope="col">Canonical item</th><th scope="col">Category</th><th scope="col">Flow</th><th scope="col">Note</th></tr></thead><tbody>
   {% for r in rows %}<tr><td>{{ r["item"] }}</td><td>{{ r.canonical_item }}</td><td>{{ r.category }}</td><td><code>{{ r.flow }}</code></td><td class="muted">{{ r.note }}</td></tr>{% endfor %}
   </tbody></table></div>

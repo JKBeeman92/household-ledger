@@ -61,7 +61,7 @@ until you confirm. The files are kept exactly as uploaded, so a mapping correcte
     <div><label for="t_decimal">Decimal mark</label><select id="t_decimal" name="t_decimal">{% for d in ['.', ','] %}<option {% if d == v('t_decimal', t.decimal) %}selected{% endif %}>{{ d }}</option>{% endfor %}</select></div>
     <div><label for="t_thousands">Thousands separator</label><select id="t_thousands" name="t_thousands">{% for d, lab in [(',', ','), ('.', '.'), (' ', 'space'), ('', 'none')] %}<option value="{{ d }}" {% if d == v('t_thousands', t.thousands) %}selected{% endif %}>{{ lab }}</option>{% endfor %}</select></div>
     <div><label for="t_income_values">Type values that mean income</label><input id="t_income_values" type="text" name="t_income_values" value="{{ v('t_income_values', (t.income_values or [])|join(', ')) }}"></div>
-    <div><label for="t_income_groups">Income groups</label><input id="t_income_groups" type="text" name="t_income_groups" value="{{ v('t_income_groups', (t.income_groups or ['Income'])|join(', ')) }}"></div>
+    <div><label for="t_income_groups">Income groups</label><input id="t_income_groups" type="text" name="t_income_groups" value="{{ v('t_income_groups', (t.income_groups or default_income_groups)|join(', ')) }}"></div>
   </div>
 </section>
 {% endif %}
@@ -77,7 +77,7 @@ until you confirm. The files are kept exactly as uploaded, so a mapping correcte
       {% for val, lab in [('negative', 'negative, as in the transactions'), ('positive', 'positive (e.g. 380.00 spent)')] %}<option value="{{ val }}" {% if val == v('b_spent_sign', b.spent_sign) %}selected{% endif %}>{{ lab }}</option>{% endfor %}</select></div>
     <div><label for="b_decimal">Decimal mark</label><select id="b_decimal" name="b_decimal">{% for d in ['.', ','] %}<option {% if d == v('b_decimal', b.decimal) %}selected{% endif %}>{{ d }}</option>{% endfor %}</select></div>
     <div><label for="b_thousands">Thousands separator</label><select id="b_thousands" name="b_thousands">{% for d, lab in [(',', ','), ('.', '.'), (' ', 'space'), ('', 'none')] %}<option value="{{ d }}" {% if d == v('b_thousands', b.thousands) %}selected{% endif %}>{{ lab }}</option>{% endfor %}</select></div>
-    <div><label for="b_income_groups">Income groups</label><input id="b_income_groups" type="text" name="b_income_groups" value="{{ v('b_income_groups', (b.income_groups or ['Income'])|join(', ')) }}">
+    <div><label for="b_income_groups">Income groups</label><input id="b_income_groups" type="text" name="b_income_groups" value="{{ v('b_income_groups', (b.income_groups or default_income_groups)|join(', ')) }}">
       <p class="muted">Lines in these groups are income; every other line is spending.</p></div>
   </div>
 </section>

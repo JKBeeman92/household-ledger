@@ -714,10 +714,10 @@ dash.calc('lm_totals', { inputs: ['budget_items'], title: 'Last month totals vs 
   const net = inc - sp - db, anet = ainc - asp - adb;
   return [{ row: 'last', month: last, income_actual: inc, income_planned: incp, income_vs_plan: inc - incp, spend_actual: sp, spend_planned: spp, spend_vs_plan: sp - spp, debt_actual: db, debt_planned: dbp, debt_vs_plan: db - dbp, net_actual: net, net_avg: anet, net_vs_avg: net - anet, income_avg: ainc, spend_avg: asp, debt_avg: adb }];
 } });
-dash.calc('lm_cats', { inputs: ['budget_items', 'goal_config'], title: 'Last month by category vs plan and trailing average', description: 'For the latest budget month, per category: planned, spent, gap to plan, average of the twelve months before, gap to that average, and a suggested plan (12-month average rounded up to the nearest 10; Housing, Debt and Insurance keep the current plan).', fn: (budget_items, goal_config) => {
-  const gc = (goal_config && goal_config[0]) || {}, saveGroups = new Set(gc.savings_groups || []), giveCats = new Set(gc.giving_categories || ['Giving']);
+dash.calc('lm_cats', { inputs: ['budget_items', 'goal_config'], title: 'Last month by category vs plan and trailing average', description: 'For the latest budget month, per category: planned, spent, gap to plan, average of the twelve months before, gap to that average, and a suggested plan (12-month average rounded up to the nearest 10; the plan_keep_categories rule\u2019s categories keep the current plan).', fn: (budget_items, goal_config) => {
+  const gc = (goal_config && goal_config[0]) || {}, saveGroups = new Set(gc.savings_groups || []), giveCats = new Set(gc.giving_categories || ['Giving']);   // role default
   const months = [...new Set(budget_items.map((r) => r.m))].sort(); const last = months[months.length - 1]; const prev = months.slice(-13, -1); const n = prev.length || 1;
-  const keep = ['Housing', 'Debt', 'Insurance'];
+  const keep = gc.plan_keep_categories || ['Housing', 'Debt', 'Insurance'];   // role default, until a rebuild emits plan_keep_categories
   const cats = [...new Set(budget_items.map((r) => r.category))];
   return cats.map((c) => {
     const cur = budget_items.filter((r) => r.m === last && r.category === c); const flow = cur[0] ? cur[0].flow : (budget_items.find((r) => r.category === c) || {}).flow;
@@ -736,7 +736,7 @@ dash.calc('lm_items', { inputs: ['budget_items'], title: 'Last month envelopes b
 // "good", "off" or "neutral" for a gap: under plan is good for spending, but a shortfall for savings, giving and debt
 HL.tone = (r, gap) => Math.abs(gap) < 0.5 ? 'neutral' : ((r.want_more ? gap > 0 : gap < 0) ? 'good' : 'off');
 const goalConfig = HL.goalConfig = () => { const g = dash.data('goal_config'); const c = g.status === 'ok' && g.data[0] ? g.data[0] : {};
-  return { giving_categories: c.giving_categories || ['Giving'], housing_categories: c.housing_categories || ['Housing', 'Utilities'], savings_groups: c.savings_groups || [], catchall_items: c.catchall_items || [] }; };
+  return { giving_categories: c.giving_categories || ['Giving'], housing_categories: c.housing_categories || ['Housing', 'Utilities'], savings_groups: c.savings_groups || [], catchall_items: c.catchall_items || [] }; };   // role default
 dash.calc('goal_month', { inputs: ['budget_items', 'employer', 'cat_month', 'goals'], title: 'Goal ratios by month', description: 'Per budget month: net paychecks (take-home) and paycheck count (deposits over the rules\u2019 paycheck_min) from employer; giving spend and housing spend from cat_month, by the categories goal_config names; money planned into goal_config\u2019s savings groups from budget_items; each as a share of gross (goals.gross_annual / 12) or of take-home; plus twelve-month trailing shares.', fn: (budget_items, employer, cat_month, goals) => {
   const cfg = goalConfig();
   const gv = goals.find((g) => g.key === 'gross_annual'); const gross = gv && gv.value != null ? Number(gv.value) / 12 : 0;
@@ -890,7 +890,7 @@ dash.draw('annual', (el) => {
   const g = HL.rd('yearly'); el.replaceChildren();
   if (g.status !== 'ok') { el.textContent = '—'; return; }
   const f = HL.fld; const rows = [...g.data].sort((a, b) => a.y < b.y ? -1 : 1);
-  const keys = ['income', 'spend', 'debt'], names = ['Income', 'Living spend', 'Debt payments'], ci = [0, 1, 3];
+  const keys = ['income', 'spend', 'debt'], names = ['Income', 'Living spend', 'Debt payments'], ci = [0, 1, 3];   // label, not a role
   const W = el.clientWidth || 600, H = 260, mt = 8, mb = 28;
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
   const y = d3.scaleLinear([0, d3.max(rows, (r) => Math.max(...keys.map((k) => Number(r[f(k)]))))], [H - mb, mt]).nice();
@@ -1185,7 +1185,7 @@ dash.draw('lm-take', (el) => { const r = lmRow(); if (!r) { el.textContent = '�
 dash.draw('lm-chips', (ul) => { const r = lmRow(); const c = dash.data('lm_cats'); if (!r) { ul.replaceChildren(); return; }
   const chip = (label, value, gap, wantMore) => { const li = document.createElement('li'); const tone = HL.tone({ want_more: wantMore }, gap); li.className = 'chip ' + tone;
     const b = document.createElement('b'); b.textContent = label; li.append(b, ' ' + HL.usd0(value) + ' · ' + (Math.abs(gap) < 0.5 ? 'on plan' : (gap > 0 ? '+' : '−') + HL.usd0(Math.abs(gap)) + ' vs plan')); return li; };
-  const out = [chip('Income', r.income_actual, r.income_vs_plan, true), chip('Living spend', r.spend_actual, r.spend_vs_plan, false), chip('Debt', r.debt_actual, r.debt_vs_plan, true)];
+  const out = [chip('Income', r.income_actual, r.income_vs_plan, true), chip('Living spend', r.spend_actual, r.spend_vs_plan, false), chip('Debt', r.debt_actual, r.debt_vs_plan, true)];   // label, not a role
   if (c.status === 'ok') for (const x of c.data.filter((x) => x.want_more && x.flow === 'expense' && x.vs_plan <= -0.5)) out.push(chip(x.category, x.actual, x.vs_plan, true));   // a savings or giving shortfall is named
   ul.replaceChildren(...out); });
 dash.draw('lm-name', (el) => { el.textContent = lmName() || '—'; });

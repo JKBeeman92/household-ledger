@@ -83,11 +83,20 @@ def flow_for(item: str, group: str, rules: dict | None = None) -> str:
     if _transfer_rx(rules).match(norm(item)):
         return "transfer"
     g = norm(group).lower()
-    if g == "income" or g.startswith("income "):
+    inc = [x.lower() for x in _role(rules, "income_groups", INCOME_GROUPS_DEFAULT)]
+    if g in inc or any(g.startswith(x + " ") for x in inc):   # "Income Rosie" is an income group too
         return "income"
-    if g == "debt":
+    if g in {x.lower() for x in _role(rules, "debt_groups", DEBT_GROUPS_DEFAULT)}:
         return "debt"
     return "expense"
+
+
+INCOME_GROUPS_DEFAULT, DEBT_GROUPS_DEFAULT = ["Income"], ["Debt"]   # role default: build_ledger.RULES
+
+
+def _role(rules: dict | None, key: str, default: list[str]) -> list[str]:
+    v = (rules or {}).get(key)
+    return v if v is not None else default
 
 
 def draft(unmapped: list[dict], mapping: list[dict], rules: dict | None = None) -> list[dict]:

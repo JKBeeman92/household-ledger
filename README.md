@@ -59,7 +59,7 @@ at once as `settings.zip` ([Backups](#backups)), so moving to a new box is: unzi
 
 | File | Shape |
 |---|---|
-| `item_mapping.csv` | columns `Item,CanonicalItem,Category,Flow,Note` ([Names the pipeline relies on](#names-the-pipeline-relies-on)) |
+| `item_mapping.csv` | columns `Item,CanonicalItem,Category,Flow,Note` ([Roles](#roles)) |
 | `cpi_u.csv` | columns `month,cpi,source` (`month` is `YYYY-MM`) |
 | `goals.json` | list of `{"key", "label", "value", "unit", "note"}`; `value` may be `null` |
 | `events.json` | list of `{"m": "YYYY-MM", "label": "…"}` (the key is `m`, not `month`) |
@@ -95,7 +95,7 @@ docker compose exec -T ledger python -m app.admin import-mapping - < item_mappin
 
 Commands: `import-mapping`, `set-rules`, `set-events`, `set-goals`, `set-cpi` and `set-household` replace one editor's contents from a file
 (`-` reads standard input); `export <mapping|rules|events|goals|cpi|household>` and `export-mapping` print them; `draft-mapping` prints the
-[drafted mapping](#names-the-pipeline-relies-on) for unmapped items and `add-mapping FILE` adds a reviewed draft without touching existing
+[drafted mapping](#roles) for unmapped items and `add-mapping FILE` adds a reviewed draft without touching existing
 rows; `rebuild` exits 0 when the build reconciles, 1 when it fails or does not reconcile, and 75 when another rebuild is running. Every
 write is logged as a `ledger.admin` line naming the command. API tokens stay read-only: shell access to the container already means
 full control, so the command line adds no new way in.
@@ -251,19 +251,25 @@ Outside the app, `python -m pipeline.sources propose …` prints a starting prof
 `python -m pipeline.sources normalize --profile p.json --month YYYY-MM …` writes them as EveryDollar-named files for the standalone
 pipeline scripts.
 
-## Names the pipeline relies on
+## Roles
 
-The item mapping turns each raw item name from the exports (`Item`) into a `CanonicalItem`, a `Category` and a `Flow`. Most of it is
-yours to name as you like, but a few names are read literally, and renaming them empties a chart without any error:
+The item mapping turns each raw item name from the exports (`Item`) into a `CanonicalItem`, a `Category` and a `Flow`. Name them as
+you like: nothing in the code reads a category, canonical item or budget group by its name. Where a chart needs to know *which* of
+your names plays a part (which items are paychecks, which categories are recurring bills), a rule says so. Each has a default that
+matches the sample household; set it on Settings → Pipeline rules → **Roles**, or in the rules JSON.
 
-| Name | Kind | What reads it |
-|---|---|---|
-| `Paycheck` | CanonicalItem, hard-coded (`pipeline/aggregate.py`, `pipeline/build_ledger.py`) | Only rows with exactly this name get an employer (the `employers` rule) and count as deposits (`paycheck_min`). The Employer chart and the Goals tab's take-home and paycheck count are built from them, and the month-close review counts paychecks from `Paycheck` rows whose Category is `Income` (`app/review.py`). Map every earner's paycheck items to `Paycheck`; tell earners apart with `income_by_person`, not by renaming it. |
-| `Subscriptions`, `Utilities`, `Insurance` | Category, hard-coded (`pipeline/aggregate.py`) | The Recurring tab lists `expense` rows in these three categories only. |
-| `Housing`, `Debt`, `Insurance` | Category, hard-coded (`app/web/templates/dashboard.html`) | The Last month tab's suggested plan keeps the current plan for these instead of the twelve-month average. |
-| `Housing`, `Utilities` | Category, default of `goal_housing_categories` | The housing share on the Goals tab. Change the rule if your categories differ. |
-| `Giving` | Category, default of `goal_giving_categories` | The giving share on the Goals tab. |
-| `Income` | Budget group, hard-coded (`pipeline/build_ledger.py`) | An inflow whose merchant equals its item name is read as a carry-forward into a fund (a transfer), except in this group. Source profiles for other tools also default their income groups to `Income`. |
+| Rule | Default | Names | What reads it |
+|---|---|---|---|
+| `paycheck_items` | `["Paycheck"]` | CanonicalItem | Rows of these items get an employer (the `employers` rule) and count as deposits (`paycheck_min`). The Employer chart, the Goals tab's take-home and paycheck count, and the month-close review's paycheck count are built from them. A list, so `Salary` and `Contract Income` can stay apart; tell earners apart with `income_by_person`. |
+| `recurring_categories` | `["Subscriptions", "Utilities", "Insurance"]` | Category | The Recurring tab lists `expense` rows in these categories. |
+| `plan_keep_categories` | `["Housing", "Debt", "Insurance"]` | Category | The Last month tab's suggested plan keeps the current plan for these instead of the twelve-month average. |
+| `income_groups` | `["Income"]` | Budget group | An inflow whose merchant equals its item name is read as a carry-forward into a fund (a transfer), except in these groups; income-typed transfers are counted from them. New source profiles for other tools, and the mapping draft, start from these. |
+| `debt_groups` | `["Debt"]` | Budget group | The `debt_plug_until` rule looks at these groups; the off-budget outflow count leaves them out; the mapping draft gives their items Flow `debt`. |
+| `goal_housing_categories` | `["Housing", "Utilities"]` | Category | The housing share on the Goals tab. |
+| `goal_giving_categories` | `["Giving"]` | Category | The giving share on the Goals tab. |
+
+Renaming one of these names in the mapping without changing its rule empties what reads it, so change both together. A test
+(`tests/test_role_literals.py`) fails if any of the default names appears as a string in the code outside the rule defaults.
 
 **Rules take canonical names**, not the raw names in the exports: `income_by_person`, `payer_items_by_person`,
 `payer_prefix_by_person`, `catchall_items` and `verify_transfer_prefixes` all compare against `CanonicalItem`. With
@@ -284,8 +290,8 @@ every chart. The sample household's `Venmo Pass-Through` item shows the pattern.
 
 **A first mapping for a back catalogue.** Settings → Item mapping offers **Draft a mapping from my budget groups** whenever the stored
 exports carry items with no mapping row. The draft fills only those items and never changes an existing row: Category is the budget
-group; CanonicalItem is the item name without a year's suffix (` 2`, ` Fund`, ` Goal`); Flow is `income` for the `Income` group, `debt`
-for `Debt`, `transfer` for names such as `Fund Transfer`, `Transfer Funds`, `… Rebalance` or `Transfer to …`, and `expense` otherwise.
+group; CanonicalItem is the item name without a year's suffix (` 2`, ` Fund`, ` Goal`); Flow is `income` for the `income_groups` (default `Income`), `debt`
+for the `debt_groups` (default `Debt`), `transfer` for names such as `Fund Transfer`, `Transfer Funds`, `… Rebalance` or `Transfer to …`, and `expense` otherwise.
 An item whose name matches one already mapped (`Second Breakfast 3` beside `Second Breakfast`) copies that row instead. Every drafted
 row's Note starts with `drafted`, so the guesses can be found later. You review the draft as CSV before it is added; check pass-through
 money (`exclude`) and fund moves the names do not reveal.
