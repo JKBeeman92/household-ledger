@@ -18,9 +18,19 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(d, default=str)
 
 
+TEXT_FORMAT = "%(levelname)-8s %(name)s: %(message)s"
+
+
 def configure(fmt: str) -> None:
-    """Called once at import. Anything but 'json' leaves logging as it was."""
+    """Called once at import. 'json': every logger as one JSON object per line. Anything else: readable lines, `LEVEL logger: message`,
+    from a root handler, and only when nothing has configured the root logger yet (a test runner, an embedding app). Without it the
+    access line (uvicorn's own runs with --no-access-log) would have no INFO handler, and the mcp SDK's later logging.basicConfig would
+    print every line bare; with it that basicConfig call does nothing."""
     if fmt.strip().lower() != "json":
+        root = logging.getLogger()
+        if not root.handlers:
+            h = logging.StreamHandler(); h.setFormatter(logging.Formatter(TEXT_FORMAT))
+            root.addHandler(h); root.setLevel(logging.INFO)
         return
     h = logging.StreamHandler()
     h.setFormatter(JsonFormatter())
@@ -34,14 +44,21 @@ def configure(fmt: str) -> None:
     logging.getLogger("uvicorn.access").disabled = True
 
 
+def _host(addr) -> str:
+    return addr[0] if addr else "-"
+
+
 class RequestIdMiddleware:
-    """Pure ASGI: takes a sane incoming X-Request-ID or makes one, echoes it, and logs one access line per request."""
+    """Pure ASGI: takes a sane incoming X-Request-ID or makes one, echoes it, and logs one access line per request.
+    It must wrap the proxy-headers middleware (app/main.py), never sit inside it: `peer` is scope["client"] as the connection arrived
+    (the reverse proxy, the value FORWARDED_ALLOW_IPS wants), `client` the same key after X-Forwarded-For was applied in place."""
     def __init__(self, app):
         self.app = app
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
+        peer = _host(scope.get("client"))
         incoming = dict(scope["headers"]).get(b"x-request-id", b"").decode("latin-1")
         rid = incoming if _SAFE_ID.match(incoming) else uuid.uuid4().hex
         token = request_id.set(rid)
@@ -59,6 +76,9 @@ class RequestIdMiddleware:
         finally:
             if scope["path"] not in _QUIET:
                 ms = round((time.perf_counter() - t0) * 1000, 1)
-                access_log.info("%s %s %s", scope["method"], scope["path"], status,
-                                extra={"fields": {"method": scope["method"], "path": scope["path"], "status": status, "duration_ms": ms}})
+                client = _host(scope.get("client"))
+                via = "" if client == peer else f" via {peer}"
+                access_log.info('%s%s "%s %s" %s %sms', client, via, scope["method"], scope["path"], status, ms,
+                                extra={"fields": {"method": scope["method"], "path": scope["path"], "status": status, "duration_ms": ms,
+                                                  "client": client, "peer": peer}})
             request_id.reset(token)

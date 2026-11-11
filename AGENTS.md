@@ -28,7 +28,7 @@ it on the Settings page.
 
 ## Checking a change
 1. `DATABASE_URL=<throwaway database> python -m pytest -q` (`requirements-dev.txt`; see CONTRIBUTING.md). Goldens change only deliberately (`UPDATE_GOLDENS=1`).
-2. `uvicorn app.main:app --reload` with `AUTH_DISABLED=true` against a local Postgres.
+2. `uvicorn app.main:app --reload --no-proxy-headers --no-access-log` with `AUTH_DISABLED=true` against a local Postgres.
 3. `python -m pipeline.import_exports <dir>` on a set of exports; it exits non-zero if reconciliation fails.
 4. Open the page in light and dark; no console errors; every tab draws.
 
