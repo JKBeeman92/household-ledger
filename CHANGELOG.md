@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.0](https://github.com/JKBeeman92/household-ledger/compare/v0.3.0...v0.4.0) (2026-11-11)
+
+
+### Features
+
+* a headless admin command line for mapping, rules, events, goals and rebuild ([#135](https://github.com/JKBeeman92/household-ledger/issues/135)) ([f8349bf](https://github.com/JKBeeman92/household-ledger/commit/f8349bf2c57a960193c31e36103af4a76106b343))
+* draft an item mapping from the budget groups, and flag names that drift between years ([#134](https://github.com/JKBeeman92/household-ledger/issues/134)) ([770def3](https://github.com/JKBeeman92/household-ledger/commit/770def31cf3427fed7b4ef0fa981947ea49fdfc0))
+* export every setting as one zip in the seed-directory shape, and start a new install from it ([#173](https://github.com/JKBeeman92/household-ledger/issues/173)) ([c38af64](https://github.com/JKBeeman92/household-ledger/commit/c38af64490a483f13f45264cacb684bace3c7404)), closes [#160](https://github.com/JKBeeman92/household-ledger/issues/160)
+* warn when a BRAND_DIR theme lacks a contract token or fails a contrast pair ([#137](https://github.com/JKBeeman92/household-ledger/issues/137)) ([8324fa3](https://github.com/JKBeeman92/household-ledger/commit/8324fa33bf96931ebd6057efa42acb92acf128c6))
+
+
+### Bug Fixes
+
+* collapse the life-event list under the timeline behind a count ([#172](https://github.com/JKBeeman92/household-ledger/issues/172)) ([82e911f](https://github.com/JKBeeman92/household-ledger/commit/82e911f200dca81cc0270f5625a5a026d65cef92)), closes [#139](https://github.com/JKBeeman92/household-ledger/issues/139)
+* log the client without ":0" and the proxy it came through, in text and JSON alike ([#136](https://github.com/JKBeeman92/household-ledger/issues/136)) ([ebfdc4b](https://github.com/JKBeeman92/household-ledger/commit/ebfdc4bf37fdfb543e808912b3b5d83fc153b8aa))
+
 ## [0.3.0](https://github.com/JKBeeman92/household-ledger/compare/v0.2.0...v0.3.0) (2026-11-11)
 
 
