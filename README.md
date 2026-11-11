@@ -54,7 +54,8 @@ database container, which sets its own ownership on first start; leave it alone.
 First boot applies the migrations and seeds the reference tables. Seeds come from `SEED_DIR` (`/srv/ledger/seed/` in the compose file)
 when a file is present there, else from the generic files in `pipeline/` (CPI table, empty mapping, goal keys with no values).
 A seed directory holds any of `item_mapping.csv`, `cpi_u.csv`, `goals.json`, `events.json`, `rules.json`, `review.json`,
-`household.json`; after the first boot the database owns them and the Settings page is the editor. Their shapes:
+`household.json`; after the first boot the database owns them and the Settings page is the editor. A running install writes all of them
+at once as `settings.zip` ([Backups](#backups)), so moving to a new box is: unzip into `seed/`, start. Their shapes:
 
 | File | Shape |
 |---|---|
@@ -201,6 +202,11 @@ docker compose --profile backup up -d      # one dump now, then every BACKUP_INT
 Dumps land in `/srv/ledger/backups/ledger-<UTC time>.dump` (`pg_dump -Fc`, readable only by root) and dumps older than
 `BACKUP_KEEP_DAYS` (14) are deleted. Both settings are optional entries in `.env`. A failed dump is logged (`docker compose logs backup`) and
 never replaces an earlier good one. Copy that directory off the machine; a backup on the same disk is not a backup.
+
+**Settings alone.** **Close a month** → `settings.zip` (or `/export/settings.zip`, or `docker compose exec ledger python -m app.admin
+export-settings /tmp/settings`) holds the mapping, CPI, goals, life events, rules and household as the seed files below. Unzip it into an
+empty `seed/` and a new install starts with the same settings, no `pg_dump` needed. It carries no secrets (API tokens, webhook
+destination and secret, sessions) and no reviews or build log. Take one before an upgrade that reshapes the mapping.
 
 The dump is the database only, and it includes the files uploaded from other budget tools (they are stored in the database).
 To rebuild a household from nothing you also need the directories you maintain by hand: `seed/`, `brand/` and `import/` (the raw

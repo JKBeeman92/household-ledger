@@ -84,6 +84,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("export-mapping", help="print the mapping CSV the Settings page exports")
     sub.add_parser("draft-mapping", help="print a draft mapping CSV for the unmapped items (nothing is saved)")
     sub.add_parser("add-mapping", help="add the rows of a mapping CSV (e.g. a reviewed draft); refuses items already mapped").add_argument("file")
+    sub.add_parser("export-settings", help="write every setting into DIR in the seed-directory shape (as /export/settings.zip)").add_argument("dir")
     sub.add_parser("rebuild", help="rebuild the ledger and datasets (exit 75 if one is already running, 1 if it does not reconcile)")
     a = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s", stream=sys.stderr)
@@ -96,6 +97,11 @@ def main(argv: list[str] | None = None) -> int:
     if a.cmd == "rebuild":
         return rebuild_cmd()
     with _connect() as conn:
+        if a.cmd == "export-settings":
+            from app.settings_export import write_dir
+            names = write_dir(conn, Path(a.dir))
+            print(f"Wrote {len(names)} files to {a.dir}: {', '.join(names)}. Put them in an empty SEED_DIR to start a new install with these settings.")
+            return 0
         if a.cmd == "draft-mapping":
             rows = s.draft_mapping(conn)
             if not rows:
