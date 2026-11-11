@@ -15,7 +15,7 @@
       <td class="mono">{{ u.months[0] }}{% if u.months|length > 1 %} … {{ u.months[-1] }}{% endif %}</td>
       <td class="mono">{{ u.rows }}</td>
       <td><input name="canonical" value="{{ u['canonical_guess'] }}" aria-label="Canonical item for {{ u['item'] }}"></td>
-      <td><input name="category" list="map-categories" value="{{ u.group or '' }}" aria-label="Category for {{ u['item'] }}"></td>
+      <td><input name="category" list="map-categories" value="{{ u.category_guess or u.group or '' }}" aria-label="Category for {{ u['item'] }}"></td>
       <td><select name="flow" aria-label="Flow for {{ u['item'] }}">{% for f in findings.flows %}<option {% if f == u.flow_guess %}selected{% endif %}>{{ f }}</option>{% endfor %}</select></td>
     </tr>{% endfor %}</tbody></table>
     <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit" {% if build.state == 'running' %}disabled title="A rebuild is running"{% endif %}>Add to mapping and rebuild</button></p>
