@@ -16,6 +16,21 @@
 - [ ] Schema change: a new `db/migrations/NNNN_name.sql` (NNNN = issue number), never an edit to an applied one; applies on an existing database with data, not just a fresh one
 - [ ] No household data, secrets or `.env` contents in the diff
 
+## Done means
+
+<!-- Only for a change that adds a dataset, or a reference or raw table (AGENTS.md, "Done means"). For each line write "done" or
+"not, because …". Delete this section for any other change. -->
+
+- [ ] Dataset: emitted by `make_datasets.py`, read through `dash.data()`
+- [ ] Review: in `build_context`
+- [ ] MCP: in `DATASETS`, `tests/test_mcp.py` updated
+- [ ] Exports: `datasets.zip` / `sources.zip`; a reference table in `settings.zip` and the seed loader
+- [ ] CLI: `python -m app.admin` can set it
+- [ ] Webhooks: `figures` in `build.completed`
+- [ ] Sample household: `generate.py` exercises it
+- [ ] Upgrade note in `docs/UPGRADING.md`
+- [ ] Docs: README
+
 ## Notes for the release
 
 <!-- Anything a user upgrading the image should know: new env var, changed default, data migration. Leave blank if none. -->
