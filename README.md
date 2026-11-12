@@ -316,7 +316,7 @@ rule, default 3; 0 never folds) under **Paid off**. A household that types nothi
 | `income_groups` | `["Income"]` | Budget group | An inflow whose merchant equals its item name is read as a carry-forward into a fund (a transfer), except in these groups; income-typed transfers are counted from them. New source profiles for other tools, and the mapping draft, start from these. |
 | `debt_groups` | `["Debt"]` | Budget group | The `debt_plug_until` rule looks at these groups; the off-budget outflow count leaves them out; the mapping draft gives their items Flow `debt`. |
 | `loan_categories` | `["Family Loan"]` | Category | The Method tab's two family-loan lines: inflows kept out of income, repayments kept out of spend. |
-| `goal_housing_categories` | `["Housing", "Utilities"]` | Category | The housing share on the Goals tab. |
+| `goal_housing_categories` | `["Housing", "Utilities"]` | Category | The housing share on the Goals tab, and housing debt-to-income (with any mortgage-type debt). |
 | `goal_giving_categories` | `["Giving"]` | Category | The giving share on the Goals tab. |
 
 Renaming one of these names in the mapping without changing its rule empties what reads it, so change both together. A test
@@ -378,6 +378,20 @@ household holds. So once a month it asks for a few month-end balances, one per a
 Balances are typed facts, so they travel with the raw exports: `sources.zip` holds `balances.csv`, `settings.zip` holds `accounts.csv`,
 and a `SEED_DIR` with both starts a new install with them. The review and MCP see totals by account type (`balance_totals`), never an
 account's name.
+
+## Debt-to-income
+
+"How much of what we earn is already spoken for by debt, and is that shrinking?" The Last month tab's **Debt against income** card
+gives two ratios for the closing month, and the Goals tab draws them month by month over the trailing twelve:
+
+- **All debt**: payments on rows with Flow `debt` ÷ gross monthly pay (`gross_annual` ÷ 12, the stated salary the Goals tab uses).
+- **Housing**: spending and payments in the `goal_housing_categories` (rent counts) plus any debt of type `mortgage`, each payment
+  once ÷ the same gross. Lenders' housing ratio usually leaves utilities out; to compare with one, drop `Utilities` from that rule.
+
+Gross, because that is what "debt-to-income" means wherever it is quoted; each figure is followed by the same payments as a share of
+take-home ("31% of gross, 41% of take-home"), because take-home is what the household feels. With no gross recorded the ratios show
+"—", not 0%. There is no built-in judgement: a cap line appears only when the household adds `dti_cap` or `housing_dti_cap` (a share
+of gross) on Settings → Goals. The `debt_to_income` dataset carries every figure, and reaches the month-close review and MCP.
 
 ## Try it with the sample household
 

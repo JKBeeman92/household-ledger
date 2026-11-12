@@ -27,7 +27,8 @@ MONTH = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 # Derived datasets only. A dataset added by the pipeline later stays private until it is listed here.
 DATASETS = ("monthly", "yearly", "cat_month", "cat_year", "item_year", "budget_items", "goals", "people", "employer", "debts",
             "recurring", "events", "exclusions", "slush", "reconciliation", "cpi", "review",
-            "balance_totals")   # balances by kind and type (#143); `balances` itself names accounts and stays private
+            "balance_totals",   # balances by kind and type (#143); `balances` itself names accounts and stays private
+            "debt_to_income")   # #145
 MAX_SECTIONS, MAX_HEADING, MAX_TEXT = 12, 200, 5000
 INSTRUCTIONS = ("Read-only access to a household's month-close figures (budget months, not calendar months): per-month and per-category "
                 "totals, envelopes planned vs spent, goals and the written month-close review. There are no transactions, merchants or notes. "

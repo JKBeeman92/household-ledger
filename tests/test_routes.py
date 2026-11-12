@@ -37,6 +37,9 @@ def test_datasets_empty_before_any_upload(client, reset_db):
 
 
 def test_upload_builds_the_golden_datasets(client, reset_db):
+    from app import db
+    with db.pool.connection() as conn:   # the gross pay the golden run states (tests/fixtures/golden/pipeline_goals.json), for debt_to_income
+        conn.execute("UPDATE goals SET value=72000 WHERE key='gross_annual'"); conn.commit()
     r = upload_files(client, GOLDEN / "exports")
     assert r.status_code == 303 and r.headers["location"] == "/upload"
     page = client.get("/upload").text

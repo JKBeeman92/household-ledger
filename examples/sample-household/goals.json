@@ -42,6 +42,20 @@
   "note": "Housing and utilities over net paychecks."
  },
  {
+  "key": "dti_cap",
+  "value": 0.1,
+  "unit": "share of gross",
+  "label": "Debt-to-income cap",
+  "note": "Debt payments over gross; the household's own line, not a lender's."
+ },
+ {
+  "key": "housing_dti_cap",
+  "value": 0.28,
+  "unit": "share of gross",
+  "label": "Housing debt-to-income cap",
+  "note": "Rent, utilities and any mortgage over gross."
+ },
+ {
   "key": "investing_per_paycheck",
   "value": 150,
   "unit": "usd",

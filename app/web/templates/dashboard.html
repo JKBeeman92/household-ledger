@@ -26,7 +26,7 @@
 .hl .tile .k { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
 .hl .tile .v { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-title); font-weight: 600; line-height: 1.15; margin: var(--cds-gap-xs) 0; }
 .hl .tile .d { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-.hl .tile .d.up { color: var(--color-ok); } .hl .tile .d.down { color: var(--color-bad); }
+.hl .tile .d.up { color: var(--color-ok); } .hl .tile .d.down { color: var(--color-bad); } .hl dl.dti .down { color: var(--color-bad); }
 .hl .chart { position: relative; min-height: 260px; }
 .hl .radars { grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); margin: var(--cds-gap-sm) 0 0; }
 .hl .radars .sub { font-size: var(--cds-font-size-caption); font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 var(--cds-gap-xs); text-align: center; }
@@ -313,6 +313,12 @@
       <ul class="chips" data-draw="lm-chips" data-source="lm_totals lm_cats" aria-label="The month at a glance"></ul>
       <p class="aside-note">Planned and spent are your budget tool's own figures, so moves between envelopes count as they did in the app; the other tabs use the cleaned ledger.</p>
     </div>
+    <div class="card" id="lm-dti-card">
+      <h2 id="lm-dti">Debt against income</h2>
+      <ul class="key row"><li>debt payments ÷ gross pay (the stated salary ÷ 12)</li><li>the same payments ÷ take-home, after it</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Debt-to-income is the share of gross pay already spoken for by debt payments, the figure lenders quote; take-home is what the household actually feels, so it is shown after it. <b>All debt</b> counts every row with Flow debt. <b>Housing</b> counts the housing categories (Pipeline rules, goal_housing_categories: Housing and Utilities unless changed) plus any debt of type mortgage, each payment once; rent counts here and not under all debt. Lenders' housing figure usually leaves utilities out, so take Utilities out of that rule to compare with one. A cap shows only when you set one on Settings → Goals (dti_cap, housing_dti_cap); the app has no opinion of its own.</p></details>
+      <dl class="dti" data-draw="lm-dti" data-source="debt_to_income goals"></dl>
+    </div>
     <div class="card">
       <div class="aside">
         <p class="eyebrow">Month-close review</p>
@@ -382,6 +388,14 @@
         <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Giving / gross</th><th scope="col">Savings / gross</th><th scope="col">Housing / take-home</th></tr></thead><tbody data-draw="dt-goal-lines" data-source="goal_month"></tbody></table></div></details>
       <div class="legend"><span data-c="0">Giving / gross</span><span data-c="1">Savings funding / gross</span><span data-c="2">Housing + utilities / take-home</span></div>
       <details class="how"><summary>How to read this</summary><p>Giving as a share of gross (floor and target lines), savings-group funding as a share of gross (target line), and housing plus utilities as a share of take-home (cap line). Twelve-month trailing averages, so a three-paycheck month or a lump payment does not whip the line around. A solid line above its dashed target is good for giving and savings, and bad for housing. The lines are twelve-month trailing averages, so a change in behaviour takes a few months to show. Gross is the stated annual salary spread evenly across months; take-home is the net paychecks that actually landed, so the housing ratio is honest about months with two versus three paychecks only in the trailing view.</p></details>
+    </div>
+    <div class="card">
+      <h2 id="dti-chart">Debt-to-income, month by month</h2>
+        <ul class="key row"><li><span class="glyph ln" aria-hidden="true"></span>solid: twelve-month trailing share of gross</li><li><span class="glyph ln dash" aria-hidden="true"></span>dashed: your cap, when set</li><li><span class="glyph">↓</span>lower is better</li></ul>
+      <div class="chart" data-draw="dti-lines" data-source="debt_to_income goals"></div>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">All debt / gross</th><th scope="col">Housing / gross</th><th scope="col">All debt / take-home</th><th scope="col">Housing / take-home</th></tr></thead><tbody data-draw="dt-dti" data-source="debt_to_income"></tbody></table></div></details>
+      <div class="legend"><span data-c="0">All debt / gross</span><span data-c="2">Housing / gross</span></div>
+      <details class="how"><summary>How to read this</summary><p>Debt payments, and housing payments, as a share of gross pay, each over the trailing twelve months so a month with an extra payment does not whip the line around. Housing is the housing categories plus any mortgage-type debt (Last month tab, "Debt against income"). The dashed lines are the caps you set on Settings → Goals (dti_cap, housing_dti_cap); without one there is no line, because lenders' rules of thumb are theirs, not a household's. With no gross pay recorded there is nothing to draw.</p></details>
     </div>
     <div class="grid">
       <div class="card">
@@ -1377,6 +1391,51 @@ dash.draw('goal-lines', (el) => {
       t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}, trailing 12 months</div><div><span class="sw" style="background:${c[0]}"></span>Giving ${r.a == null ? '—' : pct1(r.a)}</div><div><span class="sw" style="background:${c[1]}"></span>Savings funding ${r.b == null ? '—' : pct1(r.b)}</div><div><span class="sw" style="background:${c[2]}"></span>Housing + utilities ${r.c == null ? '—' : pct1(r.c)}</div>`); })
     .on('pointerleave', () => { hover.attr('display', 'none'); t.hide(); });
 });
+// Debt-to-income (#145): the debt_to_income dataset, against the household's own caps when it has set them
+const goalValue = (G, k) => { const r = G.status === 'ok' && G.data.find((x) => x.key === k); return r && r.value != null && Number.isFinite(Number(r.value)) ? Number(r.value) : null; };
+dash.draw('lm-dti', (el) => {
+  const g = dash.data('debt_to_income'), G = dash.data('goals'); el.replaceChildren();
+  if (g.status !== 'ok' || !g.data.length) { el.textContent = '—'; return; }
+  const r = g.data[g.data.length - 1], P = (v) => v == null ? '—' : pct1(v);
+  const add = (label, gross, take, g12, cap) => {
+    const dt = document.createElement('dt'); dt.textContent = label;
+    const dd = document.createElement('dd'); const v = document.createElement('span'); v.className = 'v'; v.textContent = gross == null ? '—' : `${P(gross)} of gross`;
+    dd.append(v, document.createTextNode(take == null ? '' : `, ${P(take)} of take-home`));
+    const d = document.createElement('div'); d.className = 'muted';
+    d.textContent = (g12 == null ? '' : `Last 12 months: ${P(g12)} of gross. `) + (cap == null ? 'No cap set.' : `Your cap: ${P(cap)}${g12 != null ? (g12 <= cap ? ', under it.' : ', over it.') : '.'}`);
+    if (cap != null && g12 != null && g12 > cap) d.classList.add('down');
+    dd.append(d); el.append(dt, dd);
+  };
+  add(`All debt, ${HL.fmtM(HL.parseM(r.m))}`, r.dti, r.dti_takehome, r.dti_12, goalValue(G, 'dti_cap'));
+  add('Housing costs', r.housing_dti, r.housing_takehome, r.housing_dti_12, goalValue(G, 'housing_dti_cap'));
+  if (r.gross == null) { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = 'Gross pay'; dd.className = 'muted';
+    dd.textContent = 'not recorded: set gross_annual on Settings → Goals to see these as a share of gross.'; el.append(dt, dd); }
+});
+dash.draw('dti-lines', (el) => {
+  const g = HL.rd('debt_to_income'), G = dash.data('goals'); el.replaceChildren();
+  if (g.status !== 'ok') { el.textContent = '—'; return; }
+  const rows = g.data.filter((r) => r.dti_12 != null || r.housing_dti_12 != null).map((r) => ({ d: HL.parseM(r.m), a: r.dti_12, b: r.housing_dti_12 }));
+  if (!rows.length) { el.textContent = 'Nothing to draw yet: record gross pay (gross_annual) on the Settings page.'; return; }
+  const W = el.clientWidth || 600, H = 260, mt = 10, mb = 28;
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
+  const caps = [goalValue(G, 'dti_cap'), goalValue(G, 'housing_dti_cap')];
+  const y = d3.scaleLinear([0, Math.max(0.1, d3.max(rows, (r) => Math.max(r.a || 0, r.b || 0)), ...caps.filter((v) => v != null))], [H - mb, mt]).nice();
+  const ml = HL.margins(svg, y.ticks(5), dash.fmt.pct(0));
+  const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
+  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(dash.fmt.pct(0)).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
+  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
+  const c = HL.colors(), col = [c[0], c[2]];
+  caps.forEach((v, i) => { if (v == null) return; svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', col[i]).attr('stroke-dasharray', '5 4').attr('stroke-opacity', .7);
+    svg.append('text').attr('x', W - 8).attr('y', y(v) - 4).attr('text-anchor', 'end').attr('fill', col[i]).text(i ? 'housing cap' : 'debt cap'); });
+  ['a', 'b'].forEach((k, i) => svg.append('path').datum(rows).attr('fill', 'none').attr('stroke', col[i]).attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round')
+    .attr('d', d3.line().defined((r) => r[k] != null).x((r) => x(r.d)).y((r) => y(r[k]))));
+  const t = HL.tip(el), bis = d3.bisector((r) => r.d).center;
+  const hover = svg.append('g').attr('display', 'none'); hover.append('line').attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--cds-chart-axis)');
+  svg.append('rect').attr('x', ml).attr('y', mt).attr('width', Math.max(0, W - ml - 8)).attr('height', H - mt - mb).attr('fill', 'transparent')
+    .on('pointermove', (pe) => { const [px, py] = d3.pointer(pe, el); const r = rows[bis(rows, x.invert(px))]; if (!r) return; hover.attr('display', null).select('line').attr('x1', x(r.d)).attr('x2', x(r.d));
+      t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}, trailing 12 months</div><div><span class="sw" style="background:${col[0]}"></span>All debt ${r.a == null ? '—' : pct1(r.a)}</div><div><span class="sw" style="background:${col[1]}"></span>Housing ${r.b == null ? '—' : pct1(r.b)}</div>`); })
+    .on('pointerleave', () => { hover.attr('display', 'none'); t.hide(); });
+});
 dash.draw('goal-table', (tb) => {
   const g = dash.data('goal_month'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   const rows = [...g.data].sort((a, b) => a.m < b.m ? 1 : -1).slice(0, 24);
@@ -1450,6 +1509,7 @@ table('employer', 'employer', byM, [(r) => M(r.m), (r) => r.employer || 'Unknown
 table('goal-lines', 'goal_month', byM, [(r) => M(r.m), (r) => P1(r.giving_share_12), (r) => P1(r.joy_share_12), (r) => P1(r.housing_share_12)], mSpan);
 table('debts', 'debts', (rows) => [...rows].sort((a, b) => a.first < b.first ? -1 : 1), [(r) => r.item + (r.paid_off && HL.debtsTyped() ? ' (paid off)' : ''), (r) => r.debt_type || '—', (r) => M(r.first), (r) => M(r.last), (r) => String(r.months), (r) => $(r.total)],
   (rows) => rows.length ? [M(rows.map((r) => r.first).sort()[0]), M(rows.map((r) => r.last).sort().pop())] : []);
+table('dti', 'debt_to_income', byM, [(r) => M(r.m), (r) => P1(r.dti_12), (r) => P1(r.housing_dti_12), (r) => P1(r.dti_takehome_12), (r) => P1(r.housing_takehome_12)], mSpan);
 table('net', 'yearly', byY, [(r) => HL.yearLabel(r.y), (r) => $(r[HL.fld('net')]), (r) => P1(r.savings_rate)], ySpan);
 })();</script>
 {% endblock %}
