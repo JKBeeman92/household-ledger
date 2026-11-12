@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Bearings">
+  <!-- The small cut of the seal, day: ring, fix, needle and waypoint. Use under 48 px (header, browser tab). -->
+  <rect x="6" y="6" width="500" height="500" rx="250" fill="#174a8c" stroke="#174a8c" stroke-width="6"/><circle cx="256" cy="256" r="200" fill="none" stroke="#fcfaf2" stroke-opacity=".55" stroke-width="22"/><path d="M165.4 346.6 L180.2 269.5 L352.8 159.2 Z" fill="#e9c456"/><path d="M165.4 346.6 L242.5 331.8 L352.8 159.2 Z" fill="#b8922f"/><circle cx="356" cy="156" r="50" fill="#e9c456"/><circle cx="176" cy="336" r="66" fill="#174a8c"/><circle cx="176" cy="336" r="44" fill="none" stroke="#fcfaf2" stroke-width="30"/>
+</svg>

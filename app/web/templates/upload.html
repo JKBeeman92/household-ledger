@@ -74,7 +74,7 @@ addEventListener('DOMContentLoaded', () => {
       <label for="month">Budget month</label>
       <select id="month" name="month">{% for m in months %}<option value="{{ m }}" {% if loop.first %}selected{% endif %}>{{ m }}</option>{% endfor %}</select>
       <p style="margin-top:var(--space-4)"><button class="btn primary" type="submit" {% if not review_enabled %}disabled title="Configure a review provider to enable"{% endif %}>Generate review</button>
-      {% if not review_enabled %}<span class="muted" style="margin-left:var(--space-2)">disabled: no API key configured</span>{% endif %}</p>
+      {% if not review_enabled %}<span class="muted" style="margin-left:var(--space-2)">Not available: no review provider is set up. <a href="/reviews/provider">Set one up</a>.</span>{% endif %}</p>
     </form>
     {% if review_job %}{% set j = review_job %}
     <div id="review-job" class="review-job" data-state="{{ j.state }}" data-since="{{ (j.started_at or j.created_at).isoformat() }}" role="status" aria-live="polite">

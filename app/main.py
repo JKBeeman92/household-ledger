@@ -1,10 +1,11 @@
-"""Household Ledger — FastAPI app. Routes live in app/routes/: auth, pages, upload (close a month), settings editors, api, brand."""
+"""Bearings: the FastAPI app. Routes live in app/routes/: auth, pages, upload (close a month), settings editors, api, brand."""
 from __future__ import annotations
 import asyncio
 import logging
 import secrets
 from contextlib import asynccontextmanager
 
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -52,7 +53,7 @@ async def lifespan(app: FastAPI):
     db.pool.close()
 
 
-app = FastAPI(title="Household Ledger", docs_url=None, redoc_url=None, lifespan=lifespan, dependencies=[Depends(csrf.protect), Depends(revalidate)])
+app = FastAPI(title="Bearings", docs_url=None, redoc_url=None, lifespan=lifespan, dependencies=[Depends(csrf.protect), Depends(revalidate)])
 app.add_middleware(UploadLimit, limit_bytes=lambda: settings.max_upload_mb * 2**20)   # 413 before a form parser spools an oversized body
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret or secrets.token_hex(32), https_only=settings.base_url.startswith("https"), same_site="lax", max_age=settings.session_max_age)
 app.add_middleware(GZipMiddleware, minimum_size=1024)
@@ -76,6 +77,18 @@ async def csrf_rejected(request: Request, exc: csrf.CsrfError):
     flash(request, msg, "bad")
     resp = render(request, "csrf_error.html", current_user(request))
     resp.status_code = 403
+    return resp
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_error(request: Request, exc: StarletteHTTPException):
+    """A mistyped or stale link gets a page with the header and a way back; API clients keep their JSON (docs/DESIGN.md, DS-WORD-4)."""
+    wants_page = "text/html" in request.headers.get("accept", "") and not request.url.path.startswith(("/api/", "/static/", "/brand/", MCP_PATH))
+    if exc.status_code != 404 or not wants_page or bearer(request) is not None:
+        return JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=getattr(exc, "headers", None))
+    detail = "" if exc.detail in (None, "Not Found") else str(exc.detail).rstrip(".") + "."
+    resp = render(request, "not_found.html", current_user(request), detail=detail)
+    resp.status_code = 404
     return resp
 
 

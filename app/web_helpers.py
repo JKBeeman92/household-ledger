@@ -8,13 +8,14 @@ from fastapi import Request
 from pipeline.run_pipeline import build_running
 from fastapi.templating import Jinja2Templates
 
-from . import db
+from . import brand_kit, db
 from .csrf import csrf_field
 from .security import csp_nonce
 
 ROOT = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=ROOT / "web" / "templates")
 templates.env.globals["csrf_field"] = csrf_field   # every POST form calls this; renders the hidden token input (app/csrf.py)
+templates.env.globals["glyph"] = brand_kit.glyph         # {{ glyph("check-in") }}: a decorative glyph beside its label (docs/DESIGN.md)
 templates.env.globals["csp_nonce"] = csp_nonce     # every inline <script> carries nonce="{{ csp_nonce(request) }}" (app/security.py)
 
 
@@ -30,13 +31,19 @@ def _format_settings(household: dict) -> dict:
             "locale": loc if re.fullmatch(r"[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*", loc) else "en-US"}
 
 
+def _words() -> dict:
+    """The kit's flourish words; the route module holds the brand directory, so a test that swaps it is honoured."""
+    from .routes import brand
+    return brand_kit.words(brand.BRAND_DIR)
+
+
 def render(request: Request, name: str, user, **ctx):
     flashes = request.session.pop("flashes", []) if hasattr(request, "session") else []
     with db.pool.connection() as conn:
         household = db.get_setting(conn, "household", {})
         # not while a build runs: that build already reads the change, and "Rebuild now" beside "Rebuilding…" contradicts itself
         rebuild_needed = bool(user and user.get("is_editor")) and db.rebuild_needed(conn) and not build_running(conn)
-    return templates.TemplateResponse(request, name, {"household": household, "fmt": _format_settings(household), "user": user, "get_flashes": lambda: flashes, "theme_mode": None,
+    return templates.TemplateResponse(request, name, {"household": household, "fmt": _format_settings(household), "words": _words(), "user": user, "get_flashes": lambda: flashes, "theme_mode": None,
                                                       "rebuild_needed": rebuild_needed, **ctx})
 
 

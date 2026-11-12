@@ -44,7 +44,8 @@
       tr.className = ""; tr.textContent = "";
       fields.forEach(function (f) { tr.appendChild(el("td", { "data-f": f }, row[f] == null ? "" : String(row[f]))); });
       var td = el("td", { "class": "acts" });
-      var eb = el("button", { type: "button", "class": "btn", "data-act": "edit" }, "Edit"), db = el("button", { type: "button", "class": "btn", "data-act": "del" }, "Delete");
+      var what = String(row[fields[0]] == null ? "this row" : row[fields[0]]);   // a button names its row to a screen reader (DS-A11Y-2)
+      var eb = el("button", { type: "button", "class": "btn", "data-act": "edit", "aria-label": "Edit " + what }, "Edit"), db = el("button", { type: "button", "class": "btn", "data-act": "del", "aria-label": "Delete " + what }, "Delete");
       td.appendChild(eb); td.appendChild(db); tr.appendChild(td);
       eb.onclick = function () { edit(tr); }; db.onclick = function () { del(tr); };
     }
@@ -97,10 +98,11 @@
         };
       }
       sv.onclick = function () { save(tr); };
-      cn.onclick = function () { if (tr.dataset.new) tr.remove(); else show(tr, row); };
+      cn.onclick = function () { if (tr.dataset.new) { var a = tr.closest("section, .panel, body").querySelector("[data-act=add]"); tr.remove(); if (a) a.focus(); } else { show(tr, row); back(tr); } };
       tr.onkeydown = function (e) { if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); save(tr); } else if (e.key === "Escape") cn.click(); };
       var first = tr.querySelector("input,select"); if (first) first.focus();
     }
+    function back(tr) { var e = tr.querySelector("[data-act=edit]"); if (e) e.focus(); }   // focus returns to the row, not to the top of the page (DS-A11Y-1)
     function save(tr) {
       var body = origOf(tr);
       if (tr.fillCategory) tr.fillCategory();   // Enter saves before the canonical field's change event (#133)
@@ -110,7 +112,7 @@
       tr.querySelectorAll(".err").forEach(function (e) { e.textContent = ""; });
       tr.querySelectorAll("[aria-invalid]").forEach(function (i) { i.removeAttribute("aria-invalid"); });
       post("/settings/" + kind + "/row", body).then(function (res) {
-        if (res.ok) { delete tr.dataset.new; setOrig(tr, res.row); show(tr, res.row); flash(tr, "Saved"); if (kind === "mapping" && res.row && res.row.category) cats[String(res.row.category).toLowerCase()] = 1; status("Saved" + (res.warning ? " (" + res.warning + ")" : "") + ". The dashboard shows it after a rebuild: press Rebuild now above.", false); needRebuild(res); return; }
+        if (res.ok) { delete tr.dataset.new; setOrig(tr, res.row); show(tr, res.row); back(tr); flash(tr, "Saved"); if (kind === "mapping" && res.row && res.row.category) cats[String(res.row.category).toLowerCase()] = 1; status("Saved" + (res.warning ? " (" + res.warning + ")" : "") + ". The dashboard shows it after a rebuild: press Rebuild now above.", false); needRebuild(res); return; }
         var errs = res.errors || {}, first = true, fieldErr = false;
         Object.keys(errs).forEach(function (f) {
           var td = tr.querySelector('td[data-f="' + f + '"]');
@@ -124,7 +126,7 @@
     function del(tr) {
       if (!confirm("Delete this row?")) return;
       post("/settings/" + kind + "/row/delete", origOf(tr)).then(function (res) {
-        if (res.ok) { tr.remove(); status("Row deleted. The dashboard shows it after a rebuild.", false); needRebuild(res); } else status((res.errors && res.errors._) || "Row not deleted (already gone? reload the page).", true);
+        if (res.ok) { var nx = tr.nextElementSibling || tr.previousElementSibling; tr.remove(); if (nx) back(nx); status("Row deleted. The dashboard shows it after a rebuild.", false); needRebuild(res); } else status((res.errors && res.errors._) || "Row not deleted (already gone? reload the page).", true);
       }).catch(function () { status("Row not deleted: could not reach the server.", true); });
     }
     Array.prototype.forEach.call(tbody.rows, function (tr) {

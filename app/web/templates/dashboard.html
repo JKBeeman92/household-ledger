@@ -4,82 +4,80 @@
 <style>
 .hl [hidden] { display: none !important; }
 /* Layout: a short header with the takeaway, one control row (dollar basis + tabs), then one section per question. */
-.hl { font-family: var(--font-anthropic-sans); font-variant-numeric: tabular-nums; }
-.hl h1 { font-family: var(--font-anthropic-serif); font-weight: 600; letter-spacing: 0.02em; font-size: var(--cds-font-size-title); margin: 0 0 var(--cds-gap-xs); }
-.hl .lede { color: var(--color-fg-muted); margin: 0 0 var(--cds-gap-md); max-width: 90ch; }
-.hl .lede b { font-weight: 500; color: var(--color-fg); }
-.hl .controls { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; margin-bottom: var(--cds-gap-md); }
-.hl .ctl-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium); }
-.hl .seg { display: inline-flex; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); overflow: hidden; }
-.hl .seg button, .hl .tabs button { font: inherit; background: var(--color-panel); color: var(--color-fg-muted); border: 0; padding: var(--cds-pad-xs) var(--cds-pad-sm); cursor: pointer; }
-.hl .seg button + button { border-left: 1px solid var(--color-border-line); }
-.hl .seg button[aria-pressed="true"] { background: var(--color-fg); color: var(--color-bg); }
-.hl .tabs { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs); }
-.hl .tabs button { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); }
-.hl .tabs button[aria-selected="true"] { background: var(--color-fg); color: var(--color-bg); border-color: var(--color-fg); }
-.hl .seg button:focus-visible, .hl .tabs button:focus-visible, .hl select:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 1px; }
-.hl .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: var(--cds-gap-md); margin-bottom: var(--cds-gap-md); }
-.hl .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); gap: var(--cds-gap-md); margin-bottom: var(--cds-gap-md); }
-.hl .card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; }
-.hl .card h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
-.hl .card .note { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin: var(--cds-gap-xs) 0 var(--cds-gap-sm); }
-.hl .tile .k { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
-.hl .tile .v { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-title); font-weight: 600; line-height: 1.15; margin: var(--cds-gap-xs) 0; }
-.hl .tile .d { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-.hl .tile .d.up { color: var(--color-ok); } .hl .tile .d.down { color: var(--color-bad); } .hl dl.dti .down { color: var(--color-bad); }
+.hl { font-family: var(--font-sans); font-variant-numeric: tabular-nums; }
+.hl h1 { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.02em; font-size: var(--text-title); margin: 0 0 var(--space-1); }
+.hl .lede { color: var(--ink-muted); margin: 0 0 var(--space-4); max-width: 90ch; }
+.hl .lede b { font-weight: 500; color: var(--ink); }
+.hl .controls { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-bottom: var(--space-4); }
+.hl .ctl-label { font-size: var(--text-caption); color: var(--ink-muted); font-weight: var(--weight-strong); }
+.hl .seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; }
+.hl .seg button, .hl .tabs button { font: inherit; background: var(--surface-200); color: var(--ink-muted); border: 0; padding: var(--space-1) var(--space-2); cursor: pointer; }
+.hl .seg button + button { border-left: 1px solid var(--line); }
+.hl .seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface-100); }
+.hl .tabs { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.hl .tabs button { border: 1px solid var(--line); border-radius: var(--radius-md); }
+.hl .tabs button[aria-selected="true"] { background: var(--ink); color: var(--surface-100); border-color: var(--ink); }
+.hl .seg button:focus-visible, .hl .tabs button:focus-visible, .hl select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.hl .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: var(--space-4); margin-bottom: var(--space-4); }
+.hl .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); gap: var(--space-4); margin-bottom: var(--space-4); }
+.hl .card { background: var(--surface-200); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-4); min-width: 0; }
+.hl .card h2 { font-size: var(--text-heading); font-weight: var(--weight-strong); margin: 0; }
+.hl .card .note { color: var(--ink-muted); font-size: var(--text-caption); margin: var(--space-1) 0 var(--space-2); }
+.hl .tile .k { color: var(--ink-muted); font-size: var(--text-caption); }
+.hl .tile .v { font-family: var(--font-display); font-size: var(--text-title); font-weight: 600; line-height: 1.15; margin: var(--space-1) 0; }
+.hl .tile .d { font-size: var(--text-caption); color: var(--ink-muted); }
+.hl .tile .d.up { color: var(--success); } .hl .tile .d.down { color: var(--danger); } .hl dl.dti .down { color: var(--danger); }
 .hl .chart { position: relative; min-height: 260px; }
-.hl .radars { grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); margin: var(--cds-gap-sm) 0 0; }
-.hl .radars .sub { font-size: var(--cds-font-size-caption); font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 var(--cds-gap-xs); text-align: center; }
+.hl .radars { grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); margin: var(--space-2) 0 0; }
+.hl .radars .sub { font-size: var(--text-caption); font-weight: var(--weight-strong); color: var(--ink-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 var(--space-1); text-align: center; }
 .hl .chart svg { width: 100%; height: auto; display: block; overflow: visible; }
-.hl .chart text { font-family: var(--font-anthropic-sans); font-size: var(--cds-font-size-caption); fill: var(--color-fg-muted); }
-.hl .tip { position: absolute; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); pointer-events: none; white-space: nowrap; z-index: 2; }
-.hl .tip .t { color: var(--cds-text-secondary); }
+.hl .chart text { font-family: var(--font-sans); font-size: var(--text-caption); fill: var(--ink-muted); }
+.hl .tip { position: absolute; background: var(--surface-300); border: 1px solid var(--line-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-md); padding: var(--space-1) var(--space-2); font-size: var(--text-caption); pointer-events: none; white-space: nowrap; z-index: 2; }
+.hl .tip .t { color: var(--ink-muted); }
 .hl .tip .sw { display: inline-block; width: .6em; height: .6em; border-radius: 50%; margin-right: .4em; vertical-align: middle; }
-.hl .legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs) var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: var(--cds-gap-sm); }
+.hl .legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: var(--text-caption); color: var(--ink-muted); margin-top: var(--space-2); }
 .hl .legend.years span { cursor: pointer; } .hl .legend.years span:focus-visible, .hl dfn:focus-visible, .hl .page:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; } .hl .legend.years span[aria-pressed="false"] { opacity: .4; text-decoration: line-through; }
 .hl .legend span::before { content: ""; display: inline-block; width: .6em; height: .6em; border-radius: 50%; margin-right: .4em; background: var(--sw); vertical-align: middle; }
 .hl .tbl { overflow-x: auto; max-height: 28rem; overflow-y: auto; } .hl .tbl.short { max-height: 20rem; }   /* scrolls inside its card, header stays */
-.hl table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-caption); }
-.hl th, .hl td { text-align: right; padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+.hl table { border-collapse: collapse; width: 100%; font-size: var(--text-caption); }
+.hl th, .hl td { text-align: right; padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--line); white-space: nowrap; }
 .hl th:first-child, .hl td:first-child { text-align: left; }
-.hl th { position: sticky; top: 0; background: var(--color-panel); font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); }
-.hl tr.filled td { color: var(--color-warn); }
-.hl td.neg { color: var(--color-bad); }
+.hl th { position: sticky; top: 0; background: var(--surface-200); font-weight: var(--weight-strong); color: var(--ink-muted); }
+.hl tr.filled td { color: var(--warning); }
+.hl td.neg { color: var(--danger); }
 .hl .prose { max-width: 70ch; }
 .hl .prose p, .hl .prose li { line-height: 1.5; }
-.hl .prose h3 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: var(--cds-gap-md) 0 var(--cds-gap-xs); }
-.hl select { font: inherit; background: var(--color-panel); color: var(--color-fg); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-xs) var(--cds-pad-sm); }
+.hl .prose h3 { font-size: var(--text-heading); font-weight: var(--weight-strong); margin: var(--space-4) 0 var(--space-1); }
+.hl select { font: inherit; background: var(--surface-200); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-1) var(--space-2); }
 .hl [data-dash-source-state=empty] { color: transparent; }
-.hl [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
-/* Brand accents arrive through dash.colors (set on --brand0/--brand1 in script), never typed here. */
-.hl .eyebrow { font-size: var(--cds-font-size-caption); font-weight: var(--cds-font-weight-medium); letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2-text, var(--color-fg-muted)); margin: 0 0 var(--cds-gap-xs); }
-.hl .masthead { display: flex; align-items: center; gap: var(--cds-gap-sm); margin-bottom: var(--cds-gap-xs); }
-.hl .mark { width: 28px; height: 28px; flex: none; }
-.hl .mark polygon { fill: none; stroke: var(--brand1, var(--color-fg-muted)); stroke-width: 2; }
-.hl .mark path { fill: none; stroke: var(--brand0, var(--color-fg)); stroke-width: 2; stroke-linecap: round; }
-.hl .intro { color: var(--color-fg-muted); margin: 0 0 var(--cds-gap-md); max-width: 90ch; }
-.hl .intro dfn, .hl .lede dfn, .hl .prose dfn { font-style: normal; border-bottom: 1px dotted var(--brand1, var(--color-fg-muted)); cursor: help; }
-.hl details.how { margin: var(--cds-gap-sm) 0 0; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-.hl details.how summary { cursor: pointer; color: var(--accent-2-text, var(--color-fg-muted)); font-weight: var(--cds-font-weight-medium); letter-spacing: .04em; }
-.hl details.how summary:focus-visible { outline: 2px solid var(--brand0, var(--color-fg)); outline-offset: 2px; }
-.hl details.how p { margin: var(--cds-gap-xs) 0 0; max-width: 90ch; line-height: 1.5; }
-.hl .card h2 { border-left: 3px solid var(--brand1, var(--color-border-line)); padding-left: var(--cds-pad-sm); }
-.hl tbody tr:hover td { background: color-mix(in srgb, var(--color-fg) 6%, transparent); }
+.hl [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--dur-slow); }
+/* Brand accents arrive through dash.colors (set on --accent/--accent-2 in script), never typed here. */
+.hl .eyebrow { font-size: var(--text-caption); font-weight: var(--weight-strong); letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2-text, var(--ink-muted)); margin: 0 0 var(--space-1); }
+.hl .masthead { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1); }
+.hl .mark { width: 56px; height: 56px; flex: none; }   /* the full seal: 48 px and up (DS-MARK-1) */
+.hl .intro { color: var(--ink-muted); margin: 0 0 var(--space-4); max-width: 90ch; }
+.hl .intro dfn, .hl .lede dfn, .hl .prose dfn { font-style: normal; border-bottom: 1px dotted var(--accent-2, var(--ink-muted)); cursor: help; }
+.hl details.how { margin: var(--space-2) 0 0; font-size: var(--text-caption); color: var(--ink-muted); }
+.hl details.how summary { cursor: pointer; color: var(--accent-2-text, var(--ink-muted)); font-weight: var(--weight-strong); letter-spacing: .04em; }
+.hl details.how summary:focus-visible { outline: 2px solid var(--accent, var(--ink)); outline-offset: 2px; }
+.hl details.how p { margin: var(--space-1) 0 0; max-width: 90ch; line-height: 1.5; }
+.hl .card h2 { border-left: 3px solid var(--accent-2, var(--line)); padding-left: var(--space-2); }
+.hl tbody tr:hover td { background: color-mix(in srgb, var(--ink) 6%, transparent); }
 .hl .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.hl .seg button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 14%, var(--color-panel)); color: var(--color-fg); box-shadow: inset 0 0 0 2px var(--accent); }
-.hl .review h3 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: var(--cds-gap-md) 0 var(--cds-gap-xs); } .hl .review h3:first-child { margin-top: 0; } .hl .review p { margin: 0; line-height: 1.55; max-width: 70ch; }
-.hl .summary-list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--cds-gap-xs); }
-.hl .summary-list li { padding: var(--cds-pad-xs) var(--cds-pad-sm); border-left: 3px solid var(--color-border-line); }
-.hl .summary-list li.over { border-left-color: var(--color-bad); } .hl .summary-list li.under { border-left-color: var(--color-ok); }
+.hl .seg button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 14%, var(--surface-200)); color: var(--ink); box-shadow: inset 0 0 0 2px var(--accent); }
+.hl .review h3 { font-size: var(--text-heading); font-weight: var(--weight-strong); margin: var(--space-4) 0 var(--space-1); } .hl .review h3:first-child { margin-top: 0; } .hl .review p { margin: 0; line-height: 1.55; max-width: 70ch; }
+.hl .summary-list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-1); }
+.hl .summary-list li { padding: var(--space-1) var(--space-2); border-left: 3px solid var(--line); }
+.hl .summary-list li.over { border-left-color: var(--danger); } .hl .summary-list li.under { border-left-color: var(--success); }
 /* Explanation beside what it explains: a narrow aside (heading, a visual key, the accordion) and the content in the rest. */
-.hl .split { display: grid; grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr); gap: var(--cds-gap-lg); align-items: start; }
-@media (max-width: 900px) { .hl .split { grid-template-columns: minmax(0, 1fr); gap: var(--cds-gap-sm); } }
-.hl .aside-note { display: block; font-size: var(--cds-font-size-caption); margin-top: var(--cds-gap-xs); }
-.hl .key { list-style: none; margin: var(--cds-gap-sm) 0; padding: 0; display: grid; gap: var(--cds-gap-xs); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-.hl .key.row { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs) var(--cds-gap-md); }
-.hl .key li { display: flex; align-items: center; gap: var(--cds-gap-xs); }
-.hl .key li:not(:has(.glyph))::before { content: ""; flex: none; width: 1.6rem; height: 6px; background: radial-gradient(circle, var(--accent-2-text, var(--color-fg-muted)) 3px, transparent 3.5px); }
-.hl .key .glyph { flex: none; min-width: 1.6rem; text-align: center; font-weight: var(--cds-font-weight-medium); color: var(--accent-2-text, var(--color-fg)); }
+.hl .split { display: grid; grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr); gap: var(--space-6); align-items: start; }
+@media (max-width: 900px) { .hl .split { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); } }
+.hl .aside-note { display: block; font-size: var(--text-caption); margin-top: var(--space-1); }
+.hl .key { list-style: none; margin: var(--space-2) 0; padding: 0; display: grid; gap: var(--space-1); font-size: var(--text-caption); color: var(--ink-muted); }
+.hl .key.row { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
+.hl .key li { display: flex; align-items: center; gap: var(--space-1); }
+.hl .key li:not(:has(.glyph))::before { content: ""; flex: none; width: 1.6rem; height: 6px; background: radial-gradient(circle, var(--accent-2-text, var(--ink-muted)) 3px, transparent 3.5px); }
+.hl .key .glyph { flex: none; min-width: 1.6rem; text-align: center; font-weight: var(--weight-strong); color: var(--accent-2-text, var(--ink)); }
 /* Line-style swatches: the chip shows the stroke it describes instead of a character standing in for it. */
 .hl .key .glyph.ln { min-width: 1.4rem; height: 0; border-top: 2px solid currentColor; align-self: center; }
 .hl .key .glyph.ln.dash { border-top-style: dashed; } .hl .key .glyph.ln.dot { border-top-style: dotted; border-top-width: 3px; }
@@ -87,21 +85,21 @@
 .hl .key .bar { flex: none; width: 1.6rem; height: .6rem; border-radius: 2px; background: var(--k); }
 .hl .key .bar.r { clip-path: polygon(0 0, 80% 0, 100% 50%, 80% 100%, 0 100%); }
 .hl .key .bar.l { clip-path: polygon(20% 0, 100% 0, 100% 100%, 20% 100%, 0 50%); }
-.hl .review { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--cds-gap-md); }
-.hl .review .rv { border-top: 2px solid var(--brand1, var(--color-border-line)); padding-top: var(--cds-gap-xs); }
+.hl .review { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--space-4); }
+.hl .review .rv { border-top: 2px solid var(--accent-2, var(--line)); padding-top: var(--space-1); }
 .hl .review { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); align-items: start; }
-.hl .review .rv h3 { margin: 0 0 var(--cds-gap-xs); } .hl .review .rv p { max-width: none; margin: 0; }
+.hl .review .rv h3 { margin: 0 0 var(--space-1); } .hl .review .rv p { max-width: none; margin: 0; }
 .hl .review summary { cursor: pointer; list-style: none; } .hl .review summary::-webkit-details-marker { display: none; }
-.hl .review summary h3::after { content: " ▸"; color: var(--accent-2-text, var(--color-fg-muted)); } .hl .review details[open] summary h3::after { content: " ▾"; }
+.hl .review summary h3::after { content: " ▸"; color: var(--accent-2-text, var(--ink-muted)); } .hl .review details[open] summary h3::after { content: " ▾"; }
 .hl .review summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.hl .review .more { margin-top: var(--cds-gap-xs); color: var(--color-fg-muted); }
+.hl .review .more { margin-top: var(--space-1); color: var(--ink-muted); }
 .hl .review details[open] { grid-column: span 2; }
 .hl .summary-list.two { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
-.hl .card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--cds-gap-sm); }
+.hl .card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .hl .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.hl .topics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: var(--cds-gap-sm) var(--cds-gap-md); margin-top: var(--cds-gap-sm); }
-.hl details.topic { border-top: 1px solid var(--color-border-line); padding-top: var(--cds-gap-xs); }
-.hl details.topic summary { cursor: pointer; display: grid; gap: 2px; } .hl details.topic summary span { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.hl .topics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: var(--space-2) var(--space-4); margin-top: var(--space-2); }
+.hl details.topic { border-top: 1px solid var(--line); padding-top: var(--space-1); }
+.hl details.topic summary { cursor: pointer; display: grid; gap: 2px; } .hl details.topic summary span { color: var(--ink-muted); font-size: var(--text-caption); }
 .hl details.topic summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .hl details.topic[open] { grid-column: 1 / -1; } .hl details.topic .prose { max-width: 90ch; }
 /* Motion: content rises in, bars grow from their baseline, timelines reveal left to right, stars open from the centre.
@@ -133,60 +131,60 @@
 .hl tbody td { transition: background-color 120ms ease-out; }
 @media (prefers-reduced-motion: no-preference) { .hl .tip:not([hidden]) { animation: hl-in 140ms ease-out backwards; } }
 @media (prefers-reduced-motion: reduce) { .hl .chart svg rect.b, .hl .chart svg path.ring, .hl tbody td { transition: none; } }
-.hl .range { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--cds-gap-xs); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-.hl .range label { display: inline; margin: 0; font-weight: var(--cds-font-weight-medium); }
+.hl .range { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); font-size: var(--text-caption); color: var(--ink-muted); }
+.hl .range label { display: inline; margin: 0; font-weight: var(--weight-strong); }
 .hl .range select { width: auto; max-width: 100%; min-height: 36px; margin: 0; }
 @media (max-width: 820px) { .hl .range { width: 100%; } .hl .range #range-pick { flex: 1 1 0; min-width: 0; } }
-.hl .range #range-custom:not([hidden]) { display: inline-flex; align-items: center; gap: var(--cds-gap-xs); }
-.hl .range-status { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: calc(-1 * var(--cds-gap-sm)) 0 var(--cds-gap-md); padding-left: var(--cds-pad-sm); border-left: 3px solid var(--accent-2, var(--color-border-line)); }
+.hl .range #range-custom:not([hidden]) { display: inline-flex; align-items: center; gap: var(--space-1); }
+.hl .range-status { font-size: var(--text-caption); color: var(--ink-muted); margin: calc(-1 * var(--space-2)) 0 var(--space-4); padding-left: var(--space-2); border-left: 3px solid var(--accent-2, var(--line)); }
 /* Scrolling tables show a soft edge where more rows are hidden (background-attachment trick; tokens only). */
-.hl .tbl { background: linear-gradient(var(--color-panel) 30%, transparent) top / 100% 2.5rem no-repeat local, linear-gradient(transparent, var(--color-panel) 70%) bottom / 100% 2.5rem no-repeat local,
-  radial-gradient(farthest-side at 50% 0, color-mix(in srgb, var(--color-fg) 18%, transparent), transparent) top / 100% .8rem no-repeat scroll,
-  radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--color-fg) 18%, transparent), transparent) bottom / 100% .8rem no-repeat scroll; }
+.hl .tbl { background: linear-gradient(var(--surface-200) 30%, transparent) top / 100% 2.5rem no-repeat local, linear-gradient(transparent, var(--surface-200) 70%) bottom / 100% 2.5rem no-repeat local,
+  radial-gradient(farthest-side at 50% 0, color-mix(in srgb, var(--ink) 18%, transparent), transparent) top / 100% .8rem no-repeat scroll,
+  radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--ink) 18%, transparent), transparent) bottom / 100% .8rem no-repeat scroll; }
 .hl table[data-source="goals"] td:nth-child(3) { white-space: normal; min-width: 12rem; }
 .hl .key.events li { white-space: nowrap; }
 /* Headline summaries: one figure, one plain takeaway, then status chips; detail stays a click away. */
-.hl .headline { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: var(--cds-gap-xs) var(--cds-gap-lg); align-items: end; margin-bottom: var(--cds-gap-md); }
-.hl .headline .eyebrow { margin: 0; } .hl .headline .aside-note { grid-column: 1 / -1; color: var(--color-fg-muted); margin: 0; }
-.hl .headline .fig { font-family: var(--font-anthropic-serif); font-size: calc(var(--cds-font-size-title) * 1.7); font-weight: 600; line-height: 1.05; }
-.hl .fig.good { color: var(--color-ok); } .hl .fig.off { color: var(--color-bad); }
-.hl .headline .take { font-size: var(--cds-font-size-heading); margin: 0 0 .3em; }
-.hl .chips { list-style: none; display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs); margin: var(--cds-gap-xs) 0 0; padding: 0; grid-column: 1 / -1; }
-.hl .chip { display: inline-flex; align-items: center; gap: .4em; border: 1px solid var(--color-border-line); border-radius: 999px; padding: 3px 12px 3px 10px; font-size: var(--cds-font-size-caption); background: var(--color-panel); white-space: nowrap; }
-.hl .chip::before { content: ""; width: .55em; height: .55em; border-radius: 50%; background: var(--color-fg-muted); flex: none; }
-.hl .chip.good { border-color: color-mix(in srgb, var(--color-ok) 55%, transparent); } .hl .chip.good::before { background: var(--color-ok); }
-.hl .chip.off { border-color: color-mix(in srgb, var(--color-bad) 55%, transparent); } .hl .chip.off::before { background: var(--color-bad); }
-.hl .chip b { font-weight: var(--cds-font-weight-medium); }
+.hl .headline { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: var(--space-1) var(--space-6); align-items: end; margin-bottom: var(--space-4); }
+.hl .headline .eyebrow { margin: 0; } .hl .headline .aside-note { grid-column: 1 / -1; color: var(--ink-muted); margin: 0; }
+.hl .headline .fig { font-family: var(--font-display); font-size: calc(var(--text-title) * 1.7); font-weight: 600; line-height: 1.05; }
+.hl .fig.good { color: var(--success); } .hl .fig.off { color: var(--danger); }
+.hl .headline .take { font-size: var(--text-heading); margin: 0 0 .3em; }
+.hl .chips { list-style: none; display: flex; flex-wrap: wrap; gap: var(--space-1); margin: var(--space-1) 0 0; padding: 0; grid-column: 1 / -1; }
+.hl .chip { display: inline-flex; align-items: center; gap: .4em; border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px 3px 10px; font-size: var(--text-caption); background: var(--surface-200); white-space: nowrap; }
+.hl .chip::before { content: ""; width: .55em; height: .55em; border-radius: 50%; background: var(--ink-muted); flex: none; }
+.hl .chip.good { border-color: color-mix(in srgb, var(--success) 55%, transparent); } .hl .chip.good::before { background: var(--success); }
+.hl .chip.off { border-color: color-mix(in srgb, var(--danger) 55%, transparent); } .hl .chip.off::before { background: var(--danger); }
+.hl .chip b { font-weight: var(--weight-strong); }
 @media (max-width: 700px) { .hl .headline { grid-template-columns: minmax(0, 1fr); } }
-.hl .spark { margin-top: var(--cds-gap-xs); height: 28px; }
-.hl .gauge { display: flex; align-items: center; gap: var(--cds-gap-sm); margin-top: var(--cds-gap-xs); }
-.hl .gauge .track, .hl .sumrow .vsplan { position: relative; flex: 1 1 auto; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--color-fg) 8%, transparent); }
-.hl .gauge .track i, .hl .sumrow .vsplan i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--color-fg-muted); }
-.hl .gauge .track i.good { background: var(--color-ok); } .hl .gauge .track i.off { background: var(--color-bad); }
-.hl .gauge .track b, .hl .sumrow .vsplan b { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--color-fg); }
-.hl .sumrows { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--cds-gap-xs); }
-.hl .sumrow { display: grid; grid-template-columns: minmax(7rem, 11rem) minmax(4rem, 1fr) auto minmax(6.5rem, auto); align-items: center; gap: var(--cds-gap-sm); }
-.hl .sumrow.off .vsplan i { background: var(--color-bad); } .hl .sumrow.good .vsplan i { background: var(--color-ok); }
-.hl .sumrow .usual { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); text-align: right; }
-.hl .key .tick { display: inline-block; width: 2px; height: .9em; background: var(--color-fg); margin: 0 .55rem; }
+.hl .spark { margin-top: var(--space-1); height: 28px; }
+.hl .gauge { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-1); }
+.hl .gauge .track, .hl .sumrow .vsplan { position: relative; flex: 1 1 auto; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.hl .gauge .track i, .hl .sumrow .vsplan i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--ink-muted); }
+.hl .gauge .track i.good { background: var(--success); } .hl .gauge .track i.off { background: var(--danger); }
+.hl .gauge .track b, .hl .sumrow .vsplan b { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--ink); }
+.hl .sumrows { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+.hl .sumrow { display: grid; grid-template-columns: minmax(7rem, 11rem) minmax(4rem, 1fr) auto minmax(6.5rem, auto); align-items: center; gap: var(--space-2); }
+.hl .sumrow.off .vsplan i { background: var(--danger); } .hl .sumrow.good .vsplan i { background: var(--success); }
+.hl .sumrow .usual { font-size: var(--text-caption); color: var(--ink-muted); text-align: right; }
+.hl .key .tick { display: inline-block; width: 2px; height: .9em; background: var(--ink); margin: 0 .55rem; }
 @media (max-width: 600px) { .hl .sumrow { grid-template-columns: minmax(0, 1fr) auto; } .hl .sumrow .vsplan { grid-column: 1 / -1; order: 3; } .hl .sumrow .usual { grid-column: 1 / -1; text-align: left; order: 4; } }
-.hl details.datatable { margin-top: var(--cds-gap-sm); font-size: var(--cds-font-size-caption); }
+.hl details.datatable { margin-top: var(--space-2); font-size: var(--text-caption); }
 /* closed, "How to read this" and the table sit side by side on one line; open, each takes the full width */
-.hl details.how:not([open]):has(+ details.datatable), .hl details.how:not([open]) + details.datatable:not([open]) { display: inline-block; margin-right: var(--cds-gap-lg); }
-.hl details.datatable summary { cursor: pointer; color: var(--accent-2-text, var(--color-fg-muted)); font-weight: var(--cds-font-weight-medium); }
+.hl details.how:not([open]):has(+ details.datatable), .hl details.how:not([open]) + details.datatable:not([open]) { display: inline-block; margin-right: var(--space-6); }
+.hl details.datatable summary { cursor: pointer; color: var(--accent-2-text, var(--ink-muted)); font-weight: var(--weight-strong); }
 .hl details.datatable summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 /* Phone first screen: the masthead, one control row and the tab strip fit above the first tiles. The aside-notes and the
    Overview's question line are kept for wider screens; the Method tab says the same. */
 @media (max-width: 600px) {
   .hl .eyebrow { margin-bottom: 2px; }
   .hl .masthead { margin-bottom: 2px; } .hl .masthead .mark { display: none; }
-  .hl h1 { font-size: var(--cds-font-size-heading); line-height: 1.2; }
-  .hl > .lede { font-size: var(--cds-font-size-caption); margin-bottom: var(--cds-gap-sm); }
+  .hl h1 { font-size: var(--text-heading); line-height: 1.2; }
+  .hl > .lede { font-size: var(--text-caption); margin-bottom: var(--space-2); }
   .hl > .lede .aside-note, .hl #overview > .intro { display: none; }
-  #dash-root.hl > .controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--cds-gap-xs); margin-bottom: var(--cds-gap-sm); }
+  #dash-root.hl > .controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-1); margin-bottom: var(--space-2); }
   #dash-root.hl > .controls .ctl-label { display: none; }
   #dash-root.hl > .controls .seg { width: auto; min-width: 0; }
-  #dash-root.hl > .controls .seg button { padding-inline: var(--cds-pad-xs); font-size: var(--cds-font-size-caption); }
+  #dash-root.hl > .controls .seg button { padding-inline: var(--space-1); font-size: var(--text-caption); }
   #dash-root.hl > .controls .range { width: auto; min-width: 0; flex-wrap: nowrap; }
   #dash-root.hl > .controls .range > label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   #dash-root.hl > .controls .range #range-pick { min-height: 44px; width: 100%; }
@@ -195,18 +193,18 @@
 }
 /* First run: one card instead of empty charts */
 .hl.empty .controls, .hl.empty .page, .hl.empty > .lede, .hl.empty #range-status, .hl.empty .masthead + .lede { display: none !important; }
-.hl .firstrun h2 { font-size: var(--cds-font-size-title); margin: 0 0 var(--cds-gap-sm); }
-.hl .firstrun .steps { margin: 0 0 var(--cds-gap-md); padding-left: 1.4em; display: grid; gap: var(--cds-gap-xs); max-width: 70ch; }
-.hl .firstrun .actions { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; } .hl .firstrun form.inline { display: inline; margin: 0; }
-.hl .foot { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-top: var(--cds-gap-lg); padding-top: var(--cds-gap-sm); border-top: 1px solid var(--color-border-line); max-width: 90ch; }
+.hl .firstrun h2 { font-size: var(--text-title); margin: 0 0 var(--space-2); }
+.hl .firstrun .steps { margin: 0 0 var(--space-4); padding-left: 1.4em; display: grid; gap: var(--space-1); max-width: 70ch; }
+.hl .firstrun .actions { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; } .hl .firstrun form.inline { display: inline; margin: 0; }
+.hl .foot { color: var(--ink-muted); font-size: var(--text-caption); margin-top: var(--space-6); padding-top: var(--space-2); border-top: 1px solid var(--line); max-width: 90ch; }
 </style>
 
 <div id="dash-root" class="hl{% if not span.has_data %} empty{% endif %}">
   {% if freshness.stale %}<div class="flash warn" id="stale-banner" role="status">{{ freshness.message }}.{% if user and user.is_editor %} <a href="/upload">Close a month</a>{% endif %}</div>{% endif %}
-  <p class="eyebrow">{{ household.name or 'Household' }}{% if span.has_data %} · {{ span.years }}-year audit{% endif %}</p>
+  <p class="eyebrow">{{ words.dashboard_eyebrow }} · {{ household.name or 'Household' }}{% if span.has_data %} · {{ span.years }}-year audit{% endif %}</p>
   <div class="masthead">
-    <img class="mark" src="/brand/mark.svg" alt="">
-    <h1>{{ household.title or 'Household Ledger' }}{% if span.has_data %} {{ span.first_year }}{% if span.last_year != span.first_year %}–{{ span.last_year }}{% endif %}{% endif %}</h1>
+    <img class="mark mark-day" src="/brand/mark.svg" alt=""><img class="mark mark-night" src="/brand/mark-dark.svg" alt="">
+    <h1>{{ household.title or words.name }}{% if span.has_data %} {{ span.first_year }}{% if span.last_year != span.first_year %}–{{ span.last_year }}{% endif %}{% endif %}</h1>
   </div>
   <p class="lede">Over the last twelve <dfn title="Your budget tool files each transaction into the month whose budget it belonged to, which is not always its calendar month. Every figure here uses the budget month.">budget months</dfn> the household took in <b data-draw="lede-income">—</b>, spent <b data-draw="lede-spend">—</b> on <dfn title="Everything that is not income, debt principal or a transfer: housing, food, giving, insurance, projects, envelope spending.">living</dfn> and <b data-draw="lede-debt">—</b> on debt, and kept <b data-draw="lede-net">—</b>.
     <span class="aside-note">From your budget tool's exports, with moves between envelopes and your rules' exclusions taken out (Method tab). Dotted terms have a definition: hover, focus or tap them.</span></p>
@@ -346,20 +344,20 @@
     <div class="card split">
       <div class="aside">
         <h2 id="lm-summary">Before setting next month</h2>
-        <ul class="key"><li><span class="bar" style="--k: var(--color-bad)"></span>needs a look</li><li><span class="bar" style="--k: var(--color-ok)"></span>room to spare</li><li><span class="tick"></span>the plan</li></ul>
+        <ul class="key"><li><span class="bar" style="--k: var(--danger)"></span>needs a look</li><li><span class="bar" style="--k: var(--success)"></span>room to spare</li><li><span class="tick"></span>the plan</li></ul>
       </div>
       <ul class="sumrows" data-draw="lm-summary" data-source="lm_cats"></ul>
     </div>
     <div class="grid">
       <div class="card">
         <h2 id="lm-var-chart">Over and under plan, by category</h2>
-        <ul class="key row"><li><span class="bar" style="--k: var(--color-bad)"></span>needs a look</li><li><span class="bar" style="--k: var(--color-ok)"></span>room to spare</li><li>for income, savings, giving and debt, more is better</li></ul>
+        <ul class="key row"><li><span class="bar" style="--k: var(--danger)"></span>needs a look</li><li><span class="bar" style="--k: var(--success)"></span>room to spare</li><li>for income, savings, giving and debt, more is better</li></ul>
         <details class="how"><summary>How to read this</summary><p>Spent minus planned for the month. Red bars went over their envelope; green came in under. A large red bar on a planned-zero category means an unplanned expense, not an overrun. Income is shown as received minus expected, so red means less arrived than expected.</p></details>
         <div class="chart" data-draw="lm-var" data-source="lm_cats"></div>
       </div>
       <div class="card">
         <h2 id="lm-avg-chart">Against the trailing twelve months</h2>
-        <ul class="key row"><li><span class="bar r" style="--k: var(--color-bad)"></span>above its average</li><li><span class="bar l" style="--k: var(--color-ok)"></span>below it</li><li>should the plan move?</li></ul>
+        <ul class="key row"><li><span class="bar r" style="--k: var(--danger)"></span>above its average</li><li><span class="bar l" style="--k: var(--success)"></span>below it</li><li>should the plan move?</li></ul>
         <details class="how"><summary>How to read this</summary><p>Spent this month minus the average of the twelve months before it, by category. This compares the month with its own recent history rather than with the plan. A category that is over plan but at its twelve-month average has a plan problem; one that is at plan but far above its average had an unusual month.</p></details>
         <div class="chart" data-draw="lm-avg" data-source="lm_cats"></div>
       </div>
@@ -537,7 +535,7 @@
       </div>
       <div class="card">
         <h2 id="net-chart">Net kept, by year</h2>
-        <ul class="key row"><li><span class="bar " style="--k: var(--color-ok)"></span>added to savings</li><li><span class="bar " style="--k: var(--color-bad)"></span>drawn from savings</li></ul>
+        <ul class="key row"><li><span class="bar " style="--k: var(--success)"></span>added to savings</li><li><span class="bar " style="--k: var(--danger)"></span>drawn from savings</li></ul>
       <details class="how"><summary>How to read this</summary><p>Income minus living spend minus debt payments. Below zero means the year was funded from savings or one-off inflows. Green years added to savings; red years drew on them. A deep red bar usually means taxes, giving or savings-envelope spending landed in a year with lower income.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Year</th><th scope="col">Net kept</th><th scope="col">Savings rate</th></tr></thead><tbody data-draw="dt-net" data-source="yearly"></tbody></table></div></details>
         <div class="chart" data-draw="net" data-source="yearly"></div>
       </div>
@@ -671,11 +669,11 @@ window.HL = (() => {
     const y = d3.scaleLinear([0, yMax], [H - mb, mt]).nice();
     const ml = margins(svg, y.ticks(5), money);
     const x = d3.scaleBand(xs, [ml, W - 8]).padding(0.25);
-    svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(money).tickSize(-(W - ml - 8))).call((g) => { g.select('.domain').remove(); g.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); g.attr('font-size', null).attr('font-family', null); });
+    svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(money).tickSize(-(W - ml - 8))).call((g) => { g.select('.domain').remove(); g.selectAll('line').attr('stroke', 'var(--chart-grid)'); g.attr('font-size', null).attr('font-family', null); });
     const probeX = svg.append('text').attr('opacity', 0); let lw = 0;
     for (const v of xs) { probeX.text(opts.xfmt ? opts.xfmt(v) : keyX === 'y' ? HL.yearLabel(v) : v); lw = Math.max(lw, probeX.node().getComputedTextLength()); } probeX.remove();
     const every = Math.ceil(xs.length / Math.max(1, Math.floor((W - ml) / (lw + 28))));
-    svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).tickValues(xs.filter((_, i) => i % every === 0)).tickFormat(opts.xfmt || ((d) => keyX === 'y' ? HL.yearLabel(d) : d)).tickSize(0)).call((g) => { g.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); g.attr('font-size', null).attr('font-family', null); edgeTicks(g, ml, W - 8); });
+    svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).tickValues(xs.filter((_, i) => i % every === 0)).tickFormat(opts.xfmt || ((d) => keyX === 'y' ? HL.yearLabel(d) : d)).tickSize(0)).call((g) => { g.select('.domain').attr('stroke', 'var(--chart-axis)'); g.attr('font-size', null).attr('font-family', null); edgeTicks(g, ml, W - 8); });
     const col = (i) => colors()[(i + (opts.skip || 0)) % colors().length];   // skip: start later in the palette (people avoid the good/bad hues)
     const t = tip(el);
     svg.append('g').selectAll('g').data(stacked).join('g').attr('fill', (d, i) => col(i)).selectAll('rect').data((d) => d.map((p) => ({ ...p, key: d.key }))).join('rect').attr('class', 'b')
@@ -685,8 +683,8 @@ window.HL = (() => {
     const marks = (opts.markers || []).filter((e) => x(e.x) !== undefined);   // [{x, text}]: dashed line and dot over that bar, label on hover
     if (marks.length) {
       const cx = (e) => x(e.x) + x.bandwidth() / 2;
-      svg.append('g').selectAll('line').data(marks).join('line').attr('x1', cx).attr('x2', cx).attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '2 3').style('pointer-events', 'none');
-      svg.append('g').selectAll('circle').data(marks).join('circle').attr('class', 'ev').attr('cx', cx).attr('cy', mt + 4).attr('r', 4).attr('fill', 'var(--cds-chart-reference)').style('cursor', 'default')
+      svg.append('g').selectAll('line').data(marks).join('line').attr('x1', cx).attr('x2', cx).attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--chart-reference)').attr('stroke-dasharray', '2 3').style('pointer-events', 'none');
+      svg.append('g').selectAll('circle').data(marks).join('circle').attr('class', 'ev').attr('cx', cx).attr('cy', mt + 4).attr('r', 4).attr('fill', 'var(--chart-reference)').style('cursor', 'default')
         .on('pointermove', (pe, e) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${esc(opts.xfmt ? opts.xfmt(e.x) : e.x)}</div><div>${esc(e.text)}</div>`); }).on('pointerleave', () => t.hide());
     }
     return series;
@@ -846,7 +844,7 @@ if (['overview','lastmonth','goals','where','leaks','position','people','method'
 window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (document.getElementById(h) && document.getElementById(h).classList.contains('page')) showTab(h); });
 
 dash.onData(() => {
-  const root = document.querySelector('.hl'); if (root) { root.style.setProperty('--brand0', dash.colors[0]); root.style.setProperty('--brand1', dash.colors[1]); }
+  const root = document.querySelector('.hl'); if (root) { root.style.setProperty('--accent', dash.colors[0]); root.style.setProperty('--accent-2', dash.colors[1]); }
   document.querySelectorAll('.hl .legend span[data-c]').forEach((sp) => sp.style.setProperty('--sw', dash.colors[Number(sp.dataset.c) % dash.colors.length]));
   const b = HL.basis();
   document.querySelectorAll('.hl .dollars').forEach((btn) => btn.setAttribute('aria-pressed', String(btn.dataset.dollars === b)));
@@ -868,9 +866,9 @@ ledeDraw('lede-income', 'income', HL.money); ledeDraw('lede-spend', 'spend', HL.
 // a quiet twelve-month line under each Overview figure: the shape behind the number
 HL.spark = (el, values) => { el.replaceChildren(); if (values.length < 2) return; const W = el.clientWidth || 160, H = 28, x = d3.scaleLinear([0, values.length - 1], [1, W - 1]), y = d3.scaleLinear(d3.extent(values).map((v, i) => v + (i ? 1e-9 : 0)), [H - 3, 3]);
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%').attr('height', H);
-  svg.append('path').attr('d', d3.area().x((_, i) => x(i)).y0(H).y1((v) => y(v))(values)).attr('fill', 'color-mix(in srgb, var(--brand0, var(--color-fg)) 10%, transparent)');
-  svg.append('path').attr('d', d3.line().x((_, i) => x(i)).y((v) => y(v))(values)).attr('fill', 'none').attr('stroke', 'var(--brand0, var(--color-fg))').attr('stroke-width', 1.5);
-  svg.append('circle').attr('cx', x(values.length - 1)).attr('cy', y(values[values.length - 1])).attr('r', 2.5).attr('fill', 'var(--brand0, var(--color-fg))'); };
+  svg.append('path').attr('d', d3.area().x((_, i) => x(i)).y0(H).y1((v) => y(v))(values)).attr('fill', 'color-mix(in srgb, var(--accent, var(--ink)) 10%, transparent)');
+  svg.append('path').attr('d', d3.line().x((_, i) => x(i)).y((v) => y(v))(values)).attr('fill', 'none').attr('stroke', 'var(--accent, var(--ink))').attr('stroke-width', 1.5);
+  svg.append('circle').attr('cx', x(values.length - 1)).attr('cy', y(values[values.length - 1])).attr('r', 2.5).attr('fill', 'var(--accent, var(--ink))'); };
 for (const [k, f] of [['inc', 'income'], ['sp', 'spend'], ['db', 'debt'], ['net', 'net']]) for (const [b, sfx] of [['n', ''], ['r', '_real']])
   dash.draw(`sp-${k}-${b}`, (el) => { const g = dash.data('monthly'); if (g.status !== 'ok') { el.replaceChildren(); return; }
     const ms = [...g.data].sort((a, c) => a.m < c.m ? -1 : 1).slice(-12); HL.spark(el, ms.map((r) => Number(r[f + sfx]))); });
@@ -906,8 +904,8 @@ dash.draw('monthly', (el) => {
   const y = d3.scaleLinear([0, d3.max(rows, (r) => Math.max(r.income, r.outgo))], [H - mb, mt]).nice();
   const ml = HL.margins(svg, y.ticks(5), HL.money);
   const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
-  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
-  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
+  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
+  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
   const line = (k) => d3.line().x((r) => x(r.d)).y((r) => y(r[k]));
   const defs = svg.append('defs'); const grad = defs.append('linearGradient').attr('id', 'hl-inc').attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 1);
@@ -918,12 +916,12 @@ dash.draw('monthly', (el) => {
   svg.append('path').datum(rows).attr('fill', 'none').attr('stroke', c[2]).attr('stroke-width', 1.5).attr('stroke-dasharray', '4 3').attr('d', line('outgo'));
   const t = HL.tip(el);
   if (ev.status === 'ok') {
-    svg.append('g').selectAll('line').data(ev.data).join('line').attr('x1', (e) => x(HL.parseM(e.m))).attr('x2', (e) => x(HL.parseM(e.m))).attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '2 3');
-    svg.append('g').selectAll('circle').data(ev.data).join('circle').attr('class', 'ev').attr('cx', (e) => x(HL.parseM(e.m))).attr('cy', mt + 4).attr('r', 4).attr('fill', 'var(--cds-chart-reference)').style('cursor', 'default')
+    svg.append('g').selectAll('line').data(ev.data).join('line').attr('x1', (e) => x(HL.parseM(e.m))).attr('x2', (e) => x(HL.parseM(e.m))).attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--chart-reference)').attr('stroke-dasharray', '2 3');
+    svg.append('g').selectAll('circle').data(ev.data).join('circle').attr('class', 'ev').attr('cx', (e) => x(HL.parseM(e.m))).attr('cy', mt + 4).attr('r', 4).attr('fill', 'var(--chart-reference)').style('cursor', 'default')
       .on('pointermove', (pe, e) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(HL.parseM(e.m)))}</div><div>${HL.esc(HL.evText(e))}</div>`); }).on('pointerleave', () => t.hide());
   }
   const hover = svg.append('g').attr('display', 'none');
-  hover.append('line').attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--cds-chart-axis)');
+  hover.append('line').attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--chart-axis)');
   const dots = hover.selectAll('circle').data([0, 1, 2]).join('circle').attr('r', 3.5).attr('fill', (i) => c[i]);
   const bis = d3.bisector((r) => r.d).center;
   svg.append('rect').attr('x', ml).attr('y', mt).attr('width', Math.max(0, W - ml - 8)).attr('height', H - mt - mb).attr('fill', 'transparent')
@@ -958,8 +956,8 @@ dash.draw('annual', (el) => {
   const y = d3.scaleLinear([0, d3.max(rows, (r) => Math.max(...keys.map((k) => Number(r[f(k)]))))], [H - mb, mt]).nice();
   const ml = HL.margins(svg, y.ticks(5), HL.money);
   const x0 = d3.scaleBand(rows.map((r) => r.y), [ml, W - 8]).padding(0.2), x1 = d3.scaleBand(keys, [0, x0.bandwidth()]).padding(0.1);
-  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
-  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x0).tickFormat(HL.yearLabel).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); });
+  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
+  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x0).tickFormat(HL.yearLabel).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--chart-axis)'); a.attr('font-size', null).attr('font-family', null); });
   const c = HL.colors(); const t = HL.tip(el);
   svg.append('g').selectAll('g').data(rows).join('g').attr('transform', (r) => `translate(${x0(r.y)},0)`).selectAll('rect').data((r) => keys.map((k, i) => ({ y: r.y, k, i, v: Number(r[f(k)]) }))).join('rect').attr('class', (d) => d.v < 0 ? 'b neg' : 'b')
     .attr('x', (d) => x1(d.k)).attr('width', x1.bandwidth()).attr('y', (d) => y(d.v)).attr('height', (d) => y(0) - y(d.v)).attr('rx', 2).attr('fill', (d) => c[ci[d.i]])
@@ -975,12 +973,12 @@ dash.draw('net', (el) => {
   const ext = d3.extent(rows, (r) => r.v); const y = d3.scaleLinear([Math.min(0, ext[0]), Math.max(0, ext[1])], [H - mb, mt]).nice();
   const ml = HL.margins(svg, y.ticks(5), HL.money);
   const x = d3.scaleBand(rows.map((r) => r.y), [ml, W - 8]).padding(0.3);
-  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
-  svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--cds-chart-axis)');
+  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
+  svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--chart-axis)');
   svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).tickFormat(HL.yearLabel).tickSize(0)).call((a) => { a.select('.domain').remove(); a.attr('font-size', null).attr('font-family', null); });
   const t = HL.tip(el);
   svg.append('g').selectAll('rect').data(rows).join('rect').attr('class', (r) => r.v < 0 ? 'b neg' : 'b').attr('x', (r) => x(r.y)).attr('width', x.bandwidth()).attr('y', (r) => Math.min(y(0), y(r.v))).attr('height', (r) => Math.abs(y(0) - y(r.v))).attr('rx', 2)
-    .attr('fill', (r) => r.v >= 0 ? 'var(--color-ok)' : 'var(--color-bad)')
+    .attr('fill', (r) => r.v >= 0 ? 'var(--success)' : 'var(--danger)')
     .on('pointermove', (pe, r) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(r.y)}</div><div>Net ${HL.esc(HL.usd0(r.v))}</div>`); }).on('pointerleave', () => t.hide());
   const labels = svg.append('g').selectAll('text').data(rows).join('text').attr('x', (r) => x(r.y) + x.bandwidth() / 2).attr('y', (r) => r.v >= 0 ? y(r.v) - 4 : y(r.v) + 12).attr('text-anchor', 'middle').text((r) => HL.money(r.v));
   const widest = d3.max(labels.nodes(), (n) => n.getComputedTextLength()) || 0;
@@ -1116,10 +1114,10 @@ dash.draw('nw-chart', (el) => {
   const y = d3.scaleLinear([Math.min(0, d3.min(series, (sr) => d3.min(sr, (d) => d[0]))), Math.max(0, d3.max(series, (sr) => d3.max(sr, (d) => d[1])))], [H - mb, mt]).nice();
   const ml = HL.margins(svg, y.ticks(5), HL.money);
   const x = d3.scaleBand(months, [ml, W - 8]).padding(0.15);
-  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
+  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
   const every = Math.max(1, Math.ceil(months.length / Math.max(2, Math.floor((W - ml) / 70))));
   svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).tickValues(months.filter((_, i) => i % every === 0)).tickFormat((m) => dash.fmt.month(HL.parseM(m))).tickSize(0)).call((a) => { a.select('.domain').remove(); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
-  svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--cds-chart-axis)');
+  svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--chart-axis)');
   const c = HL.colors();
   series.forEach((sr, i) => svg.append('g').attr('fill', c[i % c.length]).attr('fill-opacity', 0.75).selectAll('rect').data(sr).join('rect')
     .attr('x', (d) => x(d.data.m)).attr('width', x.bandwidth()).attr('y', (d) => y(Math.max(d[0], d[1]))).attr('height', (d) => Math.abs(y(d[0]) - y(d[1]))));
@@ -1175,9 +1173,9 @@ const drawDebts = (el, rows) => {
   const c = HL.colors(); const t = HL.tip(el);
   const grp = svg.append('g').selectAll('g').data(data).join('g').attr('transform', (r, i) => `translate(0,${mt + i * rowH})`);
   const heads = grp.filter((r) => r.head);
-  heads.append('text').attr('x', 0).attr('y', rowH / 2 + 4).attr('font-weight', 600).attr('fill', 'var(--color-fg)').text((r) => `${r.head} · ${HL.money(r.sum)}`);
+  heads.append('text').attr('x', 0).attr('y', rowH / 2 + 4).attr('font-weight', 600).attr('fill', 'var(--ink)').text((r) => `${r.head} · ${HL.money(r.sum)}`);
   const bars = grp.filter((r) => !r.head);
-  bars.append('text').attr('x', ml - 8).attr('y', rowH / 2 + 4).attr('text-anchor', 'end').attr('fill', 'var(--color-fg)').text((r) => r.item);
+  bars.append('text').attr('x', ml - 8).attr('y', rowH / 2 + 4).attr('text-anchor', 'end').attr('fill', 'var(--ink)').text((r) => r.item);
   bars.append('rect').attr('class', 'b h').style('animation-delay', (r, i) => Math.min(i, 12) * 30 + 'ms').attr('x', (r) => x(r.d0)).attr('width', (r) => Math.max(3, x(r.d1) - x(r.d0))).attr('y', 5).attr('height', rowH - 10).attr('rx', 3).attr('fill', (r) => c[debts.indexOf(r) % c.length])
     .on('pointermove', (pe, r) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(r.item)}${r.debt_type ? ' · ' + HL.esc(label(r.debt_type)) : ''}</div><div>${HL.esc(HL.fmtM(r.d0))} – ${HL.esc(HL.fmtM(HL.parseM(r.last)))}, ${HL.esc(String(r.months))} months</div><div>Paid ${HL.esc(HL.usd0(r.total))}</div>`); }).on('pointerleave', () => t.hide());
   bars.append('text').attr('x', (r) => x(r.d1) + 6).attr('y', rowH / 2 + 4).text((r) => HL.money(r.total));
@@ -1310,14 +1308,14 @@ const drawRadar = (el, idx) => {
   const r = d3.scaleLinear([0, rMax], [0, R]).nice();
   const ang = (i) => (i / cats.length) * 2 * Math.PI - Math.PI / 2;
   const rings = r.ticks(3).filter((t) => t > 0);
-  svg.append('g').selectAll('circle').data(rings).join('circle').attr('cx', cx).attr('cy', cy).attr('r', (t) => r(t)).attr('fill', 'none').attr('stroke', 'var(--cds-chart-grid)');
+  svg.append('g').selectAll('circle').data(rings).join('circle').attr('cx', cx).attr('cy', cy).attr('r', (t) => r(t)).attr('fill', 'none').attr('stroke', 'var(--chart-grid)');
   // Scale labels sit between the first two spokes, so they never sit on a spoke line.
   const mid = ang(0) + Math.PI / cats.length;
   svg.append('g').attr('class', 'scale').selectAll('text').data(rings).join('text').attr('x', (t) => cx + r(t) * Math.cos(mid) + 3).attr('y', (t) => cy + r(t) * Math.sin(mid) - 3)
-    .attr('fill', 'var(--color-fg-muted)').attr('font-size', 11).attr('paint-order', 'stroke').attr('stroke', 'var(--color-panel)').attr('stroke-width', 3).attr('stroke-linejoin', 'round').text((t) => HL.money(t));
-  svg.append('g').selectAll('line').data(cats).join('line').attr('x1', cx).attr('y1', cy).attr('x2', (c, i) => cx + R * Math.cos(ang(i))).attr('y2', (c, i) => cy + R * Math.sin(ang(i))).attr('stroke', 'var(--cds-chart-axis)');
+    .attr('fill', 'var(--ink-muted)').attr('font-size', 11).attr('paint-order', 'stroke').attr('stroke', 'var(--surface-200)').attr('stroke-width', 3).attr('stroke-linejoin', 'round').text((t) => HL.money(t));
+  svg.append('g').selectAll('line').data(cats).join('line').attr('x1', cx).attr('y1', cy).attr('x2', (c, i) => cx + R * Math.cos(ang(i))).attr('y2', (c, i) => cy + R * Math.sin(ang(i))).attr('stroke', 'var(--chart-axis)');
   svg.append('g').attr('class', 'labels').selectAll('text').data(cats).join('text').attr('x', (c, i) => cx + (R + 8) * Math.cos(ang(i))).attr('y', (c, i) => cy + (R + 8) * Math.sin(ang(i)) + 4)
-    .attr('text-anchor', (c, i) => { const x = Math.cos(ang(i)); return Math.abs(x) < 0.2 ? 'middle' : x > 0 ? 'start' : 'end'; }).attr('fill', 'var(--color-fg)').text((c) => short(c))
+    .attr('text-anchor', (c, i) => { const x = Math.cos(ang(i)); return Math.abs(x) < 0.2 ? 'middle' : x > 0 ? 'start' : 'end'; }).attr('fill', 'var(--ink)').text((c) => short(c))
     .each(function (c) { if (short(c) !== c) d3.select(this).append('title').text(c); });
   const c = HL.colors(); const t = HL.tip(el);
   const path = d3.lineRadial().angle((d, i) => ang(i) + Math.PI / 2).radius((d) => r(Math.max(0, d))).curve(d3.curveLinearClosed);
@@ -1375,12 +1373,12 @@ const divergingBars = (el, rows, field, labelOf) => {
   const probe = svg.append('text').attr('opacity', 0); let ml = 0; for (const d of data) { probe.text(labelOf(d)); ml = Math.max(ml, probe.node().getComputedTextLength()); } probe.remove(); ml = Math.ceil(ml) + 12;
   const ext = d3.max(data, (d) => Math.abs(d[field])) || 1; const x = d3.scaleLinear([-ext, ext], [ml, W - 8]).nice();
   svg.append('g').attr('transform', `translate(0,${mt - 6})`).call(d3.axisTop(x).ticks(5).tickFormat(HL.money).tickSize(0)).call((a) => { a.select('.domain').remove(); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
-  svg.append('line').attr('x1', x(0)).attr('x2', x(0)).attr('y1', mt - 2).attr('y2', H - 6).attr('stroke', 'var(--cds-chart-axis)');
+  svg.append('line').attr('x1', x(0)).attr('x2', x(0)).attr('y1', mt - 2).attr('y2', H - 6).attr('stroke', 'var(--chart-axis)');
   const t = HL.tip(el);
   const grp = svg.append('g').selectAll('g').data(data).join('g').attr('transform', (d, i) => `translate(0,${mt + i * rowH})`);
-  grp.append('text').attr('x', ml - 8).attr('y', rowH / 2 + 4).attr('text-anchor', 'end').attr('fill', 'var(--color-fg)').text(labelOf);
+  grp.append('text').attr('x', ml - 8).attr('y', rowH / 2 + 4).attr('text-anchor', 'end').attr('fill', 'var(--ink)').text(labelOf);
   grp.append('rect').attr('class', (d) => d[field] < 0 ? 'b h neg' : 'b h').style('animation-delay', (d, i) => Math.min(i, 16) * 25 + 'ms').attr('x', (d) => Math.min(x(0), x(d[field]))).attr('width', (d) => Math.max(1, Math.abs(x(d[field]) - x(0)))).attr('y', 4).attr('height', rowH - 8).attr('rx', 2)
-    .attr('fill', (d) => ({ good: 'var(--color-ok)', off: 'var(--color-bad)', neutral: 'var(--color-fg-muted)' })[HL.tone(d.want_more == null ? { want_more: d.flow === 'income' } : d, d[field])])
+    .attr('fill', (d) => ({ good: 'var(--success)', off: 'var(--danger)', neutral: 'var(--ink-muted)' })[HL.tone(d.want_more == null ? { want_more: d.flow === 'income' } : d, d[field])])
     .on('pointermove', (pe, d) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(labelOf(d))}</div><div>${(d[field] >= 0 ? '+' : '−') + HL.esc(HL.usd0(Math.abs(d[field])))}</div>`); }).on('pointerleave', () => t.hide());
   el.style.minHeight = H + 'px';
 };
@@ -1470,15 +1468,15 @@ dash.draw('goal-lines', (el) => {
   const y = d3.scaleLinear([0, yMax], [H - mb, mt]).nice();
   const ml = HL.margins(svg, y.ticks(5), dash.fmt.pct(0));
   const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
-  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(dash.fmt.pct(0)).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
-  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
+  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(dash.fmt.pct(0)).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
+  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
   const ref = (v, col, label) => { if (v == null) return; svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', col).attr('stroke-dasharray', '5 4').attr('stroke-opacity', .7); svg.append('text').attr('x', W - 8).attr('y', y(v) - 4).attr('text-anchor', 'end').attr('fill', col).text(label); };
   ref(gv('giving_floor'), c[0], 'giving floor'); ref(gv('giving_target'), c[0], 'giving target'); ref(gv('joy_target'), c[1], 'savings target'); ref(gv('housing_cap'), c[2], 'housing cap');
   const line = (k) => d3.line().defined((r) => r[k] != null).x((r) => x(r.d)).y((r) => y(r[k]));
   ['a', 'b', 'c'].forEach((k, i) => svg.append('path').datum(rows).attr('fill', 'none').attr('stroke', c[i]).attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round').attr('d', line(k)));
   const t = HL.tip(el); const bis = d3.bisector((r) => r.d).center;
-  const hover = svg.append('g').attr('display', 'none'); hover.append('line').attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--cds-chart-axis)');
+  const hover = svg.append('g').attr('display', 'none'); hover.append('line').attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--chart-axis)');
   svg.append('rect').attr('x', ml).attr('y', mt).attr('width', Math.max(0, W - ml - 8)).attr('height', H - mt - mb).attr('fill', 'transparent')
     .on('pointermove', (pe) => { const [px, py] = d3.pointer(pe, el); const r = rows[bis(rows, x.invert(px))]; if (!r) return; hover.attr('display', null).select('line').attr('x1', x(r.d)).attr('x2', x(r.d));
       t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}, trailing 12 months</div><div><span class="sw" style="background:${c[0]}"></span>Giving ${r.a == null ? '—' : pct1(r.a)}</div><div><span class="sw" style="background:${c[1]}"></span>Savings funding ${r.b == null ? '—' : pct1(r.b)}</div><div><span class="sw" style="background:${c[2]}"></span>Housing + utilities ${r.c == null ? '—' : pct1(r.c)}</div>`); })
@@ -1527,8 +1525,8 @@ dash.draw('ef-lines', (el) => {
   const y = d3.scaleLinear([0, Math.max(1, d3.max(rows, (r) => r.v), target || 0)], [H - mb, mt]).nice();
   const ml = HL.margins(svg, y.ticks(5), (v) => `${v}`);
   const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
-  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
-  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
+  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
+  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
   if (target != null) { svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(target)).attr('y2', y(target)).attr('stroke', c[1]).attr('stroke-dasharray', '5 4').attr('stroke-opacity', .7);
     svg.append('text').attr('x', W - 8).attr('y', y(target) - 4).attr('text-anchor', 'end').attr('fill', c[1]).text('target'); }
@@ -1549,15 +1547,15 @@ dash.draw('dti-lines', (el) => {
   const y = d3.scaleLinear([0, Math.max(0.1, d3.max(rows, (r) => Math.max(r.a || 0, r.b || 0)), ...caps.filter((v) => v != null))], [H - mb, mt]).nice();
   const ml = HL.margins(svg, y.ticks(5), dash.fmt.pct(0));
   const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
-  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(dash.fmt.pct(0)).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
-  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
+  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(dash.fmt.pct(0)).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
+  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors(), col = [c[0], c[2]];
   caps.forEach((v, i) => { if (v == null) return; svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', col[i]).attr('stroke-dasharray', '5 4').attr('stroke-opacity', .7);
     svg.append('text').attr('x', W - 8).attr('y', y(v) - 4).attr('text-anchor', 'end').attr('fill', col[i]).text(i ? 'housing cap' : 'debt cap'); });
   ['a', 'b'].forEach((k, i) => svg.append('path').datum(rows).attr('fill', 'none').attr('stroke', col[i]).attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round')
     .attr('d', d3.line().defined((r) => r[k] != null).x((r) => x(r.d)).y((r) => y(r[k]))));
   const t = HL.tip(el), bis = d3.bisector((r) => r.d).center;
-  const hover = svg.append('g').attr('display', 'none'); hover.append('line').attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--cds-chart-axis)');
+  const hover = svg.append('g').attr('display', 'none'); hover.append('line').attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--chart-axis)');
   svg.append('rect').attr('x', ml).attr('y', mt).attr('width', Math.max(0, W - ml - 8)).attr('height', H - mt - mb).attr('fill', 'transparent')
     .on('pointermove', (pe) => { const [px, py] = d3.pointer(pe, el); const r = rows[bis(rows, x.invert(px))]; if (!r) return; hover.attr('display', null).select('line').attr('x1', x(r.d)).attr('x2', x(r.d));
       t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}, trailing 12 months</div><div><span class="sw" style="background:${col[0]}"></span>All debt ${r.a == null ? '—' : pct1(r.a)}</div><div><span class="sw" style="background:${col[1]}"></span>Housing ${r.b == null ? '—' : pct1(r.b)}</div>`); })

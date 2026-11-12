@@ -1,6 +1,6 @@
 # AGENTS.md — working in this repo
 
-Household Ledger is a FastAPI + Postgres app around a small, file-based budget pipeline. Read this before changing anything.
+Bearings (the repository is still `household-ledger`) is a FastAPI + Postgres app around a small, file-based budget pipeline. Read this before changing anything.
 
 ## Invariants
 - **Raw exports are facts; everything else is derived.** Month-end balances typed by a person (`balances`, #143) are facts too: a
@@ -15,7 +15,8 @@ Household Ledger is a FastAPI + Postgres app around a small, file-based budget p
   `rules.json` from the working directory and know nothing about the DB.
 - The dashboard page (`app/web/templates/dashboard.html`) talks to data only through `dash.data()/calc()/draw()` from
   `dash-shim.js`. Add a dataset by emitting it from `make_datasets.py`; the shim exposes every row of `datasets` automatically.
-- Colours come from the brand contract tokens (`docs/BRANDING.md`). Never type a hex colour into `app.css` or the page.
+- The look follows `docs/DESIGN.md`: the rules every page keeps, and the token contract a brand kit fills. Colours, typefaces and sizes
+  come from the kit's tokens; never type one into `app.css` or a page. Flourish words come from `words`, glyphs from `glyph()`.
 - No secrets in the repo. `.env` is ignored; `.env.example` holds placeholders only.
 
 ## Long lists
@@ -25,6 +26,15 @@ holds two. Its own Save button may follow it. Where a page must stack sections (
 (`<details>` whose summary says how many, open only when short), so what comes after it is a short scroll away. Mark such a list
 `data-list="unbounded"`; `tests/test_long_lists.py` checks every one on the pages it renders. A list long enough to scan gets a filter box.
 Sub-tabs keep their place in the URL (`/settings#mapping/debts`), so a flash after a save and a link in the docs land on them.
+
+## UX review
+Any change to what a household sees (a template, `app.css`, `settings.js`, `dash-shim.js`, the dashboard page, or the copy and
+flashes in a route) gets a UX critique before its PR is merged: run the saved workflow `ux-critique` (`.claude/workflows/ux-critique.js`)
+with the app running on the sample household (step 2 of "Checking a change"). It finds the surfaces the diff touches, reviews each
+through five lenses (flow, copy and hierarchy, WCAG 2.1 AA, phone width and both modes, and conformance to `docs/DESIGN.md`), has three
+skeptics try to refute every finding, and returns a fix plan. `docs/DESIGN.md` is the law it judges by: a finding names the rule it breaks
+(`DS-SHEET-1`), or is marked a judgement. A change that needs a new rule adds it to `docs/DESIGN.md` in the same PR. Fix what survives in the same PR, or say in the PR why not; items it marks as the owner's
+decision go to the owner. The PR's "How I checked it" names the run and what it found.
 
 ## Schema changes
 Never edit an applied file in `db/migrations/`; add `NNNN_name.sql`, where NNNN is the 4-digit GitHub issue number (`0022_source_file_history.sql`).
@@ -63,7 +73,7 @@ it on the Settings page.
 1. `DATABASE_URL=<throwaway database> python -m pytest -q` (`requirements-dev.txt`; see CONTRIBUTING.md). Goldens change only deliberately (`UPDATE_GOLDENS=1`).
 2. `uvicorn app.main:app --reload --no-proxy-headers --no-access-log` with `AUTH_DISABLED=true` against a local Postgres.
 3. `python -m pipeline.import_exports <dir>` on a set of exports; it exits non-zero if reconciliation fails.
-4. Open the page in light and dark; no console errors; every tab draws.
+4. Open the page in day and night; no console errors; every tab draws.
 
 ## Month-to-month operation (what a session is usually for)
 A new month arrives as two CSVs. Upload them on **Close a month**. If the build log says UNMAPPED, add the item on the Settings
@@ -76,5 +86,5 @@ the database, not in prompts — read them there.
   release-please reads.
 - **Releases are automatic.** release-please keeps a `chore(main): release x.y.z` PR open on `main`; merging it tags `vx.y.z`, writes
   `CHANGELOG.md`, bumps `version.txt`. `feat` bumps minor, `fix` bumps patch (while < 1.0, a breaking change bumps minor).
-- **Images**: every push to `main` publishes (amd64 + arm64) `ghcr.io/jkbeeman92/household-ledger:latest` and `:sha-<short>`; a release additionally
+- **Images**: every push to `main` publishes (amd64 + arm64) `ghcr.io/jkbeeman92/bearings:latest` and `:sha-<short>`; a release additionally
   publishes `:x.y.z`, `:x.y`, `:x`. Deployments that want stability pin `:x`; `:latest` follows `main`.

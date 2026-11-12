@@ -1,0 +1,8 @@
+{
+ "name": "Bearings",
+ "tagline": "The monthly check-in for household money.",
+ "dashboard_eyebrow": "Where the household stands",
+ "checkin_eyebrow": "Position at month's end",
+ "login_line": "Sign in to take this month's bearings.",
+ "footer": "Every figure is recomputed from the stored files on each rebuild."
+}

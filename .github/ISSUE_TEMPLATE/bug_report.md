@@ -11,7 +11,7 @@ labels: ["bug"]
 
 **Where** (dashboard tab / Close a month / Settings / API / pipeline / container start)
 
-**Version** — `version.txt` or the image tag, and the browser if it's a page issue
+**Version** — `version.txt` or the image tag; for a page issue, the browser, day or night, and whether a brand kit of your own is mounted
 
 **Build log / console output** (Close a month → last build; or the browser console)
 
