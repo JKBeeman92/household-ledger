@@ -229,10 +229,10 @@ def export_for_pipeline(conn: psycopg.Connection, wd: Path) -> None:
                     w = csv.writer(out, quoting=csv.QUOTE_ALL); w.writerow(["Group", "Item", "Planned", "Spent", "Remaining"])
                     for r in cur: w.writerow([r["grp"], r["item"], f"{r['planned']:.2f}", f"{r['spent']:.2f}", f"{r['remaining']:.2f}"])
         # reference tables
-        cur.execute("SELECT item, canonical_item, category, flow, note FROM mapping_rows ORDER BY item")
-        with open(wd / "item_mapping.csv", "w", newline="") as out:
-            w = csv.writer(out); w.writerow(["Item", "CanonicalItem", "Category", "Flow", "Note"])
-            for r in cur: w.writerow([r["item"], r["canonical_item"], r["category"], r["flow"], r["note"]])
+        cur.execute("SELECT item, canonical_item, category, flow, note, debt_type FROM mapping_rows ORDER BY item")
+        with open(wd / "item_mapping.csv", "w", newline="") as out:   # DebtType: the optional sixth column (#141)
+            w = csv.writer(out); w.writerow(["Item", "CanonicalItem", "Category", "Flow", "Note", "DebtType"])
+            for r in cur: w.writerow([r["item"], r["canonical_item"], r["category"], r["flow"], r["note"], r["debt_type"] or ""])
         cur.execute("SELECT month, cpi, source FROM cpi ORDER BY month")
         with open(wd / "cpi_u.csv", "w", newline="") as out:
             w = csv.writer(out); w.writerow(["month", "cpi", "source"])
@@ -519,7 +519,8 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
                 seed = {}
                 for r in csv.DictReader(f):   # first row of an item wins, as before
                     seed.setdefault(norm(r["Item"]), {"item": norm(r["Item"]), "canonical_item": norm(r["CanonicalItem"]), "category": norm(r["Category"]),
-                                                      "flow": r["Flow"], "note": r.get("Note") or ""})
+                                                      "flow": r["Flow"], "note": r.get("Note") or "",
+                                                      **({"debt_type": (r["DebtType"] or "").strip().lower() or None} if "DebtType" in r else {})})
             rows, notes = mapping_store.settle_legacy(list(seed.values()))   # a 0.4 settings.zip still seeds (#133)
             try:
                 mapping_store.write_rows(conn, rows, replace=True)

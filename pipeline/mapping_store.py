@@ -13,6 +13,7 @@ from __future__ import annotations
 import psycopg
 from psycopg.rows import dict_row, tuple_row
 
+DEBT_TYPES = ("mortgage", "student", "auto", "card", "medical", "personal", "other")   # db/migrations/0141_debt_type.sql (#141)
 UNMAPPED = "UNMAPPED"   # a build finding (an item with no row), never a category anyone chose: refused as a category
 
 
@@ -22,8 +23,43 @@ class MappingError(ValueError):
 
 def rows(conn: psycopg.Connection, order: str = "category, canonical_item, item") -> list[dict]:
     with conn.cursor(row_factory=dict_row) as cur:
-        cur.execute(f"SELECT item, canonical_item, category, flow, note FROM mapping_rows ORDER BY {order}")
+        cur.execute(f"SELECT item, canonical_item, category, flow, note, debt_type FROM mapping_rows ORDER BY {order}")
         return cur.fetchall()
+
+
+def debt_types_of(conn: psycopg.Connection) -> dict[str, str | None]:
+    """{canonical item: its debt type, or None}."""
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute("SELECT name, debt_type FROM canonical_items")
+        return {r["name"]: r["debt_type"] for r in cur.fetchall()}
+
+
+def debt_type_problems(new: list[dict], current: dict[str, str | None] | None = None, lines: list[int] | None = None) -> list[str]:
+    """Rows that carry a debt_type (the CSV's optional DebtType column; absent means "leave it"): it must be one of DEBT_TYPES or
+    empty, one canonical item has one type, and (append mode, `current` given) an existing canonical item keeps the type it has."""
+    seen: dict[str, tuple[str | None, int | None]] = {}
+    out = []
+    for i, r in enumerate(new):
+        if "debt_type" not in r:
+            continue
+        where = f"line {lines[i]}: " if lines else ""
+        t, canon = r["debt_type"] or None, r["canonical_item"]
+        if t and t not in DEBT_TYPES:
+            out.append(f"{where}DebtType {t!r} is not one of {', '.join(DEBT_TYPES)} (or empty)"); continue
+        if canon in seen and seen[canon][0] != t:
+            out.append(f"{where}{canon} is given DebtType {t or '(empty)'}, but {'line ' + str(seen[canon][1]) if seen[canon][1] else 'another row'} gives it {seen[canon][0] or '(empty)'}")
+        elif current and canon in current and t and current[canon] and current[canon] != t:
+            out.append(f"{where}{canon} has debt type {current[canon]}, not {t}: change it on Settings → Item mapping → Canonical items")
+        seen.setdefault(canon, (t, lines[i] if lines else None))
+    return out
+
+
+def set_debt_type(conn: psycopg.Connection, name: str, debt_type: str | None) -> None:
+    debt_type = (debt_type or "").strip().lower() or None
+    if debt_type and debt_type not in DEBT_TYPES:
+        raise MappingError(f"debt type must be one of {', '.join(DEBT_TYPES)}, or empty")
+    if conn.execute("UPDATE canonical_items SET debt_type=%s WHERE name=%s", (debt_type, name)).rowcount == 0:
+        raise MappingError(f"there is no canonical item {name}")
 
 
 def categories_of(conn: psycopg.Connection) -> dict[str, str]:
@@ -97,7 +133,7 @@ def write_rows(conn: psycopg.Connection, new: list[dict], *, replace: bool = Fal
     canonical item keeps its category and a row naming another one is refused (moving is the Canonical items panel's job).
     Raises MappingError, before writing anything, on any problem."""
     current = categories_of(conn)
-    problems = conflicts(new, None if replace else current, lines)
+    problems = conflicts(new, None if replace else current, lines) + debt_type_problems(new, None if replace else debt_types_of(conn), lines)
     if replace:   # the CSV is the whole mapping: blank categories are not filled from what it replaces
         problems = [p for p in problems if "needs a category" not in p] + \
                    [(f"line {lines[i]}: " if lines else "") + f"category required on: {r['item']}" for i, r in enumerate(new) if not r.get("category")]
@@ -121,6 +157,10 @@ def write_rows(conn: psycopg.Connection, new: list[dict], *, replace: bool = Fal
         cur.executemany("INSERT INTO item_mapping (item, canonical_item, flow, note) VALUES (%s, %s, %s, %s) ON CONFLICT (item) DO UPDATE SET "
                         "canonical_item = EXCLUDED.canonical_item, flow = EXCLUDED.flow, note = EXCLUDED.note, updated_at = now()",
                         [(r["item"], r["canonical_item"], r["flow"], r.get("note") or "") for r in new])
+        typed = {r["canonical_item"]: (r["debt_type"] or None) for r in new if "debt_type" in r}
+        if typed:   # rows that carry a DebtType set it; without the column a canonical item keeps the type it has (#141)
+            cur.executemany("UPDATE canonical_items SET debt_type=%s WHERE name=%s AND debt_type IS DISTINCT FROM %s",
+                            [(t, n, t) for n, t in sorted(typed.items()) if replace or t])
         if replace:
             cur.execute("DELETE FROM item_mapping WHERE item <> ALL(%s)", ([r["item"] for r in new],))
     prune(conn)

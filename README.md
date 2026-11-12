@@ -75,7 +75,7 @@ at once as `settings.zip` ([Backups](#backups)), so moving to a new box is: unzi
 
 | File | Shape |
 |---|---|
-| `item_mapping.csv` | columns `Item,CanonicalItem,Category,Flow,Note` ([Roles](#roles)) |
+| `item_mapping.csv` | columns `Item,CanonicalItem,Category,Flow,Note`, and optionally `DebtType` ([Roles](#roles)) |
 | `cpi_u.csv` | columns `month,cpi,source` (`month` is `YYYY-MM`) |
 | `goals.json` | list of `{"key", "label", "value", "unit", "note"}`; `value` may be `null` |
 | `events.json` | list of `{"m": "YYYY-MM", "label": "…", "kind": "…", "person": "…"}` (the key is `m`, not `month`); `kind` (one of `job`, `move`, `family`, `health`, `purchase`, `debt`, `other`) and `person` (best one of the `people` rule) are optional |
@@ -112,7 +112,7 @@ docker compose exec -T ledger python -m app.admin import-mapping - < item_mappin
 Commands: `import-mapping`, `set-rules`, `set-events`, `set-goals`, `set-cpi` and `set-household` replace one editor's contents from a file
 (`-` reads standard input); `export <mapping|rules|events|goals|cpi|household>` and `export-mapping` print them; `draft-mapping` prints the
 [drafted mapping](#roles) for unmapped items and `add-mapping FILE` adds a reviewed draft without touching existing
-rows; `rename-category OLD NEW`, `rename-canonical OLD NEW` and `move-canonical NAME CATEGORY` do what the Categories and canonical
+rows; `rename-category OLD NEW`, `rename-canonical OLD NEW` and `move-canonical NAME CATEGORY` (and `set-debt-type NAME TYPE`) do what the Categories and canonical
 items panel does ([Roles](#roles)); `preview-mapping-migration` prints what the 0.5.0 upgrade will change in a 0.4 mapping
 ([docs/UPGRADING.md](docs/UPGRADING.md)); `rebuild` exits 0 when the build reconciles, 1 when it fails or does not reconcile, and 75 when another rebuild is running. Every
 write is logged as a `ledger.admin` line naming the command. API tokens stay read-only: shell access to the container already means
@@ -300,6 +300,12 @@ exists merges the two. A rename also rewrites every rule that names what was ren
 keep their wording, and the Reviews page notes the renames made since each was written. The mapping CSV keeps its five columns
 everywhere (the editor, the bulk import, `settings.zip`, seeds, the command line); a CSV that gives one canonical item two categories
 is refused, naming the lines. The panel also flags a canonical item whose rows mix `income` with `expense` or `debt`.
+
+**Debt types.** A canonical item with `debt` rows can be given a type there: `mortgage`, `student`, `auto`, `card`, `medical`,
+`personal` or `other`. The mapping CSV carries it as an optional sixth column, `DebtType`: a five-column CSV leaves types as they are,
+and with the column an empty value clears one. The Debts tab groups typed debts with each type's total, orders them by first payment
+or by total paid, and, once any debt has a type, folds a debt with no payment in the latest `debt_paid_off_months` budget months (a
+rule, default 3; 0 never folds) under **Paid off**. A household that types nothing sees the Debts timeline as before.
 `UNMAPPED` is not a category: an item with no row is what the build calls unmapped.
 
 | Rule | Default | Names | What reads it |

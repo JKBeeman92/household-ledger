@@ -10,6 +10,7 @@ import json
 from pipeline import mapping_store
 from . import db
 from .roles import ROLE_DEFAULTS
+DEBT_TYPES = mapping_store.DEBT_TYPES
 
 # rules that hold category names, and rules that hold canonical item names (lists, or person -> list)
 CATEGORY_RULES = ("goal_giving_categories", "goal_housing_categories", "recurring_categories", "plan_keep_categories", "loan_categories")
@@ -86,13 +87,17 @@ def rename_canonical(conn, old: str, new: str, by: str = "") -> str:
     if new == old:
         return f"{old} is already called that"
     merge = new in cats
-    if merge:   # into an existing canonical item: its rows join it, and take its category
+    types = mapping_store.debt_types_of(conn)
+    clash = merge and types.get(old) and types.get(new) and types[old] != types[new]
+    if merge:   # into an existing canonical item: its rows join it, and take its category; its debt type unless it has none (#141)
+        conn.execute("UPDATE canonical_items SET debt_type = COALESCE(debt_type, %s) WHERE name=%s", (types.get(old), new))
         conn.execute("UPDATE item_mapping SET canonical_item=%s, updated_at=now() WHERE canonical_item=%s", (new, old))
         mapping_store.prune(conn)
     else:
         conn.execute("UPDATE canonical_items SET name=%s WHERE name=%s", (new, old))
     changed = _log_and_rules(conn, "canonical_item", old, new, by)
     note = f" (now in {cats[new]}, not {cats[old]})" if merge and cats[new] != cats[old] else ""
+    note += f" (debt type {types[new]} kept; {old} was {types[old]})" if clash else ""
     warn = prefix_warnings(db.get_setting(conn, "rules", {}) or {}, old, new)
     return (f"{old} {'merged into' if merge else 'renamed'} {new}{note}" + (f"; rules updated: {', '.join(changed)}" if changed else "")
             + (f". Check the rules: {'; '.join(warn)}" if warn else ""))
@@ -132,7 +137,8 @@ def overview(conn) -> dict:
     rows = mapping_store.rows(conn)
     canon: dict[str, dict] = {}
     for r in rows:
-        c = canon.setdefault(r["canonical_item"], {"name": r["canonical_item"], "category": r["category"], "rows": 0, "flows": set()})
+        c = canon.setdefault(r["canonical_item"], {"name": r["canonical_item"], "category": r["category"], "rows": 0, "flows": set(),
+                                                    "debt_type": r.get("debt_type")})
         c["rows"] += 1; c["flows"].add(r["flow"])
     for c in canon.values():
         c["mixed"] = "income" in c["flows"] and bool(c["flows"] & {"expense", "debt"})

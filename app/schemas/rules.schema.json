@@ -123,6 +123,10 @@
       "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
       "description": "Budget groups that hold debt payments, as they appear in the export: the debt_plug_until rule looks at these groups, the off-budget outflow count leaves them out, and the mapping draft gives their items Flow debt. Empty (null) means [\"Debt\"]."
     },
+    "debt_paid_off_months": {
+      "type": ["integer", "null"], "minimum": 0,
+      "description": "A debt with no payment in this many of the latest budget months is folded under \"Paid off\" on the Debts tab. 0 folds nothing. Empty (null) means 3."
+    },
     "loan_categories": {
       "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
       "description": "Categories of loans between family or friends. The Method tab counts their inflows (kept out of income) and repayments (kept out of spend). Empty (null) means [\"Family Loan\"]."

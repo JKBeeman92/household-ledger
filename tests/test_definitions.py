@@ -175,7 +175,7 @@ def test_renaming_a_name_a_default_rule_holds_writes_the_rule_out():
 
 def test_five_column_csv_round_trips_through_zip_cli_and_draft(client, reset_db, tmp_path, capsys):
     zf = zipfile.ZipFile(io.BytesIO(client.get("/export/settings.zip").content))
-    assert zf.read("item_mapping.csv").decode().splitlines()[0] == "Item,CanonicalItem,Category,Flow,Note"
+    assert zf.read("item_mapping.csv").decode().splitlines()[0] == "Item,CanonicalItem,Category,Flow,Note,DebtType"   # DebtType: #141
     assert admin.main(["export-mapping"]) == 0
     out = capsys.readouterr().out
     f = tmp_path / "m.csv"; f.write_text(out)
