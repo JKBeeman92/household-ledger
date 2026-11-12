@@ -72,6 +72,8 @@ GOALS = [
     {"key": "giving_target", "value": 0.07, "unit": "share of gross", "label": "Giving target", "note": "Work toward this share of gross."},
     {"key": "joy_target", "value": 0.04, "unit": "share of gross", "label": "Savings target", "note": "Share of gross planned into the Savings group."},
     {"key": "housing_cap", "value": 0.35, "unit": "share of take-home", "label": "Housing cap", "note": "Housing and utilities over net paychecks."},
+    {"key": "dti_cap", "value": 0.1, "unit": "share of gross", "label": "Debt-to-income cap", "note": "Debt payments over gross; the household's own line, not a lender's."},
+    {"key": "housing_dti_cap", "value": 0.28, "unit": "share of gross", "label": "Housing debt-to-income cap", "note": "Rent, utilities and any mortgage over gross."},
     {"key": "investing_per_paycheck", "value": 150, "unit": "usd", "label": "Investing per paycheck", "note": "Deposited outside the budget app; not in the exports."},
 ]
 # accounts and month-end balances (#143): a backfilled year before the exports start, then every month-end but the last, which is left

@@ -30,13 +30,16 @@ def built(tmp_path_factory) -> Path:
         shutil.copy(f, wd / ("txns" if "Transactions" in f.name else "summaries") / f.name)
     for n in REFS:
         shutil.copy(GOLDEN / n, wd / n)
+    (wd / "dash_data").mkdir()   # the goals run_pipeline writes beside the datasets; here with a stated gross, for debt_to_income (#145)
+    shutil.copy(GOLDEN / "pipeline_goals.json", wd / "dash_data" / "goals.json")
     run_scripts(wd)
     if os.environ.get("UPDATE_GOLDENS") == "1":
         shutil.rmtree(EXPECTED, ignore_errors=True)
         (EXPECTED / "dash_data").mkdir(parents=True)
         shutil.copy(wd / "ledger.csv", EXPECTED / "ledger.csv")
         for p in (wd / "dash_data").glob("*.json"):
-            shutil.copy(p, EXPECTED / "dash_data" / p.name)
+            if p.name != "goals.json":   # an input here (run_pipeline writes it), not something the scripts produce
+                shutil.copy(p, EXPECTED / "dash_data" / p.name)
         pytest.skip("UPDATE_GOLDENS=1: goldens rewritten, review `git diff tests/fixtures` and run again without it")
     return wd
 
@@ -46,7 +49,7 @@ def test_ledger_matches_golden(built):
 
 
 def test_datasets_match_golden(built):
-    got = {p.name: p for p in (built / "dash_data").glob("*.json")}
+    got = {p.name: p for p in (built / "dash_data").glob("*.json") if p.name != "goals.json"}
     want = {p.name: p for p in (EXPECTED / "dash_data").glob("*.json")}
     assert sorted(got) == sorted(want)
     for name, p in want.items():

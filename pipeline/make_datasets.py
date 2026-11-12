@@ -80,6 +80,7 @@ _brows = _bal.series(_accts, _bal.read_balances(), _paid, _last)
 w("balances", _brows)
 w("balance_totals", _bal.totals(_brows))
 
+
 # what the Goals tab counts as giving, housing and savings (defaults as in build_ledger.RULES), and the catch-all list for its copy
 def _rl(key, default): return RU.get(key) if RU.get(key) is not None else default
 # plan_keep_categories (issue #162): the Last month tab's suggested plan keeps the current plan for these categories
@@ -103,3 +104,33 @@ for (_bm, _it) in sorted(set(_sp) | set(_tx)):
     if status != "OK":
         rec.append({"m": _bm, "item": _it, "txn_sum": float(t or 0), "spent": None if s is None else float(s), "delta": float((t or 0) - (s or 0)), "status": status})
 w("reconciliation", rec)
+
+# debt_to_income (#145): debt payments and housing payments over gross monthly income (goals.gross_annual / 12), each month and over the
+# trailing twelve, and the same payments over take-home (paychecks, as the Goals tab counts them). Housing is the goal_housing_categories'
+# spending and debt payments plus any debt of type mortgage (#141), counted row by row so a mortgage in a housing category counts once.
+# No gross stated: the ratios are null ("—"), never 0. Goals come from dash_data/goals.json (run_pipeline writes it); absent, no gross.
+_goals = json.load(open("dash_data/goals.json")) if os.path.exists("dash_data/goals.json") else []
+_gv = {g["key"]: g.get("value") for g in _goals}
+_gross = float(_gv["gross_annual"]) / 12 if _gv.get("gross_annual") else None
+_house_cats = set(_rl("goal_housing_categories", ["Housing", "Utilities"]))   # role default
+_pay_items = set(_rl("paycheck_items", ["Paycheck"]))   # role default
+_dm = collections.defaultdict(lambda: {"debt": 0.0, "housing": 0.0, "takehome": 0.0})
+for r in L:
+    if r["InTotals"] != "1":
+        continue
+    a, d = float(r["Amount"]), _dm[r["BudgetMonth"]]
+    if r["Flow"] == "debt": d["debt"] += -a
+    if (r["Flow"] in ("expense", "debt") and r["Category"] in _house_cats) or (r["Flow"] == "debt" and _debt_type.get(r["CanonicalItem"]) == "mortgage"):
+        d["housing"] += -a
+    if r["CanonicalItem"] in _pay_items: d["takehome"] += a
+_share = lambda x, y: round(x / y, 4) if y else None
+_dti, _ms = [], sorted({r["BudgetMonth"] for r in L})
+for i, m in enumerate(_ms):
+    d, win = _dm[m], _ms[max(0, i - 11):i + 1]
+    t = {k: sum(_dm[x][k] for x in win) for k in ("debt", "housing", "takehome")}
+    _dti.append({"m": m, "debt": round(d["debt"], 2), "housing": round(d["housing"], 2), "takehome": round(d["takehome"], 2), "gross": round(_gross, 2) if _gross else None,
+                 "dti": _share(d["debt"], _gross), "housing_dti": _share(d["housing"], _gross),
+                 "dti_takehome": _share(d["debt"], d["takehome"]), "housing_takehome": _share(d["housing"], d["takehome"]),
+                 "months_12": len(win), "dti_12": _share(t["debt"], _gross * len(win) if _gross else None), "housing_dti_12": _share(t["housing"], _gross * len(win) if _gross else None),
+                 "dti_takehome_12": _share(t["debt"], t["takehome"]), "housing_takehome_12": _share(t["housing"], t["takehome"])})
+w("debt_to_income", _dti)

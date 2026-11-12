@@ -196,3 +196,7 @@ th[aria-sort="ascending"] .sortbtn::after { content: " ▲"; } th[aria-sort="des
 .defs form.inline { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin: 0; }
 .defs form.inline input { flex: 1; min-width: 8rem; width: auto; }
 .defs form.inline select { min-width: 8rem; width: auto; }
+/* Debt against income (issue 145), Last month tab: label, then the ratio, then the trailing year and the cap */
+dl.dti { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-2) var(--space-4); margin: var(--space-3) 0 0; }
+dl.dti dt { font-weight: 600; } dl.dti dd { margin: 0; } dl.dti .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) { dl.dti { grid-template-columns: minmax(0, 1fr); gap: var(--space-1); } dl.dti dd { margin-bottom: var(--space-2); } }

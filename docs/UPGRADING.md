@@ -21,6 +21,10 @@ Migrations run at start; read this list before upgrading.
   `balances.csv` (the seed loader reads both from `SEED_DIR`); `datasets.zip` gains `balances` and `balance_totals`. For agents: MCP's
   `get_dataset` adds `balance_totals` (totals by account type, no account names), and the month-close review's data gains `balances`.
 
+- **Debt-to-income** (#145): no migration and nothing to do. To draw a cap on it, add `dti_cap` and/or `housing_dti_cap` (a share of
+  gross) on Settings → Goals. Housing counts the `goal_housing_categories` rule, so Utilities are in it unless you change that rule.
+  For agents: MCP gains the `debt_to_income` dataset, and the review's data gains `debt_to_income`.
+
 ## 0.5.0
 
 Migrations run at start; read this list before upgrading.

@@ -58,7 +58,7 @@ PAYCHECK_ITEMS_DEFAULT = ["Paycheck"]   # role default: build_ledger.RULES["payc
 
 
 def build_context(conn, month: str) -> dict:
-    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals')").fetchall()}
+    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals','debt_to_income')").fetchall()}
     monthly = {r["m"]: r for r in ds.get("monthly", [])}
     months = sorted(monthly)
     if month not in monthly:
@@ -85,6 +85,7 @@ def build_context(conn, month: str) -> dict:
         "paycheck_envelopes_with_money": paychecks,
         "goals": goals,
         **({"balances": balances_context(ds.get("balance_totals", []), month, prev)} if ds.get("balance_totals") else {}),
+        **({"debt_to_income": dti_context(ds.get("debt_to_income", []), goals, month)} if ds.get("debt_to_income") else {}),
         "continuity": continuity(conn, month, prev),
     }
 
@@ -201,3 +202,17 @@ def latest_job(conn) -> dict | None:
     job["where"] = "the dashboard's Last month tab" if job["month"] == latest else f"Reviews → Past reviews ({job['month']})"
     job["odd_count"] = job["state"] == "stored" and job["sections"] is not None and not 5 <= job["sections"] <= 7
     return job
+
+
+DTI_NOTE = ("Debt-to-income (#145): debt payments, and housing payments (the housing categories plus mortgage-type debt), as a share of gross "
+            "pay (the stated salary / 12) and of take-home, for the month and the trailing twelve. null means no gross pay is recorded. "
+            "Caps are the household's own (dti_cap, housing_dti_cap in goals); with none set, do not judge the ratio against a lender's rule of thumb.")
+
+
+def dti_context(rows: list[dict], goals: dict, month: str) -> dict | None:
+    r = next((x for x in rows if x["m"] == month), None)
+    if not r:
+        return None
+    keep = ("dti", "housing_dti", "dti_takehome", "housing_takehome", "dti_12", "housing_dti_12")
+    return {"note": DTI_NOTE, **{k: r[k] for k in keep},
+            "caps": {k: goals[k]["value"] for k in ("dti_cap", "housing_dti_cap") if k in goals and goals[k]["value"] is not None}}

@@ -1,0 +1,2 @@
+[{"key": "gross_annual", "value": 72000, "unit": "usd", "label": "Gross salary, annual", "note": "", "confirmed_at": null},
+ {"key": "dti_cap", "value": 0.2, "unit": "share of gross", "label": "Debt-to-income cap", "note": "", "confirmed_at": null}]
