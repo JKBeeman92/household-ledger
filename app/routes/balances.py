@@ -32,7 +32,8 @@ def _who(user) -> str:
 @router.post("/balances/{month}")
 async def save_balances(month: str, request: Request, background: BackgroundTasks, user=Depends(auth.require_editor)):
     form = await request.form()
-    back = RedirectResponse(f"/upload?balances_month={month}#balances", status_code=303)
+    nxt = str(form.get("next") or "")   # the check-in's Balances step returns to it (#164)
+    back = RedirectResponse(auth._safe_next(nxt) if nxt else f"/upload?balances_month={month}#balances", status_code=303)
     values = dict(zip((str(n) for n in form.getlist("account")), (str(v) for v in form.getlist("amount"))))
     with db.pool.connection() as conn:
         try:

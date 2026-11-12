@@ -200,3 +200,10 @@ th[aria-sort="ascending"] .sortbtn::after { content: " ▲"; } th[aria-sort="des
 dl.dti { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-2) var(--space-4); margin: var(--space-3) 0 0; }
 dl.dti dt { font-weight: 600; } dl.dti dd { margin: 0; } dl.dti .v { font-weight: 600; font-variant-numeric: tabular-nums; }
 @media (max-width: 600px) { dl.dti { grid-template-columns: minmax(0, 1fr); gap: var(--space-1); } dl.dti dd { margin-bottom: var(--space-2); } }
+/* The monthly check-in (issue 164): numbered steps that open in place */
+.checkin-steps { list-style: none; margin: var(--space-4) 0; padding: 0; display: grid; gap: var(--space-3); }
+.checkin-steps details.step > summary { cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.checkin-steps .n { display: inline-grid; place-items: center; width: 1.8em; height: 1.8em; border-radius: 50%; border: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.checkin-steps .step-summary { flex-basis: 100%; font-size: .9em; }
+.checkin-steps .step-body { margin-top: var(--space-3); } .checkin-steps .step-body .panel { margin-top: 0 !important; padding: 0; border: 0; box-shadow: none; background: none; }
+.checkin-steps .inline-actions { margin-top: var(--space-2); }

@@ -1,6 +1,6 @@
 {# Month-end balances (#143): one field per account, pre-filled. The monthly check-in's Balances step (#164) is this panel. #}
 <div class="panel" id="balances" style="margin-top:var(--space-4)">
-  <h2>Balances at the end of {{ bal.month or "the month" }}</h2>
+  {% if not next_url %}<h2>Balances at the end of {{ bal.month or "the month" }}</h2>{% endif %}
   {% if not bal.has_accounts %}
   <p class="muted">No accounts yet. Add what you owe and own on <a href="/settings#accounts">Settings → Accounts</a> (four to eight is typical), and their month-end balances are asked for here each month.</p>
   {% elif not bal.month %}
@@ -8,8 +8,8 @@
   {% else %}
   <p class="muted">What each account stood at on the last day of the budget month, from its statement or app. Each field is filled in with a suggestion: for a debt, the balance before plus a month's interest (at its APR, when given) less the month's payment and escrow; for an asset, the balance before. Saving a suggestion unchanged counts as confirming it. A debt left blank is estimated on the charts, an asset carried.
     {% if bal.months|length > 1 %}<a href="/settings#accounts">Earlier months</a> are entered as balances history.{% endif %}</p>
-  <form method="get" action="/upload#balances" class="tools"><label>Month <select name="balances_month" aria-label="Month-end to enter">{% for m in bal.months %}<option {% if m == bal.month %}selected{% endif %}>{{ m }}</option>{% endfor %}</select></label> <button class="btn" type="submit">Show</button></form>
-  <form method="post" action="/balances/{{ bal.month }}">{{ csrf_field(request) }}
+  {% if not next_url %}<form method="get" action="/upload#balances" class="tools"><label>Month <select name="balances_month" aria-label="Month-end to enter">{% for m in bal.months %}<option {% if m == bal.month %}selected{% endif %}>{{ m }}</option>{% endfor %}</select></label> <button class="btn" type="submit">Show</button></form>{% endif %}
+  <form method="post" action="/balances/{{ bal.month }}">{{ csrf_field(request) }}{% if next_url %}<input type="hidden" name="next" value="{{ next_url }}#step-balances">{% endif %}
     <div class="tablewrap"><table class="plain balances-form" data-list="unbounded"><thead><tr><th scope="col">Account</th><th scope="col">Balance</th></tr></thead><tbody>
     {% for r in bal.rows %}<tr>
       <td><label for="bal-{{ loop.index }}"><strong>{{ r.name }}</strong></label> <span class="muted">{{ r.kind }}{% if r.type %} · {{ r.type }}{% endif %}{% if r.person %} · {{ r.person }}{% endif %}{% if not r.active %} · retired{% endif %}</span>

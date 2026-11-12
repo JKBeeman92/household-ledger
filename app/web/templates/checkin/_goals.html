@@ -1,0 +1,2 @@
+{# Step 5: goals that wait for confirmation (the month-close checklist). #}
+{% if c.checklist %}{% with checklist = c.checklist %}{% include "_checklist.html" %}{% endwith %}{% else %}<p class="muted">No goal waits for confirmation. They are kept on <a href="/settings#goals">Settings → Goals</a>.</p>{% endif %}

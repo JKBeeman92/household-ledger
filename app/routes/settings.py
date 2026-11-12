@@ -266,6 +266,9 @@ def _editor_body(conn, key: str) -> str:
         return accounts_store.accounts_csv(conn)
     if key == "balances":   # not a Settings editor: the typed month-end balances, for the CLI and sources.zip (#143)
         return accounts_store.balances_csv(conn)
+    if key == "checkins":   # not a Settings editor: the check-ins done, for settings.zip and the seed loader (#164)
+        rows = conn.execute("SELECT month, mode, steps, completed_at, completed_by, reopened_at FROM checkins ORDER BY month").fetchall()
+        return json.dumps([{**r, **{k: r[k].isoformat() if r[k] else None for k in ("completed_at", "reopened_at")}} for r in rows], indent=1)
     if key == "cpi":
         out = io.StringIO(); w = csv.writer(out); w.writerow(["month", "cpi", "source"])
         for r in conn.execute("SELECT month, cpi, source FROM cpi ORDER BY month").fetchall():

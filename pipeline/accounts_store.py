@@ -336,11 +336,14 @@ def save_month(conn, month: str, values: dict[str, str], by: str = "") -> tuple[
     return changed, {}
 
 
-def month_status(conn, month: str) -> dict:
-    """How far the month's balances are: {"accounts", "confirmed", "to_do": [names]} over the accounts the form lists."""
+def month_status(conn, month: str, strict: bool = True) -> dict:
+    """How far the month's balances are: {"accounts", "confirmed", "to_do": [names], "optional": [names]} over the accounts the form
+    lists. Not strict (catching up an earlier month, #164): an account with no balance at or before the month is optional, since it may
+    not have existed then; the latest month (strict) asks for every active account."""
     rows = suggestions(conn, month)
-    todo = [r["name"] for r in rows if r["stored"] is None]
-    return {"accounts": len(rows), "confirmed": len(rows) - len(todo), "to_do": todo}
+    optional = [] if strict else [r["name"] for r in rows if r["stored"] is None and r["previous"] is None]
+    todo = [r["name"] for r in rows if r["stored"] is None and r["name"] not in optional]
+    return {"accounts": len(rows) - len(optional), "confirmed": len(rows) - len(optional) - len(todo), "to_do": todo, "optional": optional}
 
 
 def seed(conn, accounts_path, balances_path) -> None:

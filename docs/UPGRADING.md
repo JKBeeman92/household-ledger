@@ -30,6 +30,10 @@ Migrations run at start; read this list before upgrading.
 - **Pre-tax saving** (#152): no migration. State each person's contribution on Settings → Goals → Pre-tax saving. The `monthly`
   dataset gains `pretax` and `pretax_real`, `yearly` gains `pretax` and `savings_rate_pretax` (all null until stated); the review's
   data gains `savings_rate`. The Overview's savings-rate line now says "of take-home kept".
+- **The monthly check-in** (#164, `0164_checkins.sql`): a new table only. **Check-in** joins the top bar; the first visit says which
+  loaded months have no check-in and offers to catch up, which you can also ignore. `settings.zip` gains `checkins.json` (the seed
+  loader reads it). A new webhook event, `checkin.completed`, is sent when a check-in is marked Done: a receiver that rejects unknown
+  events should allow it. The rules gain `year_start_month` (default 1). See [CHECK-IN.md](CHECK-IN.md).
 
 ## 0.5.0
 

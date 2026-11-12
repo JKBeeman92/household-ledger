@@ -353,6 +353,13 @@ mapping tab lists such groups under "names that look like one envelope", with a 
 adding a row for a new item fills it in from the matching one. The suffixes are the `item_name_suffixes` rule and the fund-move names
 the `transfer_item_names` rule, for tools that name things differently.
 
+## The monthly check-in
+
+**Check-in** in the top bar is the monthly sit-down as one page (`/checkin/YYYY-MM`): files, clean books, balances, goals to confirm,
+where we stand and the review, each with a status, then **Done**, which records who and when and sends the `checkin.completed`
+webhook. Months without a check-in can be caught up with a short form, oldest first. The last month of a quarter or a year runs in
+quarter or year mode (`year_start_month` rule). How to sit down with it, month, quarter and year: [docs/CHECK-IN.md](docs/CHECK-IN.md).
+
 ## Accounts and balances
 
 Budget exports carry payments, not balances: the app knows what was paid toward a debt, not what is left, and nothing about what the

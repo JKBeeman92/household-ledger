@@ -559,6 +559,11 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
         if cur.fetchone()[0] == 0 and (seed_dir / "rules.json").exists():
             cur.execute("INSERT INTO settings (key, value) VALUES ('rules', %s)", (_read(seed_dir / "rules.json"),))
         accounts_store.seed(conn, seed_dir / "accounts.csv", seed_dir / "balances.csv")   # #143: balances.csv is in sources.zip
+        cur.execute("SELECT count(*) FROM checkins")
+        if cur.fetchone()[0] == 0 and (seed_dir / "checkins.json").exists():   # the check-ins done (#164), from settings.zip
+            for c in json.loads(_read(seed_dir / "checkins.json")):
+                cur.execute("INSERT INTO checkins (month, mode, steps, completed_at, completed_by, reopened_at) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+                            (c["month"], c.get("mode") or "month", json.dumps(c.get("steps") or {}), c.get("completed_at"), c.get("completed_by"), c.get("reopened_at")))
         cur.execute("SELECT count(*) FROM reviews")
         if cur.fetchone()[0] == 0 and (seed_dir / "review.json").exists():
             with open(seed_dir / "review.json") as f:

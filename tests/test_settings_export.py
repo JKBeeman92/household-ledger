@@ -8,7 +8,7 @@ from test_api_tokens import make_token
 from app import admin, db, settings_export
 from pipeline.run_pipeline import seed_reference_tables
 
-EXPECTED = ["item_mapping.csv", "cpi_u.csv", "goals.json", "events.json", "accounts.csv", "rules.json", "household.json", "manifest.json"]
+EXPECTED = ["item_mapping.csv", "cpi_u.csv", "goals.json", "events.json", "accounts.csv", "checkins.json", "rules.json", "household.json", "manifest.json"]
 
 
 def snapshot(conn) -> dict:

@@ -38,6 +38,8 @@ of `docker compose logs ledger` (check them for anything private first).
       key named. If Item mapping lists "names that look like one envelope", decide for each: one canonical name, or apart on purpose.
 - [ ] **Own brand kit** (optional). With a `theme.css` in `BRAND_DIR`, `docker compose logs ledger | grep "brand:"` shows either
       "passes every contrast check" or one line per failing pair, and Settings shows the same count (docs/BRANDING.md).
+- [ ] **Check-in.** **Check-in** in the top bar opens the latest month's check-in; each step opens in place, and `python -m app.admin
+      checkin status` prints the same steps.
 - [ ] **Command line.** `docker compose exec ledger python -m app.admin export rules` prints the rules JSON.
 - [ ] **Review** (optional). With a provider configured, generate one review (it asks for confirmation and shows an approximate
       input-token count), open `/reviews/history` to see the prompt that was sent, then hand-edit a section and save it.
