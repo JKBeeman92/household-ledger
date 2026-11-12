@@ -17,7 +17,10 @@ export const meta = {
 //   shots     a writable directory for screenshots (default '/tmp/ux-critique')
 //   surfaces  [{key, name, where}] to skip Scope and review exactly these
 //   skeptics  verifiers per finding (default 3; a finding survives with a majority)
+//   models    {critic, merge, verify, lead} to override the tier of a stage. The defaults keep the run cheap: looking and
+//             reproducing are sonnet's work, collapsing duplicates is haiku's; pass 'opus' for a stage only when a run proved too shallow
 const A = args || {}
+const M = { critic: 'sonnet', merge: 'haiku', verify: 'sonnet', lead: 'sonnet', ...(A.models || {}) }
 const BASE = A.base || 'origin/main', URL = A.url || 'http://localhost:8010', SHOTS = A.shots || '/tmp/ux-critique', K = A.skeptics || 3
 
 const CONTEXT = `You are reviewing the UX of Bearings, a self-hosted app a household uses ONCE A MONTH to check in on its money (README, "What this is, and isn't"). The repository is the current working directory. The app is running at ${URL} with AUTH_DISABLED (you are an editor), normally on the synthetic sample household.
@@ -55,7 +58,7 @@ phase('Scope')
 let surfaces = A.surfaces
 if (!surfaces) {
   const scoped = await agent(`Find the user-facing surfaces a change touches in this repository. Run \`git diff --stat ${BASE}...HEAD\` and \`git diff ${BASE}...HEAD -- app/web app/routes app/checkin\`, plus uncommitted changes (\`git diff\`, \`git status\`). For each page, tab, sub-tab, panel, card or chart whose look, copy or behaviour changed, return one surface: a short key, a name a reviewer understands, and "where": the URL(s) at ${URL} (with #hash for dashboard tabs and settings sub-tabs) and the source files behind it. Group small related changes on one page into one surface; return an empty list if nothing user-facing changed. Read-only.`,
-    { label: 'scope', phase: 'Scope', schema: SURFACES_SCHEMA })
+    { label: 'scope', phase: 'Scope', schema: SURFACES_SCHEMA, model: M.critic })
   surfaces = scoped ? scoped.surfaces : []
 }
 log(`${surfaces.length} surface(s): ${surfaces.map((s) => s.key).join(', ') || 'none'}`)
@@ -66,17 +69,17 @@ const results = await pipeline(
   surfaces,
   (s) => parallel(LENSES.map((l) => () => agent(
     `${CONTEXT}\n\nSURFACE: ${s.name}\nWHERE: ${s.where}\n\nYOUR LENS: ${l.text}\n\nReview only this surface through only this lens; an empty list is a valid answer. Screenshot folder label: "${s.key}-${l.key}".`,
-    { label: `${s.key}:${l.key}`, phase: 'Critique', schema: FINDINGS }))),
+    { label: `${s.key}:${l.key}`, phase: 'Critique', schema: FINDINGS, model: M.critic }))),
   (lensResults, s) => {
     const all = lensResults.filter(Boolean).flatMap((r) => r.findings)
     if (!all.length) return { findings: [] }
     return agent(`Merge UX findings for one surface (${s.name}) from five critics:\n${JSON.stringify(all, null, 1)}\n\nCollapse findings about the same underlying problem (strongest evidence, most specific fix, highest severity the evidence justifies, lens names joined, and the rule id kept: a rule id beats "judgement"). Keep distinct problems; invent none. Do not browse.`,
-      { label: `merge:${s.key}`, phase: 'Merge', schema: FINDINGS, effort: 'low' })
+      { label: `merge:${s.key}`, phase: 'Merge', schema: FINDINGS, effort: 'low', model: M.merge })
   },
   (merged, s) => parallel((merged ? merged.findings : []).map((f, i) => () =>
     parallel(Array.from({ length: K }, (_, k) => () => agent(
       `${CONTEXT}\n\nSkeptic #${k + 1} on ONE claimed problem on ${s.name} (${s.where}).\nCLAIM: ${f.title}\nRULE: ${f.rule}\nSEVERITY: ${f.severity}\nEVIDENCE: ${f.evidence}\nFIX: ${f.fix}\n\nTry to REFUTE it by reproducing it yourself. Refute if it does not reproduce, if the cited rule does not say what the claim needs it to say (read the rule in docs/DESIGN.md), if it faults a kit's value and not a rule, if it is documented intended behaviour that is still reasonable, if it is generic advice, or if the fix breaks a rule. If it reproduces, keep it and set the severity the evidence supports. When uncertain after checking, refute. Screenshot label: "${s.key}-v${i}-${k}".`,
-      { label: `verify:${s.key}#${i}.${k}`, phase: 'Verify', schema: VERDICT }))).then((vs) => {
+      { label: `verify:${s.key}#${i}.${k}`, phase: 'Verify', schema: VERDICT, model: M.verify }))).then((vs) => {
       const ok = vs.filter(Boolean), kept = ok.filter((v) => !v.refuted)
       const sev = kept.length ? kept.map((v) => v.severity).sort((a, b) => rank[b] - rank[a])[Math.floor((kept.length - 1) / 2)] : f.severity
       return { ...f, surface: s.key, survives: kept.length * 2 > ok.length && ok.length > 0, severity: sev, skeptic_notes: ok.map((v) => (v.refuted ? 'REFUTED: ' : 'kept: ') + v.reason) }
@@ -89,6 +92,6 @@ log(`${verified.length} findings after merging; ${confirmed.length} survived ver
 
 phase('Synthesize')
 const plan = await agent(`${CONTEXT}\n\nYou are the UX lead. CONFIRMED findings (survived ${K}-skeptic verification):\n${JSON.stringify(confirmed, null, 1)}\n\nREFUTED (context only, do not resurrect):\n${JSON.stringify(dropped.map((f) => f.surface + ': ' + f.title))}\n\n1. COMPLETENESS: what was missed across the surfaces together: the same concept named or styled differently on different pages, a flow that spans pages, first run vs a returning household. Verify each gap in the browser (read-only) before listing it.\n2. PLAN: a prioritized, de-duplicated fix plan in markdown, grouped by file: severity, rule id, surface, the problem in one sentence, the exact change. Mark items that need the owner's product decision.\n3. THE LAW ITSELF: where a confirmed judgement shows docs/DESIGN.md is silent or wrong, propose the rule to add or amend, with its id. End with what was checked and found fine.`,
-  { label: 'synthesize', phase: 'Synthesize' })
+  { label: 'synthesize', phase: 'Synthesize', model: M.lead })
 
 return { confirmed, dropped: dropped.map((f) => ({ surface: f.surface, title: f.title, notes: f.skeptic_notes })), plan }
