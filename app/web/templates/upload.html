@@ -49,7 +49,8 @@ addEventListener('DOMContentLoaded', () => {
 {% if last_upload %}<div class="panel" id="upload-result" style="margin-top:var(--space-4)">
   <h2>Last upload</h2>
   <p class="muted">{{ last_upload.created_at.strftime('%Y-%m-%d %H:%M:%S') }} · {{ last_upload.results|selectattr('ok')|list|length }} of {{ last_upload.results|length }} files stored.</p>
-  <ul class="upload-results">{% for r in last_upload.results %}<li class="{{ 'ok' if r.ok else 'bad' }}"><strong>{{ 'Stored' if r.ok else 'Rejected' }}</strong> <span class="mono">{{ r.name }}</span>{% if r.source %} <span class="muted">(from {{ r.source }})</span>{% endif %}: {{ r.detail }}</li>{% endfor %}</ul>
+  {% set rejected = last_upload.results|rejectattr('ok')|list %}<details {% if rejected or last_upload.results|length <= 8 %}open{% endif %}><summary>Show the {{ last_upload.results|length }} file{{ '' if last_upload.results|length == 1 else 's' }}{% if rejected %} ({{ rejected|length }} rejected){% endif %}</summary>
+  <ul class="upload-results" data-list="unbounded">{% for r in last_upload.results %}<li class="{{ 'ok' if r.ok else 'bad' }}"><strong>{{ 'Stored' if r.ok else 'Rejected' }}</strong> <span class="mono">{{ r.name }}</span>{% if r.source %} <span class="muted">(from {{ r.source }})</span>{% endif %}: {{ r.detail }}</li>{% endfor %}</ul></details>
 </div>{% endif %}
 <div class="row" style="margin-top:var(--space-4)">
   <form class="panel" method="post" action="/upload" enctype="multipart/form-data">{{ csrf_field(request) }}
@@ -91,13 +92,14 @@ addEventListener('DOMContentLoaded', () => {
 <div class="panel" style="margin-top:var(--space-4)">
   <h2>Loaded months</h2>
   <p class="muted">{{ files|length }} files · {{ months|length }} budget months{% if months %} · {{ months[-1] }} → {{ months[0] }}{% endif %}.</p>
-  <details {% if files|selectattr('replaced_at')|list %}open{% endif %}><summary class="muted">Show files</summary>
-  <table class="plain"><thead><tr><th>Month</th><th>Kind</th><th>File</th><th>Rows</th><th>Uploaded</th><th>Actions</th></tr></thead><tbody>
+  <form method="post" action="/rebuild" style="margin-bottom:var(--space-3)">{{ csrf_field(request) }}<button class="btn" type="submit" id="rebuild-btn" {% if build.state == 'running' %}disabled{% endif %}>Rebuild without uploading</button> <span class="muted">after editing the mapping, CPI, goals, events or rules</span></form>
+  <details {% if files|selectattr('replaced_at')|list %}open{% endif %}><summary class="muted">Show the {{ files|length }} files</summary>
+  <table class="plain" data-list="unbounded"><thead><tr><th>Month</th><th>Kind</th><th>File</th><th>Rows</th><th>Uploaded</th><th>Actions</th></tr></thead><tbody>
   {% for f in files %}<tr><td class="mono">{{ f.budget_month }}</td><td>{{ f.kind }}</td><td>{{ f.filename }}</td><td class="mono">{{ f.row_count }}</td><td class="mono">{{ f.uploaded_at.strftime('%Y-%m-%d') }}
     {%- if f.replaced_at %}<br><span class="muted replaced-note">replaced on {{ f.replaced_at.strftime('%Y-%m-%d') }}, {% if f.previous_sha256 == f.sha256 %}identical to the previous file{% else %}different from the previous file ({{ f.previous_sha256[:8] }} → {{ f.sha256[:8] }}){% endif %}</span>{% endif %}</td>
     <td>{% if loop.first or files[loop.index0 - 1].budget_month != f.budget_month %}<form method="post" action="/months/{{ f.budget_month }}/delete" data-confirm="Delete both files for {{ f.budget_month }} and rebuild? Upload them again to bring the month back.">{{ csrf_field(request) }}<button class="btn" type="submit" {% if build.state == 'running' %}disabled title="A rebuild is running"{% endif %}>Delete {{ f.budget_month }}</button></form>{% endif %}</td></tr>{% endfor %}
   </tbody></table></details>
-  <form method="post" action="/rebuild" style="margin-top:var(--space-3)">{{ csrf_field(request) }}<button class="btn" type="submit" id="rebuild-btn" {% if build.state == 'running' %}disabled{% endif %}>Rebuild without uploading</button> <span class="muted">after editing the mapping, CPI, goals, events or rules</span></form>
+
 </div>
 <div class="panel" style="margin-top:var(--space-4)">
   <h2>Take your data out, or scan for new files</h2>

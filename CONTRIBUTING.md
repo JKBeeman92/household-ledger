@@ -8,6 +8,7 @@ first thing to read. The short version:
 - **Reconciliation must stay clean.** Every envelope's transactions sum to its Spent. A change that breaks that is wrong, however
   nice the chart.
 - **Raw exports are facts.** Never edit `transactions`/`budget_items`; change the mapping or rules and rebuild.
+- **A long list ends its panel** (or hides behind a count): nothing a household needs sits underneath one (`AGENTS.md`, "Long lists").
 - **No colours outside the theme.** `app.css` and the page use contract tokens only (`docs/BRANDING.md`).
 - **No household data in the repo.** Fixtures are synthetic. `.env` is ignored. If you paste a build log into an issue, scrub it.
 - **New data is done when it reaches every exit.** A PR that adds a dataset or a table answers the checklist in `AGENTS.md`,

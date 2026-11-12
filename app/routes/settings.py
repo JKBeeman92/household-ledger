@@ -383,33 +383,33 @@ def _who(user) -> str:
     return (user or {}).get("email") or (user or {}).get("name") or ""
 
 
-def _definition_change(request: Request, fn, *args) -> RedirectResponse:
-    """Run one rename or move in its own transaction and say what happened."""
+def _definition_change(request: Request, fn, *args, back: str = "/settings#mapping") -> RedirectResponse:
+    """Run one rename or move in its own transaction and say what happened; back to the sub-tab it was made on."""
     with db.pool.connection() as conn:
         try:
             what = fn(conn, *args); conn.commit()
             flash(request, f"{what[0].upper()}{what[1:]}. The dashboard shows it after a rebuild: press Rebuild now.")
         except ValueError as e:
             conn.rollback(); flash(request, f"Not changed — {e}", "bad")
-    return RedirectResponse("/settings#mapping", status_code=303)
+    return RedirectResponse(back, status_code=303)
 
 
 @router.post("/settings/mapping/category/rename")
 async def category_rename(request: Request, user=Depends(auth.require_editor)):
     f = await request.form()
-    return _definition_change(request, renames.rename_category, str(f.get("old", "")), str(f.get("new", "")), _who(user))
+    return _definition_change(request, renames.rename_category, str(f.get("old", "")), str(f.get("new", "")), _who(user), back="/settings#mapping/categories")
 
 
 @router.post("/settings/mapping/canonical/rename")
 async def canonical_rename(request: Request, user=Depends(auth.require_editor)):
     f = await request.form()
-    return _definition_change(request, renames.rename_canonical, str(f.get("old", "")), str(f.get("new", "")), _who(user))
+    return _definition_change(request, renames.rename_canonical, str(f.get("old", "")), str(f.get("new", "")), _who(user), back="/settings#mapping/canonical")
 
 
 @router.post("/settings/mapping/canonical/move")
 async def canonical_move(request: Request, user=Depends(auth.require_editor)):
     f = await request.form()
-    return _definition_change(request, renames.move_canonical, str(f.get("name", "")), str(f.get("category", "")))
+    return _definition_change(request, renames.move_canonical, str(f.get("name", "")), str(f.get("category", "")), back="/settings#mapping/canonical")
 
 
 @router.post("/settings/mapping/canonical/debt-type")
@@ -420,7 +420,7 @@ async def canonical_debt_type(request: Request, user=Depends(auth.require_editor
     def change(conn):
         mapping_store.set_debt_type(conn, name, t); db.mark_inputs_changed(conn)
         return f"{name} is {'a ' + t + ' debt' if t else 'no longer typed'}"
-    return _definition_change(request, change)
+    return _definition_change(request, change, back="/settings#mapping/debts")
 
 
 @router.post("/settings/mapping/notes/dismiss")
@@ -509,7 +509,7 @@ def balances_backfill(request: Request, body: str = Form(...), user=Depends(auth
             flash(request, f"Saved {what}. The dashboard shows them after a rebuild: press Rebuild now.")
         except ValueError as e:
             conn.rollback(); flash(request, f"Not saved — {e}", "bad")
-    return RedirectResponse("/settings#accounts", status_code=303)
+    return RedirectResponse("/settings#accounts/history", status_code=303)
 
 
 @router.get("/settings/accounts/balances.csv")

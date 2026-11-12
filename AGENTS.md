@@ -18,6 +18,14 @@ Household Ledger is a FastAPI + Postgres app around a small, file-based budget p
 - Colours come from the brand contract tokens (`docs/BRANDING.md`). Never type a hex colour into `app.css` or the page.
 - No secrets in the repo. `.env` is ignored; `.env.example` holds placeholders only.
 
+## Long lists
+A list that grows with the household's data (mapping rows, categories, canonical items, accounts, balances, events, goals, files, findings)
+is **the last thing in its panel**: forms, tools, hints and other sections go above it or into a sub-tab of their own, and a tab never
+holds two. Its own Save button may follow it. Where a page must stack sections (Close a month), a long list sits behind a count instead
+(`<details>` whose summary says how many, open only when short), so what comes after it is a short scroll away. Mark such a list
+`data-list="unbounded"`; `tests/test_long_lists.py` checks every one on the pages it renders. A list long enough to scan gets a filter box.
+Sub-tabs keep their place in the URL (`/settings#mapping/debts`), so a flash after a save and a link in the docs land on them.
+
 ## Schema changes
 Never edit an applied file in `db/migrations/`; add `NNNN_name.sql`, where NNNN is the 4-digit GitHub issue number (`0022_source_file_history.sql`).
 `app/db.py` applies, at start and under an advisory lock, every file not yet in `schema_migrations`, in filename order, each in its own
