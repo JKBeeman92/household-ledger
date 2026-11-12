@@ -40,14 +40,15 @@ def _month_before(m: str) -> str:
 
 SECTION_CHARS = 1200   # per stored section; keeps last month's review from dominating the prompt
 CONTINUITY_NOTE = ("prior_review is last month's stored review: say whether its suggested change for this month was made. life_events are "
-                   "the household's own notes for this and the prior month: name them rather than inferring. goal_confirmations are the answers from the month-close checklist.")
+                   "the household's own notes for this and the prior month, each with its kind (job, move, family, health, purchase, debt, other) and person when given: name them rather than inferring. goal_confirmations are the answers from the month-close checklist.")
 
 
 def continuity(conn, month: str, prev: str) -> dict:
     """Prior review, life events and confirmed goals: derived text and household-entered labels only, never transactions, merchants or notes."""
     row = conn.execute("SELECT sections FROM reviews WHERE month=%s", (prev,)).fetchone()
     prior = [{"heading": s["heading"], "text": s["text"][:SECTION_CHARS]} for s in row["sections"]] if row else None
-    events = {m: [r["label"] for r in conn.execute("SELECT label FROM life_events WHERE month=%s ORDER BY label", (m,)).fetchall()] for m in (prev, month)}
+    events = {m: [{"label": r["label"], **{k: r[k] for k in ("kind", "person") if r[k]}}   # kind and person when set (#109)
+                  for r in conn.execute("SELECT label, kind, person FROM life_events WHERE month=%s ORDER BY label", (m,)).fetchall()] for m in (prev, month)}
     goals = [{"key": r["key"], "label": r["label"], "value": float(r["value"]) if r["value"] is not None else None, "unit": r["unit"], "confirmed": r["confirmed_at"].date().isoformat()}
              for r in conn.execute("SELECT key, label, value, unit, confirmed_at FROM goals WHERE confirmed_at IS NOT NULL ORDER BY key").fetchall()]
     return {"note": CONTINUITY_NOTE, "prior_review": prior, "life_events": events, "goal_confirmations": goals}

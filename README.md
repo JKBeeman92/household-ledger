@@ -8,6 +8,22 @@ Everything the app decides from is data you can edit on its Settings page: the i
 dollars, goals, life-event markers, the classification rules (who earns what, which items are transfers), and the household name.
 The look is a mounted directory of CSS and images ([docs/BRANDING.md](docs/BRANDING.md)).
 
+## What this is, and isn't
+
+A **monthly check-in and refocus**: once a month (and once a quarter, and once a year), sit down, see where the household
+stands, decide what to adjust for the coming month, and keep in view where it is heading. It is not a full financial tracker.
+
+| It is | It isn't |
+|---|---|
+| A monthly close: upload, reconcile, review | Bank or account syncing |
+| Where we stand: income, spend, debts and, from 0.6.0, balances and net worth | Daily budgeting or editing individual transactions: your budgeting tool (EveryDollar or another) does that, and this app reads its exports |
+| What to change next month | Investment performance or allocation |
+| Quarterly and yearly comparisons | Bill reminders, or notifications that want you in the app more than once a month |
+| A simple look ahead: payoff dates, goals | Tax preparation |
+
+**The test for a feature:** would a household use it during its monthly (or quarterly) sit-down? If it is only useful daily,
+it belongs in the budgeting tool, not here.
+
 ## How it works
 
 ```
@@ -62,7 +78,7 @@ at once as `settings.zip` ([Backups](#backups)), so moving to a new box is: unzi
 | `item_mapping.csv` | columns `Item,CanonicalItem,Category,Flow,Note` ([Roles](#roles)) |
 | `cpi_u.csv` | columns `month,cpi,source` (`month` is `YYYY-MM`) |
 | `goals.json` | list of `{"key", "label", "value", "unit", "note"}`; `value` may be `null` |
-| `events.json` | list of `{"m": "YYYY-MM", "label": "…"}` (the key is `m`, not `month`) |
+| `events.json` | list of `{"m": "YYYY-MM", "label": "…", "kind": "…", "person": "…"}` (the key is `m`, not `month`); `kind` (one of `job`, `move`, `family`, `health`, `purchase`, `debt`, `other`) and `person` (best one of the `people` rule) are optional |
 | `rules.json` | object; keys and types in [`app/schemas/rules.schema.json`](app/schemas/rules.schema.json) |
 | `household.json` | object; [`app/schemas/household.schema.json`](app/schemas/household.schema.json) |
 | `review.json` | list of `{"m", "order", "heading", "text"}`, one row per review section |

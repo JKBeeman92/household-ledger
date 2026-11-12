@@ -28,6 +28,7 @@
 
   document.querySelectorAll("table.edit").forEach(function (table) {
     var kind = table.dataset.kind, fields = table.dataset.fields.split(","), flows = (table.dataset.flows || "").split(",");
+    var choices = {}; try { choices = JSON.parse(table.dataset.choices || "{}"); } catch (e) { choices = {}; }   // fields picked from a fixed list (#109)
     var origKeys = kind === "events" ? ["original_m", "original_label"] : ["original"];
     var origFields = kind === "events" ? ["m", "label"] : [fields[0]];
     var tbody = table.tBodies[0];
@@ -58,9 +59,14 @@
           if (blank) inp.value = "expense";
           var hint = el("div", { "class": "hint" }, flowHelp[inp.value] || ""); inp.onchange = function () { hint.textContent = flowHelp[inp.value] || ""; };
           td.appendChild(inp); td.appendChild(hint); td.appendChild(el("div", { "class": "err", role: "alert" })); tr.appendChild(td); return;
+        } else if (choices[f]) {
+          inp = el("select", { name: f, "aria-label": heading(f) });
+          var opts = choices[f].slice(); if (row[f] && opts.indexOf(row[f]) < 0) opts.push(row[f]);   // keep a value the list no longer has
+          opts.forEach(function (o) { var op = el("option", { value: o }, o === "" ? "(none)" : o); if (o === (row[f] || "")) op.selected = true; inp.appendChild(op); });
         } else {
           inp = el("input", { type: "text", name: f, "aria-label": heading(f), value: row[f] == null ? "" : row[f] });
           if (f === "category" && kind === "mapping") inp.setAttribute("list", "settings-categories");
+          if (f === "person" && kind === "events") inp.setAttribute("list", "settings-people");   // suggested, not required: an unknown person is a warning (#109)
           if (f === "value") inp.setAttribute("inputmode", "decimal");
           if (f === "m") inp.setAttribute("placeholder", "YYYY-MM");
         }
@@ -94,7 +100,7 @@
       tr.querySelectorAll(".err").forEach(function (e) { e.textContent = ""; });
       tr.querySelectorAll("[aria-invalid]").forEach(function (i) { i.removeAttribute("aria-invalid"); });
       post("/settings/" + kind + "/row", body).then(function (res) {
-        if (res.ok) { delete tr.dataset.new; setOrig(tr, res.row); show(tr, res.row); flash(tr, "Saved"); if (kind === "mapping" && res.row && res.row.category) cats[String(res.row.category).toLowerCase()] = 1; status("Saved. The dashboard shows it after a rebuild: press Rebuild now above.", false); needRebuild(res); return; }
+        if (res.ok) { delete tr.dataset.new; setOrig(tr, res.row); show(tr, res.row); flash(tr, "Saved"); if (kind === "mapping" && res.row && res.row.category) cats[String(res.row.category).toLowerCase()] = 1; status("Saved" + (res.warning ? " (" + res.warning + ")" : "") + ". The dashboard shows it after a rebuild: press Rebuild now above.", false); needRebuild(res); return; }
         var errs = res.errors || {}, first = true, fieldErr = false;
         Object.keys(errs).forEach(function (f) {
           var td = tr.querySelector('td[data-f="' + f + '"]');
