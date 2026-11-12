@@ -12,6 +12,7 @@
 
 - [ ] `python -m pytest -q` passes (goldens regenerated only on purpose, and the diff reviewed)
 - [ ] Ran locally against Postgres (`AUTH_DISABLED=true`) and the page draws in light and dark with no console errors
+- [ ] UI change: the `ux-critique` workflow ran (AGENTS.md, "UX review"); its surviving findings are fixed or answered here
 - [ ] Pipeline change: `python -m pipeline.import_exports <fixtures>` exits 0 (reconciliation clean) and the ledger diff is the one I expected
 - [ ] Schema change: a new `db/migrations/NNNN_name.sql` (NNNN = issue number), never an edit to an applied one; applies on an existing database with data, not just a fresh one
 - [ ] No household data, secrets or `.env` contents in the diff
