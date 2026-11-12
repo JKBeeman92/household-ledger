@@ -144,7 +144,7 @@
         var idx = fields.indexOf(th.dataset.sort), dir = th.getAttribute("aria-sort") === "ascending" ? -1 : 1;
         table.querySelectorAll("th").forEach(function (o) { o.removeAttribute("aria-sort"); });
         th.setAttribute("aria-sort", dir === 1 ? "ascending" : "descending");
-        var trs = Array.prototype.slice.call(tbody.rows), val = function (tr) { var c = tr.cells[idx]; var i = c.querySelector("input,select"); return (i ? i.value : c.textContent).trim(); };
+        var trs = Array.prototype.slice.call(tbody.rows), val = function (tr) { var c = tr.cells[idx]; var i = c.querySelector("input,select"); return (i ? i.value : c.hasAttribute("data-v") ? c.getAttribute("data-v") : c.textContent).trim(); };   // data-v: the stored figure behind a formatted one
         var num = trs.every(function (tr) { var v = val(tr); return v === "" || !isNaN(parseFloat(v)) && isFinite(v); });
         trs.sort(function (a, b) {
           var x = val(a), y = val(b);

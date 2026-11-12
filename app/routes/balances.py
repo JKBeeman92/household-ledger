@@ -6,7 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, Request, Depends
 from fastapi.responses import RedirectResponse
 
 from .. import db, auth
-from ..web_helpers import flash, _months
+from ..web_helpers import flash, _months, month_text
 from ..builds import run_background
 from pipeline import accounts_store
 from pipeline.run_pipeline import build_running
@@ -48,11 +48,12 @@ async def save_balances(month: str, request: Request, background: BackgroundTask
         conn.commit()
         left = accounts_store.month_status(conn, month)["to_do"]
         busy = build_running(conn)
-    msg = (f"Saved {changed} balance{'s' * (changed != 1)} for the end of {month}." if changed else f"No balance changed for {month}.")
+    when = month_text(month)
+    msg = (f"Saved {changed} balance{'s' * (changed != 1)} for the end of {when}." if changed else f"No balance changed for {when}.")
     msg += f" Still to confirm: {', '.join(left)}." if left else " Every account is confirmed."
     if changed and not busy:
         background.add_task(run_background); msg += " Rebuilding in the background."
     elif changed:
         msg += " A rebuild is running; press Rebuild when it finishes."
-    flash(request, msg, "bad" if left else "ok")
+    flash(request, msg)   # a save that leaves accounts to confirm is still a good save; the sentence says what is left
     return back

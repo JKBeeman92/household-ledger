@@ -12,14 +12,7 @@
 <p id="rowstatus" class="rowstatus" role="status" aria-live="polite"></p>
 {% set by_key = {} %}{% for ed in editors %}{% if by_key.update({ed.key: ed}) %}{% endif %}{% endfor %}
 
-{# A figure in a grid is shown formatted (DS-WORD-6); the value as stored stays in data-v, which the row editor reads. #}
-{% macro cell(kind, c, r) -%}
-{%- if r[c] is none or r[c] == "" %}{{ none }}
-{%- elif kind == "goals" and c == "value" and (r.unit or "").startswith("share") %}{{ r[c]|share(2, trim=True) }}
-{%- elif kind == "goals" and c == "value" and (r.unit or "").startswith("usd") %}{{ r[c]|money }}
-{%- elif kind == "accounts" and c == "escrow" %}{{ r[c]|money(2) }}
-{%- endif %}
-{%- endmacro %}
+{# A figure in a grid is shown formatted (DS-WORD-6); the value as stored stays in data-v, which the row editor and the sort read. #}
 {% macro grid(kind, ed, cols, heads, rows, choices=none) %}
 <section class="panel" id="{{ kind }}-editor">
   <h2>{{ ed.title }}</h2>
@@ -34,7 +27,7 @@
     {% if kind == "mapping" %}<input type="search" data-filter="mapping" placeholder="Filter {{ rows|length }} rows" aria-label="Filter mapping rows">{% endif %}</p>
   <div class="tablewrap"><table class="plain edit" data-list="unbounded" data-kind="{{ kind }}" data-fields="{{ cols|join(',') }}"{% if kind == "mapping" %} data-flows="{{ flows|join(',') }}"{% endif %}{% if choices %} data-choices="{{ choices|tojson|forceescape }}"{% endif %}>
     <thead><tr>{% for c in cols %}<th data-sort="{{ c }}" scope="col"><button type="button" class="sortbtn">{{ heads[loop.index0] }}</button></th>{% endfor %}<th><span class="sr">Actions</span></th></tr></thead>
-    <tbody>{% for r in rows %}<tr>{% for c in cols %}{% set shown = cell(kind, c, r) %}<td data-f="{{ c }}"{% if shown is not none %} data-v="{{ r[c] }}"{% endif %}>{{ shown if shown is not none else (r[c] if r[c] is not none else "") }}</td>{% endfor %}
+    <tbody>{% for r in rows %}<tr>{% for c in cols %}{% set v = r[c] %}{% set has = v is not none and v != "" %}{% set unit = (r.unit or "") if kind == "goals" else "" %}{% set shown = (v|share(2, trim=True)) if has and kind == "goals" and c == "value" and unit.startswith("share") else ((v|money) if has and kind == "goals" and c == "value" and unit.startswith("usd") else ((v|money(2)) if has and kind == "accounts" and c == "escrow" else ((v|month_short) if has and kind == "events" and c == "m" else none))) %}<td data-f="{{ c }}"{% if shown is not none %} data-v="{{ r[c] }}"{% endif %}>{{ shown if shown is not none else (r[c] if r[c] is not none else "") }}</td>{% endfor %}
       <td class="acts"><button type="button" class="btn" data-act="edit">Edit</button> <button type="button" class="btn" data-act="del">Delete</button></td></tr>{% endfor %}</tbody>
   </table></div>
 </section>

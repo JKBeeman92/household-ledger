@@ -74,14 +74,23 @@ def render(request: Request, name: str, user, **ctx):
                                                       "rebuild_needed": rebuild_needed, **ctx})
 
 
-def month_text(m: str) -> str:
-    """A budget month for a flash or other copy written in a route: "November 2026" in the household's locale (DS-WORD-6)."""
+def household_locale() -> str:
+    """The household's locale, for copy written in a route; the default when there is no database at hand (a unit test)."""
     try:
         with db.pool.connection() as conn:
-            loc = _format_settings(db.get_setting(conn, "household", {}) or {})["locale"]
-    except Exception:   # no database at hand (a unit test): the default locale
-        loc = "en-US"
-    return formatting.month(m, loc)
+            return _format_settings(db.get_setting(conn, "household", {}) or {})["locale"]
+    except Exception:
+        return "en-US"
+
+
+def month_text(m: str) -> str:
+    """A budget month for a flash or other copy written in a route: "November 2026" in the household's locale (DS-WORD-6)."""
+    return formatting.month(m, household_locale())
+
+
+def number_text(n) -> str:
+    """A count for copy written in a route, grouped for the household's locale: 12,345 or 12.345."""
+    return formatting.number(n, household_locale())
 
 
 def _span(conn) -> dict:
@@ -93,8 +102,9 @@ def _span(conn) -> dict:
         rules = db.get_setting(conn, "rules", {}) or {}
         base = rules.get("cpi_base_month") or conn.execute("SELECT max(month) m FROM cpi").fetchone()["m"] or r["b"] or "2026-09"
     bd = _dt.date(int(base[:4]), int(base[5:7]), 1)
+    loc = _format_settings(db.get_setting(conn, "household", {}) or {})["locale"]
     fy, ly = (int(r["a"][:4]) if r["a"] else bd.year), (int(r["b"][:4]) if r["b"] else bd.year)
-    return {"first_year": fy, "last_year": ly, "years": ly - fy + 1, "cpi_base_short": bd.strftime("%b %Y"), "cpi_base_long": bd.strftime("%B %Y"),
+    return {"first_year": fy, "last_year": ly, "years": ly - fy + 1, "cpi_base_short": formatting.month_short(base, loc), "cpi_base_long": formatting.month(base, loc),
             "cpi_base_iso": base, "has_data": bool(r["a"]), "first_month": r["a"], "last_month": r["b"]}
 
 
