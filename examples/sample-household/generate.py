@@ -92,6 +92,15 @@ ACCOUNTS = [  # name, kind, type, person, debt_item, apr, emergency, in_net_wort
     ("Tuckborough Brokerage", "asset", "brokerage", "", "", "", "no", "yes"),
 ]
 BALANCES_FROM = (2024, 7)
+# decisions (#155): three months of them, made at the March, April and May check-ins. The app's verdicts are worked out from the
+# months generated below with pipeline/decisions.py, as the app does; the household agreed with each, except June's, which waits for
+# the June check-in.
+DECISIONS = [  # made_in, text, kind, target, until, person
+    ("2026-03", "Eating out under $150", "spend_cap", {"item": "Eating Out", "max": 150}, "2026-05", None),
+    ("2026-04", "Put at least $300 in the emergency fund", "save", {"item": "Emergency Fund", "min": 300}, None, "Rosie"),
+    ("2026-05", "An extra $50 on the student loan", "extra_payment", {"debt": "Lembas Student Loan", "item": "Student Loan", "extra": 50, "base": 275}, None, "Rosie"),
+    ("2026-05", "Plan groceries at $750 for the baby", "plan_change", {"item": "Groceries", "planned": 750, "from": 720}, None, None),
+]
 HOUSEHOLD = {"name": "Sample Household", "title": "Sample Household Ledger", "currency": "USD", "locale": "en-US"}
 
 
@@ -183,11 +192,28 @@ def write_balances(out: Path, export_months: list[str], kept: dict[str, int]):
         for a, bm, c in sorted(rows): w.writerow([a, bm, money(c)])
 
 
+def write_decisions(out: Path, months_rows: dict[str, list]):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("decisions", Path(__file__).resolve().parents[2] / "pipeline" / "decisions.py")
+    rules = importlib.util.module_from_spec(spec); spec.loader.exec_module(rules)
+    last, items = max(months_rows), []
+    for made, text, kind, target, until, person in DECISIONS:
+        d = {"made_in": made, "text": text, "kind": kind, "target": target, "until": until, "person": person, "status": "open", "note": "", "checks": []}
+        months = [m for m in rules.months_in_force(d, last) if m < last]   # the latest month waits for its check-in
+        for m in months:
+            v, x = rules.auto(kind, target, months_rows[m])
+            d["checks"].append({"month": m, "verdict": v if v in rules.VERDICTS else "kept", "auto_verdict": v, "auto_figure": x})
+        if months and months[-1] == rules.months_in_force(d, "9999-12")[-1]:
+            d["status"] = d["checks"][-1]["verdict"]
+        items.append(d)
+    (out / "decisions.json").write_text(json.dumps(items, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
 def main(out: Path):
     out.mkdir(parents=True, exist_ok=True)
     rng = random.Random(SEED)
     months = list(month_list())
-    flow_of, kept = {item: flow for g, item, canon, cat, flow, *_ in ITEMS}, {}
+    flow_of, kept, months_rows = {item: flow for g, item, canon, cat, flow, *_ in ITEMS}, {}, {}
     for y, m in months:
         bm, txns, planned = build_month(rng, y, m)
         kept[bm] = sum(c for d, g, item, typ, merch, c, note in txns if flow_of[item] != "exclude")   # the month's net, in cents
@@ -200,6 +226,9 @@ def main(out: Path):
                 w.writerow([g, item, typ, f"{y}-{m:02d}-{d:02d}" if neutral else f"{m:02d}/{d:02d}/{y}", merch, ACCOUNT, money(c), note])
         spent = {}
         for d, g, item, typ, merch, c, note in txns: spent[item] = spent.get(item, 0) + c
+        months_rows[f"{y}-{m:02d}"] = [{"canonical": canon, "category": cat, "planned": planned.get(item, 0) / 100,
+                                        "actual": (spent.get(item, 0) if flow == "income" else -spent.get(item, 0)) / 100}
+                                       for g, item, canon, cat, flow, *_ in ITEMS]
         with open(out / bname, "w", newline="", encoding="utf-8") as f:
             w = csv.writer(f, lineterminator="\n"); w.writerow(["Group", "Item", "Planned", "Spent", "Remaining"])
             for g, item, canon, cat, flow, *_ in ITEMS:
@@ -209,6 +238,7 @@ def main(out: Path):
         w = csv.writer(f, lineterminator="\n"); w.writerow(["Item", "CanonicalItem", "Category", "Flow", "Note", "DebtType"])
         for g, item, canon, cat, flow, *_ in ITEMS: w.writerow([item, canon, cat, flow, MAPPING_NOTES.get(canon, ""), DEBT_TYPES.get(canon, "")])
     write_balances(out, [f"{y}-{m:02d}" for y, m in months], kept)
+    write_decisions(out, months_rows)
     for name, obj in [("goals.json", GOALS), ("events.json", [{"m": m, "label": l, "kind": k, **({"person": p} if p else {})} for m, l, k, p in EVENTS]), ("rules.json", RULES), ("household.json", HOUSEHOLD)]:
         (out / name).write_text(json.dumps(obj, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 

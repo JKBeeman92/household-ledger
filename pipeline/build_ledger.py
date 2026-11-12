@@ -37,6 +37,8 @@ RULES = {
   "income_groups": ["Income"],         # budget groups that hold income: no carry-forward-into-a-fund there; source profiles and the draft default to them
   "debt_groups": ["Debt"],             # budget groups that hold debt payments: the debt-plug rule and the off-budget outflow count
   "year_start_month": 1,               # the household's year starts in this month: the check-in's quarter and year modes (#164); not read by the scripts
+  "decision_partly_over": 0.10,        # a spend cap missed by up to this share counts as "partly" kept (#155)
+  "decision_partly_share": 0.5,        # a save or an extra payment that reaches this share of its aim counts as "partly" kept (#155)
   "debt_paid_off_months": 3,           # a debt with no payment in this many months is folded under "Paid off" on the Debts tab (#141)
   "loan_categories": ["Family Loan"],  # categories of loans between family: their inflows and repayments are counted on the Method tab
   "offbudget_since": None,             # "YYYY-MM": count unpaired off-budget outflows from here (exclusions table)

@@ -138,7 +138,7 @@ def test_context_carries_prior_review_life_events_and_goal_confirmations(client,
     assert [g["key"] for g in c["goal_confirmations"]] == ["giving_floor"]
     assert c["goal_confirmations"][0] == {"key": "giving_floor", "label": "Giving floor", "value": 10.0, "unit": "%", "confirmed": "2026-03-04"}
     assert "Old news" not in sent and not any(k in ctx for k in secret)
-    assert "suggested change" in review.SYSTEM and "suggested change" in c["note"]
+    assert "decisions" in review.SYSTEM and "the household's decisions" in c["note"] and "suggested change" not in c["note"]   # #155: its own decisions
 
 
 def test_customised_prompt_is_kept_and_preview_shows_continuity(client, month):

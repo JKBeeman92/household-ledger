@@ -135,6 +135,11 @@ def _row_save(conn, kind: str, f: dict) -> tuple[dict, dict]:
                 err["category"] = str(e).split(": ", 1)[1]
     elif kind == "accounts":
         c, err = accounts_store.row_save(conn, f)
+        was = accounts_store.norm(f.get("original") or "")
+        if not err and was and c["name"] != was:   # a decision's extra payment names its account (#155): the rename reaches it, and is logged
+            from .. import decisions
+            decisions.rewrite_targets(conn, "account", was, c["name"])
+            conn.execute("INSERT INTO renames (dimension, old, new, by) VALUES ('account', %s, %s, %s)", (was, c["name"], ""))
     elif kind == "goals":
         c, err = check_goal_row(f); orig = (f.get("original") or "").strip()
         if not err and c["key"] != orig:
@@ -269,6 +274,9 @@ def _editor_body(conn, key: str) -> str:
     if key == "checkins":   # not a Settings editor: the check-ins done, for settings.zip and the seed loader (#164)
         rows = conn.execute("SELECT month, mode, steps, completed_at, completed_by, reopened_at FROM checkins ORDER BY month").fetchall()
         return json.dumps([{**r, **{k: r[k].isoformat() if r[k] else None for k in ("completed_at", "reopened_at")}} for r in rows], indent=1)
+    if key == "decisions":   # not a Settings editor: the decisions log and its monthly checks (#155), for settings.zip and the seed loader
+        from .. import decisions
+        return decisions.export_json(conn)
     if key == "cpi":
         out = io.StringIO(); w = csv.writer(out); w.writerow(["month", "cpi", "source"])
         for r in conn.execute("SELECT month, cpi, source FROM cpi ORDER BY month").fetchall():

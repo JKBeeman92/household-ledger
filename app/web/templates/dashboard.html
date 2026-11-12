@@ -320,6 +320,15 @@
       <details class="how"><summary>How to read this</summary><p>Net worth is every account's month-end balance (Settings → Accounts; entered at Close a month), assets less debts, leaving out accounts marked not in net worth. Its change since last month is split in two. <b>What you did</b> is the month's income less living spend: what was kept plus what was paid on debts, since paying a loan down is the household's own doing (and, once stated, pre-tax saving such as a 401(k)). <b>What happened to you</b> is the rest: investments and the home's estimate moving, interest charged, and money moving into or out of accounts this page does not track. An account's first month is shown on its own, so adding one is not read as progress. A debt with no balance entered is estimated, and the figure says so. One thing lands on the wrong side: money your budget counts as spent that goes into an account tracked here (a savings envelope paid into a savings account) shows under what happened, not what you did. <b>Excluding home</b> takes a home's typed estimate out, since it moves the total more than any month's decisions.</p></details>
       <dl class="dti" data-draw="lm-nw" data-source="net_worth balances"></dl>
     </div>
+    <div class="card" id="lm-decisions-card">
+      <h2 id="lm-decisions">Decisions in force</h2>
+      <ul class="key row"><li>the decisions in force in the latest month, and how each went</li><li>the share kept, over the last six months of checks</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Decisions are written down at the check-in's Next month step and asked about at the next one. Where a decision names a category, a budget item or a debt and an amount, the app checks it against the month's budget: a spend cap against what was spent, a save against what was put in, an extra payment against the usual payment, a plan change against next month's planned figure. The household's own verdict is the one that counts; "partly" is half. A month whose files are not in yet is waiting, never "not kept".</p></details>
+      <p class="tools" data-draw="lm-decisions-rate" data-source="decision_summary"></p>
+      <div data-draw="lm-decisions-empty" data-source="decisions"></div>
+      <details class="listcount" id="lm-decisions-list" open><summary data-draw="lm-decisions-count" data-source="decisions">Decisions</summary>
+        <dl class="dti long-labels" data-draw="lm-decisions" data-source="decisions" data-list="unbounded"></dl></details>
+    </div>
     <div class="card" id="lm-payoff-card">
       <h2 id="lm-payoff">When the debts are gone</h2>
       <ul class="key row"><li>each debt's month-end balance and its change</li><li>the month it is paid off at last month's payment (est.)</li></ul>
@@ -785,11 +794,13 @@ dash.calc('lm_cats', { inputs: ['budget_items', 'goal_config'], title: 'Last mon
   const months = [...new Set(budget_items.map((r) => r.m))].sort(); const last = months[months.length - 1]; const prev = months.slice(-13, -1); const n = prev.length || 1;
   const keep = gc.plan_keep_categories || ['Housing', 'Debt', 'Insurance'];   // role default, until a rebuild emits plan_keep_categories
   const cats = [...new Set(budget_items.map((r) => r.category))];
+  const psd = dash.data('plan_suggestions'), ps = psd.status === 'ok' ? psd.data : [];   // read, not an input: an install not yet rebuilt still draws
   return cats.map((c) => {
     const cur = budget_items.filter((r) => r.m === last && r.category === c); const flow = cur[0] ? cur[0].flow : (budget_items.find((r) => r.category === c) || {}).flow;
     const planned = d3.sum(cur, (r) => Number(r.planned)), actual = d3.sum(cur, (r) => Number(r.actual));
     const avg12 = d3.sum(budget_items.filter((r) => prev.includes(r.m) && r.category === c), (r) => Number(r.actual)) / n;
-    const suggest = keep.includes(c) ? planned : Math.ceil(avg12 / 10) * 10;
+    const built = ps.find((r) => r.m === last && r.category === c);   // the pipeline's figure (pipeline/decisions.py), which the check-in reads too
+    const suggest = built ? Number(built.suggest) : keep.includes(c) ? planned : Math.ceil(avg12 / 10) * 10;
     const want_more = flow === 'income' || flow === 'debt' || giveCats.has(c) || cur.some((r) => saveGroups.has(r.group));   // more than planned is good
     return { category: c, flow, planned, actual, vs_plan: actual - planned, avg12, vs_avg: actual - avg12, suggest, want_more };
   }).filter((r) => r.planned || r.actual || r.avg12).sort((a, b) => Math.abs(b.vs_plan) - Math.abs(a.vs_plan));
@@ -1105,6 +1116,43 @@ const nwCard = (el) => {
   else add('Over 12 months', '—', 'needs balances from a year before (Settings → Accounts → Balances history)', false);
 };
 dash.draw('lm-nw', nwCard);
+// decisions (#155): those in force in the latest month, with the app's verdict and the household's, and the keep rate
+const decLatest = () => { const g = dash.data('decisions'); if (g.status !== 'ok' || !g.data.length) return null; const last = g.data.map((r) => r.m).sort().pop(); return g.data.filter((r) => r.m === last); };
+const DEC_WORDS = { kept: 'kept', partly: 'partly kept', dropped: 'not kept', pending: 'waiting for the month’s files', unknown: 'yours to say' };
+dash.draw('lm-decisions-empty', (el) => {
+  const g = dash.data('decisions'), rows = decLatest(), list = document.getElementById('lm-decisions-list'); el.replaceChildren();
+  if (rows && rows.length) { if (list) list.hidden = false; return; }
+  if (list) list.hidden = true;
+  const p = document.createElement('p');
+  if (g.status === 'ok') { p.textContent = 'Decisions you write at a check-in’s Next month step show here the month after, with how each went.';
+    el.append(p, Object.assign(document.createElement('a'), { className: 'btn', href: '/checkin', textContent: 'Open the check-in' })); }
+  else { p.className = 'muted'; p.textContent = g.status === 'missing' ? 'Rebuild the ledger to see decisions (Close a month).' : '—'; el.append(p); }
+});
+dash.draw('lm-decisions-count', (el) => { const rows = decLatest(); if (!rows) return; el.textContent = rows.length + ' in force in ' + HL.fmtM(HL.parseM(rows[0].m)); const d = el.closest('details'); if (d) d.open = rows.length <= 3; });
+dash.draw('lm-decisions-rate', (el) => { const g = dash.data('decision_summary'); el.replaceChildren();
+  if (g.status !== 'ok' || !g.data[0] || !g.data[0].checked) return; const s = g.data[0], b = document.createElement('strong');
+  b.className = 'v'; b.textContent = `Kept ${dash.fmt.num(s.kept)} of ${s.checked}`;
+  el.append(b, ` checks, ${HL.fmtM(HL.parseM(s.since))} to ${HL.fmtM(HL.parseM(s.through))} (partly kept counts half).`); });
+const decFigure = (r) => { const t = r.target || {}, x = r.auto_figure, name = t.category || t.item || t.debt || '';
+  if (x == null || !name) return '';
+  if (r.kind === 'spend_cap') return `${name}: ${HL.usd0(x)} spent against a cap of ${HL.usd0(t.max)}`;
+  if (r.kind === 'save') return `${name}: ${HL.usd0(x)} put in, against at least ${HL.usd0(t.min)}`;
+  if (r.kind === 'extra_payment') return `${name}: ${HL.usd0(x)} paid, against the usual ${HL.usd0(t.base || 0)} plus ${HL.usd0(t.extra)}`;
+  if (r.kind === 'plan_change') return `${name}: planned at ${HL.usd0(x)} for the month, against your ${HL.usd0(t.planned)}`;
+  return `${name}: ${HL.usd0(x)}`; };
+const DEC_CHIP = { kept: 'ok', partly: 'warn', dropped: 'bad' };
+dash.draw('lm-decisions', (el) => {
+  const rows = decLatest(); el.replaceChildren(); if (!rows) return;
+  for (const r of rows) {
+    const dt = document.createElement('dt'), dd = document.createElement('dd'), v = document.createElement('span'), d = document.createElement('div');
+    dt.textContent = r.text; const word = r.verdict || r.auto_verdict;
+    v.className = 'status-chip' + (r.verdict && DEC_CHIP[word] ? ' ' + DEC_CHIP[word] : '');   // only the household's verdict takes a verdict colour
+    v.textContent = r.verdict ? DEC_WORDS[word] : (DEC_CHIP[word] ? 'looks ' + DEC_WORDS[word] : DEC_WORDS[word] || '—');
+    const fig = decFigure(r);
+    d.className = 'muted'; d.textContent = (r.verdict ? 'your verdict' : 'the app’s reading, not yet confirmed') + (fig ? ' · ' + fig : '');
+    dd.append(v, d); el.append(dt, dd);
+  }
+});
 // payoff (#144): no rows yet (say what will appear and offer the first step), or a dataset not built yet (say to rebuild)
 dash.draw('lm-payoff-empty', (el) => {
   const g = dash.data('payoff'); el.replaceChildren(); const list = document.getElementById('lm-payoff-list');

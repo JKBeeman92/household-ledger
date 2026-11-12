@@ -22,7 +22,8 @@ SYSTEM = (
     "and under plan (name plan amounts that look wrong-sized); where the standing ratios stand (giving vs floor/target, savings vs target, "
     "housing+utilities vs cap) and whether this month moved them; one trend worth watching; what to change in next month's plan. "
     "If the month had three paychecks, say so and do not read it as a raise. "
-    "The data may also carry last month's review, life events and goal confirmations: say whether last month's suggested change was made, "
+    "The data may also carry last month's review, the household's own decisions with how each went, life events and goal confirmations: "
+    "comment on the household's decisions (kept, partly, not kept, or still waiting for the month's files), not on a suggestion of your own, "
     "and name a life event (a move, a job change) rather than inferring it. Return only the JSON object."
 )
 
@@ -39,7 +40,10 @@ def _month_before(m: str) -> str:
 
 
 SECTION_CHARS = 1200   # per stored section; keeps last month's review from dominating the prompt
-CONTINUITY_NOTE = ("prior_review is last month's stored review: say whether its suggested change for this month was made. life_events are "
+CONTINUITY_NOTE = ("prior_review is last month's stored review, for continuity. decisions are what the household itself decided at earlier "
+                   "check-ins, each with the months it was in force, the app's own check (auto_verdict, from the budget: pending means the "
+                   "month's files are not in yet, unknown that it cannot be checked) and the household's verdict when given: comment on these, "
+                   "the household's decisions, rather than on any suggestion of your own. life_events are "
                    "the household's own notes for this and the prior month, each with its kind (job, move, family, health, purchase, debt, other) and person when given: name them rather than inferring. goal_confirmations are the answers from the month-close checklist.")
 
 
@@ -51,7 +55,15 @@ def continuity(conn, month: str, prev: str) -> dict:
                   for r in conn.execute("SELECT label, kind, person FROM life_events WHERE month=%s ORDER BY label", (m,)).fetchall()] for m in (prev, month)}
     goals = [{"key": r["key"], "label": r["label"], "value": float(r["value"]) if r["value"] is not None else None, "unit": r["unit"], "confirmed": r["confirmed_at"].date().isoformat()}
              for r in conn.execute("SELECT key, label, value, unit, confirmed_at FROM goals WHERE confirmed_at IS NOT NULL ORDER BY key").fetchall()]
-    return {"note": CONTINUITY_NOTE, "prior_review": prior, "life_events": events, "goal_confirmations": goals}
+    return {"note": CONTINUITY_NOTE, "prior_review": prior, "life_events": events, "goal_confirmations": goals, "decisions": decisions_context(conn, month)}
+
+
+def decisions_context(conn, month: str) -> list[dict]:
+    """The household's decisions in force this month and the month before, with both verdicts (#155). The text is the household's
+    own words, as a life event's label is; the private note never leaves."""
+    r = conn.execute("SELECT rows FROM datasets WHERE name='decisions'").fetchone()
+    rows = [x for x in (r["rows"] if r else []) if x["m"] in (_month_before(month), month)]
+    return [{k: x[k] for k in ("m", "made_in", "text", "kind", "target", "auto_verdict", "auto_figure", "verdict")} for x in rows]
 
 
 PAYCHECK_ITEMS_DEFAULT = ["Paycheck"]   # role default: build_ledger.RULES["paycheck_items"]

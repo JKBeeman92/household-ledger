@@ -111,6 +111,14 @@
       "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
       "description": "Categories the Recurring tab lists: their expense rows, by canonical item. Empty (null) means [\"Subscriptions\", \"Utilities\", \"Insurance\"]."
     },
+    "decision_partly_over": {
+      "type": ["number", "null"], "minimum": 0, "maximum": 1,
+      "description": "A spend-cap decision missed by up to this share of its cap counts as partly kept, not dropped (#155). Empty (null) means 0.10."
+    },
+    "decision_partly_share": {
+      "type": ["number", "null"], "minimum": 0, "maximum": 1,
+      "description": "A save or extra-payment decision that reaches this share of its aim counts as partly kept (#155). Empty (null) means 0.5."
+    },
     "plan_keep_categories": {
       "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
       "description": "Categories whose suggested plan on the Last month tab stays the current plan instead of the twelve-month average. Empty (null) means [\"Housing\", \"Debt\", \"Insurance\"]."
