@@ -9,7 +9,9 @@ first thing to read. The short version:
   nice the chart.
 - **Raw exports are facts.** Never edit `transactions`/`budget_items`; change the mapping or rules and rebuild.
 - **A long list ends its panel** (or hides behind a count): nothing a household needs sits underneath one (`AGENTS.md`, "Long lists").
-- **No colours outside the theme.** `app.css` and the page use contract tokens only (`docs/BRANDING.md`).
+- **The design system is the law for anything a household sees** (`docs/DESIGN.md`). Colours, typefaces and sizes come from the
+  kit's tokens, never typed; controls say plainly what they do; a kit may change values and flourish words, not layout or labels.
+  A UI change gets the UX critique, which cites the rule a finding breaks (`AGENTS.md`, "UX review").
 - **No household data in the repo.** Fixtures are synthetic. `.env` is ignored. If you paste a build log into an issue, scrub it.
 - **New data is done when it reaches every exit.** A PR that adds a dataset or a table answers the checklist in `AGENTS.md`,
   "Done means" (review, MCP, exports, seeds, CLI, webhooks, sample household, upgrade note, docs). The PR template carries it.

@@ -1,12 +1,25 @@
 # Bearings
 
-A self-hosted dashboard for a household budget kept in any budget tool that exports its transactions and its budget each month
-(EveryDollar is the worked example, and needs no setup). Upload the two monthly files, get a reconciled ledger, charts across every year you load, goals tracking and a
-model-written month-close review — behind your own identity provider, on your own box.
+<img src="app/web/static/brand/mark.svg" width="96" height="96" alt="The Bearings seal: a fix on a chart, rhumb lines fanning from it, and a brass needle reaching a waypoint">
+
+**The monthly check-in for household money.** Once a month a household sits down, sees where it stands, decides what to change,
+and keeps in view where it is heading. A navigator does the same with a chart: takes a fix, and draws the course from it. Bearings
+is the chart table for that sitting.
+
+It is self-hosted, and it reads what your budget tool already exports. Upload the month's two files (its transactions and its
+budget; EveryDollar is the worked example and needs no setup) and you get a reconciled ledger, charts across every year you load,
+goals, balances and net worth, a guided check-in, and a model-written month-close review. It runs behind your own identity
+provider, on your own box, and only derived figures ever leave it.
 
 Everything the app decides from is data you can edit on its Settings page: the item → category mapping, the CPI table for real
 dollars, goals, life-event markers, the classification rules (who earns what, which items are transfers), and the household name.
-The look is a mounted directory of CSS and images ([docs/BRANDING.md](docs/BRANDING.md)).
+
+**The look** is a design system and a brand kit. [docs/DESIGN.md](docs/DESIGN.md) holds the rules every page keeps: ruled sheets,
+plain words on every control, day and night modes, WCAG 2.1 AA. The shipped kit, also called Bearings, fills them with navy and
+brass on chart paper. Mount a directory to replace the colours, typefaces, marks, glyphs and flourish words with your own
+([docs/BRANDING.md](docs/BRANDING.md)); two example kits are in [`examples/brand-kits/`](examples/brand-kits/).
+
+The repository and some identifiers are still named `household-ledger`, the app's name before 0.6.0.
 
 ## What this is, and isn't
 
@@ -525,7 +538,7 @@ MCP client can read the month-close figures. Create a token on **Settings → AP
 should write reviews), then:
 
 ```
-claude mcp add --transport http household-ledger https://ledger.example.com/mcp --header "Authorization: Bearer hl_YOUR_TOKEN"
+claude mcp add --transport http bearings https://ledger.example.com/mcp --header "Authorization: Bearer hl_YOUR_TOKEN"
 ```
 
 Tools: `list_months`, `get_dataset(name)`, `month_summary(m)`, `category_trend(category, months)`, `goals()`, `review(m)`,
@@ -556,6 +569,8 @@ export DATABASE_URL=postgresql://ledger:ledger@localhost:5432/ledger AUTH_DISABL
 uvicorn app.main:app --reload --port 8010 --no-proxy-headers --no-access-log
 ```
 
+Before changing anything a household sees, read [docs/DESIGN.md](docs/DESIGN.md); [CONTRIBUTING.md](CONTRIBUTING.md) has the rest.
+
 Layout: `app/` (FastAPI, templates, static), `pipeline/` (the scripts and the seed data), `db/migrations/` (numbered SQL, applied at start), `examples/sample-household/` (synthetic data for a first run).
 
 ## Privacy
@@ -565,7 +580,8 @@ database plus the `seed/`, `brand/` and `import/` directories are the whole stat
 makes outbound calls only to the identity provider (sign-in and the group re-check) and when you ask for them: to the review
 provider you configured when you press Generate review, to the price-index source when you press Fetch latest on the CPI page, and
 to the webhook URL an editor set on the Webhooks page ([docs/WEBHOOKS.md](docs/WEBHOOKS.md)). Only derived figures are sent, never
-transactions.
+transactions. The pages themselves load nothing from outside: the shipped brand kit serves its own fonts, and the charting
+library is vendored. (A brand kit you mount may import fonts from a font service; that is the kit's choice.)
 
 ## License
 

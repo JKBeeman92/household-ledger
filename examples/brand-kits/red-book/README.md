@@ -1,6 +1,6 @@
 # Example brand kit: The Red Book
 
-A ledger kept the way the Shire kept its records: red leather and gold leaf in dark mode, parchment and red ink in light mode,
+A ledger kept the way the Shire kept its records: red leather and gold leaf by night, parchment and red ink by day,
 Cinzel capitals for headings, EB Garamond for text and Courier Prime for figures. The mark is a gold-tooled red book with a ring
 and a lone mountain on its cover; the login backdrop is a hand-drawn map with hills, a wood, a river and a road that goes ever on.
 All the art is original SVG; nothing is taken from the films or from any edition of the books.

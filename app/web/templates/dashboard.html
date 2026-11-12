@@ -204,7 +204,7 @@
   <p class="eyebrow">{{ household.name or 'Household' }}{% if span.has_data %} · {{ span.years }}-year audit{% endif %}</p>
   <div class="masthead">
     <img class="mark mark-day" src="/brand/mark.svg" alt=""><img class="mark mark-night" src="/brand/mark-dark.svg" alt="">
-    <h1>{{ household.title or 'Household Ledger' }}{% if span.has_data %} {{ span.first_year }}{% if span.last_year != span.first_year %}–{{ span.last_year }}{% endif %}{% endif %}</h1>
+    <h1>{{ household.title or words.name }}{% if span.has_data %} {{ span.first_year }}{% if span.last_year != span.first_year %}–{{ span.last_year }}{% endif %}{% endif %}</h1>
   </div>
   <p class="lede">Over the last twelve <dfn title="Your budget tool files each transaction into the month whose budget it belonged to, which is not always its calendar month. Every figure here uses the budget month.">budget months</dfn> the household took in <b data-draw="lede-income">—</b>, spent <b data-draw="lede-spend">—</b> on <dfn title="Everything that is not income, debt principal or a transfer: housing, food, giving, insurance, projects, envelope spending.">living</dfn> and <b data-draw="lede-debt">—</b> on debt, and kept <b data-draw="lede-net">—</b>.
     <span class="aside-note">From your budget tool's exports, with moves between envelopes and your rules' exclusions taken out (Method tab). Dotted terms have a definition: hover, focus or tap them.</span></p>

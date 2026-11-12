@@ -106,7 +106,7 @@ alongside the built-in theme.
 
 ## Example kit: War of the Ring
 
-`examples/brand-kits/war-of-the-ring/` uses the two modes for two sides: light mode is the West (Gondor's white stone, Rohan's
-green and gold), dark mode the Shadow (Mordor's soot and fire, Isengard's iron). It shows that `--login-backdrop` may differ per
+`examples/brand-kits/war-of-the-ring/` uses the two modes for two sides: day is the West (Gondor's white stone, Rohan's
+green and gold), night the Shadow (Mordor's soot and fire, Isengard's iron). It shows that `--login-backdrop` may differ per
 mode (`backdrop-light.svg`, `backdrop-dark.svg`), while `mark.svg` is shared by both, so its mark, the Ring, is drawn to read on
 either surface.
