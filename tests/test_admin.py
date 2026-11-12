@@ -21,7 +21,7 @@ def mapping(conn):
 
 def test_export_then_import_mapping_round_trips(client, reset_db, capsys, tmp_path):
     code, csv_text, _ = run(capsys, "export-mapping")
-    assert code == 0 and csv_text.splitlines()[0] == "Item,CanonicalItem,Category,Flow,Note"
+    assert code == 0 and csv_text.splitlines()[0] == "Item,CanonicalItem,Category,Flow,Note,DebtType"
     with db.pool.connection() as conn:
         before = mapping(conn)
     f = tmp_path / "m.csv"; f.write_text(csv_text.replace("Rent,Rent,Housing,expense,", "Rent,Bag End Rent,Housing,expense,"))

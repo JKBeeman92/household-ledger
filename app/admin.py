@@ -110,6 +110,8 @@ def main(argv: list[str] | None = None) -> int:
         sp.add_argument("old"); sp.add_argument("new")
     sp = sub.add_parser("move-canonical", help="move a canonical item, and so all its rows, to another category")
     sp.add_argument("name"); sp.add_argument("category")
+    sp = sub.add_parser("set-debt-type", help="set a canonical item's debt type (mortgage, student, auto, card, medical, personal, other; '' clears it)")
+    sp.add_argument("name"); sp.add_argument("debt_type")
     sub.add_parser("preview-mapping-migration", help="before upgrading to 0.5.0: print what migration 0133 would change in the item mapping "
                                                      "(nothing is changed; run it against a copy of the 0.4.x database)")
     a = p.parse_args(argv)
@@ -122,6 +124,9 @@ def main(argv: list[str] | None = None) -> int:
         return _write(a.cmd, s._mapping_add, _read(a.file))
     if a.cmd == "rebuild":
         return rebuild_cmd()
+    if a.cmd == "set-debt-type":
+        from pipeline import mapping_store
+        return _write(a.cmd, lambda conn: (mapping_store.set_debt_type(conn, a.name, a.debt_type), f"{a.name}'s debt type ({a.debt_type or 'cleared'})")[1])
     if a.cmd in ("rename-category", "rename-canonical", "move-canonical"):
         from app import renames
         if a.cmd == "move-canonical":

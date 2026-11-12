@@ -84,9 +84,17 @@ employer = {m:{k:{"amount":round(v,2),"n":empn[m][k]} for k,v in emp[m].items()}
 debt = collections.defaultdict(lambda: collections.defaultdict(float))
 for r in T:
     if r["Flow"]=="debt": debt[r["CanonicalItem"]][r["BudgetMonth"]] += -r["amt"]
+# debt type per canonical item (#141): item_mapping.csv's optional sixth column, DebtType; a five-column file means none
+DEBT_TYPE = {}
+for r in csv.DictReader(open("item_mapping.csv", newline="")) if os.path.exists("item_mapping.csv") else []:
+    if (r.get("DebtType") or "").strip(): DEBT_TYPE[r["CanonicalItem"].strip()] = r["DebtType"].strip().lower()
+# paid off: no payment in the last debt_paid_off_months budget months (same default as build_ledger.RULES)
+PAID_OFF_MONTHS = int(RU.get("debt_paid_off_months") if RU.get("debt_paid_off_months") is not None else 3)
+recent = set(months[-PAID_OFF_MONTHS:]) if PAID_OFF_MONTHS > 0 else set()
 debts=[]
 for k,v in debt.items():
-    ms=sorted(v); debts.append({"item":k,"first":ms[0],"last":ms[-1],"total":round(sum(v.values()),2),"months":len(ms)})
+    ms=sorted(v); debts.append({"item":k,"first":ms[0],"last":ms[-1],"total":round(sum(v.values()),2),"months":len(ms),
+                                "debt_type":DEBT_TYPE.get(k),"paid_off":PAID_OFF_MONTHS > 0 and ms[-1] not in recent and ms[-1] < min(recent)})
 debts.sort(key=lambda d:d["first"])
 
 # --- recurring subscriptions: last 12 months monthly avg vs first 12 of the item ---

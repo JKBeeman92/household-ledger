@@ -10,6 +10,7 @@ import json
 from pipeline import mapping_store
 from . import db
 from .roles import ROLE_DEFAULTS
+DEBT_TYPES = mapping_store.DEBT_TYPES
 
 # rules that hold category names, and rules that hold canonical item names (lists, or person -> list)
 CATEGORY_RULES = ("goal_giving_categories", "goal_housing_categories", "recurring_categories", "plan_keep_categories", "loan_categories")
@@ -132,7 +133,8 @@ def overview(conn) -> dict:
     rows = mapping_store.rows(conn)
     canon: dict[str, dict] = {}
     for r in rows:
-        c = canon.setdefault(r["canonical_item"], {"name": r["canonical_item"], "category": r["category"], "rows": 0, "flows": set()})
+        c = canon.setdefault(r["canonical_item"], {"name": r["canonical_item"], "category": r["category"], "rows": 0, "flows": set(),
+                                                    "debt_type": r.get("debt_type")})
         c["rows"] += 1; c["flows"].add(r["flow"])
     for c in canon.values():
         c["mixed"] = "income" in c["flows"] and bool(c["flows"] & {"expense", "debt"})

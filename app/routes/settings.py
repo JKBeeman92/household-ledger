@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 EDITORS = {
-    "mapping": {"title": "Item mapping", "help": "Each item from your budget tool gets a canonical name and a flow; its category is its canonical item's. Every item must be here, or the build lists it as unmapped.", "help_long": "One row per item in your exports: Item, CanonicalItem, Category, Flow, Note. A canonical item has one category, so every row of it gives the same Category (in the row editor, leave Category blank to use the one it has); use Categories and canonical items to rename or move one. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every item name in the exports must appear here or the build reports it UNMAPPED. Fund moves kept as income items (Fund Transfer, End of Year Rebalance) need Flow transfer, or they count as income; money held for someone else and paid out needs exclude. No name is read literally: the parts names play (which items are paychecks, which categories are recurring bills, and so on) are set under Pipeline rules, Roles (README, \"Roles\"); rules name canonical items, not raw ones."},
+    "mapping": {"title": "Item mapping", "help": "Each item from your budget tool gets a canonical name and a flow; its category is its canonical item's. Every item must be here, or the build lists it as unmapped.", "help_long": "One row per item in your exports: Item, CanonicalItem, Category, Flow, Note, and optionally DebtType (mortgage, student, auto, card, medical, personal, other; a five-column CSV leaves types as they are). A canonical item has one category, so every row of it gives the same Category (in the row editor, leave Category blank to use the one it has); use Categories and canonical items to rename or move one. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every item name in the exports must appear here or the build reports it UNMAPPED. Fund moves kept as income items (Fund Transfer, End of Year Rebalance) need Flow transfer, or they count as income; money held for someone else and paid out needs exclude. No name is read literally: the parts names play (which items are paychecks, which categories are recurring bills, and so on) are set under Pipeline rules, Roles (README, \"Roles\"); rules name canonical items, not raw ones."},
     "goals": {"title": "Goals", "help": "One row per goal: key, label, value, unit, note. The Goals tab and the month-close review read these; values are also confirmed each month in the checklist on Close a month. A share is a fraction (0.07) or a percentage (7%)."},
     "events": {"title": "Life events", "help": "One row per event: month (YYYY-MM), label, and optionally its kind (job, move, family, health, purchase, debt, other) and the person it concerns (one of the people in Pipeline rules). Drawn as markers on the timeline charts; the Employer chart shows job events and events with no kind."},
     "cpi": {"title": "CPI index", "help": "CSV: month, cpi, source. A price index (consumer prices, any base) used for the real-amounts toggle. US households: CPI-U, appending the newest month from FRED CPIAUCSL; mark estimates in source."},
@@ -44,6 +44,9 @@ def check_mapping_row(r: dict) -> tuple[dict, dict]:
     c = {"item": norm(r.get("item") or r.get("Item") or ""), "canonical_item": norm(r.get("canonical_item") or r.get("CanonicalItem") or ""),
          "category": norm(r.get("category") or r.get("Category") or ""), "flow": (r.get("flow") or r.get("Flow") or "").strip(), "note": (r.get("note") or r.get("Note") or "").strip()}
     err = {k: "required" for k in ("item", "canonical_item") if not c[k]}   # category may be blank when the canonical item has one (#133)
+    for key in ("debt_type", "DebtType"):   # the CSV's optional sixth column (#141): absent means "leave the type as it is"
+        if key in r:
+            c["debt_type"] = (r.get(key) or "").strip().lower() or None
     if c["flow"] not in FLOWS:
         err["flow"] = f"bad Flow '{c['flow']}': one of {', '.join(FLOWS)}"
     return c, err
@@ -159,9 +162,9 @@ def _row_delete(conn, kind: str, f: dict) -> int:
 
 
 def _mapping_csv(conn) -> str:
-    out = io.StringIO(); w = csv.writer(out); w.writerow(["Item", "CanonicalItem", "Category", "Flow", "Note"])
+    out = io.StringIO(); w = csv.writer(out); w.writerow(["Item", "CanonicalItem", "Category", "Flow", "Note", "DebtType"])
     for r in mapping_store.rows(conn):
-        w.writerow([r["item"], r["canonical_item"], r["category"], r["flow"], r["note"]])
+        w.writerow([r["item"], r["canonical_item"], r["category"], r["flow"], r["note"], r["debt_type"] or ""])
     return out.getvalue()
 
 
@@ -175,7 +178,7 @@ def _mapping_rows(body: str, existing: set[str] | None = None) -> tuple[list[dic
     reader = csv.DictReader(io.StringIO(body.lstrip("\ufeff")))
     rows = list(reader)
     if not rows or not {"Item", "CanonicalItem", "Category", "Flow"}.issubset(rows[0].keys()):
-        raise ValueError("mapping needs columns Item, CanonicalItem, Category, Flow, Note")
+        raise ValueError("mapping needs columns Item, CanonicalItem, Category, Flow, Note (and optionally DebtType)")
     clean, lines, problems, seen = [], [], [], {}
     for n, r in enumerate(rows, start=2):
         c, err = check_mapping_row({k: v for k, v in r.items() if isinstance(v, str)})
@@ -327,7 +330,8 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
                   categories=categories, rules=rules, hh=household, name_families=name_families, unmapped=unmapped,
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS,
                   event_choices={"kind": [""] + list(EVENT_KINDS)}, people=list(rules.get("people") or []),
-                  defs=defs, mapping_notes=mapping_notes, canonical_category={c["name"]: c["category"] for c in defs["canonical"]})
+                  defs=defs, mapping_notes=mapping_notes, canonical_category={c["name"]: c["category"] for c in defs["canonical"]},
+                  debt_types=mapping_store.DEBT_TYPES)
 
 
 @router.get("/settings/mapping.csv")
@@ -389,6 +393,17 @@ async def canonical_rename(request: Request, user=Depends(auth.require_editor)):
 async def canonical_move(request: Request, user=Depends(auth.require_editor)):
     f = await request.form()
     return _definition_change(request, renames.move_canonical, str(f.get("name", "")), str(f.get("category", "")))
+
+
+@router.post("/settings/mapping/canonical/debt-type")
+async def canonical_debt_type(request: Request, user=Depends(auth.require_editor)):
+    """Set or clear a canonical item's debt type (#141)."""
+    f = await request.form()
+    name, t = str(f.get("name", "")), str(f.get("debt_type", ""))
+    def change(conn):
+        mapping_store.set_debt_type(conn, name, t); db.mark_inputs_changed(conn)
+        return f"{name} is {'a ' + t + ' debt' if t else 'no longer typed'}"
+    return _definition_change(request, change)
 
 
 @router.post("/settings/mapping/notes/dismiss")

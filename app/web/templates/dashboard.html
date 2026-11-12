@@ -480,8 +480,10 @@
       <div class="card">
         <h2 id="debt-chart">Debt timeline</h2>
         <ul class="key row"><li><span class="glyph">↔</span>first to last payment month</li><li><span class="glyph">Σ</span>label: total paid, interest included</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Each bar spans the months a debt item received payments; the label is the total paid. Bars run from first to last payment month. Total paid includes principal and interest as the budget tool recorded them, not the original loan balance.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Debt</th><th scope="col">First payment</th><th scope="col">Last payment</th><th scope="col">Months</th><th scope="col">Total paid</th></tr></thead><tbody data-draw="dt-debts" data-source="debts"></tbody></table></div></details>
+        <p class="tools" data-draw="debt-order" data-source="debts"></p>
+      <details class="how"><summary>How to read this</summary><p>Each bar spans the months a debt item received payments; the label is the total paid. Bars run from first to last payment month. Debts given a type (Settings → Item mapping → Canonical items) are grouped by it, with each type's total; a debt with no payment in the latest months (the debt_paid_off_months rule, 3 by default) is folded under Paid off. Total paid includes principal and interest as the budget tool recorded them, not the original loan balance.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Debt</th><th scope="col">Type</th><th scope="col">First payment</th><th scope="col">Last payment</th><th scope="col">Months</th><th scope="col">Total paid</th></tr></thead><tbody data-draw="dt-debts" data-source="debts"></tbody></table></div></details>
         <div class="chart" data-draw="debts" data-source="debts"></div>
+        <details class="how paidoff" data-draw="debts-paid-box" data-source="debts"><summary>Paid off</summary><div class="chart" data-draw="debts-paid" data-source="debts"></div></details>
       </div>
       <div class="card">
         <h2 id="net-chart">Net kept, by year</h2>
@@ -1020,22 +1022,53 @@ dash.draw('yearly', (tb) => {
     (r, td) => { if (Number(r.savings_rate) < 0) td.classList.add('neg'); return r.savings_rate == null ? '—' : dash.fmt.pct(1)(Number(r.savings_rate)); },
     (r) => HL.usd0(Number(r.income_real)), (r) => HL.usd0(Number(r.spend_real)), (r, td) => neg(r.net_real, td)]);
 });
-dash.draw('debts', (el) => {
-  const g = HL.rd('debts'); el.replaceChildren();
-  if (g.status !== 'ok') { el.textContent = '—'; return; }
-  const rows = [...g.data].sort((a, b) => a.first < b.first ? -1 : 1).map((r) => ({ ...r, d0: HL.parseM(r.first), d1: d3.utcMonth.offset(HL.parseM(r.last), 1), total: Number(r.total) }));
-  const W = el.clientWidth || 600, rowH = 26, mt = 22, mb = 8, H = mt + rows.length * rowH + mb;
+// Debts (#141): grouped by debt type when any debt has one, each group with its total; ordered by first payment or by total paid
+// (the debt_order param); debts with no recent payment (paid_off, from the debt_paid_off_months rule) drawn apart, under Paid off
+const DEBT_TYPES = ['mortgage', 'student', 'auto', 'card', 'medical', 'personal', 'other'];
+const debtOrder = () => (dash.params().debt_order === 'total' ? 'total' : 'first');
+const debtRows = (paidOff, g) => { if (g.status !== 'ok') return null;   // g: HL.rd('debts'), the period's rows
+  const by = debtOrder() === 'total' ? (a, b) => Number(b.total) - Number(a.total) : (a, b) => (a.first < b.first ? -1 : a.first > b.first ? 1 : 0);
+  return g.data.filter((r) => !!r.paid_off === paidOff).sort(by); };
+const drawDebts = (el, rows) => {
+  el.replaceChildren();
+  if (!rows) { el.textContent = '—'; return; }
+  if (!rows.length) return;
+  const typed = rows.some((r) => r.debt_type);
+  const label = (t) => t ? t[0].toUpperCase() + t.slice(1) : 'No type';
+  const lines = [];   // {head: type} or a debt row, in drawing order
+  if (typed) {
+    const groups = d3.group(rows, (r) => r.debt_type || '');
+    for (const t of [...DEBT_TYPES, '']) { const rs = groups.get(t); if (!rs) continue; lines.push({ head: label(t), sum: d3.sum(rs, (r) => Number(r.total)) }, ...rs); }
+  } else lines.push(...rows);
+  const data = lines.map((r) => r.head ? r : ({ ...r, d0: HL.parseM(r.first), d1: d3.utcMonth.offset(HL.parseM(r.last), 1), total: Number(r.total) }));
+  const debts = data.filter((r) => !r.head);
+  const W = el.clientWidth || 600, rowH = 26, mt = 22, mb = 8, H = mt + data.length * rowH + mb;
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
-  const probe = svg.append('text').attr('opacity', 0); let ml = 0; for (const r of rows) { probe.text(r.item); ml = Math.max(ml, probe.node().getComputedTextLength()); } probe.remove(); ml = Math.ceil(ml) + 12;
-  const x = d3.scaleUtc([d3.min(rows, (r) => r.d0), d3.max(rows, (r) => r.d1)], [ml, W - 70]);
+  const probe = svg.append('text').attr('opacity', 0); let ml = 0; for (const r of debts) { probe.text(r.item); ml = Math.max(ml, probe.node().getComputedTextLength()); } probe.remove(); ml = Math.ceil(ml) + 12;
+  const x = d3.scaleUtc([d3.min(debts, (r) => r.d0), d3.max(debts, (r) => r.d1)], [ml, W - 70]);
   svg.append('g').attr('transform', `translate(0,${mt - 6})`).call(d3.axisTop(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').remove(); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 70); });
   const c = HL.colors(); const t = HL.tip(el);
-  const grp = svg.append('g').selectAll('g').data(rows).join('g').attr('transform', (r, i) => `translate(0,${mt + i * rowH})`);
-  grp.append('text').attr('x', ml - 8).attr('y', rowH / 2 + 4).attr('text-anchor', 'end').attr('fill', 'var(--color-fg)').text((r) => r.item);
-  grp.append('rect').attr('class', 'b h').style('animation-delay', (r, i) => Math.min(i, 12) * 30 + 'ms').attr('x', (r) => x(r.d0)).attr('width', (r) => Math.max(3, x(r.d1) - x(r.d0))).attr('y', 5).attr('height', rowH - 10).attr('rx', 3).attr('fill', (r, i) => c[i % c.length])
-    .on('pointermove', (pe, r) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(r.item)}</div><div>${HL.esc(HL.fmtM(r.d0))} – ${HL.esc(HL.fmtM(HL.parseM(r.last)))}, ${HL.esc(String(r.months))} months</div><div>Paid ${HL.esc(HL.usd0(r.total))}</div>`); }).on('pointerleave', () => t.hide());
-  grp.append('text').attr('x', (r) => x(r.d1) + 6).attr('y', rowH / 2 + 4).text((r) => HL.money(r.total));
+  const grp = svg.append('g').selectAll('g').data(data).join('g').attr('transform', (r, i) => `translate(0,${mt + i * rowH})`);
+  const heads = grp.filter((r) => r.head);
+  heads.append('text').attr('x', 0).attr('y', rowH / 2 + 4).attr('font-weight', 600).attr('fill', 'var(--color-fg)').text((r) => `${r.head} · ${HL.money(r.sum)}`);
+  const bars = grp.filter((r) => !r.head);
+  bars.append('text').attr('x', ml - 8).attr('y', rowH / 2 + 4).attr('text-anchor', 'end').attr('fill', 'var(--color-fg)').text((r) => r.item);
+  bars.append('rect').attr('class', 'b h').style('animation-delay', (r, i) => Math.min(i, 12) * 30 + 'ms').attr('x', (r) => x(r.d0)).attr('width', (r) => Math.max(3, x(r.d1) - x(r.d0))).attr('y', 5).attr('height', rowH - 10).attr('rx', 3).attr('fill', (r) => c[debts.indexOf(r) % c.length])
+    .on('pointermove', (pe, r) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(r.item)}${r.debt_type ? ' · ' + HL.esc(label(r.debt_type)) : ''}</div><div>${HL.esc(HL.fmtM(r.d0))} – ${HL.esc(HL.fmtM(HL.parseM(r.last)))}, ${HL.esc(String(r.months))} months</div><div>Paid ${HL.esc(HL.usd0(r.total))}</div>`); }).on('pointerleave', () => t.hide());
+  bars.append('text').attr('x', (r) => x(r.d1) + 6).attr('y', rowH / 2 + 4).text((r) => HL.money(r.total));
   el.style.minHeight = H + 'px';
+};
+dash.draw('debts', (el) => drawDebts(el, debtRows(false, HL.rd('debts'))));
+dash.draw('debts-paid', (el) => drawDebts(el, debtRows(true, HL.rd('debts'))));
+dash.draw('debts-paid-box', (box) => {   // the fold shows only when something is paid off; display, not [hidden], which the shim skips
+  const rows = debtRows(true, HL.rd('debts')) || []; box.style.display = rows.length ? '' : 'none';
+  box.querySelector('summary').textContent = `Paid off (${rows.length})`; });
+dash.draw('debt-order', (p) => {
+  const g = dash.data('debts'); if (g.status !== 'ok' || !g.data.length) { p.replaceChildren(); return; }
+  const sel = document.createElement('select'); sel.setAttribute('aria-label', 'Order debts by');
+  for (const [v, txt] of [['first', 'first payment'], ['total', 'total paid']]) { const o = document.createElement('option'); o.value = v; o.textContent = txt; sel.append(o); }
+  sel.value = debtOrder(); sel.onchange = () => dash.setParams({ debt_order: sel.value === 'first' ? null : sel.value });
+  const lab = document.createElement('label'); lab.append('Order by ', sel); p.replaceChildren(lab);
 });
 
 })();</script>
@@ -1397,7 +1430,7 @@ table('monthly', 'monthly', byM, [(r) => M(r.m), (r) => $(r[HL.fld('income')]), 
 table('annual', 'yearly', byY, [(r) => HL.yearLabel(r.y), (r) => $(r[HL.fld('income')]), (r) => $(r[HL.fld('spend')]), (r) => $(r[HL.fld('debt')]), (r) => $(r[HL.fld('net')])], ySpan);
 table('employer', 'employer', byM, [(r) => M(r.m), (r) => r.employer || 'Unknown', (r) => $(r.amount), (r) => String(r.n ?? '—')], (rows) => { const u = [...new Set(rows.map((r) => r.m))]; return u.length ? [M(u[u.length - 1]), M(u[0])] : []; });
 table('goal-lines', 'goal_month', byM, [(r) => M(r.m), (r) => P1(r.giving_share_12), (r) => P1(r.joy_share_12), (r) => P1(r.housing_share_12)], mSpan);
-table('debts', 'debts', (rows) => [...rows].sort((a, b) => a.first < b.first ? -1 : 1), [(r) => r.item, (r) => M(r.first), (r) => M(r.last), (r) => String(r.months), (r) => $(r.total)],
+table('debts', 'debts', (rows) => [...rows].sort((a, b) => a.first < b.first ? -1 : 1), [(r) => r.item + (r.paid_off ? ' (paid off)' : ''), (r) => r.debt_type || '—', (r) => M(r.first), (r) => M(r.last), (r) => String(r.months), (r) => $(r.total)],
   (rows) => rows.length ? [M(rows.map((r) => r.first).sort()[0]), M(rows.map((r) => r.last).sort().pop())] : []);
 table('net', 'yearly', byY, [(r) => HL.yearLabel(r.y), (r) => $(r[HL.fld('net')]), (r) => P1(r.savings_rate)], ySpan);
 })();</script>

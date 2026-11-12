@@ -70,13 +70,16 @@
         <input type="text" name="new" required aria-label="New name for the category {{ g.name }}" placeholder="{{ g.name }}"> <button class="btn" type="submit">Rename</button></form></td></tr>{% endfor %}
     </tbody></table></div></details>
   <details class="keyhelp"{% if defs.canonical|selectattr('mixed')|list %} open{% endif %}><summary>Canonical items ({{ defs.canonical|length }}){% set mixed = defs.canonical|selectattr('mixed')|list %}{% if mixed %}: {{ mixed|length }} mix income with spending{% endif %}</summary>
-    <div class="tablewrap"><table class="plain"><thead><tr><th scope="col">Canonical item</th><th scope="col">Category</th><th scope="col">Rows</th><th scope="col">Flows</th><th scope="col">Rename to</th><th scope="col">Move to category</th></tr></thead><tbody>
+    <div class="tablewrap"><table class="plain"><thead><tr><th scope="col">Canonical item</th><th scope="col">Category</th><th scope="col">Rows</th><th scope="col">Flows</th><th scope="col">Rename to</th><th scope="col">Move to category</th><th scope="col">Debt type</th></tr></thead><tbody>
     {% for c in defs.canonical %}<tr><td>{{ c.name }}</td><td>{{ c.category }}</td><td>{{ c.rows }}</td>
       <td>{{ c.flows|join(', ') }}{% if c.mixed %} <strong>mixes income with {{ 'expense' if 'expense' in c.flows else 'debt' }}: almost always a mistake</strong>{% endif %}</td>
       <td><form method="post" action="/settings/mapping/canonical/rename" class="inline">{{ csrf_field(request) }}<input type="hidden" name="old" value="{{ c.name }}">
         <input type="text" name="new" required aria-label="New name for the canonical item {{ c.name }}" placeholder="{{ c.name }}"> <button class="btn" type="submit">Rename</button></form></td>
       <td><form method="post" action="/settings/mapping/canonical/move" class="inline">{{ csrf_field(request) }}<input type="hidden" name="name" value="{{ c.name }}">
-        <input type="text" name="category" required list="settings-categories" aria-label="Category to move {{ c.name }} to" placeholder="{{ c.category }}"> <button class="btn" type="submit">Move</button></form></td></tr>{% endfor %}
+        <input type="text" name="category" required list="settings-categories" aria-label="Category to move {{ c.name }} to" placeholder="{{ c.category }}"> <button class="btn" type="submit">Move</button></form></td>
+      <td>{% if 'debt' in c.flows or c.debt_type %}<form method="post" action="/settings/mapping/canonical/debt-type" class="inline">{{ csrf_field(request) }}<input type="hidden" name="name" value="{{ c.name }}">
+        <select name="debt_type" aria-label="Debt type of {{ c.name }}"><option value="">(none)</option>{% for t in debt_types %}<option value="{{ t }}"{% if c.debt_type == t %} selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+        <button class="btn" type="submit">Set</button></form>{% endif %}</td></tr>{% endfor %}
     </tbody></table></div></details>
 </section>
 </div>

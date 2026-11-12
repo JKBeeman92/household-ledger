@@ -42,6 +42,7 @@ ITEMS = [
     ("Debt", "Student Loan", "Student Loan", "Debt", "debt", 275, ["Lembas Loan Servicing"], (1, 1), (1.0, 1.0)),
     ("Other", "Venmo Pass-Through", "Venmo Pass-Through", "Other", "exclude", 0, ["Venmo"], (0, 2), (1.0, 1.0)),
 ]
+DEBT_TYPES = {"Student Loan": "student"}   # the mapping's optional DebtType column (#141)
 FIXED_DAY = {"Rent": 1, "Internet": 6, "Renters Insurance": 9, "Car Insurance": 12, "Student Loan": 15, "Emergency Fund": 4, "Electric": 18, "Water": 21, "Charity": 5}
 SEASON = {"Electric": {12: 1.35, 1: 1.45, 2: 1.35, 7: 1.15, 8: 1.15}}
 PAIR_MONTHS = {"2025-05": 4000, "2025-11": 6000, "2026-02": 4500, "2026-05": 5000}   # cents moved Date Night -> Holiday
@@ -159,8 +160,8 @@ def main(out: Path):
                 p, s = planned.get(item, 0), spent.get(item, 0)
                 w.writerow([g, item, money(p), money(s), money(p - s if flow == "income" else p + s)])
     with open(out / "item_mapping.csv", "w", newline="", encoding="utf-8") as f:
-        w = csv.writer(f, lineterminator="\n"); w.writerow(["Item", "CanonicalItem", "Category", "Flow", "Note"])
-        for g, item, canon, cat, flow, *_ in ITEMS: w.writerow([item, canon, cat, flow, MAPPING_NOTES.get(canon, "")])
+        w = csv.writer(f, lineterminator="\n"); w.writerow(["Item", "CanonicalItem", "Category", "Flow", "Note", "DebtType"])
+        for g, item, canon, cat, flow, *_ in ITEMS: w.writerow([item, canon, cat, flow, MAPPING_NOTES.get(canon, ""), DEBT_TYPES.get(canon, "")])
     for name, obj in [("goals.json", GOALS), ("events.json", [{"m": m, "label": l, "kind": k, **({"person": p} if p else {})} for m, l, k, p in EVENTS]), ("rules.json", RULES), ("household.json", HOUSEHOLD)]:
         (out / name).write_text(json.dumps(obj, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 
