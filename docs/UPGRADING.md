@@ -24,9 +24,11 @@ Migrations run at start; read this list before upgrading.
   tables of their own, and a canonical item has exactly one category. **Before upgrading, download `settings.zip`** (Close a month,
   or `python -m app.admin export-settings DIR`): it holds the old mapping, so nothing is lost if you disagree with what the
   migration chose.
-  - A canonical item mapped under more than one category keeps the one most of its rows use (ties: alphabetical); a row whose
-    category was the placeholder `UNMAPPED` leaves the mapping and is listed as unmapped. Settings → Item mapping lists each such
-    change once, until you dismiss it.
+  - Names are tidied as the app tidies typed input (odd and doubled spaces, spaces at the ends), so `Rent ` and `Rent` become one.
+    A row whose category is blank or the placeholder `UNMAPPED` (any capitalisation) leaves the mapping and is listed as unmapped; a
+    blank canonical item takes the item's name. A canonical item mapped under more than one category keeps the one most of its
+    rows use (ties: alphabetical, so check these). Settings → Item mapping lists each change once, until you dismiss it.
+  - A `settings.zip` or seed directory written by 0.4 still starts a new install: the same rules apply, with the same notes.
   - To see what it will do first, run the preview against your 0.4 database, or a copy of it. It only reads:
     `docker compose exec -T db psql -U ledger ledger < db/preview/0133_mapping_preview.sql` (from a checkout of 0.5.0), or, with the
     0.5.0 image and `DATABASE_URL` pointing at a copy that has not been started on 0.5.0:

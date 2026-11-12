@@ -16,7 +16,7 @@ def reviews_list(request: Request, user=Depends(auth.require_editor)):
         prov = rp.resolve(conn)
         log = conn.execute("SELECT at, old, new FROM renames ORDER BY at").fetchall()
     # a stored review keeps its text (the record of what was said); renames since it was written are noted beside it (#133)
-    later = {r["month"]: [x for x in log if x["at"] > (r["hand_edited_at"] or r["generated_at"])] for r in rows}
+    later = {r["month"]: [x for x in log if x["at"] > r["generated_at"]] for r in rows}   # a hand edit keeps the generated names
     return render(request, "reviews_list.html", user, active="reviews", reviews=rows, prov=prov, problem=prov.problem(), later=later)
 
 

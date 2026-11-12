@@ -32,7 +32,7 @@ def test_migration_keeps_the_majority_category_and_notes_what_it_dropped(scratch
         for r in CONFLICT:
             c.execute("INSERT INTO item_mapping (item, canonical_item, category, flow) VALUES (%s, %s, %s, %s)", r)
         preview = c.execute((ROOT / "db" / "preview" / "0133_mapping_preview.sql").read_text()).fetchall()
-    assert preview == [("UNMAPPED placeholder", "Mystery", "its category was the placeholder UNMAPPED, so it leaves the mapping; it is listed as unmapped until you map it"),
+    assert preview == [("leaves the mapping", "Mystery", "its category is the placeholder UNMAPPED; it is listed as unmapped until you map it"),
                        ("category conflict", "Pipe-weed", "Fun (2 rows) kept; Bills (1 row) dropped"),
                        ("category conflict", "Rent", "Housing (4 rows) kept; Bills (1 row) dropped")]
     assert db.migrate(scratch) == [p.name for p in sorted(db.MIGRATIONS.glob("*.sql")) if p.name >= "0133"]
@@ -44,6 +44,45 @@ def test_migration_keeps_the_majority_category_and_notes_what_it_dropped(scratch
     assert notes[0].startswith("Mystery: its category was the placeholder UNMAPPED")
     assert notes[1:] == ["Pipe-weed: Fun (2 rows) kept; Bills (1 row) dropped", "Rent: Housing (4 rows) kept; Bills (1 row) dropped"]
     assert "category" not in {r[0] for r in q(scratch, "SELECT column_name FROM information_schema.columns WHERE table_name='item_mapping'")}
+
+
+LEGACY_ODD = [("Rent", "Rent", "Housing", "expense"), ("Hill Rent", "Rent ", "Housing", "expense"), ("Lamp Oil", "Lamp\u00a0Oil", "Home  Goods", "expense"),
+              ("Blank Cat", "Blank Cat", "", "expense"), ("Shy", "Shy", "Unmapped", "expense"), ("Shyer", "Shyer", " unmapped ", "expense"),
+              ("No Canon", "", "Food", "expense"), ("Paycheck", "Paycheck", "Income", "income")]
+
+
+def test_migration_tidies_odd_0_4_data_instead_of_failing_and_the_preview_says_so(scratch, tmp_path):  # noqa: F811
+    db.migrate(scratch, mig_dir(tmp_path, True))
+    import psycopg
+    with psycopg.connect(scratch, autocommit=True) as c:
+        for r in LEGACY_ODD:
+            c.execute("INSERT INTO item_mapping (item, canonical_item, category, flow) VALUES (%s, %s, %s, %s)", r)
+        preview = c.execute((ROOT / "db" / "preview" / "0133_mapping_preview.sql").read_text()).fetchall()
+    db.migrate(scratch)   # must not fail at start-up
+    assert q(scratch, "SELECT item, canonical_item, category FROM mapping_rows ORDER BY item") == [
+        ("Hill Rent", "Rent", "Housing"), ("Lamp Oil", "Lamp Oil", "Home Goods"), ("No Canon", "No Canon", "Food"),
+        ("Paycheck", "Paycheck", "Income"), ("Rent", "Rent", "Housing")]
+    notes = [r[0] for r in q(scratch, "SELECT note FROM mapping_migration_notes ORDER BY id")]
+    assert [n.split(":")[0] for n in notes] == ["Hill Rent", "Lamp Oil", "Blank Cat", "Shy", "Shyer", "No Canon"]
+    assert [(r[0], r[1]) for r in preview] == [("spacing tidied", "Hill Rent"), ("spacing tidied", "Lamp Oil"), ("leaves the mapping", "Blank Cat"),
+                                               ("leaves the mapping", "Shy"), ("leaves the mapping", "Shyer"), ("canonical item filled in", "No Canon")]
+
+
+def test_a_0_4_shaped_seed_still_starts_an_install_and_notes_what_changed(client, reset_db, tmp_path):
+    from pipeline.run_pipeline import seed_reference_tables
+    (tmp_path / "item_mapping.csv").write_text(csv_body([("A", "Rent", "Housing", "expense"), ("B", "Rent", "Housing", "expense"),
+                                                        ("C", "Rent", "Bills", "expense"), ("D", "D", "UNMAPPED", "expense")]))
+    with db.pool.connection() as conn:
+        mapping_store.clear(conn); conn.execute("DELETE FROM mapping_migration_notes")
+        seed_reference_tables(conn, tmp_path); conn.commit()
+        assert [(r["item"], r["category"]) for r in mapping_store.rows(conn, "item")] == [("A", "Housing"), ("B", "Housing"), ("C", "Housing")]
+        notes = [r["note"] for r in conn.execute("SELECT note FROM mapping_migration_notes ORDER BY id").fetchall()]
+    assert notes[0].startswith("D: its category was the placeholder UNMAPPED") and notes[1] == "Rent: Housing (2 rows) kept; Bills (1 row) dropped"
+
+
+def test_a_canonical_rename_says_when_a_prefix_rule_stops_matching():
+    w = renames.prefix_warnings({"verify_transfer_prefixes": ["Slush"], "payer_prefix_by_person": {"Rosie": ["Rosie "]}}, "Slush Fund", "Rosie Spare")
+    assert w == ['verify_transfer_prefixes "Slush" no longer matches Rosie Spare', 'payer_prefix_by_person Rosie "Rosie " now matches Rosie Spare']
 
 
 def test_migration_of_a_clean_mapping_changes_nothing_but_the_shape(scratch, tmp_path):  # noqa: F811

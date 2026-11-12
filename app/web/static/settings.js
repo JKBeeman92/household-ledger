@@ -78,7 +78,8 @@
       if (kind === "mapping") {   // #133: a canonical item has one category, so picking a known one fills it in
         var canonIn = tr.querySelector('input[name="canonical_item"]'), catIn = tr.querySelector('input[name="category"]');
         var known = {}; try { known = JSON.parse((document.getElementById("canonical-category") || {}).textContent || "{}"); } catch (e) { known = {}; }
-        if (canonIn && catIn) canonIn.onchange = function () { var c = known[canonIn.value.trim()]; if (c) catIn.value = c; };
+        var fill = function () { var k = canonIn.value.trim(), c = Object.prototype.hasOwnProperty.call(known, k) ? known[k] : null; if (typeof c === "string" && c) catIn.value = c; };
+        if (canonIn && catIn) { canonIn.onchange = fill; canonIn.oninput = fill; tr.fillCategory = fill; }
       }
       if (blank && kind === "mapping") {   // #106: a new item whose name drifted from one already mapped ("X 2", "X Fund") gets that row's values
         var itemIn = tr.querySelector('input[name="item"]'), like = el("div", { "class": "hint", id: "suggest-hint" });
@@ -100,6 +101,7 @@
     }
     function save(tr) {
       var body = origOf(tr);
+      if (tr.fillCategory) tr.fillCategory();   // Enter saves before the canonical field's change event (#133)
       tr.querySelectorAll("input,select").forEach(function (i) { body[i.name] = i.value; });
       if (kind === "mapping" && body.category && !cats[body.category.toLowerCase()] &&
           !confirm('"' + body.category + '" is a new category. Charts and goals will show it on its own. Create it?')) return;

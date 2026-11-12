@@ -11,7 +11,7 @@ tables hold exactly what the five-column CSV can say and a settings.zip round tr
 Not a standalone script: DB code for the app and pipeline/run_pipeline.py (the scripts beside it read item_mapping.csv only)."""
 from __future__ import annotations
 import psycopg
-from psycopg.rows import dict_row
+from psycopg.rows import dict_row, tuple_row
 
 UNMAPPED = "UNMAPPED"   # a build finding (an item with no row), never a category anyone chose: refused as a category
 
@@ -31,6 +31,38 @@ def categories_of(conn: psycopg.Connection) -> dict[str, str]:
     with conn.cursor(row_factory=dict_row) as cur:
         cur.execute("SELECT name, category FROM canonical_items")
         return {r["name"]: r["category"] for r in cur.fetchall()}
+
+
+def _rows(n: int) -> str:
+    return f"{n} row{'' if n == 1 else 's'}"
+
+
+def settle_legacy(rows: list[dict]) -> tuple[list[dict], list[str]]:
+    """A mapping in the 0.4 shape (any canonical item in any category) made fit for this one, by the rules migration 0133 applies:
+    a row whose category is blank or UNMAPPED (any case) leaves; a blank canonical item takes the item's name; a canonical item in
+    several categories keeps the one most of its rows use (ties: alphabetical). Returns the rows and a note per change, as the
+    migration words them. For seeds: a settings.zip or seed directory written by 0.4 still starts a new install."""
+    notes, kept = [], []
+    for r in rows:
+        cat = (r.get("category") or "").strip()
+        if not cat or cat.upper() == UNMAPPED:
+            notes.append(f"{r['item']}: its category was {'blank' if not cat else 'the placeholder ' + cat}, so it left the mapping; "
+                         "it is listed as unmapped until you map it")
+            continue
+        if not (r.get("canonical_item") or "").strip():
+            notes.append(f"{r['item']}: its canonical item was blank, so it is now {r['item']}")
+            r = {**r, "canonical_item": r["item"]}
+        kept.append({**r, "category": cat})
+    votes: dict[str, dict[str, int]] = {}
+    for r in kept:
+        v = votes.setdefault(r["canonical_item"], {}); v[r["category"]] = v.get(r["category"], 0) + 1
+    winner = {}
+    for canon, v in sorted(votes.items()):
+        order = sorted(v.items(), key=lambda kv: (-kv[1], kv[0]))
+        winner[canon] = order[0][0]
+        if len(order) > 1:
+            notes.append(f"{canon}: {order[0][0]} ({_rows(order[0][1])}) kept; " + ", ".join(f"{c} ({_rows(n)})" for c, n in order[1:]) + " dropped")
+    return [{**r, "category": winner[r["canonical_item"]]} for r in kept], notes
 
 
 def conflicts(new: list[dict], current: dict[str, str] | None = None, lines: list[int] | None = None) -> list[str]:
@@ -75,10 +107,17 @@ def write_rows(conn: psycopg.Connection, new: list[dict], *, replace: bool = Fal
     want = {}
     for r in new:
         want.setdefault(r["canonical_item"], r.get("category") or current[r["canonical_item"]])
-    with conn.cursor() as cur:
+    with conn.cursor(row_factory=tuple_row) as cur:
         cur.executemany("INSERT INTO categories (name) VALUES (%s) ON CONFLICT DO NOTHING", [(c,) for c in sorted(set(want.values()))])
-        cur.executemany("INSERT INTO canonical_items (name, category) VALUES (%s, %s) ON CONFLICT (name) DO UPDATE SET category = EXCLUDED.category",
-                        sorted(want.items()))
+        if replace:   # the CSV says each canonical item's category: it may move one
+            cur.executemany("INSERT INTO canonical_items (name, category) VALUES (%s, %s) ON CONFLICT (name) DO UPDATE SET category = EXCLUDED.category",
+                            sorted(want.items()))
+        else:   # never move one: another writer may have added it since categories_of() above, so check what is stored now
+            cur.executemany("INSERT INTO canonical_items (name, category) VALUES (%s, %s) ON CONFLICT (name) DO NOTHING", sorted(want.items()))
+            cur.execute("SELECT name, category FROM canonical_items WHERE name = ANY(%s) FOR UPDATE", (sorted(want),))
+            moved = [f"{n} is in {c}, not {want[n]}" for n, c in cur.fetchall() if c != want[n]]
+            if moved:
+                raise MappingError(f"{len(moved)} problem{'s' * (len(moved) != 1)}: " + "; ".join(moved[:8]))
         cur.executemany("INSERT INTO item_mapping (item, canonical_item, flow, note) VALUES (%s, %s, %s, %s) ON CONFLICT (item) DO UPDATE SET "
                         "canonical_item = EXCLUDED.canonical_item, flow = EXCLUDED.flow, note = EXCLUDED.note, updated_at = now()",
                         [(r["item"], r["canonical_item"], r["flow"], r.get("note") or "") for r in new])

@@ -93,7 +93,23 @@ def rename_canonical(conn, old: str, new: str, by: str = "") -> str:
         conn.execute("UPDATE canonical_items SET name=%s WHERE name=%s", (new, old))
     changed = _log_and_rules(conn, "canonical_item", old, new, by)
     note = f" (now in {cats[new]}, not {cats[old]})" if merge and cats[new] != cats[old] else ""
-    return (f"{old} {'merged into' if merge else 'renamed'} {new}{note}" + (f"; rules updated: {', '.join(changed)}" if changed else ""))
+    warn = prefix_warnings(db.get_setting(conn, "rules", {}) or {}, old, new)
+    return (f"{old} {'merged into' if merge else 'renamed'} {new}{note}" + (f"; rules updated: {', '.join(changed)}" if changed else "")
+            + (f". Check the rules: {'; '.join(warn)}" if warn else ""))
+
+
+def prefix_warnings(rules: dict, old: str, new: str) -> list[str]:
+    """Rules that match canonical items by prefix (verify_transfer_prefixes, payer_prefix_by_person) are not rewritten by a rename,
+    because a prefix names many items. Say where the rename changes what a prefix matches."""
+    out = []
+    for p in rules.get("verify_transfer_prefixes") or []:
+        if old.startswith(p) != new.startswith(p):
+            out.append(f"verify_transfer_prefixes \"{p}\" {'no longer matches' if old.startswith(p) else 'now matches'} {new}")
+    for person, prefixes in (rules.get("payer_prefix_by_person") or {}).items():
+        for p in prefixes:
+            if old.startswith(p) != new.startswith(p):
+                out.append(f"payer_prefix_by_person {person} \"{p}\" {'no longer matches' if old.startswith(p) else 'now matches'} {new}")
+    return out
 
 
 def move_canonical(conn, name: str, category: str) -> str:

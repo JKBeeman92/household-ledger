@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 EDITORS = {
-    "mapping": {"title": "Item mapping", "help": "Each EveryDollar item gets a canonical name and a flow; its category is its canonical item's. Every item must be here, or the build lists it as unmapped.", "help_long": "One row per EveryDollar item: Item, CanonicalItem, Category, Flow, Note. A canonical item has one category: leave Category blank to use it, and use Categories and canonical items to rename or move one. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every EveryDollar item name must appear here or the build reports it UNMAPPED. Fund moves kept as income items (Fund Transfer, End of Year Rebalance) need Flow transfer, or they count as income; money held for someone else and paid out needs exclude. No name is read literally: the parts names play (which items are paychecks, which categories are recurring bills, and so on) are set under Pipeline rules, Roles (README, \"Roles\"); rules name canonical items, not raw ones."},
+    "mapping": {"title": "Item mapping", "help": "Each EveryDollar item gets a canonical name and a flow; its category is its canonical item's. Every item must be here, or the build lists it as unmapped.", "help_long": "One row per EveryDollar item: Item, CanonicalItem, Category, Flow, Note. A canonical item has one category, so every row of it gives the same Category (in the row editor, leave Category blank to use the one it has); use Categories and canonical items to rename or move one. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every EveryDollar item name must appear here or the build reports it UNMAPPED. Fund moves kept as income items (Fund Transfer, End of Year Rebalance) need Flow transfer, or they count as income; money held for someone else and paid out needs exclude. No name is read literally: the parts names play (which items are paychecks, which categories are recurring bills, and so on) are set under Pipeline rules, Roles (README, \"Roles\"); rules name canonical items, not raw ones."},
     "goals": {"title": "Goals", "help": "One row per goal: key, label, value, unit, note. The Goals tab and the month-close review read these; values are also confirmed each month in the checklist on Close a month. A share is a fraction (0.07) or a percentage (7%)."},
     "events": {"title": "Life events", "help": "One row per event: month (YYYY-MM), label, and optionally its kind (job, move, family, health, purchase, debt, other) and the person it concerns (one of the people in Pipeline rules). Drawn as markers on the timeline charts; the Employer chart shows job events and events with no kind."},
     "cpi": {"title": "CPI index", "help": "CSV: month, cpi, source. A price index (consumer prices, any base) used for the real-amounts toggle. US households: CPI-U, appending the newest month from FRED CPIAUCSL; mark estimates in source."},
@@ -425,9 +425,11 @@ async def mapping_family(request: Request, user=Depends(auth.require_editor)):
         if canon not in cats:   # a new canonical name takes the category most of the family's rows have now
             votes = sorted(cur[i["item"]]["category"] for i in fam["items"])
             cats[canon] = max(votes, key=votes.count)
+        moved = [f"{i} from {cur[i]['category']}" for i in items if cur[i]["category"] != cats[canon]]
         mapping_store.write_rows(conn, [{**cur[i], "canonical_item": canon, "category": cats[canon]} for i in items])
         db.mark_inputs_changed(conn); conn.commit()
-    flash(request, f"{len(items)} item{'s' * (len(items) != 1)} now use the canonical name {canon}. The dashboard shows it after a rebuild: press Rebuild now.")
+    flash(request, f"{len(items)} item{'s' * (len(items) != 1)} now use the canonical name {canon}"
+                   + (f", so they are in {cats[canon]} ({'; '.join(moved)})" if moved else "") + ". The dashboard shows it after a rebuild: press Rebuild now.")
     return RedirectResponse("/settings#mapping", status_code=303)
 
 

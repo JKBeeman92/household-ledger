@@ -510,10 +510,12 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
                 for r in csv.DictReader(f):   # first row of an item wins, as before
                     seed.setdefault(norm(r["Item"]), {"item": norm(r["Item"]), "canonical_item": norm(r["CanonicalItem"]), "category": norm(r["Category"]),
                                                       "flow": r["Flow"], "note": r.get("Note") or ""})
+            rows, notes = mapping_store.settle_legacy(list(seed.values()))   # a 0.4 settings.zip still seeds (#133)
             try:
-                mapping_store.write_rows(conn, list(seed.values()), replace=True)
+                mapping_store.write_rows(conn, rows, replace=True)
             except mapping_store.MappingError as e:
                 raise mapping_store.MappingError(f"seed {seed_dir / 'item_mapping.csv'}: {e}") from None
+            cur.executemany("INSERT INTO mapping_migration_notes (note) VALUES (%s)", [(n,) for n in notes])
         cur.execute("SELECT count(*) FROM cpi")
         if cur.fetchone()[0] == 0 and (seed_dir / "cpi_u.csv").exists():
             with open(seed_dir / "cpi_u.csv") as f:

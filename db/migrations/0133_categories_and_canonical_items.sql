@@ -1,11 +1,14 @@
 -- Issue #133: categories and canonical items defined once, so a rename is one edit.
 -- item_mapping.category is replaced by canonical_items.category; categories and canonical items are keyed by name with
 -- ON UPDATE CASCADE, so a rename is one UPDATE and every query that reads names keeps working.
--- Data (AGENTS.md: reference tables migrate their data):
---   * a canonical item mapped under more than one category keeps the category most of its rows use (ties: alphabetical);
---     each such case is recorded in mapping_migration_notes, which Settings shows until dismissed;
---   * rows with the placeholder category UNMAPPED leave the mapping (UNMAPPED is a build finding, not a category), and are noted too.
--- db/preview/0133_mapping_preview.sql (python -m app.admin preview-mapping-migration) reports the same, without changing anything.
+-- Data (AGENTS.md: reference tables migrate their data), in this order, each case noted in mapping_migration_notes, which Settings
+-- shows until dismissed; db/preview/0133_mapping_preview.sql (python -m app.admin preview-mapping-migration) reports the same
+-- without changing anything:
+--   1. names are tidied as the app tidies them on input (no-break and other odd spaces become spaces, runs of spaces become one,
+--      ends trimmed), so "Rent " and "Rent" are one canonical item;
+--   2. a row whose category is blank or the placeholder UNMAPPED (in any case) leaves the mapping: the build lists it as unmapped;
+--   3. a row with a blank canonical item takes its item's name;
+--   4. a canonical item mapped under more than one category keeps the one most of its rows use (ties: alphabetical).
 
 CREATE TABLE IF NOT EXISTS mapping_migration_notes (
   id            BIGSERIAL PRIMARY KEY,
@@ -24,11 +27,34 @@ CREATE TABLE IF NOT EXISTS renames (
   by         TEXT NOT NULL DEFAULT ''
 );
 
-INSERT INTO mapping_migration_notes (note)
-SELECT item || ': its category was the placeholder UNMAPPED, so it left the mapping; it is listed as unmapped until you map it'
-FROM item_mapping WHERE category = 'UNMAPPED' ORDER BY item;
-DELETE FROM item_mapping WHERE category = 'UNMAPPED';
+-- 1. tidy names (the same rule as pipeline/run_pipeline.norm)
+CREATE FUNCTION pg_temp.tidy(t TEXT) RETURNS TEXT LANGUAGE SQL IMMUTABLE AS
+$$ SELECT btrim(regexp_replace(translate(coalesce(t, ''), E'    \t\r\n', '       '), ' {2,}', ' ', 'g')) $$;
 
+INSERT INTO mapping_migration_notes (note)
+SELECT item || ': spacing tidied in ' || concat_ws(' and ',
+         CASE WHEN canonical_item <> pg_temp.tidy(canonical_item) THEN 'its canonical item (now "' || pg_temp.tidy(canonical_item) || '")' END,
+         CASE WHEN category <> pg_temp.tidy(category) THEN 'its category (now "' || pg_temp.tidy(category) || '")' END)
+FROM item_mapping
+WHERE (canonical_item <> pg_temp.tidy(canonical_item) OR category <> pg_temp.tidy(category))
+  AND pg_temp.tidy(category) <> '' AND upper(pg_temp.tidy(category)) <> 'UNMAPPED'
+ORDER BY item;
+UPDATE item_mapping SET canonical_item = pg_temp.tidy(canonical_item), category = pg_temp.tidy(category)
+WHERE canonical_item <> pg_temp.tidy(canonical_item) OR category <> pg_temp.tidy(category);
+
+-- 2. no category: out of the mapping
+INSERT INTO mapping_migration_notes (note)
+SELECT item || ': its category was ' || CASE WHEN category = '' THEN 'blank' ELSE 'the placeholder ' || category END
+       || ', so it left the mapping; it is listed as unmapped until you map it'
+FROM item_mapping WHERE category = '' OR upper(category) = 'UNMAPPED' ORDER BY item;
+DELETE FROM item_mapping WHERE category = '' OR upper(category) = 'UNMAPPED';
+
+-- 3. no canonical item: the item's own name
+INSERT INTO mapping_migration_notes (note)
+SELECT item || ': its canonical item was blank, so it is now ' || item FROM item_mapping WHERE canonical_item = '' ORDER BY item;
+UPDATE item_mapping SET canonical_item = item WHERE canonical_item = '';
+
+-- 4. one category per canonical item
 CREATE TEMP TABLE _canon_votes ON COMMIT DROP AS
 SELECT canonical_item, category, count(*) AS n,
        row_number() OVER (PARTITION BY canonical_item ORDER BY count(*) DESC, category) AS rk
@@ -44,10 +70,10 @@ GROUP BY k.canonical_item, k.category, k.n
 ORDER BY k.canonical_item;
 
 CREATE TABLE IF NOT EXISTS categories (
-  name  TEXT PRIMARY KEY CHECK (name <> '' AND name <> 'UNMAPPED')
+  name  TEXT PRIMARY KEY CHECK (btrim(name) <> '' AND upper(name) <> 'UNMAPPED')
 );
 CREATE TABLE IF NOT EXISTS canonical_items (
-  name      TEXT PRIMARY KEY CHECK (name <> ''),
+  name      TEXT PRIMARY KEY CHECK (btrim(name) <> ''),
   category  TEXT NOT NULL REFERENCES categories (name) ON UPDATE CASCADE
 );
 
