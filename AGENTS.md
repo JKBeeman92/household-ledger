@@ -26,6 +26,14 @@ holds two. Its own Save button may follow it. Where a page must stack sections (
 `data-list="unbounded"`; `tests/test_long_lists.py` checks every one on the pages it renders. A list long enough to scan gets a filter box.
 Sub-tabs keep their place in the URL (`/settings#mapping/debts`), so a flash after a save and a link in the docs land on them.
 
+## UX review
+Any change to what a household sees (a template, `app.css`, `settings.js`, `dash-shim.js`, the dashboard page, or the copy and
+flashes in a route) gets a UX critique before its PR is merged: run the saved workflow `ux-critique` (`.claude/workflows/ux-critique.js`)
+with the app running on the sample household (step 2 of "Checking a change"). It finds the surfaces the diff touches, reviews each
+through four lenses (flow, copy and hierarchy, WCAG 2.1 AA, phone width and dark mode and these house rules), has three skeptics try to
+refute every finding, and returns a fix plan. Fix what survives in the same PR, or say in the PR why not; items it marks as the owner's
+decision go to the owner. The PR's "How I checked it" names the run and what it found.
+
 ## Schema changes
 Never edit an applied file in `db/migrations/`; add `NNNN_name.sql`, where NNNN is the 4-digit GitHub issue number (`0022_source_file_history.sql`).
 `app/db.py` applies, at start and under an advisory lock, every file not yet in `schema_migrations`, in filename order, each in its own
