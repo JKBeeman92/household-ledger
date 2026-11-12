@@ -293,15 +293,15 @@ your names plays a part (which items are paychecks, which categories are recurri
 matches the sample household; set it on Settings → Pipeline rules → **Roles**, or in the rules JSON.
 
 **A canonical item has one category.** The mapping is stored as categories, canonical items (each in one category) and item rows
-(each naming a canonical item), so a row's category follows from its canonical item. On Settings → Item mapping, **Categories and
-canonical items** renames either in one edit, and moves a canonical item to another category; renaming to a name that already
+(each naming a canonical item), so a row's category follows from its canonical item. Settings → Item mapping has a sub-tab for each list (Items,
+Categories, Canonical items, Debt types). **Categories** and **Canonical items** rename either in one edit, and moves a canonical item to another category; renaming to a name that already
 exists merges the two. A rename also rewrites every rule that names what was renamed (the `*_categories` rules, `loan_categories` among them, `paycheck_items`,
 `catchall_items`, `income_by_person`, `payer_items_by_person`), including a rule still at its default, and is logged: stored reviews
 keep their wording, and the Reviews page notes the renames made since each was written. The mapping CSV keeps its five columns
 everywhere (the editor, the bulk import, `settings.zip`, seeds, the command line); a CSV that gives one canonical item two categories
-is refused, naming the lines. The panel also flags a canonical item whose rows mix `income` with `expense` or `debt`.
+is refused, naming the lines. The Canonical items sub-tab also flags a canonical item whose rows mix `income` with `expense` or `debt`.
 
-**Debt types.** A canonical item with `debt` rows can be given a type there: `mortgage`, `student`, `auto`, `card`, `medical`,
+**Debt types.** A canonical item with `debt` rows can be given a type on the **Debt types** sub-tab (`/settings#mapping/debts`), which lists only those: `mortgage`, `student`, `auto`, `card`, `medical`,
 `personal` or `other`. The mapping CSV carries it as an optional sixth column, `DebtType`: a five-column CSV leaves types as they are,
 and with the column an empty value clears one. The Debts tab groups typed debts with each type's total, orders them by first payment
 or by total paid, and, once any debt has a type, folds a debt with no payment in the latest `debt_paid_off_months` budget months (a

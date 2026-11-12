@@ -3,7 +3,7 @@
   <h2>Month-close checklist</h2>
   <p class="muted">Standing figures to check before closing. Confirm each as it is, or enter the new value; the date is kept for the dashboard's Goals tab.
     These are the same goals as <a href="/settings#goals">Settings → Goals</a>, where they are added, renamed or removed.</p>
-  <ul style="list-style:none;margin:0;padding:0">
+  <ul style="list-style:none;margin:0;padding:0" data-list="unbounded">
   {% for g in checklist %}<li style="padding:var(--space-3) 0;border-top:1px solid var(--line)">
     <form method="post" action="/goals/{{ g.key }}/confirm" style="display:flex;gap:var(--space-4);align-items:end;flex-wrap:wrap">{{ csrf_field(request) }}
       <div><label for="goal-{{ g.key }}"><strong>{{ g.label }}</strong>{% if g.unit %} <span class="muted">({{ g.unit }})</span>{% endif %}</label>

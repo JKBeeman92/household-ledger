@@ -142,6 +142,7 @@ def overview(conn) -> dict:
         c["rows"] += 1; c["flows"].add(r["flow"])
     for c in canon.values():
         c["mixed"] = "income" in c["flows"] and bool(c["flows"] & {"expense", "debt"})
+        c["debt_or_typed"] = "debt" in c["flows"] or bool(c["debt_type"])   # listed under Settings → Item mapping → Debt types
         c["flows"] = sorted(c["flows"])
     cats: dict[str, dict] = {}
     for c in canon.values():
