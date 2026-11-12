@@ -79,6 +79,11 @@ _last = max([r["BudgetMonth"] for r in L] + [m for (_, m) in _bal.read_balances(
 _brows = _bal.series(_accts, _bal.read_balances(), _paid, _last)
 w("balances", _brows)
 w("balance_totals", _bal.totals(_brows))
+# net_worth (#146): what the household did in a month is its income less living spend (net plus debt payments: paying down a loan is
+# the household's doing; the interest in those payments shows up in "what happened")
+_did = {m: mn[m]["net"] + mn[m]["debt"] for m in mn}
+_cpi = {r["month"]: float(r["cpi"]) for r in csv.DictReader(open("cpi_u.csv"))}
+w("net_worth", _bal.net_worth(_brows, _did, _cpi, D["meta"]["cpi_base"]))
 
 
 # what the Goals tab counts as giving, housing and savings (defaults as in build_ledger.RULES), and the catch-all list for its copy

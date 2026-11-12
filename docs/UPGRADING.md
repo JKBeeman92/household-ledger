@@ -24,6 +24,7 @@ Migrations run at start; read this list before upgrading.
 - **Debt-to-income** (#145): no migration and nothing to do. To draw a cap on it, add `dti_cap` and/or `housing_dti_cap` (a share of
   gross) on Settings → Goals. Housing counts the `goal_housing_categories` rule, so Utilities are in it unless you change that rule.
   For agents: MCP gains the `debt_to_income` dataset, and the review's data gains `debt_to_income`.
+- **Net worth** (#146): no migration. It appears once accounts have balances (above). MCP and the review's data gain `net_worth`.
 
 ## 0.5.0
 

@@ -23,12 +23,12 @@ def test_sample_household_imports_and_reconciles_clean(client, reset_db):
 
 
 def test_sample_household_has_accounts_and_two_years_of_balances(client, reset_db):
-    """#143: five accounts, month-ends from a backfilled 2024-07 to the month before the last export, so the latest month waits for
+    """#143: six accounts, month-ends from a backfilled 2024-07 to the month before the last export, so the latest month waits for
     the check-in: its debt is estimated, its assets carried."""
     reset_db(SAMPLE)
     assert import_exports.main([str(SAMPLE)]) == 0
     rows = client.get("/api/datasets").json()["balances"]
-    assert len({r["account"] for r in rows}) == 5 and min(r["m"] for r in rows) == "2024-07"
+    assert len({r["account"] for r in rows}) == 6 and min(r["m"] for r in rows) == "2024-07"
     last = [r for r in rows if r["m"] == "2026-06"]
     assert {r["source"] for r in last if r["kind"] == "debt"} == {"estimated"} and {r["source"] for r in last if r["kind"] == "asset"} == {"carried"}
     assert any(r["source"] == "carried" and r["account"] == "Pony and Cart" for r in rows if r["m"] < "2026-06")   # valued quarterly

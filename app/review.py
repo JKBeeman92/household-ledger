@@ -58,7 +58,7 @@ PAYCHECK_ITEMS_DEFAULT = ["Paycheck"]   # role default: build_ledger.RULES["payc
 
 
 def build_context(conn, month: str) -> dict:
-    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals','debt_to_income')").fetchall()}
+    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals','debt_to_income','net_worth')").fetchall()}
     monthly = {r["m"]: r for r in ds.get("monthly", [])}
     months = sorted(monthly)
     if month not in monthly:
@@ -86,6 +86,7 @@ def build_context(conn, month: str) -> dict:
         "goals": goals,
         **({"balances": balances_context(ds.get("balance_totals", []), month, prev)} if ds.get("balance_totals") else {}),
         **({"debt_to_income": dti_context(ds.get("debt_to_income", []), goals, month)} if ds.get("debt_to_income") else {}),
+        **({"net_worth": nw_context(ds.get("net_worth", []), month)} if any(r["m"] == month for r in ds.get("net_worth", [])) else {}),
         "continuity": continuity(conn, month, prev),
     }
 
@@ -216,3 +217,16 @@ def dti_context(rows: list[dict], goals: dict, month: str) -> dict | None:
     keep = ("dti", "housing_dti", "dti_takehome", "housing_takehome", "dti_12", "housing_dti_12")
     return {"note": DTI_NOTE, **{k: r[k] for k in keep},
             "caps": {k: goals[k]["value"] for k in ("dti_cap", "housing_dti_cap") if k in goals and goals[k]["value"] is not None}}
+
+
+NW_NOTE = ("Net worth (#146): assets less debts over the household's accounts, at the month-end. change splits into you_did (the month's "
+           "income less living spend: kept plus paid on debts) and happened (investments and home estimates moving, interest, money in "
+           "accounts not tracked); added is accounts new this month and closed accounts retired, so neither reads as progress. estimated "
+           "counts debts with no balance entered. Totals only: no account is named.")
+
+
+def nw_context(rows: list[dict], month: str) -> dict:
+    r = next(x for x in rows if x["m"] == month)
+    keep = ("assets", "debts", "net_worth", "net_worth_ex_home", "change", "you_did", "happened", "added", "closed", "estimated",
+            "change_12", "you_did_12", "happened_12")
+    return {"note": NW_NOTE, **{k: r[k] for k in keep}}

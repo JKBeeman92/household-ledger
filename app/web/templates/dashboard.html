@@ -313,6 +313,13 @@
       <ul class="chips" data-draw="lm-chips" data-source="lm_totals lm_cats" aria-label="The month at a glance"></ul>
       <p class="aside-note">Planned and spent are your budget tool's own figures, so moves between envelopes count as they did in the app; the other tabs use the cleaned ledger.</p>
     </div>
+    <div class="card" id="lm-nw-card">
+      <h2 id="lm-nw">Net worth</h2>
+      <ul class="key row"><li>what you own less what you owe, at the month-end</li><li>the change, split into what you did and what happened to you</li></ul>
+      <p class="tools" data-draw="lm-nw-toggle" data-source="net_worth"></p>
+      <details class="how"><summary>How to read this</summary><p>Net worth is every account's month-end balance (Settings → Accounts; entered at Close a month), assets less debts, leaving out accounts marked not in net worth. Its change since last month is split in two. <b>What you did</b> is the month's income less living spend: what was kept plus what was paid on debts, since paying a loan down is the household's own doing (and, once stated, pre-tax saving such as a 401(k)). <b>What happened to you</b> is the rest: investments and the home's estimate moving, interest charged, and money moving into or out of accounts this page does not track. An account's first month is shown on its own, so adding one is not read as progress. A debt with no balance entered is estimated, and the figure says so. One thing lands on the wrong side: money your budget counts as spent that goes into an account tracked here (a savings envelope paid into a savings account) shows under what happened, not what you did. <b>Excluding home</b> takes a home's typed estimate out, since it moves the total more than any month's decisions.</p></details>
+      <dl class="dti" data-draw="lm-nw" data-source="net_worth balances"></dl>
+    </div>
     <div class="card" id="lm-dti-card">
       <h2 id="lm-dti">Debt against income</h2>
       <ul class="key row"><li>debt payments ÷ gross pay (the stated salary ÷ 12)</li><li>the same payments ÷ take-home, after it</li></ul>
@@ -498,6 +505,14 @@
       <details class="how"><summary>How to read this</summary><p>Each bar spans the months a debt item received payments; the label is the total paid. Bars run from first to last payment month. Debts given a type (Settings → Item mapping → Debt types) are grouped by it, with each type's total; once any debt has a type, a debt with no payment in the latest months (the debt_paid_off_months rule, 3 by default) is folded under Paid off. Total paid includes principal and interest as the budget tool recorded them, not the original loan balance.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Debt</th><th scope="col">Type</th><th scope="col">First payment</th><th scope="col">Last payment</th><th scope="col">Months</th><th scope="col">Total paid</th></tr></thead><tbody data-draw="dt-debts" data-source="debts"></tbody></table></div></details>
         <div class="chart" data-draw="debts" data-source="debts"></div>
         <details class="how paidoff" data-draw="debts-paid-box" data-source="debts"><summary>Paid off</summary><div class="chart" data-draw="debts-paid" data-source="debts"></div></details>
+      </div>
+      <div class="card">
+        <h2 id="nw-chart">Net worth, month by month</h2>
+        <ul class="key row"><li><span class="glyph ln" aria-hidden="true"></span>net worth</li><li><span class="glyph ln dash" aria-hidden="true"></span>dashed: a debt in it is estimated</li><li><span class="glyph">▼</span>accounts added</li></ul>
+        <div class="chart" data-draw="nw-chart" data-source="balances net_worth"></div>
+        <div class="legend" data-draw="nw-legend" data-source="balances"></div>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Assets</th><th scope="col">Debts</th><th scope="col">Net worth</th><th scope="col">Change</th><th scope="col">You did</th><th scope="col">Happened</th></tr></thead><tbody data-draw="dt-nw" data-source="net_worth"></tbody></table></div></details>
+        <details class="how"><summary>How to read this</summary><p>Assets stack above zero and debts below, by account type; the line is net worth, assets less debts. Where a debt had no balance entered for a month its figure is estimated (from the one before, a month's interest and the payments since) and the line is dashed there; enter it at Close a month to make it solid. A triangle marks a month in which accounts were added, so a step up there is new accounts, not progress. Colours follow the order of the types until each type gets a colour of its own.</p></details>
       </div>
       <div class="card">
         <h2 id="balances-table">Balances at the latest month-end</h2>
@@ -1042,6 +1057,67 @@ dash.draw('yearly', (tb) => {
     (r, td) => { if (Number(r.savings_rate) < 0) td.classList.add('neg'); return r.savings_rate == null ? '—' : dash.fmt.pct(1)(Number(r.savings_rate)); },
     (r) => HL.usd0(Number(r.income_real)), (r) => HL.usd0(Number(r.spend_real)), (r, td) => neg(r.net_real, td)]);
 });
+// Net worth (#146): the latest month with its split; a home's estimate can be left out
+const exHome = () => dash.params().nw === 'exhome';
+const nwField = (r, k) => exHome() && k === 'net_worth' ? r.net_worth_ex_home : k === 'net_worth' ? (HL.basis && HL.basis() === 'real' && r.net_worth_real != null ? r.net_worth_real : r.net_worth) : r[k];
+const sgn = (v) => (v >= 0 ? '+' : '−') + HL.usd0(Math.abs(v));
+dash.draw('lm-nw-toggle', (el) => { el.replaceChildren(); const g = dash.data('net_worth'); if (g.status !== 'ok' || !g.data.some((r) => r.home)) return;
+  const lab = document.createElement('label'), cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = exHome();
+  cb.addEventListener('change', () => dash.setParams({ nw: cb.checked ? 'exhome' : null })); lab.append(cb, document.createTextNode(' Excluding home')); el.append(lab); });
+const nwCard = (el) => {
+  const g = dash.data('net_worth'); el.replaceChildren();
+  if (g.status !== 'ok' || !g.data.length) { const dd = document.createElement('dd'); dd.className = 'muted'; dd.textContent = 'No balances yet: add accounts on Settings → Accounts, then enter month-end balances at Close a month.'; el.append(dd); return; }
+  const r = g.data[g.data.length - 1], hc = exHome() ? (r.home_change || 0) : 0;
+  const add = (label, main, sub, bad) => { const dt = document.createElement('dt'), dd = document.createElement('dd'), v = document.createElement('span'); dt.textContent = label; v.className = 'v'; v.textContent = main; dd.append(v);
+    if (sub) { const d = document.createElement('div'); d.className = 'muted' + (bad ? ' down' : ''); d.textContent = sub; dd.append(d); } el.append(dt, dd); };
+  add(`End of ${HL.fmtM(HL.parseM(r.m))}`, HL.usd0(nwField(r, 'net_worth')), (exHome() ? 'excluding home' : '') + (r.estimated ? `${exHome() ? '; ' : ''}includes ${r.estimated} estimated debt balance${r.estimated === 1 ? '' : 's'}` : '') + (!r.confirmed ? `${exHome() || r.estimated ? '; ' : ''}not every balance is confirmed yet (Close a month)` : ''));
+  if (r.change != null) {
+    const ch = r.change - hc, bits = [];
+    if (r.you_did != null) bits.push(`what you did ${sgn(r.you_did)}`, `what happened to you ${sgn(r.happened - hc)}`);
+    if (r.added) bits.push(`${r.added_accounts} account${r.added_accounts === 1 ? '' : 's'} added ${sgn(r.added)}`); if (r.closed) bits.push(`retired ${sgn(-r.closed)}`);
+    add('Since last month', sgn(ch), bits.join(' · ') || null, false);
+  }
+  if (r.change_12 != null) add('Over 12 months', sgn(r.change_12), r.you_did_12 != null ? `what you did ${sgn(r.you_did_12)} · what happened to you ${sgn(r.happened_12)}` + (r.added_12 ? ` · accounts added or retired ${sgn(r.added_12)}` : '') : null, false);
+  else add('Over 12 months', '—', 'needs balances from a year before (Settings → Accounts → Balances history)', false);
+};
+dash.draw('lm-nw', nwCard);
+const NW_TYPES = ['cash', 'savings', 'retirement', 'brokerage', 'home', 'vehicle', 'other', 'mortgage', 'student', 'auto', 'card', 'medical', 'personal'];
+const nwSeries = () => { const g = dash.data('balances'); if (g.status !== 'ok') return null; const rows = g.data.filter((r) => r.in_net_worth);
+  const keys = [...new Set(rows.map((r) => r.kind + ':' + (r.type || 'other')))].sort((a, b) => (a[0] === b[0] ? 0 : a < b ? 1 : -1) || NW_TYPES.indexOf(a.split(':')[1]) - NW_TYPES.indexOf(b.split(':')[1]));
+  return { rows, keys }; };
+dash.draw('nw-legend', (el) => { el.replaceChildren(); const s = nwSeries(); if (!s) return; const c = HL.colors();
+  s.keys.forEach((k, i) => { const sp = document.createElement('span'); sp.dataset.c = String(i % c.length); sp.style.setProperty('--sw', c[i % c.length]); sp.textContent = (k.startsWith('debt') ? 'owed: ' : '') + k.split(':')[1]; el.append(sp); }); });
+dash.draw('nw-chart', (el) => {
+  el.replaceChildren(); const s = nwSeries(), N = HL.rd('net_worth');
+  if (!s || !s.rows.length || N.status !== 'ok' || !N.data.length) { el.textContent = 'No balances yet: add accounts on Settings → Accounts.'; return; }
+  const months = N.data.map((r) => r.m), inR = new Set(months);
+  const data = months.map((m) => { const o = { m, d: HL.parseM(m) }; for (const k of s.keys) o[k] = 0;
+    for (const r of s.rows) if (r.m === m) o[r.kind + ':' + (r.type || 'other')] += r.kind === 'debt' ? -Number(r.amount) : Number(r.amount); return o; });
+  const series = d3.stack().keys(s.keys).offset(d3.stackOffsetDiverging)(data);
+  const W = el.clientWidth || 600, H = 300, mt = 10, mb = 28;
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
+  const y = d3.scaleLinear([Math.min(0, d3.min(series, (sr) => d3.min(sr, (d) => d[0]))), Math.max(0, d3.max(series, (sr) => d3.max(sr, (d) => d[1])))], [H - mb, mt]).nice();
+  const ml = HL.margins(svg, y.ticks(5), HL.money);
+  const x = d3.scaleBand(months, [ml, W - 8]).padding(0.15);
+  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
+  const every = Math.max(1, Math.ceil(months.length / Math.max(2, Math.floor((W - ml) / 70))));
+  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).tickValues(months.filter((_, i) => i % every === 0)).tickFormat((m) => dash.fmt.month(HL.parseM(m))).tickSize(0)).call((a) => { a.select('.domain').remove(); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
+  svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--cds-chart-axis)');
+  const c = HL.colors();
+  series.forEach((sr, i) => svg.append('g').attr('fill', c[i % c.length]).attr('fill-opacity', 0.75).selectAll('rect').data(sr).join('rect')
+    .attr('x', (d) => x(d.data.m)).attr('width', x.bandwidth()).attr('y', (d) => y(Math.max(d[0], d[1]))).attr('height', (d) => Math.abs(y(d[0]) - y(d[1]))));
+  const pts = N.data.map((r) => ({ m: r.m, v: nwField(r, 'net_worth'), est: r.estimated > 0, added: r.added_accounts }));
+  const cx = (p) => x(p.m) + x.bandwidth() / 2;
+  for (let i = 1; i < pts.length; i++) svg.append('line').attr('x1', cx(pts[i - 1])).attr('x2', cx(pts[i])).attr('y1', y(pts[i - 1].v)).attr('y2', y(pts[i].v))
+    .attr('stroke', 'var(--ink)').attr('stroke-width', 2).attr('stroke-dasharray', pts[i].est || pts[i - 1].est ? '4 3' : null);
+  pts.filter((p) => p.added).forEach((p) => svg.append('path').attr('d', d3.symbol(d3.symbolTriangle, 40)()).attr('transform', `translate(${cx(p)},${mt + 4}) rotate(180)`).attr('fill', 'var(--ink-muted)'));
+  const t = HL.tip(el);
+  svg.append('g').selectAll('rect').data(N.data).join('rect').attr('x', (r) => x(r.m)).attr('width', x.bandwidth()).attr('y', mt).attr('height', H - mt - mb).attr('fill', 'transparent')
+    .on('pointermove', (pe, r) => { const [px, py] = d3.pointer(pe, el);
+      t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(HL.parseM(r.m)))}</div><div>Net worth ${HL.usd0(nwField(r, 'net_worth'))}${r.estimated ? ' (estimated debt in it)' : ''}</div><div>Assets ${HL.usd0(r.assets)} · debts ${HL.usd0(r.debts)}</div>` +
+        (r.change != null ? `<div>Change ${sgn(r.change)}${r.you_did != null ? `: you did ${sgn(r.you_did)}, happened ${sgn(r.happened)}` : ''}</div>` : '') + (r.added_accounts ? `<div>${r.added_accounts} account${r.added_accounts === 1 ? '' : 's'} added</div>` : '')); })
+    .on('pointerleave', () => t.hide());
+});
 // Balances (#143): each account at the latest month-end the dataset has; estimated and carried months say so
 const balancesLatest = () => { const g = dash.data('balances'); if (g.status !== 'ok' || !g.data.length) return null; const last = g.data.reduce((a, r) => r.m > a ? r.m : a, '');
   return { m: last, rows: g.data.filter((r) => r.m === last).sort((a, b) => a.kind === b.kind ? (a.account < b.account ? -1 : 1) : (a.kind === 'asset' ? -1 : 1)) }; };
@@ -1509,6 +1585,7 @@ table('employer', 'employer', byM, [(r) => M(r.m), (r) => r.employer || 'Unknown
 table('goal-lines', 'goal_month', byM, [(r) => M(r.m), (r) => P1(r.giving_share_12), (r) => P1(r.joy_share_12), (r) => P1(r.housing_share_12)], mSpan);
 table('debts', 'debts', (rows) => [...rows].sort((a, b) => a.first < b.first ? -1 : 1), [(r) => r.item + (r.paid_off && HL.debtsTyped() ? ' (paid off)' : ''), (r) => r.debt_type || '—', (r) => M(r.first), (r) => M(r.last), (r) => String(r.months), (r) => $(r.total)],
   (rows) => rows.length ? [M(rows.map((r) => r.first).sort()[0]), M(rows.map((r) => r.last).sort().pop())] : []);
+table('nw', 'net_worth', byM, [(r) => M(r.m), (r) => $(r.assets), (r) => $(r.debts), (r) => $(r.net_worth) + (r.estimated ? ' (est.)' : ''), (r) => r.change == null ? '—' : $(r.change), (r) => r.you_did == null ? '—' : $(r.you_did), (r) => r.happened == null ? '—' : $(r.happened)], mSpan);
 table('dti', 'debt_to_income', byM, [(r) => M(r.m), (r) => P1(r.dti_12), (r) => P1(r.housing_dti_12), (r) => P1(r.dti_takehome_12), (r) => P1(r.housing_takehome_12)], mSpan);
 table('net', 'yearly', byY, [(r) => HL.yearLabel(r.y), (r) => $(r[HL.fld('net')]), (r) => P1(r.savings_rate)], ySpan);
 })();</script>

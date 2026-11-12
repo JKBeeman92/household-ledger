@@ -109,3 +109,54 @@ def totals(rows: list[dict]) -> list[dict]:
         t = acc.setdefault((r["m"], r["kind"], r["type"] or ""), {"m": r["m"], "kind": r["kind"], "type": r["type"] or "", "amount": 0.0, "accounts": 0, "estimated": 0})
         t["amount"] = round(t["amount"] + r["amount"], 2); t["accounts"] += 1; t["estimated"] += r["source"] == "estimated"
     return [acc[k] for k in sorted(acc)]
+
+
+def net_worth(rows: list[dict], did: dict[str, float], cpi: dict[str, float] | None = None, cpi_base: float | None = None) -> list[dict]:
+    """net_worth (#146): per budget month, assets − debts over the accounts in net worth, and the month's change split in two:
+      you_did   what the household did: `did[m]`, the month's income less living spend (net plus debt payments; plus pre-tax saving
+                where #152 states it). None for a month the exports do not cover.
+      happened  the rest: asset values moving, interest charged, money in or out of accounts not tracked here.
+    An account's first month (`added`) and the month after its last (`closed`, a retired account) are left out of the split and given
+    on their own, so a new account is not read as progress. change == you_did + happened + added − closed, to the cent.
+    *_ex_home: the same without `home` assets (a typed estimate that moves the total more than a month's decisions)."""
+    by: dict[str, dict[str, dict]] = {}
+    for r in rows:
+        if r["in_net_worth"]:
+            by.setdefault(r["m"], {})[r["account"]] = r
+    signed = lambda r: r["amount"] if r["kind"] == "asset" else -r["amount"]
+    out, prev = [], None
+    for m in sorted(by):
+        cur = by[m]
+        nw = round(sum(signed(r) for r in cur.values()), 2)
+        home = round(sum(r["amount"] for r in cur.values() if r["kind"] == "asset" and r["type"] == "home"), 2)
+        row = {"m": m, "assets": round(sum(r["amount"] for r in cur.values() if r["kind"] == "asset"), 2),
+               "debts": round(sum(r["amount"] for r in cur.values() if r["kind"] == "debt"), 2), "net_worth": nw, "home": home,
+               "net_worth_ex_home": round(nw - home, 2), "accounts": len(cur), "estimated": sum(r["source"] == "estimated" for r in cur.values()),
+               "confirmed": all(r["confirmed"] for r in cur.values()),
+               "net_worth_real": round(nw * cpi_base / cpi[m], 2) if cpi and cpi_base and cpi.get(m) else None,
+               "change": None, "added": None, "added_accounts": 0, "closed": None, "you_did": None, "happened": None, "home_change": None}
+        if prev is not None and prev["m"] == prev_month(m):
+            p = by[prev["m"]]
+            both = [a for a in cur if a in p]
+            added = round(sum(signed(cur[a]) for a in cur if a not in p), 2)
+            closed = round(sum(signed(p[a]) for a in p if a not in cur), 2)
+            moved = round(sum(signed(cur[a]) - signed(p[a]) for a in both), 2)
+            row.update(change=round(nw - prev["net_worth"], 2), added=added, added_accounts=sum(a not in p for a in cur), closed=closed,
+                       home_change=round(sum(cur[a]["amount"] - p[a]["amount"] for a in both if cur[a]["kind"] == "asset" and cur[a]["type"] == "home"), 2))
+            if did.get(m) is not None:
+                row["you_did"] = round(did[m], 2); row["happened"] = round(moved - row["you_did"], 2)
+        out.append(row); prev = row
+    for i, r in enumerate(out):   # the twelve months to this one, when the series reaches back that far without a gap
+        base = out[i - 12] if i >= 12 else None
+        r["change_12"] = round(r["net_worth"] - base["net_worth"], 2) if base and base["m"] == bal_months_back(r["m"], 12) else None
+        span = out[i - 11:i + 1] if r["change_12"] is not None else []
+        r["you_did_12"] = round(sum(x["you_did"] for x in span), 2) if span and all(x["you_did"] is not None for x in span) else None
+        r["happened_12"] = round(sum(x["happened"] for x in span), 2) if r["you_did_12"] is not None else None
+        r["added_12"] = round(sum((x["added"] or 0) - (x["closed"] or 0) for x in span), 2) if span else None
+    return out
+
+
+def bal_months_back(m: str, n: int) -> str:
+    for _ in range(n):
+        m = prev_month(m)
+    return m
