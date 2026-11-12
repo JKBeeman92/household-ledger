@@ -60,8 +60,16 @@ jobs:
           cache-dependency-path: requirements*.txt
       - run: pip install -r requirements-dev.txt
       # The backup test dumps and restores with the tools of the server's own major (postgres:16 above). The runner image ships a
-      # newer client, whose pg_restore sends settings a 16 server refuses, so install the matching one.
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-16
+      # newer client, whose pg_restore sends settings a 16 server refuses, so install the matching one from the PostgreSQL project's
+      # own apt repository (the distribution's carries only its current major).
+      - name: Install the Postgres 16 client
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          . /etc/os-release
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $VERSION_CODENAME-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg-16.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-16
       - run: python -m pytest -q
 
   image:
