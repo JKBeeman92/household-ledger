@@ -87,15 +87,18 @@ def build_server() -> FastMCP:
 
     @mcp.tool()
     def month_summary(m: str) -> dict:
-        """One budget month (YYYY-MM): ledger totals, spend by category, each envelope's planned vs actual, and any life events."""
+        """One budget month (YYYY-MM): ledger totals, spend by category, each envelope's planned vs actual, and any life events
+        (events: their labels; event_details: label with kind and person when set)."""
         with db.pool.connection() as conn:
             _built_month(conn, m)
             monthly = next(r for r in _rows(conn, "monthly") if r["m"] == m)
             cats = [{k: r[k] for k in ("category", "amount", "amount_real")} for r in _rows(conn, "cat_month") if r["m"] == m]
             items = [{k: r[k] for k in ("group", "item", "category", "planned", "actual")} for r in _rows(conn, "budget_items") if r["m"] == m]
-            events = [r["label"] for r in _rows(conn, "events") if r["m"] == m]
+            evs = [r for r in _rows(conn, "events") if r["m"] == m]
+            events = [r["label"] for r in evs]
+            details = [{k: r[k] for k in ("label", "kind", "person") if r.get(k)} for r in evs]
             has_review = conn.execute("SELECT 1 FROM reviews WHERE month=%s", (m,)).fetchone() is not None
-        return {"month": m, "totals": monthly, "categories": cats, "envelopes": items, "events": events, "has_review": has_review}
+        return {"month": m, "totals": monthly, "categories": cats, "envelopes": items, "events": events, "event_details": details, "has_review": has_review}
 
     @mcp.tool()
     def category_trend(category: str, months: int = 12) -> list[dict]:

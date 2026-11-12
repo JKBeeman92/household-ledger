@@ -134,7 +134,7 @@ def test_context_carries_prior_review_life_events_and_goal_confirmations(client,
         sent = review.prompt_for(conn, month)
     c = ctx["continuity"]
     assert c["prior_review"][0]["heading"] == "Plan" and c["prior_review"][0]["text"].startswith("Cut dining out") and len(c["prior_review"][0]["text"]) == review.SECTION_CHARS
-    assert c["life_events"] == {prev: ["Moved to Bywater"], month: ["New job at the mill"]}
+    assert c["life_events"] == {prev: [{"label": "Moved to Bywater"}], month: [{"label": "New job at the mill"}]}
     assert [g["key"] for g in c["goal_confirmations"]] == ["giving_floor"]
     assert c["goal_confirmations"][0] == {"key": "giving_floor", "label": "Giving floor", "value": 10.0, "unit": "%", "confirmed": "2026-03-04"}
     assert "Old news" not in sent and not any(k in ctx for k in secret)

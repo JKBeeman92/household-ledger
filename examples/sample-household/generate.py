@@ -51,8 +51,8 @@ NET_PAY = 1880
 
 MAPPING_NOTES = {"Paycheck": "Rosie, paid every two weeks", "Contract Income": "Sam, garden contracts",
                  "Venmo Pass-Through": "money moved for friends, not part of the household budget"}
-EVENTS = [("2025-03", "Sam takes on garden contracts"), ("2025-07", "Rosie promoted at Hobbiton Mill"),
-          ("2025-10", "Moved to a bigger hole, rent goes up"), ("2026-02", "Elanor is born")]
+EVENTS = [("2025-03", "Sam takes on garden contracts", "job", "Sam"), ("2025-07", "Rosie promoted at Hobbiton Mill", "job", "Rosie"),
+          ("2025-10", "Moved to a bigger hole, rent goes up", "move", None), ("2026-02", "Elanor is born", "family", None)]   # (m, label, kind, person)
 RULES = {
     "people": ["Rosie", "Sam"],
     "income_by_person": {"Rosie": ["Paycheck"], "Sam": ["Contract Income"]},
@@ -154,7 +154,7 @@ def main(out: Path):
     with open(out / "item_mapping.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f, lineterminator="\n"); w.writerow(["Item", "CanonicalItem", "Category", "Flow", "Note"])
         for g, item, canon, cat, flow, *_ in ITEMS: w.writerow([item, canon, cat, flow, MAPPING_NOTES.get(canon, "")])
-    for name, obj in [("goals.json", GOALS), ("events.json", [{"m": m, "label": l} for m, l in EVENTS]), ("rules.json", RULES), ("household.json", HOUSEHOLD)]:
+    for name, obj in [("goals.json", GOALS), ("events.json", [{"m": m, "label": l, "kind": k, **({"person": p} if p else {})} for m, l, k, p in EVENTS]), ("rules.json", RULES), ("household.json", HOUSEHOLD)]:
         (out / name).write_text(json.dumps(obj, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 
 

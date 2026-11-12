@@ -11,6 +11,16 @@ Every upgrade, whatever the version:
 
 Migrations are not reversible. To roll back, pin the previous image tag in `docker-compose.yml` and restore the backup from step 2.
 
+## 0.5.0
+
+Migrations run at start; read this list before upgrading.
+
+- **Life events gain an optional kind and person** (#109, `0109_life_event_kind.sql`). Existing events keep both empty and draw
+  as before; nothing is guessed from their labels. Set them on Settings → Life events. The Employer chart now marks job events,
+  and events with no kind, so existing events appear there too until you give them a kind. For agents: MCP's `month_summary`
+  adds `event_details` (label, kind, person) beside `events`, and the month-close review's `continuity.life_events` lists
+  objects (`{"label", "kind"?, "person"?}`) instead of bare labels.
+
 ## 0.4.0
 
 No action is required, and no migration runs. Two things look different:

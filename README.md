@@ -78,7 +78,7 @@ at once as `settings.zip` ([Backups](#backups)), so moving to a new box is: unzi
 | `item_mapping.csv` | columns `Item,CanonicalItem,Category,Flow,Note` ([Names the pipeline relies on](#names-the-pipeline-relies-on)) |
 | `cpi_u.csv` | columns `month,cpi,source` (`month` is `YYYY-MM`) |
 | `goals.json` | list of `{"key", "label", "value", "unit", "note"}`; `value` may be `null` |
-| `events.json` | list of `{"m": "YYYY-MM", "label": "…"}` (the key is `m`, not `month`) |
+| `events.json` | list of `{"m": "YYYY-MM", "label": "…", "kind": "…", "person": "…"}` (the key is `m`, not `month`); `kind` (one of `job`, `move`, `family`, `health`, `purchase`, `debt`, `other`) and `person` (best one of the `people` rule) are optional |
 | `rules.json` | object; keys and types in [`app/schemas/rules.schema.json`](app/schemas/rules.schema.json) |
 | `household.json` | object; [`app/schemas/household.schema.json`](app/schemas/household.schema.json) |
 | `review.json` | list of `{"m", "order", "heading", "text"}`, one row per review section |
