@@ -6,9 +6,11 @@
   {% elif not bal.month %}
   <p class="muted">Upload a month first: balances are asked for at the end of each budget month.</p>
   {% else %}
-  <p class="muted">What each account stood at on the last day of the budget month, from its statement or app. Each field is filled in with a suggestion: for a debt, the balance before plus a month's interest (at its APR, when given) less the month's payment and escrow; for an asset, the balance before. Saving a suggestion unchanged counts as confirming it. A debt left blank is estimated on the charts, an asset carried.
+  <p>What each account stood at on the last day of the budget month, from its statement or app. A suggestion is filled in; saving it unchanged confirms it.</p>
+  <details class="how"><summary>How the suggestion is worked out</summary><p class="muted">For a debt, the balance before plus a month's interest (at its APR, when given) less the month's payment and escrow; for an asset, the balance before. A debt left blank is estimated on the charts, an asset carried.</p></details>
+  <p class="muted">
     {% if bal.months|length > 1 %}<a href="/settings#accounts">Earlier months</a> are entered as balances history.{% endif %}</p>
-  {% if not next_url %}<form method="get" action="/upload#balances" class="tools"><label>Month <select name="balances_month" aria-label="Month-end to enter">{% for m in bal.months %}<option value="{{ m }}" {% if m == bal.month %}selected{% endif %}>{{ m|month_short }}</option>{% endfor %}</select></label> <button class="btn" type="submit">Show</button></form>{% endif %}
+  {% if not next_url %}<form method="get" action="/upload#balances" class="tools"><label>Month <select name="balances_month" aria-label="Month-end to enter">{% for m in bal.months %}<option value="{{ m }}" {% if m == bal.month %}selected{% endif %}>{{ m|month_short }}</option>{% endfor %}</select></label> <button class="btn" type="submit">Show that month's balances</button></form>{% endif %}
   <form method="post" action="/balances/{{ bal.month }}">{{ csrf_field(request) }}{% if next_url %}<input type="hidden" name="next" value="{{ next_url }}#step-balances">{% endif %}
     <div class="tablewrap"><table class="plain balances-form" data-list="unbounded"><thead><tr><th scope="col">Account</th><th scope="col">Balance</th></tr></thead><tbody>
     {% for r in bal.rows %}<tr>

@@ -220,7 +220,7 @@ def run_job(job_id: int) -> None:
 
 def latest_job(conn) -> dict | None:
     """The newest review job, for Close a month; a job cut off by a restart is closed as interrupted."""
-    conn.execute("UPDATE review_jobs SET state='failed', finished_at=now(), error='interrupted: the app restarted while the review was being written; generate it again' "
+    conn.execute("UPDATE review_jobs SET state='failed', finished_at=now(), error='interrupted: the app restarted while the review was being written; write it again' "
                  "WHERE state IN ('queued', 'running') AND created_at < now() - make_interval(mins => %s)", (STALE_MINUTES,))
     conn.commit()
     row = conn.execute("SELECT id, month, state, provider, created_at, started_at, finished_at, sections, error FROM review_jobs ORDER BY id DESC LIMIT 1").fetchone()

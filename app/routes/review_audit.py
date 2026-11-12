@@ -12,7 +12,7 @@ MONTH = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 
 
 @router.get("/reviews/confirm", response_class=HTMLResponse)
-def review_confirm(request: Request, month: str = "", user=Depends(auth.require_editor)):
+def review_confirm(request: Request, month: str = "", back: str = "", user=Depends(auth.require_editor)):
     if not MONTH.match(month):
         flash(request, "Pick a budget month first.", "bad")
         return RedirectResponse("/upload", status_code=303)
@@ -23,7 +23,8 @@ def review_confirm(request: Request, month: str = "", user=Depends(auth.require_
         except ValueError as e:
             tokens, error = 0, str(e)
         existing = conn.execute("SELECT model, generated_at, hand_edited_at FROM reviews WHERE month=%s", (month,)).fetchone()
-    return render(request, "reviews_confirm.html", user, active="reviews", month=month, prov=prov, problem=prov.problem(), tokens=tokens, error=error, existing=existing)
+    return render(request, "reviews_confirm.html", user, active="reviews", month=month, prov=prov, problem=prov.problem(), tokens=tokens, error=error, existing=existing,
+                  back=auth._safe_next(back) if back else "/upload")   # Cancel returns where the person came from (DS-FLASH-1)
 
 
 @router.get("/reviews/history", response_class=HTMLResponse)
@@ -41,18 +42,18 @@ def _get(conn, month: str):
 
 
 @router.get("/reviews/edit/{month}", response_class=HTMLResponse)
-def review_edit(request: Request, month: str, user=Depends(auth.require_editor)):
+def review_edit(request: Request, month: str, back: str = "", user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         row = _get(conn, month)
-    return render(request, "reviews_edit.html", user, active="reviews", r=row)
+    return render(request, "reviews_edit.html", user, active="reviews", r=row, back=auth._safe_next(back) if back else "/reviews")
 
 
 @router.post("/reviews/edit/{month}")
-def review_edit_save(request: Request, month: str, heading: list[str] = Form(default=[]), text: list[str] = Form(default=[]), user=Depends(auth.require_editor)):
+def review_edit_save(request: Request, month: str, heading: list[str] = Form(default=[]), text: list[str] = Form(default=[]), back: str = Form(""), user=Depends(auth.require_editor)):
     pairs = [(h.strip(), t.strip()) for h, t in zip(heading, text) if h.strip() or t.strip()]
     if not pairs or any(not h or not t for h, t in pairs):
         flash(request, "Not saved: every section needs both a heading and text, and at least one section must remain.", "bad")
-        return RedirectResponse(f"/reviews/edit/{month}", status_code=303)
+        return RedirectResponse(f"/reviews/edit/{month}" + (f"?back={back}" if back else ""), status_code=303)
     sections = [{"order": i, "heading": h, "text": t} for i, (h, t) in enumerate(pairs, 1)]
     with db.pool.connection() as conn:
         _get(conn, month)
@@ -60,4 +61,4 @@ def review_edit_save(request: Request, month: str, heading: list[str] = Form(def
         review.refresh_dataset(conn)
         conn.commit()
     flash(request, f"Saved your edits to the {month_text(month)} review. It is marked as hand-edited.")
-    return RedirectResponse("/reviews/history", status_code=303)
+    return RedirectResponse(auth._safe_next(back) if back else "/reviews", status_code=303)   # back where the Edit was pressed

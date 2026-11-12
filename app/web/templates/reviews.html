@@ -18,7 +18,7 @@
   </form>
   <div class="panel">
     <h2>Status</h2>
-    {% if problem %}<p>Not configured: {{ problem }}. The Generate review button stays disabled.</p>
+    {% if problem %}<p>Not configured: {{ problem }}. Write review stays unavailable until it is.</p>
     {% else %}<p>Ready: <strong>{{ prov.display }}</strong>{% if prov.base_url %} at {{ prov.base_url }}{% endif %}.</p>{% endif %}
     <form method="post" action="/reviews/test">{{ csrf_field(request) }}
       <p style="margin-top:var(--space-3)"><button class="btn" type="submit" {% if problem %}disabled{% endif %}>Test connection</button></p>

@@ -156,3 +156,39 @@ def test_confirm_page_shows_waiting_state_and_guards_a_second_send(client, month
     assert 'id="gen-form"' in t and 'id="gen-btn"' in t
     assert 'id="gen-status" class="muted" role="status" aria-live="polite" hidden' in t
     assert "form.dataset.sent" in t and "e.preventDefault()" in t and "nonce=" in t.split("form.dataset.sent")[0].rsplit("<script", 1)[1]
+
+
+def test_one_name_for_writing_a_review_and_cancel_returns_where_it_came_from(client, reset_db):
+    """#192: "Write review" and "Review provider" everywhere; Cancel and Save land where the person pressed the link."""
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parent.parent / "app" / "web" / "templates"
+    text = "\n".join(p.read_text() for p in root.rglob("*.html"))
+    for old in ("Generate review", "Send and generate", "Write one", ">Write again<", "Provider settings", "Generate the "):
+        assert old not in text, old
+    from app import db
+    with db.pool.connection() as conn:
+        conn.execute("INSERT INTO reviews (month, model, sections, prompt) VALUES ('2025-01', 'm', '[{\"order\":1,\"heading\":\"H\",\"text\":\"T\"}]'::jsonb, 'p')"); conn.commit()
+    page = client.get("/reviews/edit/2025-01?back=/reviews").text
+    assert 'name="back" value="/reviews"' in page and 'href="/reviews" style' in page
+    r = client.post("/reviews/edit/2025-01", data={"heading": ["H2"], "text": ["T2"], "back": "/reviews"})
+    assert r.headers["location"] == "/reviews"
+    assert 'href="/checkin/2025-01#step-review"' in client.get("/reviews/confirm?month=2025-01&back=/checkin/2025-01%23step-review").text
+    assert client.post("/reviews/edit/2025-01", data={"heading": ["H"], "text": ["T"], "back": "//evil.example"}).headers["location"] == "/"
+    hist = client.get("/reviews/history").text
+    assert 'href="/reviews/provider">Review provider' in hist and 'aria-label="Edit sections of the January 2025 review"' in hist
+
+
+def test_write_review_again_and_back_to_the_check_in(client, reset_db):
+    """#192: a stored review makes the act "Write review again"; a send started from the check-in returns to its Review step."""
+    from conftest import GOLDEN, upload_files
+    from app import db
+    upload_files(client, GOLDEN / "exports")
+    with db.pool.connection() as conn:
+        conn.execute("INSERT INTO reviews (month, model, sections, prompt) VALUES ('2025-01', 'm', '[{\"order\":1,\"heading\":\"H\",\"text\":\"T\"}]'::jsonb, 'p')"); conn.commit()
+    page = client.get("/reviews/confirm?month=2025-01&back=/checkin/2025-01%23step-review").text
+    assert "review again?</h1>" in page and 'data-label="Write review again"' in page and 'name="back" value="/checkin/2025-01#step-review"' in page
+    r = client.post("/review/generate", data={"month": "2025-01", "confirm": "yes", "back": "/checkin/2025-01#step-review"})
+    assert r.headers["location"] in ("/checkin/2025-01#step-review", "/upload#review-job")   # no provider here: the flash says why, on Close a month or the step
+    r = client.post("/review/generate", data={"month": "2025-01", "confirm": "yes", "back": "//evil.example"})
+    assert r.headers["location"] == "/"

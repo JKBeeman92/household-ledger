@@ -110,7 +110,7 @@ def rebuild_now(request: Request, background: BackgroundTasks, next: str = Form(
 
 
 @router.post("/review/generate")
-def review_generate(request: Request, background: BackgroundTasks, month: str = Form(...), confirm: str = Form(""), user=Depends(auth.require_editor)):
+def review_generate(request: Request, background: BackgroundTasks, month: str = Form(...), confirm: str = Form(""), back: str = Form(""), user=Depends(auth.require_editor)):
     if confirm != "yes":   # the cost guard: a provider call only follows the confirmation page
         return RedirectResponse(f"/reviews/confirm?month={month}", status_code=303)
     with db.pool.connection() as conn:   # the model can take minutes: queue it and return; Close a month shows progress (issue #124)
@@ -120,7 +120,10 @@ def review_generate(request: Request, background: BackgroundTasks, month: str = 
             flash(request, f"A review of {month_text(month)} is already being written; its progress is below.")
         else:
             background.add_task(review.run_job, job)
-    return RedirectResponse("/upload#review-job", status_code=303)
+            if back:
+                flash(request, f"The {month_text(month)} review is being written; it is stored when the model answers.")
+    # back where Write review was pressed (DS-FLASH-1): the check-in's Review step shows the job too
+    return RedirectResponse(auth._safe_next(back) if back and not back.startswith("/upload") else "/upload#review-job", status_code=303)
 
 
 @router.get("/review/status")

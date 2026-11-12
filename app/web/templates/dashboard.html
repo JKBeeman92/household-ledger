@@ -306,7 +306,7 @@
   <!-- ===================== LAST MONTH ===================== -->
   <section id="lastmonth" class="page" role="tabpanel" aria-labelledby="tab-lastmonth" tabindex="0" hidden>
     {% if checkin %}<p class="checkin-line" id="lm-checkin">{% set mname = checkin.month %}<strong>{{ checkin.month|month }} check-in:</strong>
-      {% if checkin.done %}done {{ checkin.completed_at|date }}{% else %}{{ checkin.to_do }} step{{ '' if checkin.to_do == 1 else 's' }} to do · <a href="/checkin/{{ checkin.month }}">continue</a>{% endif %}{% if checkin.missing %} · {{ checkin.missing }} earlier month{{ '' if checkin.missing == 1 else 's' }} without one (<a href="/checkin/{{ checkin.month }}#catch-up">catch up</a>){% endif %}</p>{% endif %}
+      {% if checkin.done %}done {{ checkin.completed_at|date }}{% else %}{{ checkin.to_do }} step{{ '' if checkin.to_do == 1 else 's' }} to do · <a href="/checkin/{{ checkin.month }}">continue the check-in</a>{% endif %}{% if checkin.missing %} · {{ checkin.missing }} earlier month{{ '' if checkin.missing == 1 else 's' }} without one (<a href="/checkin/{{ checkin.month }}#catch-up">catch up on earlier months</a>){% endif %}</p>{% endif %}
     <div class="card headline" id="lm-headline">
       <div class="lead"><p class="eyebrow"><b data-draw="lm-name">—</b> · against its plan</p><div class="fig" data-draw="lm-fig" data-source="lm_totals">—</div></div>
       <p class="take" data-draw="lm-take" data-source="lm_totals">—</p>

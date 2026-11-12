@@ -160,10 +160,13 @@ def test_generate_refuses_when_unconfigured(client, reset_db, cfg):
         review.generate(conn, "2026-01")
 
 
-def test_generate_button_follows_configured_provider(client, reset_db, cfg):
-    assert "disabled" in client.get("/upload").text.split("Generate review")[0][-300:]
+def test_write_review_follows_configured_provider(client, reset_db, cfg):
+    """No provider: Close a month offers the first step instead of a disabled button (DS-EMPTY-1); with one, Write review (#192)."""
+    page = client.get("/upload").text
+    assert "Set up a review provider" in page and ">Write review</button>" not in page
     cfg(review_provider="ollama", review_base_url="http://o:11434", review_model_explicit="llama-x")
-    assert "disabled" not in client.get("/upload").text.split("Generate review")[0][-300:]
+    page = client.get("/upload").text
+    assert ">Write review</button>" in page and 'name="back" value="/upload#review"' in page
 
 
 def test_reviews_page_save_and_test(client, reset_db, cfg, http):
