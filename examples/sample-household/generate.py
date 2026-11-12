@@ -74,6 +74,17 @@ GOALS = [
     {"key": "housing_cap", "value": 0.35, "unit": "share of take-home", "label": "Housing cap", "note": "Housing and utilities over net paychecks."},
     {"key": "investing_per_paycheck", "value": 150, "unit": "usd", "label": "Investing per paycheck", "note": "Deposited outside the budget app; not in the exports."},
 ]
+# accounts and month-end balances (#143): a backfilled year before the exports start, then every month-end but the last, which is left
+# for the check-in to confirm. The cart is valued quarterly, so the months between are carried. Their own random stream, so the exports
+# above stay byte-for-byte as they were.
+ACCOUNTS = [  # name, kind, type, person, debt_item, apr, emergency, in_net_worth
+    ("Lembas Student Loan", "debt", "student", "Rosie", "Student Loan", "5.5%", "", "yes"),
+    ("Green Hills Savings", "asset", "savings", "", "", "", "yes", "yes"),
+    ("Bywater Checking", "asset", "cash", "", "", "", "no", "yes"),
+    ("Hobbiton Mill Pension", "asset", "retirement", "Rosie", "", "", "no", "yes"),
+    ("Pony and Cart", "asset", "vehicle", "Sam", "", "", "no", "yes"),
+]
+BALANCES_FROM = (2024, 7)
 HOUSEHOLD = {"name": "Sample Household", "title": "Sample Household Ledger", "currency": "USD", "locale": "en-US"}
 
 
@@ -139,6 +150,30 @@ def build_month(rng, y, m):
     return bm, txns, planned
 
 
+def write_balances(out: Path, export_months: list[str]):
+    rng = random.Random(SEED * 143)
+    with open(out / "accounts.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f, lineterminator="\n"); w.writerow(["name", "kind", "type", "person", "debt_item", "apr", "escrow", "emergency", "in_net_worth", "active"])
+        for name, kind, typ, person, item, apr, em, nw in ACCOUNTS: w.writerow([name, kind, typ, person, item, apr, "", em, nw, "yes"])
+    y, m = BALANCES_FROM; ends = []
+    while f"{y}-{m:02d}" < export_months[-1]:
+        ends.append((y, m)); y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+    loan, saved, checking, pension, cart = 2100000, 300000, 240000, 1400000, 900000   # cents
+    rows = []
+    for y, m in ends:
+        bm = f"{y}-{m:02d}"
+        loan = max(0, loan + loan * 55 // 12000 - 27500)     # 5.5% APR, $275 a month: what the suggestion works out, so it reads as confirmed
+        saved += 30000 + (38000 if bm == "2025-12" else 0) - (60000 if bm == "2026-03" else 0)   # the monthly envelope; the baby's first spring
+        checking = 180000 + rng.randint(0, 120000)
+        pension = pension * (1000 + rng.randint(-12, 18)) // 1000 + 65000   # 10% of gross in, the market does the rest
+        rows += [("Lembas Student Loan", bm, loan), ("Green Hills Savings", bm, saved), ("Bywater Checking", bm, checking), ("Hobbiton Mill Pension", bm, pension)]
+        if m % 3 == 0:
+            cart = cart * 97 // 100; rows.append(("Pony and Cart", bm, cart))
+    with open(out / "balances.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f, lineterminator="\n"); w.writerow(["account", "month", "amount"])
+        for a, bm, c in sorted(rows): w.writerow([a, bm, money(c)])
+
+
 def main(out: Path):
     out.mkdir(parents=True, exist_ok=True)
     rng = random.Random(SEED)
@@ -162,6 +197,7 @@ def main(out: Path):
     with open(out / "item_mapping.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f, lineterminator="\n"); w.writerow(["Item", "CanonicalItem", "Category", "Flow", "Note", "DebtType"])
         for g, item, canon, cat, flow, *_ in ITEMS: w.writerow([item, canon, cat, flow, MAPPING_NOTES.get(canon, ""), DEBT_TYPES.get(canon, "")])
+    write_balances(out, [f"{y}-{m:02d}" for y, m in months])
     for name, obj in [("goals.json", GOALS), ("events.json", [{"m": m, "label": l, "kind": k, **({"person": p} if p else {})} for m, l, k, p in EVENTS]), ("rules.json", RULES), ("household.json", HOUSEHOLD)]:
         (out / name).write_text(json.dumps(obj, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 

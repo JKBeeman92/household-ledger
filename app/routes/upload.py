@@ -14,6 +14,7 @@ from psycopg.types.json import Jsonb
 from ..builds import build_status, run_background
 from .findings import latest_findings
 from .checklist import checklist_goals
+from .balances import form_context as balances_form
 from pipeline.run_pipeline import ingest, build_running, FN_RX, EXPORT_NAMES
 from .sources import stash
 
@@ -33,9 +34,10 @@ def upload_page(request: Request, user=Depends(auth.require_editor)):
         checklist = checklist_goals(conn)
         review_ok = review.providers.is_configured(conn)
         last = conn.execute("SELECT created_at, results FROM upload_batches ORDER BY id DESC LIMIT 1").fetchone()
+        bal = balances_form(conn, request.query_params.get("balances_month"))
     with db.pool.connection() as conn:
         review_job = review.latest_job(conn)
-    return render(request, "upload.html", user, active="upload", review_job=review_job, findings=findings, checklist=checklist, files=files, months=months, build=build, review_enabled=review_ok, last_upload=last, max_upload_mb=settings.max_upload_mb, import_dir_set=bool(settings.import_dir))
+    return render(request, "upload.html", user, active="upload", bal=bal, review_job=review_job, findings=findings, checklist=checklist, files=files, months=months, build=build, review_enabled=review_ok, last_upload=last, max_upload_mb=settings.max_upload_mb, import_dir_set=bool(settings.import_dir))
 
 
 async def _read_capped(f: UploadFile) -> bytes | None:

@@ -1,0 +1,6 @@
+name,kind,type,person,debt_item,apr,escrow,emergency,in_net_worth,active
+Lembas Student Loan,debt,student,Rosie,Student Loan,5.5%,,,yes,yes
+Green Hills Savings,asset,savings,,,,,yes,yes,yes
+Bywater Checking,asset,cash,,,,,no,yes,yes
+Hobbiton Mill Pension,asset,retirement,Rosie,,,,no,yes,yes
+Pony and Cart,asset,vehicle,Sam,,,,no,yes,yes

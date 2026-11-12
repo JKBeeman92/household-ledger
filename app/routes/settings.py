@@ -7,7 +7,7 @@ from .. import db, auth, schema, mapping_hints, brand_check, renames
 from . import brand
 from ..web_helpers import flash, render
 from pipeline.run_pipeline import norm, unmapped_items
-from pipeline import mapping_store
+from pipeline import mapping_store, accounts_store
 
 router = APIRouter()
 
@@ -15,6 +15,7 @@ router = APIRouter()
 EDITORS = {
     "mapping": {"title": "Item mapping", "help": "Each item from your budget tool gets a canonical name and a flow; its category is its canonical item's. Every item must be here, or the build lists it as unmapped.", "help_long": "One row per item in your exports: Item, CanonicalItem, Category, Flow, Note, and optionally DebtType (mortgage, student, auto, card, medical, personal, other; a five-column CSV leaves types as they are). A canonical item has one category, so every row of it gives the same Category (in the row editor, leave Category blank to use the one it has); use Categories and canonical items to rename or move one. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every item name in the exports must appear here or the build reports it UNMAPPED. Fund moves kept as income items (Fund Transfer, End of Year Rebalance) need Flow transfer, or they count as income; money held for someone else and paid out needs exclude. No name is read literally: the parts names play (which items are paychecks, which categories are recurring bills, and so on) are set under Pipeline rules, Roles (README, \"Roles\"); rules name canonical items, not raw ones."},
     "goals": {"title": "Goals", "help": "One row per goal: key, label, value, unit, note. The Goals tab and the month-close review read these; values are also confirmed each month in the checklist on Close a month. A share is a fraction (0.07) or a percentage (7%)."},
+    "accounts": {"title": "Accounts", "help": "What the household owes and owns, for month-end balances (entered on Close a month). Kind is debt or asset. A debt's type is a debt type (empty: its linked item's); an asset's is cash, savings, retirement, brokerage, home, vehicle or other. Linked item is the canonical item a debt's payments go to, so the suggested balance can subtract last month's payment; APR adds a month's interest; escrow is the part of each payment that is not the loan. Person is one of the people, or empty for joint. Emergency marks an asset that counts toward the emergency fund (cash and savings by default). An account with balances is retired (Active no), not deleted: its balances are kept."},
     "events": {"title": "Life events", "help": "One row per event: month (YYYY-MM), label, and optionally its kind (job, move, family, health, purchase, debt, other) and the person it concerns (one of the people in Pipeline rules). Drawn as markers on the timeline charts; the Employer chart shows job events and events with no kind."},
     "cpi": {"title": "CPI index", "help": "CSV: month, cpi, source. A price index (consumer prices, any base) used for the real-amounts toggle. US households: CPI-U, appending the newest month from FRED CPIAUCSL; mark estimates in source."},
     "rules": {"title": "Pipeline rules", "help": "JSON object of household-specific classification rules. Unknown keys and invalid regular expressions are rejected on save."},
@@ -36,7 +37,7 @@ FLOW_HELP = {   # one line each, shown beside the Flow choice (what the pipeline
 MONTH_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 
 
-PIPELINE_INPUTS = {"mapping", "goals", "events", "cpi", "rules"}   # read by the pipeline: the dashboard changes only after a rebuild
+PIPELINE_INPUTS = {"mapping", "goals", "events", "cpi", "rules", "accounts", "balances"}   # read by the pipeline: the dashboard changes only after a rebuild
 
 
 def check_mapping_row(r: dict) -> tuple[dict, dict]:
@@ -132,6 +133,8 @@ def _row_save(conn, kind: str, f: dict) -> tuple[dict, dict]:
                 c["category"] = mapping_store.categories_of(conn)[c["canonical_item"]]
             except mapping_store.MappingError as e:
                 err["category"] = str(e).split(": ", 1)[1]
+    elif kind == "accounts":
+        c, err = accounts_store.row_save(conn, f)
     elif kind == "goals":
         c, err = check_goal_row(f); orig = (f.get("original") or "").strip()
         if not err and c["key"] != orig:
@@ -158,6 +161,8 @@ def _row_delete(conn, kind: str, f: dict) -> int:
         return mapping_store.delete_items(conn, [norm(f.get("original") or "")])
     if kind == "goals":
         return conn.execute("DELETE FROM goals WHERE key=%s", ((f.get("original") or "").strip(),)).rowcount
+    if kind == "accounts":
+        return accounts_store.delete_account(conn, accounts_store.norm(f.get("original") or ""))
     return conn.execute("DELETE FROM life_events WHERE month=%s AND label=%s", ((f.get("original_m") or "").strip(), (f.get("original_label") or "").strip())).rowcount
 
 
@@ -257,6 +262,10 @@ def _cpi_rows(body: str) -> list[tuple[str, str, str]]:
 def _editor_body(conn, key: str) -> str:
     if key == "mapping":
         return _mapping_csv(conn)
+    if key == "accounts":
+        return accounts_store.accounts_csv(conn)
+    if key == "balances":   # not a Settings editor: the typed month-end balances, for the CLI and sources.zip (#143)
+        return accounts_store.balances_csv(conn)
     if key == "cpi":
         out = io.StringIO(); w = csv.writer(out); w.writerow(["month", "cpi", "source"])
         for r in conn.execute("SELECT month, cpi, source FROM cpi ORDER BY month").fetchall():
@@ -270,9 +279,13 @@ def _editor_body(conn, key: str) -> str:
     return json.dumps(db.get_setting(conn, key, {}), indent=1)
 
 
-def _save_editor(conn, key: str, body: str) -> str:
+def _save_editor(conn, key: str, body: str, by: str = "") -> str:
     if key == "mapping":
         return _mapping_import(conn, body)
+    if key == "accounts":
+        return accounts_store.import_accounts(conn, body)
+    if key == "balances":
+        return accounts_store.import_balances(conn, body, by)
     if key == "cpi":
         rows = _cpi_rows(body)
         base = (db.get_setting(conn, "rules", {}) or {}).get("cpi_base_month")
@@ -319,7 +332,9 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         editors = [{"key": k, "body": _editor_body(conn, k), "fields": schema.help_fields(k) if k in schema.NAMES else [], **v} for k, v in EDITORS.items()]
         rows = {"mapping": mapping_store.rows(conn),
                 "goals": [{**r, "value": (f"{r['value']:f}".rstrip("0").rstrip(".") if r["value"] is not None else None)} for r in conn.execute("SELECT key, value, unit, label, note FROM goals ORDER BY key").fetchall()],
-                "events": conn.execute("SELECT month AS m, label, kind, person FROM life_events ORDER BY month, label").fetchall()}
+                "events": conn.execute("SELECT month AS m, label, kind, person FROM life_events ORDER BY month, label").fetchall(),
+                "accounts": [accounts_store.out(a) for a in accounts_store.list_accounts(conn)]}
+        balance_counts = {r["account"]: r for r in conn.execute("SELECT account, count(*) n, min(budget_month) first, max(budget_month) last FROM balances GROUP BY account").fetchall()}
         categories = sorted({r["category"] for r in rows["mapping"] if r["category"]})
         rules = db.get_setting(conn, "rules", {}) or {}
         household = db.get_setting(conn, "household", {}) or {}
@@ -331,7 +346,9 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS,
                   event_choices={"kind": [""] + list(EVENT_KINDS)}, people=list(rules.get("people") or []),
                   defs=defs, mapping_notes=mapping_notes, canonical_category={c["name"]: c["category"] for c in defs["canonical"]},
-                  debt_types=mapping_store.DEBT_TYPES)
+                  debt_types=mapping_store.DEBT_TYPES, balance_counts=balance_counts,
+                  account_choices={"kind": list(accounts_store.KINDS), "type": [""] + sorted(set(accounts_store.bal.DEBT_TYPES + accounts_store.bal.ASSET_TYPES)),
+                                   "emergency": ["", "yes", "no"], "in_net_worth": ["yes", "no"], "active": ["yes", "no"]})
 
 
 @router.get("/settings/mapping.csv")
@@ -450,13 +467,13 @@ async def mapping_family(request: Request, user=Depends(auth.require_editor)):
 
 @router.post("/settings/{kind}/row")
 async def settings_row_save(request: Request, kind: str, user=Depends(auth.require_editor_api)):
-    if kind not in ("mapping", "goals", "events"):
+    if kind not in ("mapping", "goals", "events", "accounts"):
         raise HTTPException(404)
     form = {k: v for k, v in (await request.form()).items() if isinstance(v, str)}
     with db.pool.connection() as conn:
         try:
             row, err = _row_save(conn, kind, form)
-            warning = person_warning(conn, [row.get("person")]) if kind == "events" and not err else ""
+            warning = person_warning(conn, [row.get("person")]) if kind in ("events", "accounts") and not err else ""
             if not err:
                 db.mark_inputs_changed(conn)
             conn.commit()
@@ -467,15 +484,39 @@ async def settings_row_save(request: Request, kind: str, user=Depends(auth.requi
 
 @router.post("/settings/{kind}/row/delete")
 async def settings_row_delete(request: Request, kind: str, user=Depends(auth.require_editor_api)):
-    if kind not in ("mapping", "goals", "events"):
+    if kind not in ("mapping", "goals", "events", "accounts"):
         raise HTTPException(404)
     form = {k: v for k, v in (await request.form()).items() if isinstance(v, str)}
     with db.pool.connection() as conn:
-        n = _row_delete(conn, kind, form)
+        try:
+            n = _row_delete(conn, kind, form)
+        except ValueError as e:   # an account with balances (#143): say why, keep the row
+            conn.rollback()
+            return JSONResponse({"ok": False, "errors": {"_": str(e)}, "rebuild_needed": False})
         if n:
             db.mark_inputs_changed(conn)
         conn.commit()
     return JSONResponse({"ok": n > 0, "deleted": n, "rebuild_needed": n > 0}, status_code=200 if n else 404)
+
+
+@router.post("/settings/accounts/balances")
+def balances_backfill(request: Request, body: str = Form(...), user=Depends(auth.require_editor)):
+    """Balances history (#143): past month-ends typed or pasted as CSV (account,YYYY-MM,amount); every line checked first."""
+    with db.pool.connection() as conn:
+        try:
+            what = accounts_store.import_balances(conn, body, _who(user))
+            db.mark_inputs_changed(conn); conn.commit()
+            flash(request, f"Saved {what}. The dashboard shows them after a rebuild: press Rebuild now.")
+        except ValueError as e:
+            conn.rollback(); flash(request, f"Not saved — {e}", "bad")
+    return RedirectResponse("/settings#accounts", status_code=303)
+
+
+@router.get("/settings/accounts/balances.csv")
+def balances_export(user=Depends(auth.require_editor)):
+    with db.pool.connection() as conn:
+        body = accounts_store.balances_csv(conn)
+    return Response(body, media_type="text/csv", headers={"Content-Disposition": 'attachment; filename="balances.csv"'})
 
 
 @router.post("/settings/{key}")

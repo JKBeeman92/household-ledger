@@ -1,4 +1,4 @@
-/* Settings page: inline row editors for mapping, goals and events. Plain JS; the tables are server-rendered and work read-only without it. */
+/* Settings page: inline row editors for mapping, goals, events and accounts. Plain JS; the tables are server-rendered and work read-only without it. */
 (function () {
   var csrf = document.getElementById("csrf-form");
   function post(url, fields) {
@@ -66,7 +66,9 @@
         } else {
           inp = el("input", { type: "text", name: f, "aria-label": heading(f), value: row[f] == null ? "" : row[f] });
           if (f === "category" && kind === "mapping") inp.setAttribute("list", "settings-categories");
-          if (f === "person" && kind === "events") inp.setAttribute("list", "settings-people");   // suggested, not required: an unknown person is a warning (#109)
+          if (f === "person" && (kind === "events" || kind === "accounts")) inp.setAttribute("list", "settings-people");   // suggested, not required: an unknown person is a warning (#109)
+          if (f === "debt_item" && kind === "accounts") inp.setAttribute("list", "settings-debt-items");   // #143
+          if (f === "apr" || f === "escrow") inp.setAttribute("inputmode", "decimal");
           if (f === "canonical_item" && kind === "mapping") inp.setAttribute("list", "settings-canonicals");
           if (f === "value") inp.setAttribute("inputmode", "decimal");
           if (f === "m") inp.setAttribute("placeholder", "YYYY-MM");

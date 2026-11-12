@@ -58,7 +58,7 @@ PAYCHECK_ITEMS_DEFAULT = ["Paycheck"]   # role default: build_ledger.RULES["payc
 
 
 def build_context(conn, month: str) -> dict:
-    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people')").fetchall()}
+    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals')").fetchall()}
     monthly = {r["m"]: r for r in ds.get("monthly", [])}
     months = sorted(monthly)
     if month not in monthly:
@@ -84,8 +84,19 @@ def build_context(conn, month: str) -> dict:
         "envelopes_planned_vs_actual": items,
         "paycheck_envelopes_with_money": paychecks,
         "goals": goals,
+        **({"balances": balances_context(ds.get("balance_totals", []), month, prev)} if ds.get("balance_totals") else {}),
         "continuity": continuity(conn, month, prev),
     }
+
+
+BALANCES_NOTE = ("Month-end balances by account type (no account names): debts are what is owed, assets what is held, over the accounts "
+                 "counted in net worth. estimated counts debts with no balance typed for the month, worked out from the one before and the payments since.")
+
+
+def balances_context(totals: list[dict], month: str, prev: str) -> dict:
+    """Balances for the review (#143): totals by kind and type for the month and the one before; never an account name."""
+    pick = lambda m: [{k: r[k] for k in ("kind", "type", "amount", "accounts", "estimated")} for r in totals if r["m"] == m]
+    return {"note": BALANCES_NOTE, "month": pick(month), "prior": pick(prev)}
 
 
 def prompt_for(conn, month: str) -> str:

@@ -165,7 +165,7 @@ def test_mapped_pair_builds_the_same_ledger_as_the_everydollar_pair(client, rese
         assert all(f["m"] for f in files) and bytes(files[1]["content"]) == TXN.read_bytes()
         assert conn.execute("SELECT count(*) n FROM upload_pending").fetchone()["n"] == 0
     z = zipfile.ZipFile(io.BytesIO(client.get("/export/sources.zip").content))
-    assert sorted(z.namelist()) == ["2025-01/bree-bank-2025-01-budget.csv", "2025-01/bree-bank-2025-01-transactions.csv"]
+    assert sorted(z.namelist()) == ["2025-01/bree-bank-2025-01-budget.csv", "2025-01/bree-bank-2025-01-transactions.csv", "balances.csv"]
     assert z.read("2025-01/bree-bank-2025-01-transactions.csv") == TXN.read_bytes()
 
 

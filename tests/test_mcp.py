@@ -102,6 +102,11 @@ def test_transactions_merchants_and_notes_are_never_served(loaded):
         return {t.name for t in (await s.list_tools()).tools}
     assert not any("transaction" in n for n in mcp_session(tok, fn))
     assert "verify" not in mcp_endpoint.DATASETS and "ledger" not in mcp_endpoint.DATASETS and "transactions" not in mcp_endpoint.DATASETS
+    assert "balances" not in mcp_endpoint.DATASETS   # names accounts (#143); balance_totals is the same by type
+    err, text = call(tok, "get_dataset", {"name": "balances"})
+    assert err and "unknown dataset" in text
+    err, rows = call(tok, "get_dataset", {"name": "balance_totals"})
+    assert not err and rows and not any("account" in r for r in rows)
     err, text = call(tok, "get_dataset", {"name": "verify"})
     assert err and "unknown dataset" in text
     names = {r["name"] for r in sql("SELECT name FROM datasets")}

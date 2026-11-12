@@ -2,7 +2,7 @@
 
 The database is the source of truth. For a rebuild we:
   1. export raw exports (transactions, budget_items) from Postgres as internal-format CSVs (pipeline/filenames.py),
-  2. export the reference tables (item_mapping, cpi, goals, life_events, rules) into the files the scripts read,
+  2. export the reference tables (item_mapping, cpi, goals, life_events, rules, accounts) and the typed balances into the files the scripts read,
   3. run the unchanged pipeline scripts in a scratch working directory,
   4. load ledger.csv and dash_data/*.json back into Postgres (tables `ledger`, `datasets`).
 
@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 import psycopg
 from psycopg.rows import dict_row, tuple_row
 
-from . import filenames, mapping_store
+from . import accounts_store, balances, filenames, mapping_store
 
 HERE = Path(__file__).resolve().parent
 SCRIPTS = ["build_ledger.py", "aggregate.py", "make_datasets.py", "make_budget_items.py"]
@@ -242,6 +242,15 @@ def export_for_pipeline(conn: psycopg.Connection, wd: Path) -> None:
         cur.execute("SELECT month m, label, kind, person FROM life_events ORDER BY month, label")
         with open(wd / "events.json", "w") as out:   # kind and person only when set (#109), so events without them read as before
             json.dump([{k: v for k, v in r.items() if v is not None} for r in cur], out)
+        # accounts and month-end balances (#143): read by make_datasets.py through pipeline/balances.py
+        cur.execute(f"SELECT {', '.join(balances.ACCOUNT_COLUMNS)} FROM accounts ORDER BY name")
+        with open(wd / "accounts.csv", "w", newline="") as out:
+            w = csv.writer(out); w.writerow(balances.ACCOUNT_COLUMNS)
+            for r in cur: w.writerow(["" if r[c] is None else (str(r[c]).lower() if isinstance(r[c], bool) else r[c]) for c in balances.ACCOUNT_COLUMNS])
+        cur.execute("SELECT account, budget_month, amount, source FROM balances ORDER BY account, budget_month")
+        with open(wd / "balances.csv", "w", newline="") as out:
+            w = csv.writer(out); w.writerow(balances.BALANCE_COLUMNS)
+            for r in cur: w.writerow([r["account"], r["budget_month"], f"{r['amount']:.2f}", r["source"]])
         cur.execute("SELECT value FROM settings WHERE key='rules'")
         row = cur.fetchone()
     with open(wd / "rules.json", "w") as out:
@@ -503,7 +512,7 @@ def _seed_event_fields(e: dict, path) -> tuple[str | None, str | None]:
 
 
 def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> None:
-    """First boot: load the mapping, CPI, goals, rules, events and past reviews, only into empty tables.
+    """First boot: load the mapping, CPI, goals, rules, events, accounts, balances and past reviews, only into empty tables.
     Each file is taken from seed_dir when present there, else from the generic files shipped next to this module."""
     _given = Path(seed_dir)
 
@@ -549,6 +558,7 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
         cur.execute("SELECT count(*) FROM settings WHERE key='rules'")
         if cur.fetchone()[0] == 0 and (seed_dir / "rules.json").exists():
             cur.execute("INSERT INTO settings (key, value) VALUES ('rules', %s)", (_read(seed_dir / "rules.json"),))
+        accounts_store.seed(conn, seed_dir / "accounts.csv", seed_dir / "balances.csv")   # #143: balances.csv is in sources.zip
         cur.execute("SELECT count(*) FROM reviews")
         if cur.fetchone()[0] == 0 and (seed_dir / "review.json").exists():
             with open(seed_dir / "review.json") as f:
