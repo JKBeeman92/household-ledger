@@ -54,6 +54,9 @@ def continuity(conn, month: str, prev: str) -> dict:
     return {"note": CONTINUITY_NOTE, "prior_review": prior, "life_events": events, "goal_confirmations": goals}
 
 
+PAYCHECK_ITEMS_DEFAULT = ["Paycheck"]   # role default: build_ledger.RULES["paycheck_items"]
+
+
 def build_context(conn, month: str) -> dict:
     ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people')").fetchall()}
     monthly = {r["m"]: r for r in ds.get("monthly", [])}
@@ -70,7 +73,9 @@ def build_context(conn, month: str) -> dict:
     for c in {c for m in t12 for c in cat.get(m, {})}:
         t12_cat[c] = round(mean(cat.get(m, {}).get(c, 0) for m in t12), 2) if t12 else None
     items = [{k: r[k] for k in ("group", "item", "category", "planned", "actual")} for r in ds.get("budget_items", []) if r["m"] == month]
-    paychecks = sum(1 for r in ds.get("budget_items", []) if r["m"] == month and r["category"] == "Income" and r["actual"] and r["canonical"] == "Paycheck")
+    pay_rule = (db.get_setting(conn, "rules", {}) or {}).get("paycheck_items")   # null = the default, [] = none, as in build_ledger
+    pay_items = set(pay_rule if pay_rule is not None else PAYCHECK_ITEMS_DEFAULT)
+    paychecks = sum(1 for r in ds.get("budget_items", []) if r["m"] == month and r["flow"] == "income" and r["actual"] and r["canonical"] in pay_items)
     goals = {g["key"]: {"value": g["value"], "unit": g["unit"], "label": g["label"]} for g in ds.get("goals", [])}
     return {
         "month": month, "prior_month": prev,

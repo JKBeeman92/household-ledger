@@ -53,6 +53,12 @@ def _month_guess(data: bytes, sec: dict) -> str:
         return ""
 
 
+def income_groups(conn) -> list[str]:
+    """The income_groups rule: what a new profile's income groups start as."""
+    v = (db.get_setting(conn, "rules", {}) or {}).get("income_groups")
+    return list(v) if v is not None else src.DEFAULT_INCOME_GROUPS
+
+
 def _plan(conn, files: list[dict]) -> dict:
     """What the mapping page shows: each file's header and first rows, its kind, the profile that recognises it (if any), and a
     starting spec for both sections."""
@@ -79,9 +85,10 @@ def _plan(conn, files: list[dict]) -> dict:
         if matched and matched.get(key) and (kind not in by_kind or src.which_kind(by_kind[kind]["header"], matched) == kind):
             spec[key] = matched[key]
         elif kind in by_kind:
-            spec[key] = src.propose(kind, by_kind[kind]["data"])
+            spec[key] = src.propose(kind, by_kind[kind]["data"], income_groups(conn))
     month = _month_guess(by_kind["transactions"]["data"], spec["transactions"]) if "transactions" in by_kind and spec["transactions"] else ""
-    return {"files": out, "spec": spec, "profile_id": matched["_id"] if matched else None, "month": month, "profiles": profiles}
+    return {"files": out, "spec": spec, "profile_id": matched["_id"] if matched else None, "month": month, "profiles": profiles,
+            "income_groups": income_groups(conn)}
 
 
 @router.get("/upload/map/{batch}", response_class=HTMLResponse)
@@ -93,10 +100,10 @@ def map_page(request: Request, batch: str, user=Depends(auth.require_editor)):
             return RedirectResponse("/upload", status_code=303)
         plan = _plan(conn, files)
     return render(request, "upload_map.html", user, active="upload", batch=batch, plan=plan, txn_labels=TXN_LABELS, budget_labels=BUDGET_LABELS,
-                  date_formats=src.DATE_FORMATS, kind_label=KIND_LABEL, error=None)
+                  date_formats=src.DATE_FORMATS, kind_label=KIND_LABEL, default_income_groups=plan["income_groups"], error=None)
 
 
-def _section_from_form(form, prefix: str, kind: str, headers: list[str]) -> dict:
+def _section_from_form(form, prefix: str, kind: str, headers: list[str], groups: list[str] | None = None) -> dict:
     fields = src.TXN_FIELDS if kind == "transactions" else src.BUDGET_FIELDS
     cols = {f: (form.get(f"{prefix}col_{f}") or None) for f in fields}
     lst = lambda k, d: [v.strip() for v in (form.get(k) or d).split(",") if v.strip()]
@@ -104,9 +111,9 @@ def _section_from_form(form, prefix: str, kind: str, headers: list[str]) -> dict
     if kind == "transactions":
         sec.update(date_format=form.get(f"{prefix}date_format") or "MM/DD/YYYY", amount_mode=form.get(f"{prefix}amount_mode") or "signed",
                    expense_sign=form.get(f"{prefix}expense_sign") or "negative", income_values=lst(f"{prefix}income_values", "income"),
-                   income_groups=lst(f"{prefix}income_groups", "Income"))
+                   income_groups=lst(f"{prefix}income_groups", ", ".join(groups if groups is not None else src.DEFAULT_INCOME_GROUPS)))
     else:
-        sec.update(spent_sign=form.get(f"{prefix}spent_sign") or "negative", income_groups=lst(f"{prefix}income_groups", "Income"))
+        sec.update(spent_sign=form.get(f"{prefix}spent_sign") or "negative", income_groups=lst(f"{prefix}income_groups", ", ".join(groups if groups is not None else src.DEFAULT_INCOME_GROUPS)))
     return sec
 
 
@@ -130,7 +137,7 @@ async def map_confirm(request: Request, batch: str, background: BackgroundTasks,
             spec = {"name": name}
             for kind, key, prefix in (("transactions", "transactions", "t_"), ("budget_items", "budget", "b_")):
                 if kind in by_kind:
-                    spec[key] = _section_from_form(form, prefix, kind, src.headers_of(by_kind[kind]["data"]))
+                    spec[key] = _section_from_form(form, prefix, kind, src.headers_of(by_kind[kind]["data"]), income_groups(conn))
                 elif old and old["spec"].get(key):
                     spec[key] = old["spec"][key]   # one file of the pair: the other half of a saved profile stays as it was
                 else:
@@ -149,7 +156,7 @@ async def map_confirm(request: Request, batch: str, background: BackgroundTasks,
         except (src.ProfileError, ValueError) as e:
             conn.rollback()
             return render(request, "upload_map.html", user, active="upload", batch=batch, plan=plan, txn_labels=TXN_LABELS, budget_labels=BUDGET_LABELS,
-                          date_formats=src.DATE_FORMATS, kind_label=KIND_LABEL, error=str(e), form=form)
+                          date_formats=src.DATE_FORMATS, kind_label=KIND_LABEL, default_income_groups=plan["income_groups"], error=str(e), form=form)
         running = build_running(conn)
     if not running:
         background.add_task(run_background)

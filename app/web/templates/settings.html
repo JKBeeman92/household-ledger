@@ -86,6 +86,14 @@
     <p class="muted">Matching ignores capitals. Clear both fields of a row to remove it; the blank row adds one.</p>
     <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save people and employers</button></p>
   </form>
+  <form class="panel" method="post" action="/settings/rules/roles">{{ csrf_field(request) }}
+    <h2>Roles</h2>
+    <p class="muted">Which of your names play a part the charts rely on. Call your categories and items what you like, then say here which ones these are. One name per line; a blank field uses the default shown. To say "none", set the rule to <code>[]</code> in the JSON below.</p>
+    {% for key, label, help in role_fields %}{% set cur = rules.get(key) %}<label>{{ label }}{% if cur == [] %} <span class="muted">(none: set to [] in the JSON)</span>{% endif %} <textarea name="{{ key }}" rows="{{ [((cur or [])|length), (role_defaults[key]|length), 1]|max }}" placeholder="{{ role_defaults[key]|join('\n') }}" aria-describedby="role-{{ key }}">{{ (cur or [])|join('\n') }}</textarea></label>
+    <input type="hidden" name="{{ key }}__was" value="{{ (cur or [])|join('\n') }}">
+    <p class="muted" id="role-{{ key }}">{{ help }}</p>{% endfor %}
+    <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save roles</button></p>
+  </form>
   {% endif %}
   {% if key == "household" %}<details class="panel"><summary>Edit as JSON</summary>{% endif %}
   <form class="panel" method="post" action="/settings/{{ ed.key }}">{{ csrf_field(request) }}

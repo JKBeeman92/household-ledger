@@ -66,8 +66,10 @@ w("slush", [{"y":k[0],"item":k[1],"amount":round(v,2)} for k,v in sorted(slush.i
 
 # what the Goals tab counts as giving, housing and savings (defaults as in build_ledger.RULES), and the catch-all list for its copy
 def _rl(key, default): return RU.get(key) if RU.get(key) is not None else default
-w("goal_config", [{"giving_categories": _rl("goal_giving_categories", ["Giving"]), "housing_categories": _rl("goal_housing_categories", ["Housing", "Utilities"]),
-                   "savings_groups": _rl("goal_savings_groups", []), "catchall_items": sorted(CATCHALL), "paycheck_min": _rl("paycheck_min", 500)}])
+# plan_keep_categories (issue #162): the Last month tab's suggested plan keeps the current plan for these categories
+w("goal_config", [{"giving_categories": _rl("goal_giving_categories", ["Giving"]), "housing_categories": _rl("goal_housing_categories", ["Housing", "Utilities"]),   # role default
+                   "savings_groups": _rl("goal_savings_groups", []), "catchall_items": sorted(CATCHALL), "paycheck_min": _rl("paycheck_min", 500),
+                   "plan_keep_categories": _rl("plan_keep_categories", ["Housing", "Debt", "Insurance"])}])   # role default
 
 # reconciliation: every envelope whose transactions do not sum to its BudgetItems Spent (empty when the books are clean)
 from decimal import Decimal as _D
