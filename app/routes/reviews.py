@@ -14,7 +14,10 @@ def reviews_list(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         rows = conn.execute("SELECT month, model, generated_at, hand_edited_at, sections FROM reviews ORDER BY month DESC").fetchall()
         prov = rp.resolve(conn)
-    return render(request, "reviews_list.html", user, active="reviews", reviews=rows, prov=prov, problem=prov.problem())
+        log = conn.execute("SELECT at, old, new FROM renames ORDER BY at").fetchall()
+    # a stored review keeps its text (the record of what was said); renames since it was written are noted beside it (#133)
+    later = {r["month"]: [x for x in log if x["at"] > r["generated_at"]] for r in rows}   # a hand edit keeps the generated names
+    return render(request, "reviews_list.html", user, active="reviews", reviews=rows, prov=prov, problem=prov.problem(), later=later)
 
 
 @router.get("/reviews/provider", response_class=HTMLResponse)

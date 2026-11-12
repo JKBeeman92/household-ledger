@@ -80,7 +80,7 @@ def test_draft_adds_only_missing_items_and_keeps_one_name_per_envelope():
 # ------------------------------------------------------------------ routes
 
 def mapping(conn):
-    return {r["item"]: dict(r) for r in conn.execute("SELECT item, canonical_item, category, flow, note FROM item_mapping").fetchall()}
+    return {r["item"]: dict(r) for r in conn.execute("SELECT item, canonical_item, category, flow, note FROM mapping_rows").fetchall()}
 
 
 @pytest.fixture
@@ -143,7 +143,8 @@ def test_suggest_endpoint(client, reset_db):
 
 def test_build_log_guesses_use_the_existing_mapping(client, two_unmapped):
     with db.pool.connection() as conn:
-        conn.execute("INSERT INTO item_mapping (item,canonical_item,category,flow) VALUES ('Holiday 2','Holiday Fund','Savings','expense')"); conn.commit()
+        from pipeline import mapping_store
+        mapping_store.write_rows(conn, [{"item": "Holiday 2", "canonical_item": "Holiday Fund", "category": "Savings", "flow": "expense", "note": ""}]); conn.commit()
     from app.routes.findings import latest_findings
     from app.builds import run_background
     run_background()

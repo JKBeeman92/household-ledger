@@ -112,7 +112,9 @@ docker compose exec -T ledger python -m app.admin import-mapping - < item_mappin
 Commands: `import-mapping`, `set-rules`, `set-events`, `set-goals`, `set-cpi` and `set-household` replace one editor's contents from a file
 (`-` reads standard input); `export <mapping|rules|events|goals|cpi|household>` and `export-mapping` print them; `draft-mapping` prints the
 [drafted mapping](#roles) for unmapped items and `add-mapping FILE` adds a reviewed draft without touching existing
-rows; `rebuild` exits 0 when the build reconciles, 1 when it fails or does not reconcile, and 75 when another rebuild is running. Every
+rows; `rename-category OLD NEW`, `rename-canonical OLD NEW` and `move-canonical NAME CATEGORY` do what the Categories and canonical
+items panel does ([Roles](#roles)); `preview-mapping-migration` prints what the 0.5.0 upgrade will change in a 0.4 mapping
+([docs/UPGRADING.md](docs/UPGRADING.md)); `rebuild` exits 0 when the build reconciles, 1 when it fails or does not reconcile, and 75 when another rebuild is running. Every
 write is logged as a `ledger.admin` line naming the command. API tokens stay read-only: shell access to the container already means
 full control, so the command line adds no new way in.
 
@@ -289,6 +291,16 @@ The item mapping turns each raw item name from the exports (`Item`) into a `Cano
 you like: nothing in the code reads a category, canonical item or budget group by its name. Where a chart needs to know *which* of
 your names plays a part (which items are paychecks, which categories are recurring bills), a rule says so. Each has a default that
 matches the sample household; set it on Settings → Pipeline rules → **Roles**, or in the rules JSON.
+
+**A canonical item has one category.** The mapping is stored as categories, canonical items (each in one category) and item rows
+(each naming a canonical item), so a row's category follows from its canonical item. On Settings → Item mapping, **Categories and
+canonical items** renames either in one edit, and moves a canonical item to another category; renaming to a name that already
+exists merges the two. A rename also rewrites every rule that names what was renamed (the `*_categories` rules, `loan_categories` among them, `paycheck_items`,
+`catchall_items`, `income_by_person`, `payer_items_by_person`), including a rule still at its default, and is logged: stored reviews
+keep their wording, and the Reviews page notes the renames made since each was written. The mapping CSV keeps its five columns
+everywhere (the editor, the bulk import, `settings.zip`, seeds, the command line); a CSV that gives one canonical item two categories
+is refused, naming the lines. The panel also flags a canonical item whose rows mix `income` with `expense` or `debt`.
+`UNMAPPED` is not a category: an item with no row is what the build calls unmapped.
 
 | Rule | Default | Names | What reads it |
 |---|---|---|---|

@@ -105,6 +105,7 @@ def draft(unmapped: list[dict], mapping: list[dict], rules: dict | None = None) 
     group and Flow from flow_for. Items drafted together share a base name's CanonicalItem. Note marks every row as drafted."""
     have = {r["item"] for r in mapping}
     out, seen, canon_of = [], set(), {}
+    cat_of = {r["canonical_item"]: r["category"] for r in mapping}   # a canonical item has one category (#133): the draft follows it
     for u in unmapped:
         item = norm(u["item"])
         if not item or item in have or item in seen:
@@ -120,7 +121,9 @@ def draft(unmapped: list[dict], mapping: list[dict], rules: dict | None = None) 
         base = base_name(item, rules)
         # a fund move keeps its own name; otherwise the base name, spelled as the first drafted item that had it
         canon = item if flow == "transfer" else canon_of.setdefault(base.lower(), base)
-        out.append({"item": item, "canonical_item": canon, "category": group, "flow": flow, "note": f"drafted from group {group}"})
+        cat = cat_of.setdefault(canon, group)
+        out.append({"item": item, "canonical_item": canon, "category": cat, "flow": flow,
+                    "note": f"drafted from group {group}" + (f" (category {cat}, as {canon} already has)" if cat != group else "")})
     return out
 
 

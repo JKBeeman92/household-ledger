@@ -14,7 +14,7 @@ EXPECTED = ["item_mapping.csv", "cpi_u.csv", "goals.json", "events.json", "rules
 def snapshot(conn) -> dict:
     """The reference tables as a new install would hold them (confirmed_at and updated_at are per-install state)."""
     q = lambda sql: [dict(r) for r in conn.execute(sql).fetchall()]
-    return {"mapping": q("SELECT item, canonical_item, category, flow, note FROM item_mapping ORDER BY item"),
+    return {"mapping": q("SELECT item, canonical_item, category, flow, note FROM mapping_rows ORDER BY item"),
             "cpi": q("SELECT month, cpi, source FROM cpi ORDER BY month"),
             "goals": q("SELECT key, value, unit, label, note FROM goals ORDER BY key"),
             "events": q("SELECT month, label, kind, person FROM life_events ORDER BY month, label"),

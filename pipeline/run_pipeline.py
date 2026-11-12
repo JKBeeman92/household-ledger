@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 import psycopg
 from psycopg.rows import dict_row, tuple_row
 
-from . import filenames
+from . import filenames, mapping_store
 
 HERE = Path(__file__).resolve().parent
 SCRIPTS = ["build_ledger.py", "aggregate.py", "make_datasets.py", "make_budget_items.py"]
@@ -180,17 +180,17 @@ def reconcile(conn: psycopg.Connection, budget_month: str | None = None) -> dict
 
 
 def unmapped_items(conn: psycopg.Connection) -> list[dict]:
-    """Items in the raw exports that have no mapping row, or only the placeholder category UNMAPPED, worst (most rows) first."""
+    """Items in the raw exports that have no mapping row, worst (most rows) first."""
     with conn.cursor(row_factory=dict_row) as cur:
-        cur.execute("SELECT item, category FROM item_mapping")
-        mapped = {r["item"]: r["category"] for r in cur.fetchall()}
+        cur.execute("SELECT item FROM item_mapping")
+        mapped = {r["item"] for r in cur.fetchall()}
         cur.execute("""SELECT item, MIN(grp) AS grp, array_agg(DISTINCT budget_month ORDER BY budget_month) AS months, SUM(n)::int AS n, SUM(amt) AS amount FROM (
                          SELECT item, grp, budget_month, COUNT(*) AS n, SUM(amount) AS amt FROM transactions GROUP BY 1,2,3
                          UNION ALL SELECT item, grp, budget_month, 0, 0 FROM budget_items) u GROUP BY item""")
         found: dict[str, dict] = {}
         for r in cur.fetchall():
             k = norm(r["item"])
-            if mapped.get(k, "UNMAPPED") != "UNMAPPED":
+            if k in mapped:
                 continue
             f = found.setdefault(k, {"item": k, "group": r["grp"], "months": set(), "rows": 0, "amount": 0.0})
             f["months"].update(r["months"]); f["rows"] += r["n"]; f["amount"] += float(r["amount"])
@@ -229,7 +229,7 @@ def export_for_pipeline(conn: psycopg.Connection, wd: Path) -> None:
                     w = csv.writer(out, quoting=csv.QUOTE_ALL); w.writerow(["Group", "Item", "Planned", "Spent", "Remaining"])
                     for r in cur: w.writerow([r["grp"], r["item"], f"{r['planned']:.2f}", f"{r['spent']:.2f}", f"{r['remaining']:.2f}"])
         # reference tables
-        cur.execute("SELECT item, canonical_item, category, flow, note FROM item_mapping ORDER BY item")
+        cur.execute("SELECT item, canonical_item, category, flow, note FROM mapping_rows ORDER BY item")
         with open(wd / "item_mapping.csv", "w", newline="") as out:
             w = csv.writer(out); w.writerow(["Item", "CanonicalItem", "Category", "Flow", "Note"])
             for r in cur: w.writerow([r["item"], r["canonical_item"], r["category"], r["flow"], r["note"]])
@@ -516,9 +516,16 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
         cur.execute("SELECT count(*) FROM item_mapping")
         if cur.fetchone()[0] == 0 and (seed_dir / "item_mapping.csv").exists():
             with open(seed_dir / "item_mapping.csv") as f:
-                for r in csv.DictReader(f):
-                    cur.execute("INSERT INTO item_mapping (item,canonical_item,category,flow,note) VALUES (%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
-                                (norm(r["Item"]), r["CanonicalItem"], r["Category"], r["Flow"], r.get("Note", "")))
+                seed = {}
+                for r in csv.DictReader(f):   # first row of an item wins, as before
+                    seed.setdefault(norm(r["Item"]), {"item": norm(r["Item"]), "canonical_item": norm(r["CanonicalItem"]), "category": norm(r["Category"]),
+                                                      "flow": r["Flow"], "note": r.get("Note") or ""})
+            rows, notes = mapping_store.settle_legacy(list(seed.values()))   # a 0.4 settings.zip still seeds (#133)
+            try:
+                mapping_store.write_rows(conn, rows, replace=True)
+            except mapping_store.MappingError as e:
+                raise mapping_store.MappingError(f"seed {seed_dir / 'item_mapping.csv'}: {e}") from None
+            cur.executemany("INSERT INTO mapping_migration_notes (note) VALUES (%s)", [(n,) for n in notes])
         cur.execute("SELECT count(*) FROM cpi")
         if cur.fetchone()[0] == 0 and (seed_dir / "cpi_u.csv").exists():
             with open(seed_dir / "cpi_u.csv") as f:

@@ -60,7 +60,7 @@ def test_unmapped_item_is_listed_then_mapped_inline_and_rebuilt(client, reset_db
     assert 'id="unmapped-none"' in page and 'value="Electric"' not in page
     from app import db
     with db.pool.connection() as conn:
-        assert conn.execute("SELECT category, flow FROM item_mapping WHERE item='Electric'").fetchone() == {"category": "Utilities", "flow": "expense"}
+        assert conn.execute("SELECT category, flow FROM mapping_rows WHERE item='Electric'").fetchone() == {"category": "Utilities", "flow": "expense"}
         assert conn.execute("SELECT count(*) n FROM ledger WHERE item='Electric'").fetchone()["n"] > 0
 
 

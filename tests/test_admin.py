@@ -16,7 +16,7 @@ def run(capsys, *argv) -> tuple[int, str, str]:
 
 
 def mapping(conn):
-    return {r["item"]: dict(r) for r in conn.execute("SELECT item, canonical_item, category, flow, note FROM item_mapping").fetchall()}
+    return {r["item"]: dict(r) for r in conn.execute("SELECT item, canonical_item, category, flow, note FROM mapping_rows").fetchall()}
 
 
 def test_export_then_import_mapping_round_trips(client, reset_db, capsys, tmp_path):

@@ -19,6 +19,7 @@
   {% if kind == "mapping" %}<details class="keyhelp flowhelp"><summary>What each Flow means</summary>
     <dl class="flowlist">{% for f in flows %}<dt><code>{{ f }}</code></dt><dd>{{ flow_help[f] }}</dd>{% endfor %}</dl></details>
   <datalist id="settings-categories">{% for c in categories %}<option value="{{ c }}">{% endfor %}</datalist>
+  <datalist id="settings-canonicals">{% for c in canonical_category %}<option value="{{ c }}">{% endfor %}</datalist>
   <script type="application/json" id="flow-help" nonce="{{ csp_nonce(request) }}">{{ flow_help|tojson }}</script>{% endif %}
   <p class="tools"><button class="btn primary" type="button" data-add="{{ kind }}">Add row</button>
     {% if kind == "mapping" %}<input type="search" data-filter="mapping" placeholder="Filter {{ rows|length }} rows" aria-label="Filter mapping rows">{% endif %}</p>
@@ -38,7 +39,7 @@
   {% if unmapped %}<p class="muted" id="draft-offer" style="border-left:3px solid var(--warning);padding-left:var(--space-3)">{{ unmapped }} item{{ '' if unmapped == 1 else 's' }} in your exports {{ 'has' if unmapped == 1 else 'have' }} no mapping row yet.
     <a class="btn" href="/settings/mapping/draft">Draft a mapping from my budget groups</a> You review the draft before anything is saved, and no existing row changes.</p>{% endif %}
   {% if name_families %}<details class="keyhelp" id="name-families"><summary>{{ name_families|length }} name{{ ' that looks' if name_families|length == 1 else 's that look' }} like one envelope under different canonical names</summary>
-    <p class="muted">These items have the same name once a year's suffix (" 2", " Fund", " Goal") is removed, but map to different canonical names, so their charts show separate lines. If they are one envelope, give them one name; if you keep them apart on purpose, leave them. Only the canonical name changes.</p>
+    <p class="muted">These items have the same name once a year's suffix (" 2", " Fund", " Goal") is removed, but map to different canonical names, so their charts show separate lines. If they are one envelope, give them one name; if you keep them apart on purpose, leave them. Only the canonical name changes, and with it the category: a canonical item has one, so rows in another category move to it (the message after saving says which).</p>
     {% for fam in name_families %}<form method="post" action="/settings/mapping/family" class="family">{{ csrf_field(request) }}<input type="hidden" name="base" value="{{ fam.base }}">
       <p><strong>{{ fam.base }}</strong>: {% for i in fam["items"] %}{{ i["item"] }} → <code>{{ i["canonical_item"] }}</code>{{ ", " if not loop.last }}{% endfor %}</p>
       <p class="tools"><label>Use one canonical name for all <select name="canonical_item" aria-label="Canonical name for {{ fam.base }}">{% for c in fam.canonicals %}<option {% if c == fam.suggested %}selected{% endif %}>{{ c }}</option>{% endfor %}{% if fam.base not in fam.canonicals %}<option>{{ fam.base }}</option>{% endif %}</select></label>
@@ -52,6 +53,32 @@
     </form>
   </details>
 {% endcall %}
+{% if mapping_notes %}<section class="panel" id="mapping-notes" style="border-left:3px solid var(--warning)">
+  <h2>What the 0.5.0 upgrade changed in your mapping</h2>
+  <p class="muted">A canonical item now has one category. Where yours had more than one, the category most of its rows used was kept; an item whose category was the placeholder UNMAPPED left the mapping. The settings.zip you downloaded before upgrading holds the old mapping.</p>
+  <ul>{% for n in mapping_notes %}<li>{{ n.note }}</li>{% endfor %}</ul>
+  <form method="post" action="/settings/mapping/notes/dismiss">{{ csrf_field(request) }}<button class="btn" type="submit">Dismiss</button></form>
+</section>{% endif %}
+<section class="panel defs" id="definitions">
+  <h2>Categories and canonical items</h2>
+  <p class="muted">Each canonical item belongs to one category, and each mapping row's category follows from its canonical item. A rename here is one edit: every row, and every rule that names it (Pipeline rules), follows. Renaming to a name that already exists merges the two.</p>
+  <script type="application/json" id="canonical-category" nonce="{{ csp_nonce(request) }}">{{ canonical_category|tojson }}</script>
+  <details class="keyhelp"><summary>Categories ({{ defs.categories|length }})</summary>
+    <div class="tablewrap"><table class="plain"><thead><tr><th scope="col">Category</th><th scope="col">Canonical items</th><th scope="col">Rows</th><th scope="col">Rename to</th></tr></thead><tbody>
+    {% for g in defs.categories %}<tr><td>{{ g.name }}</td><td>{{ g.canonical }}</td><td>{{ g.rows }}</td>
+      <td><form method="post" action="/settings/mapping/category/rename" class="inline">{{ csrf_field(request) }}<input type="hidden" name="old" value="{{ g.name }}">
+        <input type="text" name="new" required aria-label="New name for the category {{ g.name }}" placeholder="{{ g.name }}"> <button class="btn" type="submit">Rename</button></form></td></tr>{% endfor %}
+    </tbody></table></div></details>
+  <details class="keyhelp"{% if defs.canonical|selectattr('mixed')|list %} open{% endif %}><summary>Canonical items ({{ defs.canonical|length }}){% set mixed = defs.canonical|selectattr('mixed')|list %}{% if mixed %}: {{ mixed|length }} mix income with spending{% endif %}</summary>
+    <div class="tablewrap"><table class="plain"><thead><tr><th scope="col">Canonical item</th><th scope="col">Category</th><th scope="col">Rows</th><th scope="col">Flows</th><th scope="col">Rename to</th><th scope="col">Move to category</th></tr></thead><tbody>
+    {% for c in defs.canonical %}<tr><td>{{ c.name }}</td><td>{{ c.category }}</td><td>{{ c.rows }}</td>
+      <td>{{ c.flows|join(', ') }}{% if c.mixed %} <strong>mixes income with {{ 'expense' if 'expense' in c.flows else 'debt' }}: almost always a mistake</strong>{% endif %}</td>
+      <td><form method="post" action="/settings/mapping/canonical/rename" class="inline">{{ csrf_field(request) }}<input type="hidden" name="old" value="{{ c.name }}">
+        <input type="text" name="new" required aria-label="New name for the canonical item {{ c.name }}" placeholder="{{ c.name }}"> <button class="btn" type="submit">Rename</button></form></td>
+      <td><form method="post" action="/settings/mapping/canonical/move" class="inline">{{ csrf_field(request) }}<input type="hidden" name="name" value="{{ c.name }}">
+        <input type="text" name="category" required list="settings-categories" aria-label="Category to move {{ c.name }} to" placeholder="{{ c.category }}"> <button class="btn" type="submit">Move</button></form></td></tr>{% endfor %}
+    </tbody></table></div></details>
+</section>
 </div>
 <div role="tabpanel" id="sp-goals" aria-labelledby="st-goals">
 {% call grid("goals", by_key.goals, ["key","label","value","unit","note"], ["Key","Label","Value","Unit","Note"], rows.goals) %}{% endcall %}

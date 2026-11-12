@@ -3,16 +3,17 @@ import csv, io, json, re
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response
 
-from .. import db, auth, schema, mapping_hints, brand_check
+from .. import db, auth, schema, mapping_hints, brand_check, renames
 from . import brand
 from ..web_helpers import flash, render
 from pipeline.run_pipeline import norm, unmapped_items
+from pipeline import mapping_store
 
 router = APIRouter()
 
 
 EDITORS = {
-    "mapping": {"title": "Item mapping", "help": "Each item from your budget tool gets a canonical name, a category and a flow. Every item must be here, or the build lists it as unmapped.", "help_long": "One row per item in your exports: Item, CanonicalItem, Category, Flow, Note. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every item name in the exports must appear here or the build reports it UNMAPPED. Fund moves kept as income items (Fund Transfer, End of Year Rebalance) need Flow transfer, or they count as income; money held for someone else and paid out needs exclude. No name is read literally: the parts names play (which items are paychecks, which categories are recurring bills, and so on) are set under Pipeline rules, Roles (README, \"Roles\"); rules name canonical items, not raw ones."},
+    "mapping": {"title": "Item mapping", "help": "Each item from your budget tool gets a canonical name and a flow; its category is its canonical item's. Every item must be here, or the build lists it as unmapped.", "help_long": "One row per item in your exports: Item, CanonicalItem, Category, Flow, Note. A canonical item has one category, so every row of it gives the same Category (in the row editor, leave Category blank to use the one it has); use Categories and canonical items to rename or move one. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every item name in the exports must appear here or the build reports it UNMAPPED. Fund moves kept as income items (Fund Transfer, End of Year Rebalance) need Flow transfer, or they count as income; money held for someone else and paid out needs exclude. No name is read literally: the parts names play (which items are paychecks, which categories are recurring bills, and so on) are set under Pipeline rules, Roles (README, \"Roles\"); rules name canonical items, not raw ones."},
     "goals": {"title": "Goals", "help": "One row per goal: key, label, value, unit, note. The Goals tab and the month-close review read these; values are also confirmed each month in the checklist on Close a month. A share is a fraction (0.07) or a percentage (7%)."},
     "events": {"title": "Life events", "help": "One row per event: month (YYYY-MM), label, and optionally its kind (job, move, family, health, purchase, debt, other) and the person it concerns (one of the people in Pipeline rules). Drawn as markers on the timeline charts; the Employer chart shows job events and events with no kind."},
     "cpi": {"title": "CPI index", "help": "CSV: month, cpi, source. A price index (consumer prices, any base) used for the real-amounts toggle. US households: CPI-U, appending the newest month from FRED CPIAUCSL; mark estimates in source."},
@@ -42,7 +43,7 @@ def check_mapping_row(r: dict) -> tuple[dict, dict]:
     """Clean one mapping row; returns (row, {field: message})."""
     c = {"item": norm(r.get("item") or r.get("Item") or ""), "canonical_item": norm(r.get("canonical_item") or r.get("CanonicalItem") or ""),
          "category": norm(r.get("category") or r.get("Category") or ""), "flow": (r.get("flow") or r.get("Flow") or "").strip(), "note": (r.get("note") or r.get("Note") or "").strip()}
-    err = {k: "required" for k in ("item", "canonical_item", "category") if not c[k]}
+    err = {k: "required" for k in ("item", "canonical_item") if not c[k]}   # category may be blank when the canonical item has one (#133)
     if c["flow"] not in FLOWS:
         err["flow"] = f"bad Flow '{c['flow']}': one of {', '.join(FLOWS)}"
     return c, err
@@ -116,13 +117,18 @@ def _row_save(conn, kind: str, f: dict) -> tuple[dict, dict]:
     """Upsert (or rename) one row of a reference table in its own transaction. Returns (clean row, errors); nothing is written when errors."""
     if kind == "mapping":
         c, err = check_mapping_row(f); orig = norm(f.get("original") or "")
+        if not c["category"] and c["canonical_item"] and c["canonical_item"] not in mapping_store.categories_of(conn):
+            err["category"] = f"required: {c['canonical_item']} is a new canonical item"
         if not err and c["item"] != orig:
             _unique_err(conn, "SELECT 1 FROM item_mapping WHERE item=%s", (c["item"],), err, "item", "already in the mapping")
         if not err:
-            if orig and orig != c["item"]:
-                conn.execute("DELETE FROM item_mapping WHERE item=%s", (orig,))
-            conn.execute("INSERT INTO item_mapping (item,canonical_item,category,flow,note) VALUES (%s,%s,%s,%s,%s) ON CONFLICT (item) DO UPDATE SET canonical_item=EXCLUDED.canonical_item, category=EXCLUDED.category, flow=EXCLUDED.flow, note=EXCLUDED.note, updated_at=now()",
-                         (c["item"], c["canonical_item"], c["category"], c["flow"], c["note"]))
+            try:   # the new row first, then the renamed one goes: its canonical item stays in use throughout
+                mapping_store.write_rows(conn, [c])
+                if orig and orig != c["item"]:
+                    mapping_store.delete_items(conn, [orig])
+                c["category"] = mapping_store.categories_of(conn)[c["canonical_item"]]
+            except mapping_store.MappingError as e:
+                err["category"] = str(e).split(": ", 1)[1]
     elif kind == "goals":
         c, err = check_goal_row(f); orig = (f.get("original") or "").strip()
         if not err and c["key"] != orig:
@@ -146,7 +152,7 @@ def _row_save(conn, kind: str, f: dict) -> tuple[dict, dict]:
 
 def _row_delete(conn, kind: str, f: dict) -> int:
     if kind == "mapping":
-        return conn.execute("DELETE FROM item_mapping WHERE item=%s", (norm(f.get("original") or ""),)).rowcount
+        return mapping_store.delete_items(conn, [norm(f.get("original") or "")])
     if kind == "goals":
         return conn.execute("DELETE FROM goals WHERE key=%s", ((f.get("original") or "").strip(),)).rowcount
     return conn.execute("DELETE FROM life_events WHERE month=%s AND label=%s", ((f.get("original_m") or "").strip(), (f.get("original_label") or "").strip())).rowcount
@@ -154,7 +160,7 @@ def _row_delete(conn, kind: str, f: dict) -> int:
 
 def _mapping_csv(conn) -> str:
     out = io.StringIO(); w = csv.writer(out); w.writerow(["Item", "CanonicalItem", "Category", "Flow", "Note"])
-    for r in conn.execute("SELECT item, canonical_item, category, flow, note FROM item_mapping ORDER BY category, canonical_item, item").fetchall():
+    for r in mapping_store.rows(conn):
         w.writerow([r["item"], r["canonical_item"], r["category"], r["flow"], r["note"]])
     return out.getvalue()
 
@@ -163,14 +169,14 @@ def _problems(problems: list[str]) -> ValueError:
     return ValueError(f"{len(problems)} problem{'s' * (len(problems) != 1)}: " + "; ".join(problems[:8]) + (f"; and {len(problems) - 8} more" if len(problems) > 8 else ""))
 
 
-def _mapping_rows(body: str, existing: set[str] | None = None) -> list[dict]:
+def _mapping_rows(body: str, existing: set[str] | None = None) -> tuple[list[dict], list[int]]:
     """Check a mapping CSV and return its clean rows; raises ValueError naming each bad line. With `existing`, an item already in the
-    mapping is a problem too (the draft only adds rows, it never overwrites one)."""
+    mapping is a problem too (the draft only adds rows, it never overwrites one). Returns the rows and their CSV line numbers."""
     reader = csv.DictReader(io.StringIO(body.lstrip("\ufeff")))
     rows = list(reader)
     if not rows or not {"Item", "CanonicalItem", "Category", "Flow"}.issubset(rows[0].keys()):
         raise ValueError("mapping needs columns Item, CanonicalItem, Category, Flow, Note")
-    clean, problems, seen = [], [], {}
+    clean, lines, problems, seen = [], [], [], {}
     for n, r in enumerate(rows, start=2):
         c, err = check_mapping_row({k: v for k, v in r.items() if isinstance(v, str)})
         if not err and c["item"] in seen:
@@ -180,23 +186,22 @@ def _mapping_rows(body: str, existing: set[str] | None = None) -> list[dict]:
         for f, m in err.items():
             problems.append(f"line {n}: " + (f"bad Flow on: {c['item'] or '(blank)'} ({m})" if f == "flow" else f"{f} {m}" + (f" on: {c['item']}" if c["item"] else "")))
         if not err:
-            seen[c["item"]] = n; clean.append(c)
+            seen[c["item"]] = n; clean.append(c); lines.append(n)
     if problems:
         raise _problems(problems)
-    return clean
+    return clean, lines
 
 
 def _mapping_add(conn, body: str) -> str:
     """Add the rows of a mapping CSV (the reviewed draft) without touching any existing row; all or nothing, like the bulk import."""
     existing = {r["item"] for r in conn.execute("SELECT item FROM item_mapping").fetchall()}
-    clean = _mapping_rows(body, existing)
-    conn.cursor().executemany("INSERT INTO item_mapping (item,canonical_item,category,flow,note) VALUES (%s,%s,%s,%s,%s)",
-                              [(c["item"], c["canonical_item"], c["category"], c["flow"], c["note"]) for c in clean])
+    clean, lines = _mapping_rows(body, existing)
+    mapping_store.write_rows(conn, clean, lines=lines)
     return f"{len(clean)} drafted mapping row{'s' * (len(clean) != 1)}"
 
 
 def _mapping_list(conn) -> list[dict]:
-    return conn.execute("SELECT item, canonical_item, category, flow, note FROM item_mapping ORDER BY category, canonical_item, item").fetchall()
+    return mapping_store.rows(conn)
 
 
 def draft_mapping(conn) -> list[dict]:
@@ -214,11 +219,8 @@ def draft_csv(rows: list[dict]) -> str:
 def _mapping_import(conn, body: str) -> str:
     """Bulk CSV: every row is checked first and the errors name the line; nothing is written unless all rows are valid. Rows are upserted and
     items absent from the CSV deleted, in one transaction, so the table is never emptied and refilled."""
-    clean = _mapping_rows(body)
-    cur = conn.cursor()
-    cur.executemany("INSERT INTO item_mapping (item,canonical_item,category,flow,note) VALUES (%s,%s,%s,%s,%s) ON CONFLICT (item) DO UPDATE SET canonical_item=EXCLUDED.canonical_item, category=EXCLUDED.category, flow=EXCLUDED.flow, note=EXCLUDED.note, updated_at=now()",
-                    [(c["item"], c["canonical_item"], c["category"], c["flow"], c["note"]) for c in clean])
-    conn.execute("DELETE FROM item_mapping WHERE item <> ALL(%s)", ([c["item"] for c in clean],))
+    clean, lines = _mapping_rows(body)
+    mapping_store.write_rows(conn, clean, replace=True, lines=lines)   # one canonical item with two categories is refused, by line
     return f"{len(clean)} mapping rows"
 
 
@@ -312,7 +314,7 @@ def _save_editor(conn, key: str, body: str) -> str:
 def settings_page(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         editors = [{"key": k, "body": _editor_body(conn, k), "fields": schema.help_fields(k) if k in schema.NAMES else [], **v} for k, v in EDITORS.items()]
-        rows = {"mapping": conn.execute("SELECT item, canonical_item, category, flow, note FROM item_mapping ORDER BY category, canonical_item, item").fetchall(),
+        rows = {"mapping": mapping_store.rows(conn),
                 "goals": [{**r, "value": (f"{r['value']:f}".rstrip("0").rstrip(".") if r["value"] is not None else None)} for r in conn.execute("SELECT key, value, unit, label, note FROM goals ORDER BY key").fetchall()],
                 "events": conn.execute("SELECT month AS m, label, kind, person FROM life_events ORDER BY month, label").fetchall()}
         categories = sorted({r["category"] for r in rows["mapping"] if r["category"]})
@@ -320,10 +322,12 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         household = db.get_setting(conn, "household", {}) or {}
         name_families = mapping_hints.families(rows["mapping"], rules)
         unmapped = len(unmapped_items(conn))
+        defs, mapping_notes = renames.overview(conn), renames.notes(conn)
     return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP,
                   categories=categories, rules=rules, hh=household, name_families=name_families, unmapped=unmapped,
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS,
-                  event_choices={"kind": [""] + list(EVENT_KINDS)}, people=list(rules.get("people") or []))
+                  event_choices={"kind": [""] + list(EVENT_KINDS)}, people=list(rules.get("people") or []),
+                  defs=defs, mapping_notes=mapping_notes, canonical_category={c["name"]: c["category"] for c in defs["canonical"]})
 
 
 @router.get("/settings/mapping.csv")
@@ -354,6 +358,46 @@ def mapping_draft_save(request: Request, body: str = Form(...), user=Depends(aut
     return RedirectResponse("/settings#mapping", status_code=303)
 
 
+def _who(user) -> str:
+    return (user or {}).get("email") or (user or {}).get("name") or ""
+
+
+def _definition_change(request: Request, fn, *args) -> RedirectResponse:
+    """Run one rename or move in its own transaction and say what happened."""
+    with db.pool.connection() as conn:
+        try:
+            what = fn(conn, *args); conn.commit()
+            flash(request, f"{what[0].upper()}{what[1:]}. The dashboard shows it after a rebuild: press Rebuild now.")
+        except ValueError as e:
+            conn.rollback(); flash(request, f"Not changed — {e}", "bad")
+    return RedirectResponse("/settings#mapping", status_code=303)
+
+
+@router.post("/settings/mapping/category/rename")
+async def category_rename(request: Request, user=Depends(auth.require_editor)):
+    f = await request.form()
+    return _definition_change(request, renames.rename_category, str(f.get("old", "")), str(f.get("new", "")), _who(user))
+
+
+@router.post("/settings/mapping/canonical/rename")
+async def canonical_rename(request: Request, user=Depends(auth.require_editor)):
+    f = await request.form()
+    return _definition_change(request, renames.rename_canonical, str(f.get("old", "")), str(f.get("new", "")), _who(user))
+
+
+@router.post("/settings/mapping/canonical/move")
+async def canonical_move(request: Request, user=Depends(auth.require_editor)):
+    f = await request.form()
+    return _definition_change(request, renames.move_canonical, str(f.get("name", "")), str(f.get("category", "")))
+
+
+@router.post("/settings/mapping/notes/dismiss")
+async def mapping_notes_dismiss(request: Request, user=Depends(auth.require_editor)):
+    with db.pool.connection() as conn:
+        conn.execute("UPDATE mapping_migration_notes SET dismissed_at=now() WHERE dismissed_at IS NULL"); conn.commit()
+    return RedirectResponse("/settings#mapping", status_code=303)
+
+
 @router.get("/settings/mapping/suggest")
 def mapping_suggest(item: str = "", user=Depends(auth.require_editor)):
     """The row an existing mapping suggests for a new item name (#106), for the inline editor. {"suggestion": null} when none."""
@@ -365,7 +409,8 @@ def mapping_suggest(item: str = "", user=Depends(auth.require_editor)):
 @router.post("/settings/mapping/family")
 async def mapping_family(request: Request, user=Depends(auth.require_editor)):
     """Give every item of one name family (#106) the same CanonicalItem. The family is recomputed here, so only items whose base name
-    still matches change, and only their CanonicalItem: category, flow and note stay as they are."""
+    still matches change, and only their CanonicalItem: flow and note stay as they are, and the category is the canonical item's
+    (for a new canonical name, the category most of the family's rows had)."""
     form = await request.form()
     base, canon = norm(str(form.get("base", ""))), norm(str(form.get("canonical_item", "")))
     with db.pool.connection() as conn:
@@ -375,9 +420,16 @@ async def mapping_family(request: Request, user=Depends(auth.require_editor)):
             flash(request, "Nothing changed: that group of names no longer differs (reload the page).", "bad")
             return RedirectResponse("/settings#mapping", status_code=303)
         items = [i["item"] for i in fam["items"] if i["canonical_item"] != canon]
-        conn.execute("UPDATE item_mapping SET canonical_item=%s, updated_at=now() WHERE item = ANY(%s)", (canon, items))
+        cur = {r["item"]: r for r in _mapping_list(conn)}
+        cats = mapping_store.categories_of(conn)
+        if canon not in cats:   # a new canonical name takes the category most of the family's rows have now
+            votes = sorted(cur[i["item"]]["category"] for i in fam["items"])
+            cats[canon] = max(votes, key=votes.count)
+        moved = [f"{i} from {cur[i]['category']}" for i in items if cur[i]["category"] != cats[canon]]
+        mapping_store.write_rows(conn, [{**cur[i], "canonical_item": canon, "category": cats[canon]} for i in items])
         db.mark_inputs_changed(conn); conn.commit()
-    flash(request, f"{len(items)} item{'s' * (len(items) != 1)} now use the canonical name {canon}. The dashboard shows it after a rebuild: press Rebuild now.")
+    flash(request, f"{len(items)} item{'s' * (len(items) != 1)} now use the canonical name {canon}"
+                   + (f", so they are in {cats[canon]} ({'; '.join(moved)})" if moved else "") + ". The dashboard shows it after a rebuild: press Rebuild now.")
     return RedirectResponse("/settings#mapping", status_code=303)
 
 
@@ -461,11 +513,7 @@ ROLE_FIELDS = [   # (rules key, plain label, what it changes) for the Roles form
 ]
 
 
-ROLE_DEFAULTS = {   # shown as placeholders; equal to build_ledger.RULES (tests/test_role_literals.py checks it)
-    "paycheck_items": ["Paycheck"], "recurring_categories": ["Subscriptions", "Utilities", "Insurance"],   # role default
-    "plan_keep_categories": ["Housing", "Debt", "Insurance"], "income_groups": ["Income"], "debt_groups": ["Debt"],   # role default
-    "loan_categories": ["Family Loan"],   # role default
-}
+from ..roles import ROLE_DEFAULTS   # noqa: E402  (shown as placeholders; equal to build_ledger.RULES)
 
 
 @router.post("/settings/rules/roles")

@@ -7,6 +7,7 @@ from .. import db, auth, mapping_hints
 from ..web_helpers import flash
 from ..builds import run_background
 from pipeline.run_pipeline import norm, build_running
+from pipeline import mapping_store
 
 router = APIRouter()
 FLOWS = ["expense", "income", "debt", "transfer", "plug", "zero", "exclude", "verify"]
@@ -21,8 +22,8 @@ def latest_findings(conn) -> dict:
     """Findings of the newest finished build, plus the known categories for the form's suggestions."""
     row = conn.execute("SELECT id, finished_at, findings FROM build_log WHERE finished_at IS NOT NULL AND findings IS NOT NULL ORDER BY id DESC LIMIT 1").fetchone()
     f = (row and row["findings"]) or {}
-    cats = [r["category"] for r in conn.execute("SELECT DISTINCT category FROM item_mapping WHERE category <> 'UNMAPPED' ORDER BY 1").fetchall()]
-    mapping = conn.execute("SELECT item, canonical_item, category, flow FROM item_mapping WHERE category <> 'UNMAPPED'").fetchall()
+    cats = [r["name"] for r in conn.execute("SELECT name FROM categories ORDER BY 1").fetchall()]
+    mapping = mapping_store.rows(conn)
     drafted = {d["item"]: d for d in mapping_hints.draft(f.get("unmapped", []), mapping, db.get_setting(conn, "rules", {}) or {})}
     unmapped = [{**u, **({"canonical_guess": d["canonical_item"], "flow_guess": d["flow"], "category_guess": d["category"]} if (d := drafted.get(norm(u.get("item", "")))) else
                          guess(u.get("item", ""), u.get("group") or ""))} for u in f.get("unmapped", [])]
@@ -43,9 +44,12 @@ def map_items(request: Request, background: BackgroundTasks, item: list[str] = F
         flash(request, "Nothing to add: fill in a category for at least one item.", "bad")
         return RedirectResponse("/upload", status_code=303)
     with db.pool.connection() as conn:
-        conn.cursor().executemany(
-            "INSERT INTO item_mapping (item,canonical_item,category,flow) VALUES (%s,%s,%s,%s) "
-            "ON CONFLICT (item) DO UPDATE SET canonical_item=EXCLUDED.canonical_item, category=EXCLUDED.category, flow=EXCLUDED.flow, updated_at=now()", rows)
+        try:   # an existing canonical item keeps its category (#133): a row naming another one is refused, not a silent move
+            mapping_store.write_rows(conn, [{"item": i, "canonical_item": c, "category": g, "flow": f, "note": ""} for i, c, g, f in rows])
+        except mapping_store.MappingError as e:
+            conn.rollback()
+            flash(request, f"Not saved — {e}", "bad")
+            return RedirectResponse("/upload", status_code=303)
         conn.commit()
         busy = build_running(conn)
     if busy:
