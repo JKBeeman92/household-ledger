@@ -379,6 +379,25 @@ Balances are typed facts, so they travel with the raw exports: `sources.zip` hol
 and a `SEED_DIR` with both starts a new install with them. The review and MCP see totals by account type (`balance_totals`), never an
 account's name.
 
+## Net worth
+
+"Are we, all told, further ahead than last month, last quarter and last year?" From the month-end balances (Accounts and balances
+above), net worth is every account in net worth, assets less debts. The Last month tab gives it with its change since last month and
+over twelve months, each split in two:
+
+- **What you did**: the month's income less living spend, that is what was kept plus what was paid on debts (paying a loan down is
+  the household's own doing), plus pre-tax saving once it is stated.
+- **What happened to you**: everything else: investments and a home's estimate moving, interest charged, money moving into or out of
+  accounts not tracked here. Money the budget counts as spent but that lands in a tracked account (a savings envelope paid into a
+  savings account) also shows here.
+
+An account's first month is shown on its own ("1 account added"), and a retired account's last, so neither reads as progress or loss;
+the parts add up to the total change, to the cent. A debt with no balance entered is estimated and the figure says so; **Excluding
+home** takes a typed home estimate out. The Position tab stacks assets above zero and debts below by account type, with net worth as a
+line (dashed where a debt is estimated). A twelve-month change needs a balance from twelve months before: enter last year's statements
+as balances history. The `net_worth` dataset carries the totals and the split, never an account's name, and reaches the review and MCP.
+Investment returns, allocation and performance are out of scope (What this is, and isn't).
+
 ## Debt-to-income
 
 "How much of what we earn is already spoken for by debt, and is that shrinking?" The Last month tab's **Debt against income** card
@@ -396,7 +415,7 @@ of gross) on Settings → Goals. The `debt_to_income` dataset carries every figu
 ## Try it with the sample household
 
 `examples/sample-household/` is a synthetic household (two earners, 18 budget months, a student loan, a transfer pair, three-paycheck
-months, life events, five accounts with two years of month-end balances) that reconciles clean, so you can see every tab before loading your own exports. The seed files go in `SEED_DIR`
+months, life events, six accounts with two years of month-end balances) that reconciles clean, so you can see every tab before loading your own exports. The seed files go in `SEED_DIR`
 (first boot only) and the exports in `IMPORT_DIR`.
 
 Compose, from a checkout of this repo (`LEDGER_DATA` defaults to `./data`, which git ignores):

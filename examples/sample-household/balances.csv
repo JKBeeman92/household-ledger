@@ -1,27 +1,27 @@
 account,month,amount
 Bywater Checking,2024-07,2469.07
-Bywater Checking,2024-08,2430.90
-Bywater Checking,2024-09,2937.59
-Bywater Checking,2024-10,2029.85
-Bywater Checking,2024-11,1973.19
-Bywater Checking,2024-12,1856.88
-Bywater Checking,2025-01,2961.14
-Bywater Checking,2025-02,2993.18
-Bywater Checking,2025-03,2013.37
-Bywater Checking,2025-04,2290.29
-Bywater Checking,2025-05,1902.09
-Bywater Checking,2025-06,2754.46
-Bywater Checking,2025-07,2839.33
-Bywater Checking,2025-08,2580.11
-Bywater Checking,2025-09,2401.62
-Bywater Checking,2025-10,1898.22
-Bywater Checking,2025-11,2885.48
-Bywater Checking,2025-12,2504.32
-Bywater Checking,2026-01,2166.56
-Bywater Checking,2026-02,2718.08
-Bywater Checking,2026-03,2731.48
-Bywater Checking,2026-04,1917.38
-Bywater Checking,2026-05,2407.96
+Bywater Checking,2024-08,2444.05
+Bywater Checking,2024-09,2029.85
+Bywater Checking,2024-10,1860.53
+Bywater Checking,2024-11,2961.14
+Bywater Checking,2024-12,2013.37
+Bywater Checking,2025-01,2319.80
+Bywater Checking,2025-02,2577.56
+Bywater Checking,2025-03,2885.48
+Bywater Checking,2025-04,2864.48
+Bywater Checking,2025-05,2731.48
+Bywater Checking,2025-06,2293.43
+Bywater Checking,2025-07,2208.42
+Bywater Checking,2025-08,2221.80
+Bywater Checking,2025-09,2003.11
+Bywater Checking,2025-10,2243.45
+Bywater Checking,2025-11,1853.23
+Bywater Checking,2025-12,1907.78
+Bywater Checking,2026-01,2872.46
+Bywater Checking,2026-02,2725.87
+Bywater Checking,2026-03,2537.27
+Bywater Checking,2026-04,2034.54
+Bywater Checking,2026-05,2828.65
 Green Hills Savings,2024-07,3300.00
 Green Hills Savings,2024-08,3600.00
 Green Hills Savings,2024-09,3900.00
@@ -46,28 +46,28 @@ Green Hills Savings,2026-03,9080.00
 Green Hills Savings,2026-04,9380.00
 Green Hills Savings,2026-05,9680.00
 Hobbiton Mill Pension,2024-07,14860.00
-Hobbiton Mill Pension,2024-08,15554.58
-Hobbiton Mill Pension,2024-09,16251.24
-Hobbiton Mill Pension,2024-10,16982.49
-Hobbiton Mill Pension,2024-11,17445.68
-Hobbiton Mill Pension,2024-12,18130.57
-Hobbiton Mill Pension,2025-01,18563.00
-Hobbiton Mill Pension,2025-02,19175.87
-Hobbiton Mill Pension,2025-03,19729.99
-Hobbiton Mill Pension,2025-04,20379.99
-Hobbiton Mill Pension,2025-05,21396.82
-Hobbiton Mill Pension,2025-06,22367.77
-Hobbiton Mill Pension,2025-07,23219.07
-Hobbiton Mill Pension,2025-08,24031.60
-Hobbiton Mill Pension,2025-09,24825.78
-Hobbiton Mill Pension,2025-10,25227.52
-Hobbiton Mill Pension,2025-11,26155.02
-Hobbiton Mill Pension,2025-12,27145.03
-Hobbiton Mill Pension,2026-01,28093.62
-Hobbiton Mill Pension,2026-02,28827.90
-Hobbiton Mill Pension,2026-03,29391.41
-Hobbiton Mill Pension,2026-04,30041.41
-Hobbiton Mill Pension,2026-05,30961.78
+Hobbiton Mill Pension,2024-08,15732.90
+Hobbiton Mill Pension,2024-09,16461.56
+Hobbiton Mill Pension,2024-10,16930.48
+Hobbiton Mill Pension,2024-11,17377.31
+Hobbiton Mill Pension,2024-12,17940.42
+Hobbiton Mill Pension,2025-01,18411.01
+Hobbiton Mill Pension,2025-02,18876.89
+Hobbiton Mill Pension,2025-03,19734.53
+Hobbiton Mill Pension,2025-04,20305.59
+Hobbiton Mill Pension,2025-05,20894.67
+Hobbiton Mill Pension,2025-06,21586.45
+Hobbiton Mill Pension,2025-07,22430.72
+Hobbiton Mill Pension,2025-08,23260.16
+Hobbiton Mill Pension,2025-09,24072.98
+Hobbiton Mill Pension,2025-10,25084.07
+Hobbiton Mill Pension,2025-11,25583.56
+Hobbiton Mill Pension,2025-12,26540.56
+Hobbiton Mill Pension,2026-01,26925.15
+Hobbiton Mill Pension,2026-02,27467.44
+Hobbiton Mill Pension,2026-03,28199.84
+Hobbiton Mill Pension,2026-04,28990.83
+Hobbiton Mill Pension,2026-05,29611.83
 Lembas Student Loan,2024-07,20821.25
 Lembas Student Loan,2024-08,20641.68
 Lembas Student Loan,2024-09,20461.28
@@ -98,3 +98,26 @@ Pony and Cart,2025-06,7967.62
 Pony and Cart,2025-09,7728.59
 Pony and Cart,2025-12,7496.73
 Pony and Cart,2026-03,7271.82
+Tuckborough Brokerage,2024-07,5005.93
+Tuckborough Brokerage,2024-08,5111.04
+Tuckborough Brokerage,2024-09,5489.46
+Tuckborough Brokerage,2024-10,5730.14
+Tuckborough Brokerage,2024-11,4663.91
+Tuckborough Brokerage,2024-12,5648.99
+Tuckborough Brokerage,2025-01,8462.75
+Tuckborough Brokerage,2025-02,9774.17
+Tuckborough Brokerage,2025-03,10875.62
+Tuckborough Brokerage,2025-04,12651.05
+Tuckborough Brokerage,2025-05,13629.67
+Tuckborough Brokerage,2025-06,15829.02
+Tuckborough Brokerage,2025-07,17502.67
+Tuckborough Brokerage,2025-08,21224.95
+Tuckborough Brokerage,2025-09,23711.46
+Tuckborough Brokerage,2025-10,24982.41
+Tuckborough Brokerage,2025-11,26395.72
+Tuckborough Brokerage,2025-12,26744.40
+Tuckborough Brokerage,2026-01,29795.20
+Tuckborough Brokerage,2026-02,31655.54
+Tuckborough Brokerage,2026-03,32942.22
+Tuckborough Brokerage,2026-04,35181.73
+Tuckborough Brokerage,2026-05,36072.21
