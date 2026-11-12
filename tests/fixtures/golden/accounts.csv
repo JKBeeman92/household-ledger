@@ -1,0 +1,6 @@
+name,kind,type,person,debt_item,apr,escrow,emergency,in_net_worth,active
+Lembas Student Loan,debt,,Rosie,Student Loan,5.5%,,,yes,yes
+Green Hills Savings,asset,savings,,,,,,yes,yes
+Bywater Checking,asset,cash,,,,,no,yes,no
+Bag End Smial,asset,home,,,,,,yes,yes
+Old Pony Fund,asset,other,,,,,,no,yes

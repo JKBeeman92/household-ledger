@@ -3,7 +3,8 @@
 Household Ledger is a FastAPI + Postgres app around a small, file-based budget pipeline. Read this before changing anything.
 
 ## Invariants
-- **Raw exports are facts; everything else is derived.** Never edit rows in `transactions`/`budget_items`; fix the mapping or
+- **Raw exports are facts; everything else is derived.** Month-end balances typed by a person (`balances`, #143) are facts too: a
+  correction replaces the month's row and keeps the old one in `balance_history`, and the build never writes there. Never edit rows in `transactions`/`budget_items`; fix the mapping or
   rules and rebuild. For a source read through a profile (#96) the fact is the uploaded file in `source_files.content`; its rows
   are re-derived from it only by `reapply_profile`, never edited. `ledger` and `datasets` are truncated and rewritten on every rebuild.
 - **Budget month, not calendar month**, everywhere.
@@ -22,8 +23,9 @@ Never edit an applied file in `db/migrations/`; add `NNNN_name.sql`, where NNNN 
 `app/db.py` applies, at start and under an advisory lock, every file not yet in `schema_migrations`, in filename order, each in its own
 transaction; a failure aborts start-up and leaves that file unrecorded. Out-of-order numbers from parallel branches still apply.
 Derived tables (`ledger`, `datasets`) may be dropped and rebuilt by a migration; raw tables (`source_files`, `transactions`,
-`budget_items`) and reference tables (`item_mapping`, `categories`, `canonical_items`, `cpi`, `goals`, `life_events`, `settings`, `reviews`, `renames`) must migrate their data.
+`budget_items`, `balances`) and reference tables (`item_mapping`, `categories`, `canonical_items`, `cpi`, `goals`, `life_events`, `settings`, `reviews`, `renames`, `accounts`) must migrate their data.
 The mapping is written only through `pipeline/mapping_store.py`, which keeps a canonical item in one category; readers use the `mapping_rows` view.
+Accounts and month-end balances are written only through `pipeline/accounts_store.py`; a corrected balance keeps the old value in `balance_history`.
 
 ## Done means
 A change that adds a dataset, or a reference or raw table, is done only when its PR answers each line below with *done* or

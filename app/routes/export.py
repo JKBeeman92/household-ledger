@@ -117,6 +117,9 @@ def _source_entries():
                 yield f"{f['budget_month']}/{f['filename']}", iter([bytes(row["content"])])
             else:
                 yield f["filename"], _source_chunks(conn, f)
+        if conn.execute("SELECT 1 FROM balances LIMIT 1").fetchone():   # month-end balances (#143): typed facts, in the seed loader's shape
+            from pipeline.accounts_store import balances_csv
+            yield "balances.csv", iter([balances_csv(conn).encode()])
 
 
 @router.get("/export/sources.zip")

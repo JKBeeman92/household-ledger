@@ -12,7 +12,7 @@ from conftest import GOLDEN, ROOT
 
 PIPELINE = ROOT / "pipeline"
 SCRIPTS = ["build_ledger.py", "aggregate.py", "make_datasets.py", "make_budget_items.py"]
-REFS = ["item_mapping.csv", "cpi_u.csv", "rules.json", "events.json"]
+REFS = ["item_mapping.csv", "cpi_u.csv", "rules.json", "events.json", "accounts.csv", "balances.csv"]
 EXPECTED = GOLDEN / "expected"
 
 

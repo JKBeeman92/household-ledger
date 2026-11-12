@@ -16,8 +16,9 @@ from psycopg.rows import dict_row
 
 EX_TEMPFAIL = 75
 log = logging.getLogger("ledger.admin")
-SETTERS = {"import-mapping": "mapping", "set-rules": "rules", "set-events": "events", "set-goals": "goals", "set-cpi": "cpi", "set-household": "household"}
-EXPORTABLE = ("mapping", "rules", "events", "goals", "cpi", "household")
+SETTERS = {"import-mapping": "mapping", "set-rules": "rules", "set-events": "events", "set-goals": "goals", "set-cpi": "cpi", "set-household": "household",
+           "set-accounts": "accounts", "set-balances": "balances"}   # set-balances adds or corrects month-ends (account,YYYY-MM,amount); it never deletes
+EXPORTABLE = ("mapping", "rules", "events", "goals", "cpi", "household", "accounts", "balances")
 
 
 def _read(path: str) -> str:
@@ -98,7 +99,8 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m app.admin", description=__doc__.split("\n\n")[0])
     sub = p.add_subparsers(dest="cmd", required=True, metavar="command")
     for cmd, key in SETTERS.items():
-        sub.add_parser(cmd, help=f"replace the {key} from FILE (- for stdin), checked as on the Settings page").add_argument("file")
+        sub.add_parser(cmd, help=(f"replace the {key} from FILE (- for stdin), checked as on the Settings page" if key != "balances" else
+                                  "add or correct month-end balances from a CSV FILE (account,YYYY-MM,amount; - for stdin); old values are kept as history")).add_argument("file")
     sub.add_parser("export", help="print an editor's current contents").add_argument("what", choices=EXPORTABLE)
     sub.add_parser("export-mapping", help="print the mapping CSV the Settings page exports")
     sub.add_parser("draft-mapping", help="print a draft mapping CSV for the unmapped items (nothing is saved)")
@@ -119,7 +121,7 @@ def main(argv: list[str] | None = None) -> int:
 
     from app.routes import settings as s
     if a.cmd in SETTERS:
-        return _write(a.cmd, s._save_editor, SETTERS[a.cmd], _read(a.file))
+        return _write(a.cmd, s._save_editor, SETTERS[a.cmd], _read(a.file), f"{_who()} (cli)")
     if a.cmd == "add-mapping":
         return _write(a.cmd, s._mapping_add, _read(a.file))
     if a.cmd == "rebuild":

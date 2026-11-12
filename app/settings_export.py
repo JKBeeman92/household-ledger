@@ -1,6 +1,7 @@
 """Every setting as the files a seed directory holds (issue #160): `/export/settings.zip` and `python -m app.admin export-settings DIR`.
 
-Unzip into an empty SEED_DIR and a new install starts with the same mapping, CPI, goals, events, rules and household. Each file is
+Unzip into an empty SEED_DIR and a new install starts with the same mapping, CPI, goals, events, accounts, rules and household.
+Month-end balances are typed facts, so they are in sources.zip (as balances.csv, which the seed loader reads from SEED_DIR too). Each file is
 written by the Settings editor's own exporter (`_editor_body`), which already produces the shape `seed_reference_tables` reads.
 
 Deliberately left out: secrets and per-install state (API tokens, the webhook destination and secret, sessions, review provider
@@ -11,7 +12,7 @@ from pathlib import Path
 
 # seed-directory file -> Settings editor key; the order is the order in the zip
 FILES = {"item_mapping.csv": "mapping", "cpi_u.csv": "cpi", "goals.json": "goals", "events.json": "events",
-         "rules.json": "rules", "household.json": "household"}
+         "accounts.csv": "accounts", "rules.json": "rules", "household.json": "household"}
 VERSION_FILE = Path(__file__).resolve().parents[1] / "version.txt"   # bumped by release-please; copied into the image
 
 

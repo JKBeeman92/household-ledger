@@ -353,17 +353,43 @@ mapping tab lists such groups under "names that look like one envelope", with a 
 adding a row for a new item fills it in from the matching one. The suffixes are the `item_name_suffixes` rule and the fund-move names
 the `transfer_item_names` rule, for tools that name things differently.
 
+## Accounts and balances
+
+Budget exports carry payments, not balances: the app knows what was paid toward a debt, not what is left, and nothing about what the
+household holds. So once a month it asks for a few month-end balances, one per account (four to eight is the design case).
+
+- **Settings → Accounts** lists them. Kind is `debt` or `asset`. A debt's type is a debt type (empty: its linked canonical item's); an
+  asset's is `cash`, `savings`, `retirement`, `brokerage`, `home`, `vehicle` or `other`. A debt's **linked item** is the canonical item its
+  payments go to; its optional **APR** and **escrow** (the part of each payment that pays taxes and insurance, not the loan) refine the
+  suggestion below. **Person** is one of the people rule, or empty for joint. **Emergency** marks an asset that counts toward the
+  emergency fund (on by default for cash and savings); **In net worth** can leave an account out of totals. An account with balances is
+  retired (Active no), never deleted.
+- **Close a month → Balances at the end of `<month>`** has one field per active account, filled in with a suggestion: for a debt, the
+  balance before plus a month's interest at its APR, less the month's payments to its linked item and less escrow; for an asset, the
+  balance before. Saving a suggestion unchanged confirms it (stored as `carried`); any other figure is `entered`.
+- **A month with no balance** is never stored: the build *estimates* a debt by the same formula and *carries* an asset unchanged, and says
+  so (`source` in the `balances` dataset, and the Position tab's table). A typed balance always wins.
+- **Balances history** (Settings → Accounts) takes past month-ends, typed or pasted as `account,YYYY-MM,amount`, so a household can
+  enter last December's statements and see a year's change at its first annual check-in. A correction replaces the month's figure and
+  keeps the old one in `balance_history`.
+- From the command line: `python -m app.admin set-accounts FILE` (replaces them, as the CSV on the Settings page),
+  `set-balances FILE` (adds or corrects month-ends, never deletes), `export accounts`, `export balances`.
+
+Balances are typed facts, so they travel with the raw exports: `sources.zip` holds `balances.csv`, `settings.zip` holds `accounts.csv`,
+and a `SEED_DIR` with both starts a new install with them. The review and MCP see totals by account type (`balance_totals`), never an
+account's name.
+
 ## Try it with the sample household
 
 `examples/sample-household/` is a synthetic household (two earners, 18 budget months, a student loan, a transfer pair, three-paycheck
-months, life events) that reconciles clean, so you can see every tab before loading your own exports. The seed files go in `SEED_DIR`
+months, life events, five accounts with two years of month-end balances) that reconciles clean, so you can see every tab before loading your own exports. The seed files go in `SEED_DIR`
 (first boot only) and the exports in `IMPORT_DIR`.
 
 Compose, from a checkout of this repo (`LEDGER_DATA` defaults to `./data`, which git ignores):
 
 ```sh
 mkdir -p data/seed data/import
-cp examples/sample-household/*.json examples/sample-household/item_mapping.csv data/seed/
+cp examples/sample-household/*.json examples/sample-household/item_mapping.csv examples/sample-household/accounts.csv examples/sample-household/balances.csv data/seed/
 cp examples/sample-household/*-EveryDollar-*.csv examples/sample-household/2026-06-*.csv data/import/
 docker compose up -d
 ```

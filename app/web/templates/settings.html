@@ -32,7 +32,7 @@
 </section>
 {% endmacro %}
 
-<div class="subtabs" role="tablist" aria-label="Settings" id="settings-tabs"><button type="button" role="tab" id="st-mapping" aria-controls="sp-mapping" aria-selected="true" tabindex="0">Item mapping</button><button type="button" role="tab" id="st-goals" aria-controls="sp-goals" aria-selected="false" tabindex="-1">Goals</button><button type="button" role="tab" id="st-events" aria-controls="sp-events" aria-selected="false" tabindex="-1">Life events</button><button type="button" role="tab" id="st-rules" aria-controls="sp-rules" aria-selected="false" tabindex="-1">Pipeline rules</button><button type="button" role="tab" id="st-cpi" aria-controls="sp-cpi" aria-selected="false" tabindex="-1">CPI</button><button type="button" role="tab" id="st-household" aria-controls="sp-household" aria-selected="false" tabindex="-1">Household</button></div>
+<div class="subtabs" role="tablist" aria-label="Settings" id="settings-tabs"><button type="button" role="tab" id="st-mapping" aria-controls="sp-mapping" aria-selected="true" tabindex="0">Item mapping</button><button type="button" role="tab" id="st-goals" aria-controls="sp-goals" aria-selected="false" tabindex="-1">Goals</button><button type="button" role="tab" id="st-events" aria-controls="sp-events" aria-selected="false" tabindex="-1">Life events</button><button type="button" role="tab" id="st-accounts" aria-controls="sp-accounts" aria-selected="false" tabindex="-1">Accounts</button><button type="button" role="tab" id="st-rules" aria-controls="sp-rules" aria-selected="false" tabindex="-1">Pipeline rules</button><button type="button" role="tab" id="st-cpi" aria-controls="sp-cpi" aria-selected="false" tabindex="-1">CPI</button><button type="button" role="tab" id="st-household" aria-controls="sp-household" aria-selected="false" tabindex="-1">Household</button></div>
 <div class="stack" style="margin-top:var(--space-4)">
 <div role="tabpanel" id="sp-mapping" aria-labelledby="st-mapping">
 {% call grid("mapping", by_key.mapping, ["item","canonical_item","category","flow","note"], ["Item","Canonical item","Category","Flow","Note"], rows.mapping) %}
@@ -89,6 +89,29 @@
 <div role="tabpanel" id="sp-events" aria-labelledby="st-events">
 <datalist id="settings-people">{% for p in people %}<option value="{{ p }}">{% endfor %}</datalist>
 {% call grid("events", by_key.events, ["m","label","kind","person"], ["Month","Label","Kind","Person"], rows.events, event_choices) %}{% endcall %}
+</div>
+<div role="tabpanel" id="sp-accounts" aria-labelledby="st-accounts">
+<datalist id="settings-debt-items">{% for c, cat in canonical_category.items() %}<option value="{{ c }}">{% endfor %}</datalist>
+<section class="panel" id="balances-history">
+  <h2>Balances history</h2>
+  <p class="muted">Month-end balances from statements you already have, so net worth has a past from the start: last December's give a year-over-year change at the first annual check-in. Type or paste one per line as <code>account,YYYY-MM,amount</code> (a debt as what is owed, a positive number). A month already entered is corrected, and the old value kept. The current month's balances are entered on <a href="/upload#balances">Close a month</a>.</p>
+  {% if balance_counts %}<div class="tablewrap"><table class="plain"><thead><tr><th scope="col">Account</th><th scope="col">Balances</th><th scope="col">From</th><th scope="col">To</th></tr></thead><tbody>
+    {% for name, c in balance_counts.items() %}<tr><td>{{ name }}</td><td class="mono">{{ c.n }}</td><td class="mono">{{ c.first }}</td><td class="mono">{{ c.last }}</td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<p class="muted">No balances yet.</p>{% endif %}
+  <form method="post" action="/settings/accounts/balances">{{ csrf_field(request) }}
+    <textarea class="json" name="body" spellcheck="false" aria-label="Balances CSV" placeholder="Green Hills Savings,2024-12,4200.00"></textarea>
+    <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save balances</button> <a class="btn" href="/settings/accounts/balances.csv" download>Download all balances</a></p>
+  </form>
+</section>
+{% call grid("accounts", by_key.accounts, ["name","kind","type","person","debt_item","apr","escrow","emergency","in_net_worth","active"], ["Name","Kind","Type","Person","Linked item","APR","Escrow","Emergency","In net worth","Active"], rows.accounts, account_choices) %}
+  <details class="keyhelp"><summary>Bulk paste or export as CSV</summary>
+    <p class="muted">Paste every account as CSV to replace them: <code>{{ "name,kind,type,person,debt_item,apr,escrow,emergency,in_net_worth,active" }}</code> (only name and kind are required). Every line is checked first; an account left out is removed, unless it has balances.</p>
+    <form method="post" action="/settings/accounts">{{ csrf_field(request) }}
+      <textarea class="json" name="body" spellcheck="false" aria-label="Accounts CSV">{{ by_key.accounts.body }}</textarea>
+      <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Replace accounts from CSV</button></p>
+    </form>
+  </details>
+{% endcall %}
 </div>
   {% for key in ("rules", "cpi", "household") %}{% set ed = by_key[key] %}
   <div role="tabpanel" id="sp-{{ key }}" aria-labelledby="st-{{ key }}">

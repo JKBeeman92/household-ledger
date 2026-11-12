@@ -486,6 +486,12 @@
         <details class="how paidoff" data-draw="debts-paid-box" data-source="debts"><summary>Paid off</summary><div class="chart" data-draw="debts-paid" data-source="debts"></div></details>
       </div>
       <div class="card">
+        <h2 id="balances-table">Balances at the latest month-end</h2>
+        <details class="how"><summary>How to read this</summary><p>What each account stood at at the end of the latest budget month with any balance, as typed at Close a month or in Settings → Accounts → Balances history. <b>Estimated</b>: a debt with no balance typed for the month, worked out from the one before plus a month's interest (at its APR), less the payments to its linked item. <b>Carried</b>: an asset with no balance typed, unchanged from the month before. Confirm both at Close a month.</p></details>
+        <p class="muted" data-draw="balances-empty" data-source="balances"></p>
+        <div class="tbl short"><table><thead><tr><th scope="col">Account</th><th scope="col">Kind</th><th scope="col">Balance</th><th scope="col">Status</th></tr></thead><tbody data-draw="balances-latest" data-source="balances"></tbody></table></div>
+      </div>
+      <div class="card">
         <h2 id="net-chart">Net kept, by year</h2>
         <ul class="key row"><li><span class="bar " style="--k: var(--color-ok)"></span>added to savings</li><li><span class="bar " style="--k: var(--color-bad)"></span>drawn from savings</li></ul>
       <details class="how"><summary>How to read this</summary><p>Income minus living spend minus debt payments. Below zero means the year was funded from savings or one-off inflows. Green years added to savings; red years drew on them. A deep red bar usually means taxes, giving or savings-envelope spending landed in a year with lower income.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Year</th><th scope="col">Net kept</th><th scope="col">Savings rate</th></tr></thead><tbody data-draw="dt-net" data-source="yearly"></tbody></table></div></details>
@@ -1022,6 +1028,13 @@ dash.draw('yearly', (tb) => {
     (r, td) => { if (Number(r.savings_rate) < 0) td.classList.add('neg'); return r.savings_rate == null ? '—' : dash.fmt.pct(1)(Number(r.savings_rate)); },
     (r) => HL.usd0(Number(r.income_real)), (r) => HL.usd0(Number(r.spend_real)), (r, td) => neg(r.net_real, td)]);
 });
+// Balances (#143): each account at the latest month-end the dataset has; estimated and carried months say so
+const balancesLatest = () => { const g = dash.data('balances'); if (g.status !== 'ok' || !g.data.length) return null; const last = g.data.reduce((a, r) => r.m > a ? r.m : a, '');
+  return { m: last, rows: g.data.filter((r) => r.m === last).sort((a, b) => a.kind === b.kind ? (a.account < b.account ? -1 : 1) : (a.kind === 'asset' ? -1 : 1)) }; };
+dash.draw('balances-empty', (el) => { const b = balancesLatest(); el.textContent = b ? `End of ${HL.fmtM(HL.parseM(b.m))}.` : 'No balances yet: add accounts on Settings → Accounts, then enter their month-end balances at Close a month.'; });
+dash.draw('balances-latest', (tb) => { const b = balancesLatest(); if (!b) { tb.replaceChildren(); return; }
+  HL.fillTable(tb, b.rows, [(r) => r.account + (r.in_net_worth ? '' : ' (not in net worth)'), (r) => r.kind + (r.type ? ' · ' + r.type : ''), (r) => HL.usd0(Number(r.amount)),
+    (r) => r.confirmed ? (r.source === 'carried' ? 'confirmed' : 'entered') : r.source]); });
 // Debts (#141): grouped by debt type when any debt has one, each group with its total; ordered by first payment or by total paid
 // (the debt_order param); debts with no recent payment (paid_off, from the debt_paid_off_months rule) drawn apart, under Paid off
 const DEBT_TYPES = ['mortgage', 'student', 'auto', 'card', 'medical', 'personal', 'other'];

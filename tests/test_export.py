@@ -45,7 +45,9 @@ def test_sources_zip_round_trips_the_raw_exports(client, loaded):
     r = client.get("/export/sources.zip")
     z = zipfile.ZipFile(io.BytesIO(r.content)); assert z.testzip() is None
     originals = {p.name: p for p in (GOLDEN / "exports").glob("*.csv")}
-    assert set(z.namelist()) == set(originals)
+    assert set(z.namelist()) == set(originals) | {"balances.csv"}   # the typed month-end balances (#143), seeded from the fixture
+    got_bal = {(r["account"], r["month"]): r["amount"] for r in csv.DictReader(io.StringIO(z.read("balances.csv").decode()))}
+    assert got_bal == {(r["account"], r["month"]): r["amount"] for r in csv.DictReader(open(GOLDEN / "balances.csv"))}
     for name, p in originals.items():
         want = list(csv.reader(io.StringIO(p.read_text(encoding="utf-8-sig"))))
         got = list(csv.reader(io.StringIO(z.read(name).decode())))
@@ -53,13 +55,13 @@ def test_sources_zip_round_trips_the_raw_exports(client, loaded):
         assert len(got) == len(want), name
     # and they re-ingest cleanly into an empty ledger, with the same reconciliation
     from pipeline.run_pipeline import parse_export
-    for name in z.namelist():
+    for name in originals:
         parse_export(name, z.read(name))
 
 
 def test_empty_database_exports_are_valid(client, reset_db):
     assert client.get("/export/ledger.csv").text.startswith("BudgetMonth,")
-    assert zipfile.ZipFile(io.BytesIO(client.get("/export/sources.zip").content)).namelist() == []
+    assert zipfile.ZipFile(io.BytesIO(client.get("/export/sources.zip").content)).namelist() == ["balances.csv"]   # seeded; no exports
     assert zipfile.ZipFile(io.BytesIO(client.get("/export/datasets.zip").content)).namelist() == []
 
 

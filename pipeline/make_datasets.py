@@ -66,6 +66,20 @@ for r in L:
         slush[(r["BudgetMonth"][:4], r["CanonicalItem"])] += -float(r["Amount"])
 w("slush", [{"y":k[0],"item":k[1],"amount":round(v,2)} for k,v in sorted(slush.items())])
 
+# balances (#143): month-end balances from balances.csv, with the months between estimated (debts) or carried (assets); balance_totals
+# is the same by kind and type, without account names, for the review and MCP. Both are empty when accounts.csv is absent.
+import balances as _bal   # noqa: E402  (beside this script, like filenames.py)
+_debt_type = {r["CanonicalItem"]: (r.get("DebtType") or "").strip() or None for r in csv.DictReader(open("item_mapping.csv", newline=""))}
+_accts = [{**a, "type": a["type"] or (_debt_type.get(a["debt_item"]) if a["kind"] == "debt" else None)} for a in _bal.read_accounts()]
+_paid = collections.defaultdict(float)   # (canonical item, budget month) -> dollars paid, as the Debts tab counts them
+for r in L:
+    if r["InTotals"]=="1" and r["Flow"]=="debt":
+        _paid[(r["CanonicalItem"], r["BudgetMonth"])] += -float(r["Amount"])
+_last = max([r["BudgetMonth"] for r in L] + [m for (_, m) in _bal.read_balances()] or [None], key=lambda x: x or "")
+_brows = _bal.series(_accts, _bal.read_balances(), _paid, _last)
+w("balances", _brows)
+w("balance_totals", _bal.totals(_brows))
+
 # what the Goals tab counts as giving, housing and savings (defaults as in build_ledger.RULES), and the catch-all list for its copy
 def _rl(key, default): return RU.get(key) if RU.get(key) is not None else default
 # plan_keep_categories (issue #162): the Last month tab's suggested plan keeps the current plan for these categories

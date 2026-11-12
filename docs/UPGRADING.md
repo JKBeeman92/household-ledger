@@ -11,6 +11,16 @@ Every upgrade, whatever the version:
 
 Migrations are not reversible. To roll back, pin the previous image tag in `docker-compose.yml` and restore the backup from step 2.
 
+## 0.6.0
+
+Migrations run at start; read this list before upgrading.
+
+- **Accounts and month-end balances** (#143, `0143_accounts_and_balances.sql`): new tables only, so nothing existing changes and there is
+  nothing to do. To use them, add what you owe and own on Settings → Accounts, enter last month's balances at Close a month, and paste
+  any statement balances you already have under Balances history. `settings.zip` gains `accounts.csv` and `sources.zip` gains
+  `balances.csv` (the seed loader reads both from `SEED_DIR`); `datasets.zip` gains `balances` and `balance_totals`. For agents: MCP's
+  `get_dataset` adds `balance_totals` (totals by account type, no account names), and the month-close review's data gains `balances`.
+
 ## 0.5.0
 
 Migrations run at start; read this list before upgrading.
