@@ -101,7 +101,7 @@ def test_scan_survives_one_bad_file_and_says_which(client, reset_db, monkeypatch
     for p in sorted((GOLDEN / "exports").glob("*.csv")):
         text = p.read_text()
         if p.name == "c0ffee-02-2025-EveryDollar-Transactions.csv":
-            text = text.replace("02/03/2025", "2025-02-03")
+            text = text.replace("02/03/2025", "Feb 3 2025")   # neither MM/DD/YYYY nor the internal format's YYYY-MM-DD
         (tmp_path / p.name).write_text(text)
     monkeypatch.setattr(export, "settings", dataclasses.replace(export.settings, import_dir=str(tmp_path)))
     r = client.post("/import/scan")

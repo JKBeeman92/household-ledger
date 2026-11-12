@@ -18,8 +18,10 @@ def run(script, wd):
 
 def test_recurring_window_and_active_flag(tmp_path):
     (tmp_path / "txns").mkdir(); (tmp_path / "summaries").mkdir()
-    for f in SAMPLE.glob("*-EveryDollar-*.csv"):
-        shutil.copy(f, tmp_path / ("txns" if "Transactions" in f.name else "summaries") / f.name)
+    from pipeline import filenames
+    for f in SAMPLE.glob("*.csv"):   # EveryDollar-named months and the internal-format one (#161)
+        if (p := filenames.parse(f.name)):
+            shutil.copy(f, tmp_path / ("txns" if p[0] == "transactions" else "summaries") / f.name)
     for n in ("item_mapping.csv", "rules.json", "events.json"):
         shutil.copy(SAMPLE / n, tmp_path / n)
     shutil.copy(PIPELINE / "cpi_u.csv", tmp_path / "cpi_u.csv")

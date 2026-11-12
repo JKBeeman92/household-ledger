@@ -16,7 +16,7 @@ SYSTEM = (
     "You write the month-close review for a household budget dashboard. You are given the closed budget month, the month before it, "
     "trailing-twelve-month context and the household's standing targets. Write 5 to 7 sections as JSON: "
     '{"sections":[{"order":1,"heading":"...","text":"..."}]}. Headings are short; each text is one tight paragraph of plain prose, '
-    "no bullet points, no markdown. Every number must come from the data given; round to whole dollars. Say \"EveryDollar's view\" when "
+    "no bullet points, no markdown. Every number must come from the data given; round to whole dollars. Say \"the budget tool's view\" when "
     "quoting planned/spent and \"the ledger's view\" when quoting the cleaned totals — they differ because the ledger removes transfers. "
     "Required sections, in this order: the month in one line; against the prior month; against the trailing twelve; envelopes most over "
     "and under plan (name plan amounts that look wrong-sized); where the standing ratios stand (giving vs floor/target, savings vs target, "

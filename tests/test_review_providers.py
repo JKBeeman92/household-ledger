@@ -134,7 +134,7 @@ def test_saved_choice_overrides_environment(cfg):
 def test_generate_stores_provider_and_model_and_tolerates_fences(client, reset_db, cfg, http, monkeypatch):
     from app import db
     reset_db(SAMPLE)
-    client.post("/upload", files=[("files", (p.name, p.read_bytes(), "text/csv")) for p in sorted(SAMPLE.glob("*EveryDollar*.csv"))])
+    client.post("/upload", files=[("files", (p.name, p.read_bytes(), "text/csv")) for p in sorted(p for p in SAMPLE.glob("*.csv") if __import__("pipeline.filenames", fromlist=["x"]).is_export(p.name))])
     calls, reply = http
     cfg(review_provider="ollama", review_base_url="http://o:11434", review_model_explicit="llama-x")
     reply["v"] = Resp({"message": {"content": "Here you go:\n```json\n" + json.dumps(SECTIONS) + "\n```"}})
@@ -225,7 +225,7 @@ def test_parse_error_tells_invalid_json_from_no_sections():
 def test_failed_generate_logs_an_excerpt_of_the_reply(client, reset_db, cfg, http, caplog):
     from app import db
     reset_db(SAMPLE)
-    client.post("/upload", files=[("files", (p.name, p.read_bytes(), "text/csv")) for p in sorted(SAMPLE.glob("*EveryDollar*.csv"))])
+    client.post("/upload", files=[("files", (p.name, p.read_bytes(), "text/csv")) for p in sorted(p for p in SAMPLE.glob("*.csv") if __import__("pipeline.filenames", fromlist=["x"]).is_export(p.name))])
     _, reply = http
     cfg(review_provider="ollama", review_base_url="http://o:11434", review_model_explicit="llama-x")
     reply["v"] = Resp({"message": {"content": "Sorry, the figures look incomplete."}})
@@ -257,7 +257,7 @@ def test_default_limit_and_timeout_leave_room_for_thinking(http):
 def test_review_runs_in_the_background_and_the_page_says_where_to_read_it(client, reset_db, cfg, http):
     """Issue #124: the request returns at once; Close a month shows the job, then where to read the review, with the section-count check."""
     reset_db(SAMPLE)
-    client.post("/upload", files=[("files", (p.name, p.read_bytes(), "text/csv")) for p in sorted(SAMPLE.glob("*EveryDollar*.csv"))])
+    client.post("/upload", files=[("files", (p.name, p.read_bytes(), "text/csv")) for p in sorted(p for p in SAMPLE.glob("*.csv") if __import__("pipeline.filenames", fromlist=["x"]).is_export(p.name))])
     _, reply = http
     cfg(review_provider="ollama", review_base_url="http://o:11434", review_model_explicit="llama-x")
     reply["v"] = Resp({"message": {"content": json.dumps({"sections": [{"order": 1, "heading": "The month", "text": "Calm."}]})}})

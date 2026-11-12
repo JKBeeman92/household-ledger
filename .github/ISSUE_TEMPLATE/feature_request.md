@@ -15,4 +15,4 @@ https://github.com/JKBeeman92/household-ledger#what-this-is-and-isnt -->
 
 **Where it belongs** (which tab / page / setting), if you have a view
 
-**Anything household-specific?** — would other EveryDollar users want this too, or does it need a setting?
+**Anything household-specific?** — would other households want this too, or does it need a setting?

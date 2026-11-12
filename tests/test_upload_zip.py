@@ -25,7 +25,7 @@ def test_zip_of_exports_is_unpacked_stored_and_reported_per_file(client, reset_d
     assert post_zip(client, z).status_code == 303
     page = client.get("/upload").text
     assert f"{len(EXPORTS)} of {len(EXPORTS) + 1} files stored" in page
-    assert "from catalogue.zip" in page and "readme.txt" in page and "not an EveryDollar export filename" in page
+    assert "from catalogue.zip" in page and "readme.txt" in page and "not named like a monthly export" in page
     assert "__MACOSX" not in page
     assert client.get("/api/status").json()["months"] == 4
 

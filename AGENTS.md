@@ -8,8 +8,10 @@ Household Ledger is a FastAPI + Postgres app around a small, file-based budget p
   are re-derived from it only by `reapply_profile`, never edited. `ledger` and `datasets` are truncated and rewritten on every rebuild.
 - **Budget month, not calendar month**, everywhere.
 - **Reconciliation must stay clean**: Σ transactions per envelope == BudgetItems Spent. A change that breaks this is wrong.
-- `pipeline/*.py` must keep working as standalone scripts on a folder of CSVs (`python -I build_ledger.py` etc.). They read
-  `item_mapping.csv`, `cpi_u.csv`, `events.json`, `rules.json` from the working directory and know nothing about the DB.
+- `pipeline/*.py` must keep working as standalone scripts on a folder of CSVs (`python -I build_ledger.py` etc.), in the **internal
+  format** (`txns/YYYY-MM-transactions.csv`, `summaries/YYYY-MM-budget.csv`, ISO dates; EveryDollar's names and dates are read too:
+  `pipeline/filenames.py`, which the scripts import from beside them). They read `item_mapping.csv`, `cpi_u.csv`, `events.json`,
+  `rules.json` from the working directory and know nothing about the DB.
 - The dashboard page (`app/web/templates/dashboard.html`) talks to data only through `dash.data()/calc()/draw()` from
   `dash-shim.js`. Add a dataset by emitting it from `make_datasets.py`; the shim exposes every row of `datasets` automatically.
 - Colours come from the brand contract tokens (`docs/BRANDING.md`). Never type a hex colour into `app.css` or the page.

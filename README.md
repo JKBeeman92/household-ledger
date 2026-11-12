@@ -1,7 +1,7 @@
 # Household Ledger
 
-A self-hosted dashboard for a household budget kept in EveryDollar, or in any tool that exports its transactions and its budget
-each month. Upload the two monthly files, get a reconciled ledger, charts across every year you load, goals tracking and a
+A self-hosted dashboard for a household budget kept in any budget tool that exports its transactions and its budget each month
+(EveryDollar is the worked example, and needs no setup). Upload the two monthly files, get a reconciled ledger, charts across every year you load, goals tracking and a
 model-written month-close review — behind your own identity provider, on your own box.
 
 Everything the app decides from is data you can edit on its Settings page: the item → category mapping, the CPI table for real
@@ -36,7 +36,7 @@ monthly exports    ──upload──▶ Postgres (source_files, transactions, b
                        Postgres (ledger, datasets)  ──/api/datasets──▶  the dashboard page (d3, no build step)
 ```
 
-- A **budget month** is read from the export filename (`<id>-MM-YYYY-EveryDollar-Transactions.csv`), never from transaction dates.
+- A **budget month** is read from the export's file name (`2026-03-transactions.csv`, or EveryDollar's `<id>-03-2026-EveryDollar-Transactions.csv`), never from transaction dates ([The internal format](#the-internal-format)).
   Another tool's files are read through a source profile, and their month is confirmed on upload ([Other budget tools](#other-budget-tools)).
 - Reconciliation: for every envelope, Σ transactions must equal the BudgetItems "Spent". A month that fails still loads, and the
   page says so.
@@ -90,11 +90,11 @@ Then open the site, go to **Close a month**, and upload exports (the form takes 
 background and the page shows its progress; only one rebuild runs at a time, even across containers.
 
 **Bulk load at start.** Anything dropped in `/srv/ledger/import/` (mounted as `IMPORT_DIR`) is loaded when the container
-starts: every EveryDollar export whose month is not yet in the database, or whose contents changed, is stored, then one rebuild
+starts: every export named in the internal format or as EveryDollar names them, whose month is not yet in the database, or whose contents changed, is stored, then one rebuild
 runs. Files already loaded are skipped by checksum, so the directory can stay as a permanent archive of the raw exports.
 A failed start-up import is logged and recorded in the build log; it never stops the container from starting.
 **Close a month** also has a *Scan import directory now* button (no restart needed), and download links for `ledger.csv`, `datasets.zip` and
-`sources.zip` (EveryDollar exports rebuilt in their own shape under their original filenames; other tools' files exactly as uploaded, under `YYYY-MM/`), also at `/export/...` for any signed-in user.
+`sources.zip` (internal-format and EveryDollar exports rebuilt in their own shape under their original filenames; other tools' files exactly as uploaded, under `YYYY-MM/`), also at `/export/...` for any signed-in user.
 The same import is available by hand:
 
 ```sh
@@ -226,7 +226,7 @@ destination and secret, sessions) and no reviews or build log. Take one before a
 
 The dump is the database only, and it includes the files uploaded from other budget tools (they are stored in the database).
 To rebuild a household from nothing you also need the directories you maintain by hand: `seed/`, `brand/` and `import/` (the raw
-EveryDollar exports) complete the state. A one-off dump through the backup service: `docker compose --profile backup run --rm -e BACKUP_ONCE=1 backup`.
+exports) complete the state. A one-off dump through the backup service: `docker compose --profile backup run --rm -e BACKUP_ONCE=1 backup`.
 
 **Restore** into an empty database, with the app stopped:
 
@@ -241,10 +241,25 @@ docker compose start ledger
 Without the `backup` service, the same dump by hand is
 `docker compose exec -T ledger-db pg_dump -U ledger -Fc ledger > ledger.dump`.
 
+## The internal format
+
+The pipeline reads one format of its own, a pair of CSV files per budget month:
+
+| File | Columns |
+|---|---|
+| `YYYY-MM-transactions.csv` | `Group, Item, Type, Date, Merchant, Account, Amount, Note`: `Date` is `YYYY-MM-DD`; `Amount` is signed, income positive and spending negative |
+| `YYYY-MM-budget.csv` | `Group, Item, Planned, Spent, Remaining` |
+
+The month in the file name is the budget month every row counts in. Files named this way are read as they are, on upload, from a
+`.zip`, from the import directory and by the standalone scripts. The app stages every rebuild in this format, and
+`python -m pipeline.sources normalize` writes it. **EveryDollar's** exports are this format with `MM/DD/YYYY` dates and their own
+names (`<id>-MM-YYYY-EveryDollar-Transactions.csv`, `…-BudgetItems.csv`); they are the built-in profile, read without a mapping
+step, and always will be. `pipeline/filenames.py` recognises both.
+
 ## Other budget tools
 
-EveryDollar's two exports are the built-in format and need no setup. Any other tool works too, as long as it exports the same
-pair each month: **a transactions CSV and a budget CSV**. Upload both on **Close a month**. Files not named like EveryDollar's go to
+A file in the internal format, or EveryDollar's, needs no setup. Any other tool works too, as long as it exports the same
+pair each month: **a transactions CSV and a budget CSV**. Upload both on **Close a month**. Files not named like exports go to
 a mapping page that shows their first rows, guesses which column is which, which file is which and the budget month, and asks
 you to confirm. The confirmed mapping is saved as a *source profile* under a name you choose and is offered again automatically
 for next month's files with the same columns. Profiles can be edited, exported and imported as JSON on **Settings → Sources**.
@@ -255,16 +270,17 @@ for next month's files with the same columns. Profiles can be edited, exported a
 | Budget | group; item; planned; spent | — |
 
 - **Group and item** must name the same budget lines in both files: each line's transactions are reconciled against that line's
-  spent figure, as they are for EveryDollar. A tool with no budget lines (a plain bank statement) cannot be reconciled, so it is
+  spent figure, as they are in the internal format. A tool with no budget lines (a plain bank statement) cannot be reconciled, so it is
   not supported.
 - **Dates**: `MM/DD/YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD`, `DD.MM.YYYY`, `YYYY/MM/DD`, `DD-MM-YYYY` or `MM-DD-YYYY`. **Numbers**: either
   decimal mark, any thousands separator, currency symbols and `(1.00)` negatives. Comma, semicolon or tab delimited; UTF-8 or Windows-1252.
 - **Signs**: say whether spending is negative or positive in each file; lines in the income groups (default `Income`) are income.
 
 The files are stored exactly as uploaded, and their rows are read through the profile, so correcting a profile re-reads every
-month stored with it; nothing needs uploading again. The import directory and `.zip` uploads take EveryDollar exports only.
+month stored with it; nothing needs uploading again. The import directory and `.zip` uploads take named exports only (the
+internal format, or EveryDollar's). The built-in EveryDollar profile is shown, read-only and exportable, on **Settings → Sources**.
 Outside the app, `python -m pipeline.sources propose …` prints a starting profile for a pair of files and
-`python -m pipeline.sources normalize --profile p.json --month YYYY-MM …` writes them as EveryDollar-named files for the standalone
+`python -m pipeline.sources normalize --profile p.json --month YYYY-MM …` writes them in the internal format for the standalone
 pipeline scripts.
 
 ## Roles
@@ -330,7 +346,7 @@ Compose, from a checkout of this repo (`LEDGER_DATA` defaults to `./data`, which
 ```sh
 mkdir -p data/seed data/import
 cp examples/sample-household/*.json examples/sample-household/item_mapping.csv data/seed/
-cp examples/sample-household/*-EveryDollar-*.csv data/import/
+cp examples/sample-household/*-EveryDollar-*.csv examples/sample-household/2026-06-*.csv data/import/
 docker compose up -d
 ```
 

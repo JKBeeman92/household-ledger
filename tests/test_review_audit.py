@@ -13,7 +13,7 @@ from test_review_providers import Resp, SECTIONS, cfg, http  # noqa: F401  (fixt
 @pytest.fixture
 def month(client, reset_db, cfg, http):  # noqa: F811
     reset_db(SAMPLE)
-    client.post("/upload", files=[("files", (p.name, p.read_bytes(), "text/csv")) for p in sorted(SAMPLE.glob("*EveryDollar*.csv"))])
+    client.post("/upload", files=[("files", (p.name, p.read_bytes(), "text/csv")) for p in sorted(p for p in SAMPLE.glob("*.csv") if __import__("pipeline.filenames", fromlist=["x"]).is_export(p.name))])
     cfg(anthropic_api_key="k")
     http[1]["v"] = Resp({"content": [{"type": "text", "text": json.dumps(SECTIONS)}]})
     with db.pool.connection() as conn:
