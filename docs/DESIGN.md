@@ -49,7 +49,9 @@ reaching a waypoint, and a chart border.
   `checkin_eyebrow`, `login_line` and `footer`, and there are no others: the eyebrows of working pages (Close a month, Settings,
   Reviews) are plain and typed. A page reads the six from `words`; it never types them.
 - **DS-WORD-3** The same thing has the same name on every page. *Budget month*, *check-in*, *close a month*, *review*,
-  *rebuild* and *reconciled* are fixed terms.
+  *rebuild* and *reconciled* are fixed terms. The act of having the model read a month back is **Write review** (a second
+  time, **Write review again**), and the page that chooses the model is **Review provider**, everywhere: never "generate",
+  "provider settings" or "write one".
 - **DS-WORD-4** Sentences are short and say what happened and what to do next. An error names the cause and the remedy; it
   does not apologise. No exclamation marks.
 - **DS-WORD-5** Sentence case everywhere. Capitals with letter-spacing are for eyebrows and stamps only.
@@ -228,10 +230,7 @@ and the critique reports them only on the surfaces a change touches. Each row na
 | Dashboard (catch-all envelopes, radar charts) | DS-CHART-5 | No table of their figures | #191 |
 | Dashboard | DS-COLOR-2 | `--accent-2` marks card headings, summaries and definitions, which are not destinations | #191 |
 | Dashboard gauges | DS-STATUS-1 | Verdicts are round pills with a dot, not stamps | #191 |
-| Dashboard, Reviews list, Settings | DS-SHEET-1, 2 | Cards and lists lie straight on the paper; one sheet is nested in another | #191 |
-| Reviews, Close a month | DS-WORD-3 | One act is named five ways ("Write the month-close review", "Generate review", "Write one", "Write again", "Send and generate") | #192 |
-| Check-in | DS-BTN-2 | "Reopen", "Undo skip" and "Catch up" lack their objects; the net-worth line "you did / happened" needs a gloss | #192 |
-| Check-in, Balances step | DS-FIRST-1 | A long method paragraph stands above the fields | #192 |
+| Dashboard, Settings | DS-SHEET-1, 2 | Cards and lists lie straight on the paper; one sheet is nested in another | #191 |
 | Settings, Reviews | DS-FORM-1, DS-EMPTY-1 | Filter boxes have no visible label; empty states link in prose where a button should be | #193 |
 | Settings tables | DS-TYPE-3 | Number columns are left-aligned (`.num` exists; the columns do not yet use it) | #193 |
 | Close a month, Settings | DS-BTN-1 | More than one primary button in a view; which is primary is the owner's choice | #193 |

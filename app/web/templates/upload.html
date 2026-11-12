@@ -67,21 +67,21 @@ addEventListener('DOMContentLoaded', () => {
     <ul id="file-list" class="muted file-list" aria-live="polite"></ul>
     <p style="margin-top:var(--space-4)"><button class="btn primary" type="submit" id="upload-btn" {% if build.state == 'running' %}disabled title="A rebuild is running"{% endif %}>Upload and rebuild</button></p>
   </form>
-  <div class="panel">
-    <h2>2 · Write the month-close review</h2>
+  <div class="panel" id="review">
+    <h2>2 · The month-close review</h2>
     <p class="muted">Sends the closed month's figures (planned vs spent, category gaps against plan and against the trailing twelve months, the ledger's clean totals, and the standing targets) to the model and stores the result. Nothing else leaves the server. The review appears on the dashboard's Last month tab.</p>
-    <form method="get" action="/reviews/confirm">
+    {% if review_enabled %}<form method="get" action="/reviews/confirm"><input type="hidden" name="back" value="/upload#review">
       <label for="month">Budget month</label>
       <select id="month" name="month">{% for m in months %}<option value="{{ m }}" {% if loop.first %}selected{% endif %}>{{ m|month_short }}</option>{% endfor %}</select>
-      <p style="margin-top:var(--space-4)"><button class="btn primary" type="submit" {% if not review_enabled %}disabled title="Configure a review provider to enable"{% endif %}>Generate review</button>
-      {% if not review_enabled %}<span class="muted" style="margin-left:var(--space-2)">Not available: no review provider is set up. <a href="/reviews/provider">Set one up</a>.</span>{% endif %}</p>
+      <p style="margin-top:var(--space-4)"><button class="btn" type="submit">Write review</button></p>
     </form>
+    {% else %}<p>A review is written by a model you choose; none is set up yet.</p><p><a class="btn" href="/reviews/provider">Set up a review provider</a></p>{% endif %}
     {% if review_job %}{% set j = review_job %}
     <div id="review-job" class="review-job" data-state="{{ j.state }}" data-since="{{ (j.started_at or j.created_at).isoformat() }}" role="status" aria-live="polite">
       {% if j.state in ('queued', 'running') %}<span class="status-chip">Writing</span> The {{ j.month|month }} review is being written by {{ j.provider }}: <span data-elapsed>0:00</span>.
         You can leave this page; the review is stored when the model answers.
       {% elif j.state == 'stored' %}<span class="status-chip ok">Stored</span> The {{ j.month|month }} review ({{ j.sections }} section{{ '' if j.sections == 1 else 's' }}): read it on {{ j.where }}.
-        {% if j.odd_count %}<br><span class="status-chip warn">Check it</span> The model wrote {{ j.sections }} section{{ '' if j.sections == 1 else 's' }}; the instructions ask for 5 to 7. Read it before relying on it, or generate again.{% endif %}
+        {% if j.odd_count %}<br><span class="status-chip warn">Check it</span> The model wrote {{ j.sections }} section{{ '' if j.sections == 1 else 's' }}; the instructions ask for 5 to 7. Read it before relying on it, or write it again.{% endif %}
       {% else %}<span class="status-chip bad">Not written</span> The {{ j.month|month }} review failed: {{ j.error }}{% endif %}
     </div>{% endif %}
   </div>

@@ -1,6 +1,7 @@
-{# Step 8: the month-close review (app/review.py); optional. Context: c.job, c.configured #}
+{# Step 8: the month-close review (app/review.py); optional. Context: c.job, c.configured, c.written #}
 {% if c.job and c.job.state in ('queued', 'running') %}<p><span class="status-chip">Writing</span> The review is being written by {{ c.job.provider }}; reload in a minute.</p>
 {% elif c.job and c.job.state == 'failed' %}<p><span class="status-chip bad">Not written</span> {{ c.job.error }}</p>{% endif %}
-{% if not c.configured %}<p class="muted">No review provider is configured, so this step is skipped. <a href="/reviews">Set one up</a> to have the month read back to you.</p>
-{% else %}<p><a class="btn primary" href="/reviews/confirm?month={{ month }}">Generate the {{ month|month }} review</a> <span class="muted">shows what is sent and roughly what it costs before anything leaves.</span></p>{% endif %}
+{% if not c.configured %}<p class="muted">No review provider is set up, so {{ "a new review cannot be written" if c.written else "this step is skipped" }}. Set one up to have the month read back to you.</p>
+<p><a class="btn" href="/reviews/provider">Set up a review provider</a></p>
+{% else %}{% set act = "Write review again" if c.written else "Write review" %}<p><a class="btn" href="/reviews/confirm?month={{ month }}&amp;back=/checkin/{{ month }}%23step-review" aria-label="{{ act }} for {{ month|month }}">{{ act }}</a>{% if c.written %} <span class="muted">a review is stored; this replaces it.</span>{% endif %} <span class="muted">shows what is sent and roughly what it costs before anything leaves.</span></p>{% endif %}
 <p class="muted">A stored review is on the dashboard's <a href="/#lastmonth">Last month tab</a>.</p>
