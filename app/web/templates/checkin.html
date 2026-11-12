@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Check-in {{ ov.month }} · {{ household.title }}{% endblock %}
+{% block content %}
+{% set chip = {'todo': '', 'done': 'ok', 'skipped': 'info', 'attention': 'bad'} %}
+<p class="eyebrow">{{ {'month': 'Monthly', 'quarter': 'Quarterly', 'year': 'Year-end'}[ov.mode] }} check-in{% if ov.short %} · catching up{% endif %}</p>
+<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">{{ month_name(ov.month) }}</h1>
+<p class="muted" style="max-width:80ch">{% if ov.short %}An earlier month, so a short form: its files, clean books and balances. The full sit-down, with the review, is for {{ month_name(latest) }}.{% else %}Where the household stands, what to adjust, and when you are done. Each step opens here; work through them in order, or come back to any later: the page remembers. <a href="https://github.com/JKBeeman92/household-ledger/blob/main/docs/CHECK-IN.md">How to sit down with it</a>.{% endif %}{% if ov.mode != 'month' and not ov.short %} The {{ ov.mode }}'s own steps arrive in later releases.{% endif %}</p>
+{% if ov.missing %}<div class="panel" id="catch-up" style="border-left:3px solid var(--warning)">
+  <p style="margin:0">{% if ov.missing|length <= 3 %}{% for m in ov.missing %}{{ month_name(m).split(' ')[0] }}{{ ', ' if not loop.last and loop.revindex > 2 else (' and ' if loop.revindex == 2 else '') }}{% endfor %} {{ 'has' if ov.missing|length == 1 else 'have' }} no check-in.{% else %}{{ ov.missing|length }} earlier months, {{ month_name(ov.missing[0]) }} to {{ month_name(ov.missing[-1]) }}, have no check-in.{% endif %}
+    <a class="btn" href="/checkin/{{ ov.missing[0] }}">Catch up</a> <span class="muted">a short form for each, oldest first; this month's full check-in after them.</span></p>
+</div>{% endif %}
+{% if ov.done %}<div class="panel" id="checkin-done" style="border-left:3px solid var(--success)">
+  <p style="margin:0"><span class="status-chip ok">Done</span> {{ ov.row.completed_at.strftime('%-d %b %Y') }}{% if ov.row.completed_by %} by {{ ov.row.completed_by }}{% endif %}.</p>
+  <form method="post" action="/checkin/{{ ov.month }}/reopen" style="margin-top:var(--space-2)">{{ csrf_field(request) }}<button class="btn" type="submit">Reopen</button> <span class="muted">the first completion date is kept</span></form>
+</div>{% endif %}
+<ol class="checkin-steps">
+{% for s in ov.steps %}<li>
+  <details id="step-{{ s.key }}" class="panel step" data-step="{{ s.key }}" {% if s.key == first_open %}open{% endif %}>
+    <summary><span class="n">{{ s.n }}</span> <strong>{{ s.title }}</strong> <span class="status-chip {{ chip[s.status] }}">{{ s.label }}</span><span class="muted step-summary">{{ s.summary }}</span></summary>
+    <div class="step-body">
+      {% with c = s.context, month = ov.month %}{% include s.template %}{% endwith %}
+      {% if 'skip' in s.actions and s.status in ('todo', 'attention') %}<form method="post" action="/checkin/{{ ov.month }}/steps/{{ s.key }}/skip" class="inline-actions">{{ csrf_field(request) }}<button class="btn" type="submit">Skip this step</button></form>{% endif %}
+      {% if s.status == 'skipped' and 'skip' in s.actions and s.summary == 'skipped' %}<form method="post" action="/checkin/{{ ov.month }}/steps/{{ s.key }}/undo" class="inline-actions">{{ csrf_field(request) }}<button class="btn" type="submit">Undo skip</button></form>{% endif %}
+    </div>
+  </details>
+</li>{% endfor %}
+</ol>
+{% if not ov.done %}<form method="post" action="/checkin/{{ ov.month }}/complete" class="panel" id="checkin-complete">{{ csrf_field(request) }}
+  <p style="margin:0 0 var(--space-2)">{% if ov.can_complete %}Every step is done or skipped.{% else %}{{ ov.to_do }} step{{ '' if ov.to_do == 1 else 's' }} still to do.{% endif %}</p>
+  <button class="btn primary" type="submit" {% if not ov.can_complete %}disabled aria-disabled="true"{% endif %}>Done</button>
+  <span class="muted">records who and when{% if not ov.short %}, and tells your webhook{% endif %}</span>
+</form>{% endif %}
+<script nonce="{{ csp_nonce(request) }}">
+// A read-only step is read once it is opened: say so to the server, then the page shows it done on the next load.
+document.querySelectorAll('details.step[data-step="standing"]').forEach((d) => d.addEventListener('toggle', () => {
+  if (!d.open || d.dataset.sent) return; d.dataset.sent = '1';
+  const fd = new FormData(); const t = document.querySelector('input[name="csrf_token"]'); if (t) fd.append('csrf_token', t.value);
+  fetch('/checkin/{{ ov.month }}/steps/standing/view', { method: 'POST', body: fd, headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+    .then((r) => { if (r.ok) { const c = d.querySelector('.status-chip'); if (c) { c.className = 'status-chip ok'; c.textContent = 'done'; } } }).catch(() => {});
+}));
+</script>
+{% endblock %}

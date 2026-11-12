@@ -46,7 +46,7 @@ async def _read_capped(f: UploadFile) -> bytes | None:
 
 
 @router.post("/upload")
-async def upload(request: Request, background: BackgroundTasks, files: list[UploadFile] = File(...), user=Depends(auth.require_editor)):
+async def upload(request: Request, background: BackgroundTasks, files: list[UploadFile] = File(...), next: str = Form(""), user=Depends(auth.require_editor)):
     items: list[Item] = []
     for f in files:
         name = f.filename or ""
@@ -94,7 +94,7 @@ async def upload(request: Request, background: BackgroundTasks, files: list[Uplo
         flash(request, f"{len(results) - stored} of {len(results)} files were not stored; see the upload result below.", "bad")
     if batch:
         return RedirectResponse(f"/upload/map/{batch}", status_code=303)
-    return RedirectResponse("/upload", status_code=303)
+    return RedirectResponse(auth._safe_next(next) if next else "/upload", status_code=303)   # the check-in's Files step returns to it (#164)
 
 
 @router.post("/rebuild")

@@ -21,6 +21,7 @@
     <nav>
       <a href="/" {% if active == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
       {% if user and user.is_editor %}
+      <a href="/checkin" {% if active == 'checkin' %}aria-current="page"{% endif %}>Check-in</a>
       <a href="/upload" {% if active == 'upload' %}aria-current="page"{% endif %}>Close a month</a>
       <a href="/settings" {% if active == 'settings' %}aria-current="page"{% endif %}>Settings</a>
       <a href="/reviews" {% if active == 'reviews' %}aria-current="page"{% endif %}>Reviews</a>

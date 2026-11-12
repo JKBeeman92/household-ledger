@@ -1,0 +1,8 @@
+{# Step 2: reconciliation and unmapped items for the month (#164). Context: c.rec, c.unmapped, c.acked #}
+{% if c.rec.problems %}<details {% if c.rec.problems|length <= 5 %}open{% endif %}><summary>{{ c.rec.problems|length }} envelope{{ '' if c.rec.problems|length == 1 else 's' }} do not reconcile</summary>
+  <ul data-list="unbounded">{% for p in c.rec.problems %}<li>{{ p.item }}: transactions {{ '%.2f'|format(p.txn_sum) if p.txn_sum is not none else '—' }}, Spent {{ '%.2f'|format(p.spent) if p.spent is not none else '—' }} ({{ p.status }})</li>{% endfor %}</ul></details>{% endif %}
+{% if c.unmapped %}<p>{{ c.unmapped|length }} item{{ '' if c.unmapped|length == 1 else 's' }} without a mapping: {{ c.unmapped|map(attribute='item')|join(', ') }}. <a href="/upload#unmapped-panel">Map them on Close a month</a>.</p>{% endif %}
+{% if not c.rec.problems and not c.unmapped %}<p class="muted">Every envelope's transactions sum to its Spent, and every item is mapped.</p>
+{% elif not c.acked %}<p class="muted">Fix them, or acknowledge them to carry on (for example a budget-tool rounding you have decided to live with).</p>
+<form method="post" action="/checkin/{{ month }}/steps/books/ack">{{ csrf_field(request) }}<button class="btn" type="submit">Acknowledge and carry on</button></form>
+{% else %}<form method="post" action="/checkin/{{ month }}/steps/books/undo">{{ csrf_field(request) }}<span class="muted">Acknowledged.</span> <button class="btn" type="submit">Undo</button></form>{% endif %}

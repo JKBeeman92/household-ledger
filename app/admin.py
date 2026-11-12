@@ -77,6 +77,28 @@ def preview_mapping_migration() -> int:
     return 0
 
 
+def checkin_status(month: str | None) -> int:
+    """`checkin status [YYYY-MM]`: each step with its status; exit 0 when done, 1 while steps are still to do (for a script)."""
+    from app import checkin
+    with _connect() as conn:
+        month = month or checkin.latest(conn)
+        if not month:
+            print("No month is loaded yet: the first check-in starts with its upload.", file=sys.stderr); return 1
+        try:
+            ov = checkin.overview(conn, month)
+        except ValueError as e:
+            print(e, file=sys.stderr); return 2
+        conn.rollback()
+    head = f"{month} check-in ({ov['mode']}{', catching up' if ov['short'] else ''}): "
+    r = ov["row"]
+    print(head + (f"done {r['completed_at']:%Y-%m-%d}" + (f" by {r['completed_by']}" if r["completed_by"] else "") if ov["done"] else f"{ov['to_do']} step(s) to do"))
+    for s in ov["steps"]:
+        print(f"  {s['n']}. {s['title']:<18} {s['label']:<16} {s['summary']}")
+    if ov["missing"]:
+        print("Earlier months without a check-in: " + ", ".join(ov["missing"]))
+    return 0 if ov["done"] else 1
+
+
 def rebuild_cmd() -> int:
     from pipeline.run_pipeline import rebuild, BuildBusy
     with _connect() as conn:
@@ -114,6 +136,8 @@ def main(argv: list[str] | None = None) -> int:
     sp.add_argument("name"); sp.add_argument("category")
     sp = sub.add_parser("set-debt-type", help="set a canonical item's debt type (mortgage, student, auto, card, medical, personal, other; '' clears it)")
     sp.add_argument("name"); sp.add_argument("debt_type")
+    sp = sub.add_parser("checkin", help="print where a month's check-in stands (completing it stays a browser action: the household's sign-off)")
+    sp.add_argument("what", choices=["status"]); sp.add_argument("month", nargs="?", help="YYYY-MM (default: the latest loaded month)")
     sub.add_parser("preview-mapping-migration", help="before upgrading to 0.5.0: print what migration 0133 would change in the item mapping "
                                                      "(nothing is changed; run it against a copy of the 0.4.x database)")
     a = p.parse_args(argv)
@@ -137,6 +161,8 @@ def main(argv: list[str] | None = None) -> int:
         return _write(a.cmd, fn, a.old, a.new, f"{_who()} (cli)")
     if a.cmd == "preview-mapping-migration":
         return preview_mapping_migration()
+    if a.cmd == "checkin":
+        return checkin_status(a.month)
     with _connect() as conn:
         if a.cmd == "export-settings":
             from app.settings_export import write_dir

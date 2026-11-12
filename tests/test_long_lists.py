@@ -82,7 +82,7 @@ def test_the_checker_catches_a_list_with_something_under_it():
         == ["u: collapsed, but its summary does not say how many"]
 
 
-@pytest.mark.parametrize("path", ["/settings", "/upload", "/upload?balances_month=2025-04"])
+@pytest.mark.parametrize("path", ["/settings", "/upload", "/upload?balances_month=2025-04", "/checkin/2025-04"])
 def test_long_lists_end_their_panel(client, reset_db, path):
     upload_files(client, GOLDEN / "exports")
     html = client.get(path).text

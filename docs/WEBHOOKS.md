@@ -10,9 +10,10 @@ Configure on **Settings, Webhooks** (`/webhooks`): a URL, a shared secret (write
 | `build.completed` | a background rebuild finished successfully | |
 | `review.stored` | a month-close review was generated or an agent saved one | `sections` |
 | `months.missing` | the previous budget month is not loaded; once per missing month | `months` (list) |
+| `checkin.completed` | a month's check-in was marked Done ([CHECK-IN.md](CHECK-IN.md)) | `mode` (`month`, `quarter`, `year`), `steps` (each step's status) |
 | `test` | the button on the page | `note` |
 
-Common fields: `id`, `sent_at`, `household`, `dashboard_url`. Build and review events add `month` (budget month), `currency`,
+Common fields: `id`, `sent_at`, `household`, `dashboard_url`. Build, review and check-in events add `month` (budget month), `currency`,
 `figures` (`income`, `spend`, `debt`, `net` for that month, as numbers) and `reconciliation` (`status` is `clean` or `problems`, and `problems` counts them).
 Only derived figures are sent, never transactions. Delivery is a single attempt with a 5 second timeout; redirects are not followed.
 

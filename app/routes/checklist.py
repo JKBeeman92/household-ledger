@@ -23,8 +23,8 @@ def checklist_goals(conn) -> list[dict]:
 
 
 @router.post("/goals/{key}/confirm")
-def confirm_goal(key: str, request: Request, background: BackgroundTasks, value: str = Form(""), user=Depends(auth.require_editor)):
-    back = RedirectResponse("/upload#checklist", status_code=303)
+def confirm_goal(key: str, request: Request, background: BackgroundTasks, value: str = Form(""), next: str = Form(""), user=Depends(auth.require_editor)):
+    back = RedirectResponse(auth._safe_next(next) if next else "/upload#checklist", status_code=303)   # the check-in's Goals step returns to it (#164)
     value = value.strip()
     with db.pool.connection() as conn:
         g = conn.execute("SELECT label, value, unit FROM goals WHERE key=%s", (key,)).fetchone()
