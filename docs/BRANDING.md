@@ -1,35 +1,53 @@
-# Branding and themes
+# Brand kits
 
-The app ships with its own brand, "Homestead": money green and warm terracotta on cream by day and on warm charcoal by night,
-Plus Jakarta Sans with JetBrains Mono for figures. Its mark is a house whose walls are a ledger sheet with a dollar sign on it.
-Everything visual
-is replaceable without rebuilding the image: mount a directory at `BRAND_DIR` (default `/data/brand`) and any file in it
-shadows the shipped default of the same name under `/brand/…`. (The household's name, title and currency are not brand files:
-they come from `household.json` in the seed directory on first boot, and from the Settings page after that.)
+The app ships with its own brand kit, **Bearings**: a navigator's chart table, navy ink and brass on chart paper by day and on
+deep ink by night; Libre Caslon Text for headings, Source Sans 3 for text, IBM Plex Mono for figures, all served from the app
+itself. Its mark is a round seal cut from a portolan chart.
 
-| File in `BRAND_DIR` | Replaces | Notes |
+A kit supplies values; it does not change how the app is laid out or what its controls say. [`DESIGN.md`](DESIGN.md) holds the
+rules every page keeps and the token contract a kit fills; this page is how to make and mount a kit.
+
+Everything a kit supplies is replaceable without rebuilding the image: mount a directory at `BRAND_DIR` (default `/data/brand`)
+and a file in it shadows the shipped one of the same name under `/brand/…`. (The household's name, title and currency are not
+brand files: they come from `household.json` in the seed directory on first boot, and from the Settings page after that.)
+
+| File in `BRAND_DIR` | Supplies | Notes |
 |---|---|---|
-| `theme.css` | the whole colour/type/spacing contract | must define every token below for `:root` (dark) and `:root[data-theme="light"]` |
+| `theme.css` | every colour, typeface, size, radius and timing | must define the contract tokens for `:root` (night) and `:root[data-theme="light"]` (day). A directory with a `theme.css` is its own kit |
+| `words.json` | the flourish words | any of `name`, `tagline`, `dashboard_eyebrow`, `checkin_eyebrow`, `login_line`, `footer`; the rest stay plain. Control labels cannot be changed |
+| `glyphs.svg` | glyphs of its own | `<symbol id="…">` elements with the ids in `DESIGN.md`; each replaces the default glyph of that id, the rest fall back |
+| `mark.svg` | the full mark, 48 px and up | square, any `viewBox`; give it its own ground |
+| `mark-small.svg` | the mark under 48 px: header, browser tab | falls back to `mark.svg` |
+| `mark-dark.svg`, `mark-small-dark.svg` | the night cuts of each | fall back to the day cuts |
+| `backdrop.svg` or any image | the sign-in backdrop | reference it from `theme.css` via `--login-backdrop` |
 | `custom.css` | nothing (loaded last, empty by default) | small overrides on top of a theme |
-| `mark.svg` | the mark in the header, masthead, favicon and login card | square, any size |
-| `backdrop.svg` or any image | the login backdrop | reference it from `theme.css` via `--login-backdrop` |
+
+A kit that leaves out `words.json` or `glyphs.svg` gets the plain defaults, not Bearings' chart symbols and wording. A directory
+with no `theme.css` (only a `custom.css`, say) is dressing on Bearings and keeps both.
 
 ## The token contract
 
+[`DESIGN.md`](DESIGN.md), "Foundations", names every token and its role. In short:
+
 Surfaces and text: `--surface-000 --surface-100 --surface-200 --surface-300 --line --line-strong --ink --ink-muted --ink-faint`
-Brand: `--accent --accent-hover --accent-soft --on-accent --accent-2 --accent-2-deep --on-accent-2 --accent-2-text --focus` (`--accent-2-text` is the ochre for small text; it must reach 4.5:1 on the panel surfaces, `--accent-2` itself only 3:1; if missing, `--accent-2` is used)
+Brand: `--accent --accent-hover --accent-soft --on-accent --accent-2 --accent-2-deep --on-accent-2 --accent-2-text --focus` (`--accent-2-text` is the secondary colour for small text; it must reach 4.5:1 on the panel surfaces, `--accent-2` itself only 3:1; if missing, `--accent-2` is used)
 Status: `--success --warning --danger --info --on-status`
 Charts: `--series-1 … --series-8` (categorical order used by every chart), `--chart-grid --chart-axis --chart-reference`
-Login: `--login-backdrop` (an `url()`), `--login-overlay` (a gradient laid over it)
-Type and rhythm: `--font-display --font-sans --font-mono`, `--space-1 2 3 4 6 8 12 16`, `--radius-sm md lg full`, `--shadow-sm md glow`
+Sign-in: `--login-backdrop` (an `url()`), `--login-overlay` (a gradient laid over it)
+Type: `--font-display --font-sans --font-mono`, `--text-caption --text-small --text-body --text-heading --text-title`, `--weight-heading --weight-strong --tracking-caps`
+Rhythm, shape, motion: `--space-1 2 3 4 6 8 12 16`, `--radius-sm md lg full`, `--shadow-sm md glow`, `--dur-fast --dur --dur-slow --ease`
+Page and glyphs: `--graticule` (the page's grid; `transparent` for plain paper), `--glyph-weight`
 
-Fonts: `@import` them at the top of `theme.css` (Google Fonts or self-hosted files placed in `BRAND_DIR`). d3 is vendored, so the
-page itself needs no CDN; a theme that imports no web fonts makes the whole app work offline.
+The type, motion, `--graticule` and `--glyph-weight` tokens have defaults in `app.css`, so a kit written before them still works.
+
+Fonts: the shipped kit serves its own font files from the brand directory, so the app calls no outside host and works offline.
+A kit may do the same (put the files in `BRAND_DIR` and name them in `@font-face`), or `@import` a font service at the top of
+`theme.css`.
 The Content-Security-Policy allows Google Fonts by default; fonts, stylesheets or images from any other host must be listed in
 `CSP_FONT_SRC` / `CSP_STYLE_SRC` / `CSP_IMG_SRC` (`.env.example`), or the browser blocks them.
 
-Light/dark: the header button toggles `data-theme="light"` on `<html>` and remembers the choice in the browser; with no stored
-choice the OS preference is used. A theme must therefore define both blocks.
+Day and night: the header's switch toggles `data-theme="light"` on `<html>` and remembers the choice in the browser; with no
+stored choice the OS preference is used. A theme must therefore define both blocks.
 
 ## Installing a kit
 
@@ -72,16 +90,16 @@ translucent colours cannot be judged on their own and are reported as such: give
 are not. The same check (`app/brand_check.py`) runs in the test suite for the shipped theme and the example kits; to run it on a
 kit locally, add it to `THEMES` in `tests/test_contrast.py`.
 
-## The logo
+## The marks
 
-`mark.svg` is the logo everywhere: the header, the dashboard masthead, the login card and the browser tab (favicon). Drop your
-own `mark.svg` into `BRAND_DIR` to replace it. Keep it square (any `viewBox`); it is drawn from 16 px (favicon) to about 64 px,
-so it should read at 16 px, and it sits on both the light and the dark surface, so give it its own background shape, as the
-shipped mark does, rather than relying on the page behind it.
+`mark.svg` is the full mark, drawn at 48 px and up (the sign-in card, the dashboard masthead); `mark-small.svg` is the cut for
+the header and the browser tab, where fine detail would be lost. Each may have a night cut (`mark-dark.svg`,
+`mark-small-dark.svg`). A kit with only a `mark.svg` is complete: the others fall back to it. Keep a mark square (any `viewBox`)
+and give it its own ground, as the shipped seal has, so it reads on both the day and the night surface.
 
 ## Example kit: The Red Book
 
-`examples/brand-kits/red-book/` is a complete alternative kit after the Red Book of Westmarch, the ledger of the Shire: red
+`examples/brand-kits/red-book/` is a complete alternative kit (a theme, a mark, a backdrop, its own words and five glyphs) after the Red Book of Westmarch, the ledger of the Shire: red
 leather and gold leaf by night, parchment and red ink by day, Cinzel / EB Garamond / Courier Prime, a gold-tooled book for the
 mark and a hand-drawn map for the login backdrop. Its `README.md` has the copy command, and `tests/test_contrast.py` checks it
 alongside the built-in theme.

@@ -15,6 +15,15 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
 
 Migrations run at start; read this list before upgrading.
 
+- **The app is now called Bearings, and its image has moved.** Change the image in your `docker-compose.yml` from
+  `ghcr.io/jkbeeman92/household-ledger` to `ghcr.io/jkbeeman92/bearings`. The old path keeps its existing tags but receives no new
+  ones. Nothing else moves: the repository, the database, the environment variables, the MCP server name and your API tokens are
+  unchanged. Your household's own name and title are untouched; only an install that never set a title shows "Bearings" there.
+- **A new look and a new default brand kit** (`docs/DESIGN.md`). If you mount your own kit in `BRAND_DIR`, it keeps working: the
+  tokens added to the contract (type sizes, motion, `--graticule`, `--glyph-weight`) have defaults. Two things to look at:
+  `--surface-300` now also grounds the resting header tabs, and the header draws `mark-small.svg`, which falls back to your
+  `mark.svg`. A kit may now also supply `words.json` and `glyphs.svg` (`docs/BRANDING.md`).
+
 - **Accounts and month-end balances** (#143, `0143_accounts_and_balances.sql`): new tables only, so nothing existing changes and there is
   nothing to do. To use them, add what you owe and own on Settings → Accounts, enter last month's balances at Close a month, and paste
   any statement balances you already have under Balances history. `settings.zip` gains `accounts.csv` and `sources.zip` gains

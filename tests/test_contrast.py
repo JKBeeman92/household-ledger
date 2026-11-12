@@ -8,7 +8,7 @@ import pytest
 from conftest import ROOT
 from app.brand_check import PAIRS, check, ratio, read, resolve, tokens
 
-THEMES = {"homestead": ROOT / "app" / "web" / "static" / "brand" / "theme.css",
+THEMES = {"bearings": ROOT / "app" / "web" / "static" / "brand" / "theme.css",
           "red-book (example kit)": ROOT / "examples" / "brand-kits" / "red-book" / "theme.css",
           "war-of-the-ring (example kit)": ROOT / "examples" / "brand-kits" / "war-of-the-ring" / "theme.css"}
 

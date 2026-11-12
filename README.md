@@ -1,4 +1,4 @@
-# Household Ledger
+# Bearings
 
 A self-hosted dashboard for a household budget kept in any budget tool that exports its transactions and its budget each month
 (EveryDollar is the worked example, and needs no setup). Upload the two monthly files, get a reconciled ledger, charts across every year you load, goals tracking and a
@@ -118,7 +118,7 @@ items panel does ([Roles](#roles)); `preview-mapping-migration` prints what the 
 write is logged as a `ledger.admin` line naming the command. API tokens stay read-only: shell access to the container already means
 full control, so the command line adds no new way in.
 
-**Updates.** The image is `ghcr.io/jkbeeman92/household-ledger`, for `linux/amd64` and `linux/arm64`. Every push to `main`
+**Updates.** The image is `ghcr.io/jkbeeman92/bearings`, for `linux/amd64` and `linux/arm64`. Every push to `main`
 publishes `:latest` and `:sha-<short>`; every release (git tag `vX.Y.Z`) also publishes `:X.Y.Z`, `:X.Y` and `:X`. The shipped
 `docker-compose.yml` is pinned to the release it came with (`:X.Y.Z`; each release bumps it). Keep it pinned: `:0.2` takes 0.2.x
 fixes only, `:0` takes every 0.x release (while the version is below 1.0 a minor release may change behaviour), and `:latest`

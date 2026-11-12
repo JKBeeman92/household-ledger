@@ -1,39 +1,57 @@
-/* Household Ledger — default brand ("Homestead"): money green and warm terracotta on cream by day, on warm charcoal by night.
-   Plus Jakarta Sans for headings and text, JetBrains Mono for figures; soft corners, quiet shadows.
-   This file is the whole visual contract: colours, type, spacing, chart series, login backdrop.
-   Override it by mounting a directory with your own theme.css at BRAND_DIR (see docs/BRANDING.md). */
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400&display=swap");
+/* Bearings, the default brand kit: a navigator's chart table. Navy ink and brass on chart paper by day, on deep ink by night.
+   Libre Caslon Text for headings and large figures, Source Sans 3 for text and controls, IBM Plex Mono for dates and amounts;
+   all three are served from this directory, so the app calls no outside host.
+   This file is a kit: it supplies values for the token contract in docs/DESIGN.md and nothing else. Replace it by mounting a
+   directory with your own theme.css at BRAND_DIR (docs/BRANDING.md). */
+@font-face { font-family: "Libre Caslon Text"; font-weight: 400; font-display: swap; src: url("/brand/caslon-400.woff2") format("woff2"); }
+@font-face { font-family: "Libre Caslon Text"; font-weight: 400; font-style: italic; font-display: swap; src: url("/brand/caslon-400-italic.woff2") format("woff2"); }
+@font-face { font-family: "Libre Caslon Text"; font-weight: 700; font-display: swap; src: url("/brand/caslon-700.woff2") format("woff2"); }
+@font-face { font-family: "Source Sans 3"; font-weight: 200 900; font-display: swap; src: url("/brand/source-sans-3.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 400; font-display: swap; src: url("/brand/plex-mono-400.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 500; font-display: swap; src: url("/brand/plex-mono-500.woff2") format("woff2"); }
 
-:root {
-  --surface-000: #100f0d; --surface-100: #171512; --surface-200: #1f1c18; --surface-300: #2a2621;
-  --line: #36312a; --line-strong: #84796b;
-  --ink: #f3eee6; --ink-muted: #c4baab; --ink-faint: #9d9283;
-  --accent: #5cc495; --accent-hover: #7fd4ad; --accent-soft: #163327; --on-accent: #10140f;
-  --accent-2: #ec9466; --accent-2-deep: #c06a40; --on-accent-2: #1a0f08; --accent-2-text: var(--accent-2);
-  --focus: #a6ecc9;
-  --success: #7fd0a2; --warning: #e9bd62; --danger: #ef8a73; --info: #8fb9dc; --on-status: #10140f;
-  --series-1: #5cc495; --series-2: #ec9466; --series-3: #8fb9dc; --series-4: #e9cf7c;
-  --series-5: #c4a1d6; --series-6: #7fc7c0; --series-7: #d98f99; --series-8: #a39787;
-  --chart-grid: #2c2823; --chart-axis: #5b5248; --chart-reference: #ec9466;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.45); --shadow-md: 0 6px 18px rgba(0,0,0,.45);
-  --shadow-glow: 0 0 0 1px rgba(166,236,201,.35), 0 0 18px rgba(92,196,149,.18);
-  --login-backdrop: url('/brand/backdrop.svg'); --login-overlay: linear-gradient(rgba(16,15,13,.35), rgba(16,15,13,.75));
-  --font-display: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif; --font-sans: "Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, sans-serif; --font-mono: "JetBrains Mono", Consolas, monospace;
+:root {   /* night */
+  /* surfaces: 000 the deepest ground, 100 chart paper (the page), 200 a sheet (panels), 300 shoal (inputs, resting tabs) */
+  --surface-000: #050b12; --surface-100: #08101a; --surface-200: #101b2a; --surface-300: #1b3250;
+  --line: #33435c; --line-strong: #8c99ad;
+  --ink: #f1ede0; --ink-muted: #c2c9d2; --ink-faint: #a3adba;
+  --accent: #8fbdf0; --accent-hover: #b3d2f5; --accent-soft: #16304f; --on-accent: #06111d;
+  --accent-2: #e6c75a; --accent-2-deep: #b8922f; --on-accent-2: #1a1305; --accent-2-text: var(--accent-2);
+  --focus: #c4dcf8;
+  --success: #86d8aa; --warning: #f09a4e; --danger: #f58d7d; --info: #7cc4cc; --on-status: #06111d;
+  --series-1: #8fbdf0; --series-2: #e6c75a; --series-3: #7fc7c0; --series-4: #d98f99;
+  --series-5: #c4a1d6; --series-6: #5cc495; --series-7: #ec9466; --series-8: #a39787;
+  --chart-grid: #1f2e44; --chart-axis: #5d6f89; --chart-reference: #e6c75a;
+  --graticule: rgba(143, 189, 240, .07);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.5); --shadow-md: 0 2px 10px rgba(0,0,0,.5);
+  --shadow-glow: 0 0 0 1px rgba(143,189,240,.35), 0 0 18px rgba(143,189,240,.16);
+  --login-backdrop: url('/brand/backdrop.svg'); --login-overlay: linear-gradient(rgba(8,16,26,.55), rgba(8,16,26,.82));
+
+  /* type: three roles, one scale */
+  --font-display: "Libre Caslon Text", "Iowan Old Style", Georgia, serif;
+  --font-sans: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", Consolas, monospace;
+  --text-caption: 13px; --text-small: 14px; --text-body: 16px; --text-heading: 19px; --text-title: 28px;
+  --weight-heading: 400; --weight-strong: 600; --tracking-caps: .1em;
+  /* rhythm, shape, motion, glyphs */
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
-  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-full: 999px;
+  --radius-sm: 2px; --radius-md: 2px; --radius-lg: 4px; --radius-full: 999px;
+  --dur-fast: 120ms; --dur: 220ms; --dur-slow: 300ms; --ease: cubic-bezier(.2, .7, .2, 1);
+  --glyph-weight: 1.7;
 }
-:root[data-theme="light"] {
-  --surface-000: #ffffff; --surface-100: #faf6ef; --surface-200: #ffffff; --surface-300: #f1ebe1;
-  --line: #e6ddcf; --line-strong: #85796a;
-  --ink: #1d2621; --ink-muted: #4f5a53; --ink-faint: #5f6862;
-  --accent: #1f6f52; --accent-hover: #175a42; --accent-soft: #e2f2ea; --on-accent: #ffffff;
-  --accent-2: #d2693f; --accent-2-deep: #a34c26; --on-accent-2: #ffffff; --accent-2-text: var(--accent-2-deep);
-  --focus: #2b8a66;
-  --success: #1d7247; --warning: #8a6208; --danger: #b8432b; --info: #2f6c98; --on-status: #ffffff;
-  --series-1: #1f8a64; --series-2: #d2693f; --series-3: #2f6c98; --series-4: #a8801b;
-  --series-5: #7b5aa6; --series-6: #2b8483; --series-7: #b04a63; --series-8: #857a6c;
-  --chart-grid: #ece5d9; --chart-axis: #a59a8a; --chart-reference: #d2693f;
-  --shadow-sm: 0 1px 2px rgba(29,38,33,.07); --shadow-md: 0 6px 18px rgba(29,38,33,.09);
-  --shadow-glow: 0 0 0 1px rgba(31,111,82,.3), 0 0 18px rgba(31,111,82,.12);
-  --login-overlay: linear-gradient(rgba(250,246,239,.5), rgba(250,246,239,.85));
+:root[data-theme="light"] {   /* day */
+  --surface-000: #ffffff; --surface-100: #efe9d8; --surface-200: #fcfaf2; --surface-300: #dbe8ef;
+  --line: #cdc5ab; --line-strong: #5f5b4e;
+  --ink: #0f1d33; --ink-muted: #3d4756; --ink-faint: #515b69;
+  --accent: #174a8c; --accent-hover: #103a70; --accent-soft: #dfe9f5; --on-accent: #ffffff;
+  --accent-2: #a87a14; --accent-2-deep: #6f4f08; --on-accent-2: #ffffff; --accent-2-text: var(--accent-2-deep);
+  --focus: #2b6cc0;
+  --success: #17633e; --warning: #8a5206; --danger: #a92f23; --info: #24666f; --on-status: #ffffff;
+  --series-1: #174a8c; --series-2: #a87a14; --series-3: #2b8483; --series-4: #b04a63;
+  --series-5: #7b5aa6; --series-6: #1f8a64; --series-7: #c9622f; --series-8: #7d7466;
+  --chart-grid: #e6dfcb; --chart-axis: #9c947d; --chart-reference: #a87a14;
+  --graticule: rgba(23, 74, 140, .09);
+  --shadow-sm: 0 1px 2px rgba(15,29,51,.10); --shadow-md: 0 2px 10px rgba(15,29,51,.16);
+  --shadow-glow: 0 0 0 1px rgba(23,74,140,.3), 0 0 18px rgba(23,74,140,.12);
+  --login-overlay: linear-gradient(rgba(239,233,216,.35), rgba(239,233,216,.78));
 }

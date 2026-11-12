@@ -1,6 +1,6 @@
 # AGENTS.md — working in this repo
 
-Household Ledger is a FastAPI + Postgres app around a small, file-based budget pipeline. Read this before changing anything.
+Bearings (the repository is still `household-ledger`) is a FastAPI + Postgres app around a small, file-based budget pipeline. Read this before changing anything.
 
 ## Invariants
 - **Raw exports are facts; everything else is derived.** Month-end balances typed by a person (`balances`, #143) are facts too: a
@@ -15,7 +15,8 @@ Household Ledger is a FastAPI + Postgres app around a small, file-based budget p
   `rules.json` from the working directory and know nothing about the DB.
 - The dashboard page (`app/web/templates/dashboard.html`) talks to data only through `dash.data()/calc()/draw()` from
   `dash-shim.js`. Add a dataset by emitting it from `make_datasets.py`; the shim exposes every row of `datasets` automatically.
-- Colours come from the brand contract tokens (`docs/BRANDING.md`). Never type a hex colour into `app.css` or the page.
+- The look follows `docs/DESIGN.md`: the rules every page keeps, and the token contract a brand kit fills. Colours, typefaces and sizes
+  come from the kit's tokens; never type one into `app.css` or a page. Flourish words come from `words`, glyphs from `glyph()`.
 - No secrets in the repo. `.env` is ignored; `.env.example` holds placeholders only.
 
 ## Long lists
@@ -30,8 +31,9 @@ Sub-tabs keep their place in the URL (`/settings#mapping/debts`), so a flash aft
 Any change to what a household sees (a template, `app.css`, `settings.js`, `dash-shim.js`, the dashboard page, or the copy and
 flashes in a route) gets a UX critique before its PR is merged: run the saved workflow `ux-critique` (`.claude/workflows/ux-critique.js`)
 with the app running on the sample household (step 2 of "Checking a change"). It finds the surfaces the diff touches, reviews each
-through four lenses (flow, copy and hierarchy, WCAG 2.1 AA, phone width and dark mode and these house rules), has three skeptics try to
-refute every finding, and returns a fix plan. Fix what survives in the same PR, or say in the PR why not; items it marks as the owner's
+through five lenses (flow, copy and hierarchy, WCAG 2.1 AA, phone width and both modes, and conformance to `docs/DESIGN.md`), has three
+skeptics try to refute every finding, and returns a fix plan. `docs/DESIGN.md` is the law it judges by: a finding names the rule it breaks
+(`DS-SHEET-1`), or is marked a judgement. A change that needs a new rule adds it to `docs/DESIGN.md` in the same PR. Fix what survives in the same PR, or say in the PR why not; items it marks as the owner's
 decision go to the owner. The PR's "How I checked it" names the run and what it found.
 
 ## Schema changes
@@ -84,5 +86,5 @@ the database, not in prompts — read them there.
   release-please reads.
 - **Releases are automatic.** release-please keeps a `chore(main): release x.y.z` PR open on `main`; merging it tags `vx.y.z`, writes
   `CHANGELOG.md`, bumps `version.txt`. `feat` bumps minor, `fix` bumps patch (while < 1.0, a breaking change bumps minor).
-- **Images**: every push to `main` publishes (amd64 + arm64) `ghcr.io/jkbeeman92/household-ledger:latest` and `:sha-<short>`; a release additionally
+- **Images**: every push to `main` publishes (amd64 + arm64) `ghcr.io/jkbeeman92/bearings:latest` and `:sha-<short>`; a release additionally
   publishes `:x.y.z`, `:x.y`, `:x`. Deployments that want stability pin `:x`; `:latest` follows `main`.

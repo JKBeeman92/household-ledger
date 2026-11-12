@@ -83,7 +83,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
-          images: ghcr.io/${{ github.repository_owner }}/household-ledger
+          images: ghcr.io/${{ github.repository_owner }}/bearings
           tags: |
             type=raw,value=latest
             type=sha
@@ -115,12 +115,12 @@ jobs:
           push: false
           platforms: linux/amd64   # single platform: `load` needs one image in the local Docker daemon
           load: true   # Trivy scans the image from the local Docker daemon
-          tags: household-ledger:pr-scan
+          tags: bearings:pr-scan
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: household-ledger:pr-scan
+          image-ref: bearings:pr-scan
           severity: HIGH,CRITICAL
           ignore-unfixed: true   # only what an upgrade can fix; keeps the check actionable
           exit-code: "1"

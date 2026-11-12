@@ -23,6 +23,9 @@
   --font-display: "Marcellus SC", "Trajan Pro", Georgia, serif; --font-sans: "Alegreya", Georgia, serif; --font-mono: "Fira Mono", Consolas, monospace;
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
   --radius-sm: 2px; --radius-md: 3px; --radius-lg: 6px; --radius-full: 999px;
+  /* the tokens docs/DESIGN.md added; this kit keeps the default glyphs, so it has no glyphs.svg */
+  --text-caption: 14px; --text-small: 15px; --text-body: 17px; --text-heading: 19px; --text-title: 27px;
+  --weight-heading: 400; --weight-strong: 700; --tracking-caps: .1em; --graticule: transparent;
 }
 :root[data-theme="light"] {   /* the West: Gondor and Rohan */
   --surface-000: #ffffff; --surface-100: #f6f4ee; --surface-200: #fdfcf8; --surface-300: #ebe7dc;

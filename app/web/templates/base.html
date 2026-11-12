@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{% block title %}{{ household.title }}{% endblock %}</title>
-<link rel="icon" href="/brand/mark.svg">
+<link rel="icon" href="/brand/mark-small.svg">
 <link rel="stylesheet" href="/brand/theme.css">
 <link rel="stylesheet" href="/static/app.css"><link rel="stylesheet" href="/brand/custom.css">
 <script src="/static/vendor/d3.v7.9.0.min.js"></script>
@@ -17,17 +17,21 @@
 <body>
 <div class="shell">
   <header class="topbar">
-    <a class="wordmark" href="/"><img src="/brand/mark.svg" alt=""> {{ household.name }}</a>
-    <nav>
-      <a href="/" {% if active == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
+    <a class="wordmark" href="/"><img class="mark-day" src="/brand/mark-small.svg" alt=""><img class="mark-night" src="/brand/mark-small-dark.svg" alt=""> {{ words.name }}</a>
+    <span class="household">{{ household.name }}</span>
+    {# administration sits apart from the monthly work, at the right (docs/DESIGN.md, DS-NAV-2) #}
+    <div class="admin">
+      {% if user and user.is_editor %}<a class="btn" href="/settings" {% if active == 'settings' %}aria-current="page"{% endif %}>{{ glyph('settings') }} Settings</a>{% endif %}
+      <button type="button" class="btn" id="theme-toggle" aria-label="Switch between day and night" title="Switch between day and night"><span class="sun">{{ glyph('day') }} Day</span><span class="moon">{{ glyph('night') }} Night</span></button>
+      {% if user %}<a class="btn" href="/logout" title="{{ user.email }}">{{ glyph('sign-out') }} Sign out</a>{% endif %}
+    </div>
+    <nav aria-label="Pages">
+      <a href="/" {% if active == 'dashboard' %}aria-current="page"{% endif %}>{{ glyph('dashboard') }} Dashboard</a>
       {% if user and user.is_editor %}
-      <a href="/checkin" {% if active == 'checkin' %}aria-current="page"{% endif %}>Check-in</a>
-      <a href="/upload" {% if active == 'upload' %}aria-current="page"{% endif %}>Close a month</a>
-      <a href="/settings" {% if active == 'settings' %}aria-current="page"{% endif %}>Settings</a>
-      <a href="/reviews" {% if active == 'reviews' %}aria-current="page"{% endif %}>Reviews</a>
+      <a href="/checkin" {% if active == 'checkin' %}aria-current="page"{% endif %}>{{ glyph('check-in') }} Check-in</a>
+      <a href="/upload" {% if active == 'upload' %}aria-current="page"{% endif %}>{{ glyph('close-month') }} Close a month</a>
+      <a href="/reviews" {% if active == 'reviews' %}aria-current="page"{% endif %}>{{ glyph('reviews') }} Reviews</a>
       {% endif %}
-      <button type="button" class="btn" id="theme-toggle" aria-label="Switch between light and dark" title="Switch between light and dark"><span class="sun">☀ Light</span><span class="moon">☾ Dark</span></button>
-      {% if user %}<a href="/logout" title="{{ user.email }}">Sign out</a>{% endif %}
     </nav>
   </header>
   {% if user and user.is_editor %}<div class="flash warn" id="rebuild-banner" role="status" {% if not rebuild_needed %}hidden{% endif %}>
@@ -35,7 +39,7 @@
     The dashboard still shows the old figures.</span> <button class="btn primary" type="submit">Rebuild now</button></form></div>{% endif %}
   {% with flashes = get_flashes() %}{% for f in flashes %}<div class="flash {{ f.kind }}">{{ f.text }}</div>{% endfor %}{% endwith %}
   {% block content %}{% endblock %}
-  <p class="foot">{{ household.name }} · {{ household.title }} · built from your budget tool's exports; every figure is recomputed from the stored files on each rebuild.</p>
+  <p class="foot">{{ household.name }} · {{ words.name }} · built from your budget tool's exports. {{ words.footer }}</p>
 </div>
 <script nonce="{{ csp_nonce(request) }}">
   document.getElementById('theme-toggle').addEventListener('click', () => {

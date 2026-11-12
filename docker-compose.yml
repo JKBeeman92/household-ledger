@@ -1,10 +1,10 @@
-# Household Ledger — run from the published image. Copy .env.example to .env first.
+# Bearings: run from the published image. Copy .env.example to .env first.
 # The image is pinned to a release (release-please bumps the tag below in each release's PR). Upgrade by hand, not with an
 # auto-updater such as Watchtower: migrations apply themselves on start and cannot be undone. Read docs/UPGRADING.md, take a
 # backup, change the tag, then `docker compose pull && docker compose up -d`. `:latest` follows main, unreleased.
 services:
   ledger:
-    image: ghcr.io/jkbeeman92/household-ledger:0.5.0   # x-release-please-version
+    image: ghcr.io/jkbeeman92/bearings:0.5.0   # x-release-please-version
     container_name: ledger
     restart: unless-stopped
     env_file: .env

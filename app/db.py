@@ -52,7 +52,7 @@ def seed_household(conn, seed_dir: Path) -> None:
     """First boot: the household setting from seed_dir/household.json (else the shipped one) over the defaults, only when none is stored."""
     if conn.execute("SELECT 1 FROM settings WHERE key='household'").fetchone() is not None:
         return
-    hh = {"name": "Household", "title": "Household Ledger", "theme": "homestead", "currency": "USD", "locale": "en-US"}
+    hh = {"name": "Household", "title": "Bearings", "theme": "bearings", "currency": "USD", "locale": "en-US"}
     p = Path(seed_dir) / "household.json"
     if not p.exists():
         p = PIPELINE_DIR / "household.json"

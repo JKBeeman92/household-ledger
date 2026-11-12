@@ -1,4 +1,4 @@
-"""Household Ledger — FastAPI app. Routes live in app/routes/: auth, pages, upload (close a month), settings editors, api, brand."""
+"""Bearings: the FastAPI app. Routes live in app/routes/: auth, pages, upload (close a month), settings editors, api, brand."""
 from __future__ import annotations
 import asyncio
 import logging
@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
     db.pool.close()
 
 
-app = FastAPI(title="Household Ledger", docs_url=None, redoc_url=None, lifespan=lifespan, dependencies=[Depends(csrf.protect), Depends(revalidate)])
+app = FastAPI(title="Bearings", docs_url=None, redoc_url=None, lifespan=lifespan, dependencies=[Depends(csrf.protect), Depends(revalidate)])
 app.add_middleware(UploadLimit, limit_bytes=lambda: settings.max_upload_mb * 2**20)   # 413 before a form parser spools an oversized body
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret or secrets.token_hex(32), https_only=settings.base_url.startswith("https"), same_site="lax", max_age=settings.session_max_age)
 app.add_middleware(GZipMiddleware, minimum_size=1024)

@@ -1,0 +1,8 @@
+{
+ "name": "The Red Book",
+ "tagline": "A household's reckoning, set down month by month.",
+ "dashboard_eyebrow": "The tale so far",
+ "checkin_eyebrow": "The tale of the month",
+ "login_line": "Sign in to take up the tale.",
+ "footer": "Every figure is reckoned afresh from the stored files on each rebuild."
+}
