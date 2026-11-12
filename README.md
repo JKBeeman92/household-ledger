@@ -304,8 +304,8 @@ is refused, naming the lines. The panel also flags a canonical item whose rows m
 **Debt types.** A canonical item with `debt` rows can be given a type there: `mortgage`, `student`, `auto`, `card`, `medical`,
 `personal` or `other`. The mapping CSV carries it as an optional sixth column, `DebtType`: a five-column CSV leaves types as they are,
 and with the column an empty value clears one. The Debts tab groups typed debts with each type's total, orders them by first payment
-or by total paid, and folds a debt with no payment in the latest `debt_paid_off_months` budget months (a rule, default 3) under
-**Paid off**. A household that types nothing sees its current debts as before.
+or by total paid, and, once any debt has a type, folds a debt with no payment in the latest `debt_paid_off_months` budget months (a
+rule, default 3; 0 never folds) under **Paid off**. A household that types nothing sees the Debts timeline as before.
 `UNMAPPED` is not a category: an item with no row is what the build calls unmapped.
 
 | Rule | Default | Names | What reads it |

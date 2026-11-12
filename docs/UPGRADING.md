@@ -41,8 +41,8 @@ Migrations run at start; read this list before upgrading.
   - The mapping CSV keeps its five columns everywhere; a CSV that gives one canonical item two categories is now refused, by line.
 - **Debt types** (#141, `0141_debt_type.sql`): canonical items gain an optional debt type, empty for every existing one. Exports of the
   mapping (`settings.zip`, the CSV download, `export-mapping`) gain a sixth column, `DebtType`; five-column files still import and
-  leave types alone. The Debts tab now folds a debt with no payment in the latest 3 budget months under **Paid off** (the
-  `debt_paid_off_months` rule; 0 turns the fold off), so a long-finished loan no longer sits beside current ones.
+  leave types alone. Once you give any debt a type, the Debts tab groups by it and folds a debt with no payment in the latest 3
+  budget months under **Paid off** (the `debt_paid_off_months` rule; 0 turns the fold off). Until then the tab looks as it did.
 
 ## 0.4.0
 

@@ -95,3 +95,16 @@ def test_paid_off_needs_no_payment_in_the_window(tmp_path):
     (wd / "rules.json").write_text(json.dumps({**json.loads((GOLDEN / "rules.json").read_text()), "debt_paid_off_months": 2}))
     run_scripts(wd)
     assert ds(wd, "debts")[0]["paid_off"] is True and ds(wd, "debts")[0]["last"] == "2025-02"
+
+
+def test_merging_canonical_items_keeps_a_debt_type(client, reset_db):
+    from app import renames
+    with db.pool.connection() as conn:
+        mapping_store.write_rows(conn, [{"item": "Car", "canonical_item": "Car Loan", "category": "Debt", "flow": "debt", "note": "", "debt_type": "auto"},
+                                        {"item": "Auto", "canonical_item": "Auto Loan", "category": "Debt", "flow": "debt", "note": ""}])
+        renames.rename_canonical(conn, "Car Loan", "Auto Loan", "t")
+        assert mapping_store.debt_types_of(conn)["Auto Loan"] == "auto"
+        mapping_store.write_rows(conn, [{"item": "Card", "canonical_item": "Visa", "category": "Debt", "flow": "debt", "note": "", "debt_type": "card"}])
+        msg = renames.rename_canonical(conn, "Visa", "Auto Loan", "t")
+        assert mapping_store.debt_types_of(conn)["Auto Loan"] == "auto" and "debt type auto kept; Visa was card" in msg
+        conn.rollback()

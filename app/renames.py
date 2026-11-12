@@ -87,13 +87,17 @@ def rename_canonical(conn, old: str, new: str, by: str = "") -> str:
     if new == old:
         return f"{old} is already called that"
     merge = new in cats
-    if merge:   # into an existing canonical item: its rows join it, and take its category
+    types = mapping_store.debt_types_of(conn)
+    clash = merge and types.get(old) and types.get(new) and types[old] != types[new]
+    if merge:   # into an existing canonical item: its rows join it, and take its category; its debt type unless it has none (#141)
+        conn.execute("UPDATE canonical_items SET debt_type = COALESCE(debt_type, %s) WHERE name=%s", (types.get(old), new))
         conn.execute("UPDATE item_mapping SET canonical_item=%s, updated_at=now() WHERE canonical_item=%s", (new, old))
         mapping_store.prune(conn)
     else:
         conn.execute("UPDATE canonical_items SET name=%s WHERE name=%s", (new, old))
     changed = _log_and_rules(conn, "canonical_item", old, new, by)
     note = f" (now in {cats[new]}, not {cats[old]})" if merge and cats[new] != cats[old] else ""
+    note += f" (debt type {types[new]} kept; {old} was {types[old]})" if clash else ""
     warn = prefix_warnings(db.get_setting(conn, "rules", {}) or {}, old, new)
     return (f"{old} {'merged into' if merge else 'renamed'} {new}{note}" + (f"; rules updated: {', '.join(changed)}" if changed else "")
             + (f". Check the rules: {'; '.join(warn)}" if warn else ""))
