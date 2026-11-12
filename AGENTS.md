@@ -22,6 +22,26 @@ transaction; a failure aborts start-up and leaves that file unrecorded. Out-of-o
 Derived tables (`ledger`, `datasets`) may be dropped and rebuilt by a migration; raw tables (`source_files`, `transactions`,
 `budget_items`) and reference tables (`item_mapping`, `cpi`, `goals`, `life_events`, `settings`, `reviews`) must migrate their data.
 
+## Done means
+A change that adds a dataset, or a reference or raw table, is done only when its PR answers each line below with *done* or
+*not, because …*. The data leaves the app through each of these places; the list is how none of them gets forgotten.
+
+1. **Dataset**: emitted by `pipeline/make_datasets.py`, so the page reads it through `dash.data()`, never a route of its own.
+   From 1.0.0 it is also in the dataset-schema snapshot test.
+2. **Review**: in `build_context` (`app/review.py`), or a stated reason why not (e.g. balances are sent, account names are not).
+3. **MCP**: in the `DATASETS` allow-list (`app/mcp_endpoint.py`) with `tests/test_mcp.py` updated, or a stated reason why not.
+4. **Exports**: a dataset is in `datasets.zip`, a raw table in `sources.zip` (`app/routes/export.py`); a reference table is in
+   `settings.zip` (`app/settings_export.py`) and read back by the seed loader (`seed_reference_tables`, `pipeline/run_pipeline.py`).
+5. **CLI**: anything an editor can set on a page can be set with `python -m app.admin`.
+6. **Webhooks**: whether `figures` in `build.completed` should carry it (`docs/WEBHOOKS.md`); usually not.
+7. **Sample household**: `examples/sample-household/generate.py` produces data that exercises it, so the first-run dashboard shows
+   it and the goldens and `tests/test_sample_household.py` test it.
+8. **Upgrade note**: a line in `docs/UPGRADING.md` under the coming release if a migration touches existing data.
+9. **Docs**: the README section that covers the feature (and, from 0.6.0, the check-in guide).
+
+**The privacy line**, which every line above respects: only derived figures leave the box (review provider, MCP, webhooks).
+Transactions, merchants and notes never do. Exports are the one exception, and they go only to a signed-in user of this install.
+
 ## Adding a household-specific rule
 Put it in `rules.json` (and the `RULES` dict defaults in `build_ledger.py`) rather than in code, so other households can change
 it on the Settings page.

@@ -10,6 +10,8 @@ first thing to read. The short version:
 - **Raw exports are facts.** Never edit `transactions`/`budget_items`; change the mapping or rules and rebuild.
 - **No colours outside the theme.** `app.css` and the page use contract tokens only (`docs/BRANDING.md`).
 - **No household data in the repo.** Fixtures are synthetic. `.env` is ignored. If you paste a build log into an issue, scrub it.
+- **New data is done when it reaches every exit.** A PR that adds a dataset or a table answers the checklist in `AGENTS.md`,
+  "Done means" (review, MCP, exports, seeds, CLI, webhooks, sample household, upgrade note, docs). The PR template carries it.
 
 ## Is it in scope?
 
