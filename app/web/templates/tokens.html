@@ -25,8 +25,8 @@
     {% if tokens %}<div class="tablewrap"><table class="plain">
       <thead><tr><th>Name</th><th>Scope</th><th>Created</th><th>Last used</th><th><span class="sr">Actions</span></th></tr></thead>
       <tbody>{% for t in tokens %}<tr><td>{{ t.name }}</td><td>{{ t.scope }}</td>
-        <td><time datetime="{{ t.created_at.isoformat() }}">{{ t.created_at.strftime('%Y-%m-%d %H:%M') }}</time></td>
-        <td>{% if t.last_used_at %}<time datetime="{{ t.last_used_at.isoformat() }}">{{ t.last_used_at.strftime('%Y-%m-%d %H:%M') }}</time>{% else %}<span class="muted">never</span>{% endif %}</td>
+        <td><time datetime="{{ t.created_at.isoformat() }}">{{ t.created_at|datetime }}</time></td>
+        <td>{% if t.last_used_at %}<time datetime="{{ t.last_used_at.isoformat() }}">{{ t.last_used_at|datetime }}</time>{% else %}<span class="muted">never</span>{% endif %}</td>
         <td><form method="post" action="/settings/tokens/{{ t.id }}/revoke" data-confirm="Revoke {{ t.name }}? Anything using it stops working.">{{ csrf_field(request) }}<button class="btn" type="submit">Revoke</button></form></td></tr>{% endfor %}</tbody>
     </table></div>
     <p class="muted">Times are UTC.</p>

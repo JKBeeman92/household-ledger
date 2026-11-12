@@ -49,7 +49,7 @@
       td.appendChild(eb); td.appendChild(db); tr.appendChild(td);
       eb.onclick = function () { edit(tr); }; db.onclick = function () { del(tr); };
     }
-    function rowOf(tr) { var r = {}; fields.forEach(function (f) { r[f] = tr.querySelector('td[data-f="' + f + '"]').textContent; }); return r; }
+    function rowOf(tr) { var r = {}; fields.forEach(function (f) { var td = tr.querySelector('td[data-f="' + f + '"]'); r[f] = td.hasAttribute("data-v") ? td.getAttribute("data-v") : td.textContent; }); return r; }   // data-v: the stored value behind a formatted figure
     function edit(tr, blank) {
       var row = blank ? {} : rowOf(tr); tr.className = "editing"; tr.textContent = "";
       fields.forEach(function (f) {

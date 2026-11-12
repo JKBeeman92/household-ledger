@@ -24,8 +24,8 @@
   <h2 id="dl-h">Delivery log</h2>
   {% if log %}<div class="tablewrap"><table class="plain">
     <thead><tr><th>When (UTC)</th><th>Event</th><th>Month</th><th>To</th><th>Result</th><th>Time</th></tr></thead>
-    <tbody>{% for d in log %}<tr><td><time datetime="{{ d.created_at.isoformat() }}">{{ d.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</time></td><td><code>{{ d.event }}</code></td>
-      <td>{{ d.month or '' }}</td><td>{{ d.target }}</td>
+    <tbody>{% for d in log %}<tr><td><time datetime="{{ d.created_at.isoformat() }}">{{ d.created_at|datetime }}</time></td><td><code>{{ d.event }}</code></td>
+      <td>{{ d.month|month_short if d.month else '' }}</td><td>{{ d.target }}</td>
       <td>{% if d.ok %}<span>Delivered</span>{% else %}<strong style="color:var(--danger)">Failed</strong>{% endif %}{% if d.http_status %} <span class="mono">{{ d.http_status }}</span>{% endif %}{% if d.error %} <span class="muted">{{ d.error }}</span>{% endif %}</td>
       <td class="mono">{{ d.duration_ms }} ms</td></tr>{% endfor %}</tbody>
   </table></div>

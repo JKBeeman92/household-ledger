@@ -1,5 +1,5 @@
 {# Step 1: the month's two exports (#164). Context: c.files #}
-{% if c.files %}<ul class="muted">{% for f in c.files %}<li>{{ f.kind.replace('_', ' ') }}: <span class="mono">{{ f.filename }}</span>, {{ f.row_count }} rows, {{ f.uploaded_at.strftime('%Y-%m-%d') }}</li>{% endfor %}</ul>{% endif %}
+{% if c.files %}<ul class="muted">{% for f in c.files %}<li>{{ f.kind.replace('_', ' ') }}: <span class="mono">{{ f.filename }}</span>, {{ f.row_count|number }} rows, {{ f.uploaded_at|date }}</li>{% endfor %}</ul>{% endif %}
 <form method="post" action="/upload" enctype="multipart/form-data">{{ csrf_field(request) }}<input type="hidden" name="next" value="{{ next_url }}#step-files">
   <label for="checkin-files">Upload {{ 'or replace ' if c.files }}the month's transactions and budget files</label>
   <input id="checkin-files" name="files" type="file" accept=".csv,.zip" multiple required>

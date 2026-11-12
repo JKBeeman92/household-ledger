@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from ..config import settings
 from .. import db, auth, review
-from ..web_helpers import flash, render, _months
+from ..web_helpers import flash, render, _months, month_text
 from ..uploads import MAX_FILE_BYTES, expand_zip, is_zip, Item
 from psycopg.types.json import Jsonb
 from ..builds import build_status, run_background
@@ -75,7 +75,7 @@ async def upload(request: Request, background: BackgroundTasks, files: list[Uplo
             if it.data is not None:
                 try:
                     info = ingest(conn, it.name, it.data, uploaded_by=user.get("email", ""))
-                    res.update(ok=True, detail=f"{info['budget_month']} {info['kind']}, {info['rows']} rows"); stored += 1
+                    res.update(ok=True, detail=f"{month_text(info['budget_month'])}, {info['kind'].replace('_', ' ')}, {info['rows']:,} rows"); stored += 1
                 except Exception as e:  # noqa: BLE001
                     conn.rollback(); res["detail"] = str(e)[:300]
             results.append(res)
@@ -117,7 +117,7 @@ def review_generate(request: Request, background: BackgroundTasks, month: str = 
         if (why := review.providers.resolve(conn).problem()):
             flash(request, f"Review not started: no review provider is configured: {why}", "bad")
         elif (job := review.start_job(conn, month, user.get("email", ""))) is None:
-            flash(request, f"A review of {month} is already being written; its progress is below.")
+            flash(request, f"A review of {month_text(month)} is already being written; its progress is below.")
         else:
             background.add_task(review.run_job, job)
     return RedirectResponse("/upload#review-job", status_code=303)

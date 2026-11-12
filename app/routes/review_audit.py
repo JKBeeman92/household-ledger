@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from .. import db, auth, review, review_providers as rp
-from ..web_helpers import flash, render
+from ..web_helpers import flash, render, month_text
 
 router = APIRouter()
 MONTH = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
@@ -59,5 +59,5 @@ def review_edit_save(request: Request, month: str, heading: list[str] = Form(def
         conn.execute("UPDATE reviews SET sections=%s::jsonb, hand_edited_at=now() WHERE month=%s", (json.dumps(sections), month))
         review.refresh_dataset(conn)
         conn.commit()
-    flash(request, f"Saved your edits to the {month} review. It is marked as hand-edited.")
+    flash(request, f"Saved your edits to the {month_text(month)} review. It is marked as hand-edited.")
     return RedirectResponse("/reviews/history", status_code=303)

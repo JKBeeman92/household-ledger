@@ -56,6 +56,9 @@ reaching a waypoint, and a chart border.
 - **DS-WORD-6** Money is written with the household's currency and locale (`fmt`); dates as `1 Nov 2026`; a month as
   `November 2026` in a heading and `Nov 2026` in a table or on a chart. A missing figure is an em dash with the reason nearby,
   never a zero. What a person types into a field stays a plain number; what the page shows them is formatted.
+  On the server the filters do it (`app/formatting.py`): `|money` (`money(2)` for cents, `money(signed=True)` for a change),
+  `|date`, `|datetime`, `|month`, `|month_short`, `|share`, `|number`, and `|plain` for a field's value; a flash uses
+  `month_text()`. In script, `dash.fmt` and `HL.mo`. Both read the same CLDR data, so a figure reads alike on either side.
 
 ## 3. Foundations (the kit contract)
 
@@ -222,8 +225,6 @@ and the critique reports them only on the surfaces a change touches. Each row na
 | Templates | DS-SPACE-1 | About 135 inline `style` attributes, most of them margins | #193 |
 | Check-in, dashboard | DS-SHEET-4 | No page turn between months | #191 |
 | Dashboard tiles | DS-GLYPH-1 | The figure glyphs (`savings-rate`, `net-worth`, `emergency-fund`) are drawn but not yet placed | #191 |
-| Check-in steps, Close a month, Reviews, Sources, Tokens, Webhooks | DS-WORD-6 | Dates as ISO strings and amounts as bare numbers; the server has no money, date or month formatter yet | #190 |
-| Dashboard (Leaks, CPI tables) | DS-WORD-6 | Months as ISO strings in three places | #190 |
 | Dashboard (catch-all envelopes, radar charts) | DS-CHART-5 | No table of their figures | #191 |
 | Dashboard | DS-COLOR-2 | `--accent-2` marks card headings, summaries and definitions, which are not destinations | #191 |
 | Dashboard gauges | DS-STATUS-1 | Verdicts are round pills with a dot, not stamps | #191 |

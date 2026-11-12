@@ -107,7 +107,7 @@ def test_acknowledging_problems_and_skipping_the_review(client, loaded):
 
 def test_last_month_line_and_cli(client, loaded, capsys):
     page = client.get("/").text
-    assert "2025-04 check-in:" in page and 'href="/checkin/2025-04">continue' in page and "3 earlier months without one" in page
+    assert "April 2025 check-in:" in page and 'href="/checkin/2025-04">continue' in page and "3 earlier months without one" in page
     assert admin.main(["checkin", "status", "2025-04"]) == 1
     out = capsys.readouterr().out
     assert out.startswith("2025-04 check-in (month): ") and "Balances" in out and "Earlier months without a check-in: 2025-01, 2025-02, 2025-03" in out

@@ -2,5 +2,5 @@
 {% if c.job and c.job.state in ('queued', 'running') %}<p><span class="status-chip">Writing</span> The review is being written by {{ c.job.provider }}; reload in a minute.</p>
 {% elif c.job and c.job.state == 'failed' %}<p><span class="status-chip bad">Not written</span> {{ c.job.error }}</p>{% endif %}
 {% if not c.configured %}<p class="muted">No review provider is configured, so this step is skipped. <a href="/reviews">Set one up</a> to have the month read back to you.</p>
-{% else %}<p><a class="btn primary" href="/reviews/confirm?month={{ month }}">Generate the {{ month }} review</a> <span class="muted">shows what is sent and roughly what it costs before anything leaves.</span></p>{% endif %}
+{% else %}<p><a class="btn primary" href="/reviews/confirm?month={{ month }}">Generate the {{ month|month }} review</a> <span class="muted">shows what is sent and roughly what it costs before anything leaves.</span></p>{% endif %}
 <p class="muted">A stored review is on the dashboard's <a href="/#lastmonth">Last month tab</a>.</p>

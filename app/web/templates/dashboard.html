@@ -305,8 +305,8 @@
 
   <!-- ===================== LAST MONTH ===================== -->
   <section id="lastmonth" class="page" role="tabpanel" aria-labelledby="tab-lastmonth" tabindex="0" hidden>
-    {% if checkin %}<p class="checkin-line" id="lm-checkin">{% set mname = checkin.month %}<strong>{{ checkin.month }} check-in:</strong>
-      {% if checkin.done %}done {{ checkin.completed_at.strftime('%-d %b') }}{% else %}{{ checkin.to_do }} step{{ '' if checkin.to_do == 1 else 's' }} to do · <a href="/checkin/{{ checkin.month }}">continue</a>{% endif %}{% if checkin.missing %} · {{ checkin.missing }} earlier month{{ '' if checkin.missing == 1 else 's' }} without one (<a href="/checkin/{{ checkin.month }}#catch-up">catch up</a>){% endif %}</p>{% endif %}
+    {% if checkin %}<p class="checkin-line" id="lm-checkin">{% set mname = checkin.month %}<strong>{{ checkin.month|month }} check-in:</strong>
+      {% if checkin.done %}done {{ checkin.completed_at|date }}{% else %}{{ checkin.to_do }} step{{ '' if checkin.to_do == 1 else 's' }} to do · <a href="/checkin/{{ checkin.month }}">continue</a>{% endif %}{% if checkin.missing %} · {{ checkin.missing }} earlier month{{ '' if checkin.missing == 1 else 's' }} without one (<a href="/checkin/{{ checkin.month }}#catch-up">catch up</a>){% endif %}</p>{% endif %}
     <div class="card headline" id="lm-headline">
       <div class="lead"><p class="eyebrow"><b data-draw="lm-name">—</b> · against its plan</p><div class="fig" data-draw="lm-fig" data-source="lm_totals">—</div></div>
       <p class="take" data-draw="lm-take" data-source="lm_totals">—</p>
@@ -619,7 +619,7 @@
       </div>
     </div>
   </section>
-  <p class="foot">Built from your budget tool's monthly exports, a transactions file and a budget file per budget month{% if span.has_data %}, {{ span.first_month }} through {{ span.last_month }}{% endif %}. The figures change when the ledger is rebuilt (Close a month); real figures use the price index with {{ span.cpi_base_long }} as the base month.</p>
+  <p class="foot">Built from your budget tool's monthly exports, a transactions file and a budget file per budget month{% if span.has_data %}, {{ span.first_month|month }} through {{ span.last_month|month }}{% endif %}. The figures change when the ledger is rebuilt (Close a month); real figures use the price index with {{ span.cpi_base_long }} as the base month.</p>
 </div>
 
 <script nonce="{{ csp_nonce(request) }}">(() => {
@@ -693,7 +693,8 @@ window.HL = (() => {
   const fillTable = (tbody, rows, cells) => {
     tbody.replaceChildren(...rows.map((r) => { const tr = document.createElement('tr'); for (const c of cells) { const td = document.createElement('td'); tr.appendChild(td); const v = c(r, td); td.textContent = v == null ? '—' : v; } return tr; }));
   };
-  return { money, pct, basis, fld, parseM, fmtM, colors, tip, esc, margins, stackChart, legend, fillTable, usd0, edgeTicks };
+  const mo = (m) => (m ? fmtM(parseM(m)) : '—');   // a YYYY-MM month as a table shows it (DS-WORD-6)
+  return { money, pct, basis, fld, parseM, fmtM, mo, colors, tip, esc, margins, stackChart, legend, fillTable, usd0, edgeTicks };
 })();
 // ---- period filter (issue #116): one range for every timeline, resolved against the LOADED months, not today's date ----
 (() => {
@@ -1039,7 +1040,7 @@ dash.draw('item-pivot', (tb) => {
 dash.draw('recurring', (tb) => {
   const g = dash.data('recurring'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   const rows = [...g.data].sort((a, b) => Number(b.monthly_now) - Number(a.monthly_now));
-  HL.fillTable(tb, rows, [(r) => r.item, (r) => (r.active === true || r.active === 'true') ? 'Yes' : 'No', (r) => r.first, (r) => r.last, (r) => dash.fmt.money2(Number(r.monthly_now)), (r) => HL.usd0(Number(r.lifetime))]);
+  HL.fillTable(tb, rows, [(r) => r.item, (r) => (r.active === true || r.active === 'true') ? 'Yes' : 'No', (r) => HL.mo(r.first), (r) => HL.mo(r.last), (r) => dash.fmt.money2(Number(r.monthly_now)), (r) => HL.usd0(Number(r.lifetime))]);
 });
 let slushOrder = [];
 dash.draw('slush', (el) => {
@@ -1252,21 +1253,21 @@ dash.draw('cpi-note', (el) => {
   const rows = [...g.data].sort((a, b) => a.month < b.month ? -1 : 1), base = rows.find((r) => r.month === el.dataset.base) || rows[rows.length - 1], first = rows.find((r) => r.month === el.dataset.first) || rows.find((r) => r.month >= (el.dataset.first || '')) || rows[0];
   const filled = rows.filter((r) => !/^FRED/.test(r.source));
   const loss = Math.round((1 - first.cpi / base.cpi) * 100);
-  el.textContent = (loss > 0 ? `A ${first.month.slice(0, 4)} dollar buys about ${loss}% less in ${base.month.slice(0, 4)}, so earlier figures grow when restated. ` : '') + (filled.length ? `${filled.length === 1 ? 'One month is' : filled.length + ' months are'} filled in rather than published (${filled.map((r) => r.month + ': ' + cpiSource(r.source).toLowerCase()).join('; ')}); marked in the table below.` : 'Every month uses a published value.');
+  el.textContent = (loss > 0 ? `A ${first.month.slice(0, 4)} dollar buys about ${loss}% less in ${base.month.slice(0, 4)}, so earlier figures grow when restated. ` : '') + (filled.length ? `${filled.length === 1 ? 'One month is' : filled.length + ' months are'} filled in rather than published (${filled.map((r) => HL.mo(r.month) + ': ' + cpiSource(r.source).toLowerCase()).join('; ')}); marked in the table below.` : 'Every month uses a published value.');
 });
 dash.draw('cpi', (tb) => {
   const g = dash.data('cpi'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   const m = dash.data('monthly'), first = m.status === 'ok' && m.data.length ? m.data.map((r) => r.m).sort()[0] : '';
   const rows = g.data.filter((r) => r.month >= first).sort((a, b) => a.month < b.month ? 1 : -1);   // the months the ledger uses, newest first
-  HL.fillTable(tb, rows, [(r) => r.month, (r) => dash.fmt.dec(3)(Number(r.cpi)), (r, td) => { if (!/^FRED/.test(r.source)) td.parentElement.classList.add('filled'); td.title = r.source; return cpiSource(r.source); }]);
+  HL.fillTable(tb, rows, [(r) => HL.mo(r.month), (r) => dash.fmt.dec(3)(Number(r.cpi)), (r, td) => { if (!/^FRED/.test(r.source)) td.parentElement.classList.add('filled'); td.title = r.source; return cpiSource(r.source); }]);
 });
 dash.draw('cpi-estimated', (el) => {
   const g = dash.data('cpi'); const m = g.status === 'ok' ? g.data.filter((r) => /carried|interpolat|estimat/i.test(r.source)).map((r) => r.month) : [];
-  el.textContent = m.length ? m.join(', ') : 'None: every month is published.';
+  el.textContent = m.length ? m.map(HL.mo).join(', ') : 'None: every month is published.';
 });
 dash.draw('verify', (tb) => {
   const g = dash.data('verify'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
-  HL.fillTable(tb, g.data, [(r) => r.m, (r) => r.item, (r) => r.merchant, (r) => HL.usd0(Number(r.amount))]);
+  HL.fillTable(tb, g.data, [(r) => HL.mo(r.m), (r) => r.item, (r) => r.merchant, (r) => HL.usd0(Number(r.amount))]);
   if (!g.data.length) { const td = Object.assign(document.createElement('td'), { colSpan: 4, textContent: 'None. Every inflow booked as income has been identified.' }); const tr = document.createElement('tr'); tr.appendChild(td); tb.replaceChildren(tr); }
   if (g.data.length) for (const tr of tb.children) tr.dataset.key = encodeURIComponent(tr.children[0].textContent) + ',' + encodeURIComponent(tr.children[1].textContent);
 });

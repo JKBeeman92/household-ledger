@@ -40,15 +40,15 @@ addEventListener('DOMContentLoaded', () => {
   <p id="build-line" role="status" aria-live="polite" style="margin:0 0 var(--space-2);border-left:3px solid var({{ '--info' if build.state in ('running', 'never') else '--success' if build.state == 'ok' else '--danger' }});padding-left:var(--space-3)">
     {%- set chip = {'running': ('info', 'Rebuilding'), 'never': ('info', 'No build yet'), 'ok': ('ok' if not build.problems else 'warn', 'Up to date' if not build.problems else 'Needs a look'), 'failed': ('bad', 'Needs attention'), 'interrupted': ('bad', 'Interrupted')}[build.state] %}
     <span class="status-chip {{ chip[0] }}">{{ chip[1] }}</span>
-    {%- if build.state == 'running' %}<strong>Rebuilding</strong>{% if build.started_at %} since {{ build.started_at.strftime('%H:%M:%S') }}{% endif %}. This page updates when it finishes.
+    {%- if build.state == 'running' %}<strong>Rebuilding</strong>{% if build.started_at %} since {{ build.started_at|clock }}{% endif %}. This page updates when it finishes.
     {%- elif build.state == 'never' %}No build yet.
-    {%- else %}<strong>{{ {'ok': 'Last build finished', 'failed': 'Last build failed', 'interrupted': 'Last build was interrupted'}[build.state] }}</strong>{% if build.finished_at %} at {{ build.finished_at.strftime('%Y-%m-%d %H:%M:%S') }}{% endif %}: {{ build.summary }}{% endif -%}
+    {%- else %}<strong>{{ {'ok': 'Last build finished', 'failed': 'Last build failed', 'interrupted': 'Last build was interrupted'}[build.state] }}</strong>{% if build.finished_at %} {{ build.finished_at|datetime }}{% endif %}: {{ build.summary }}{% endif -%}
   </p>
   <ul id="build-problems" class="muted" style="margin:0;padding-left:var(--space-6)">{% for p in build.problems or [] %}<li>Reconciliation: {{ p }}</li>{% endfor %}</ul>
 </div>
 {% if last_upload %}<div class="panel" id="upload-result" style="margin-top:var(--space-4)">
   <h2>Last upload</h2>
-  <p class="muted">{{ last_upload.created_at.strftime('%Y-%m-%d %H:%M:%S') }} · {{ last_upload.results|selectattr('ok')|list|length }} of {{ last_upload.results|length }} files stored.</p>
+  <p class="muted">{{ last_upload.created_at|datetime }} · {{ last_upload.results|selectattr('ok')|list|length }} of {{ last_upload.results|length }} files stored.</p>
   {% set rejected = last_upload.results|rejectattr('ok')|list %}<details {% if rejected or last_upload.results|length <= 8 %}open{% endif %}><summary>Show the {{ last_upload.results|length }} file{{ '' if last_upload.results|length == 1 else 's' }}{% if rejected %} ({{ rejected|length }} rejected){% endif %}</summary>
   <ul class="upload-results" data-list="unbounded">{% for r in last_upload.results %}<li class="{{ 'ok' if r.ok else 'bad' }}"><strong>{{ 'Stored' if r.ok else 'Rejected' }}</strong> <span class="mono">{{ r.name }}</span>{% if r.source %} <span class="muted">(from {{ r.source }})</span>{% endif %}: {{ r.detail }}</li>{% endfor %}</ul></details>
 </div>{% endif %}
@@ -72,17 +72,17 @@ addEventListener('DOMContentLoaded', () => {
     <p class="muted">Sends the closed month's figures (planned vs spent, category gaps against plan and against the trailing twelve months, the ledger's clean totals, and the standing targets) to the model and stores the result. Nothing else leaves the server. The review appears on the dashboard's Last month tab.</p>
     <form method="get" action="/reviews/confirm">
       <label for="month">Budget month</label>
-      <select id="month" name="month">{% for m in months %}<option value="{{ m }}" {% if loop.first %}selected{% endif %}>{{ m }}</option>{% endfor %}</select>
+      <select id="month" name="month">{% for m in months %}<option value="{{ m }}" {% if loop.first %}selected{% endif %}>{{ m|month_short }}</option>{% endfor %}</select>
       <p style="margin-top:var(--space-4)"><button class="btn primary" type="submit" {% if not review_enabled %}disabled title="Configure a review provider to enable"{% endif %}>Generate review</button>
       {% if not review_enabled %}<span class="muted" style="margin-left:var(--space-2)">Not available: no review provider is set up. <a href="/reviews/provider">Set one up</a>.</span>{% endif %}</p>
     </form>
     {% if review_job %}{% set j = review_job %}
     <div id="review-job" class="review-job" data-state="{{ j.state }}" data-since="{{ (j.started_at or j.created_at).isoformat() }}" role="status" aria-live="polite">
-      {% if j.state in ('queued', 'running') %}<span class="status-chip">Writing</span> The {{ j.month }} review is being written by {{ j.provider }}: <span data-elapsed>0:00</span>.
+      {% if j.state in ('queued', 'running') %}<span class="status-chip">Writing</span> The {{ j.month|month }} review is being written by {{ j.provider }}: <span data-elapsed>0:00</span>.
         You can leave this page; the review is stored when the model answers.
-      {% elif j.state == 'stored' %}<span class="status-chip ok">Stored</span> The {{ j.month }} review ({{ j.sections }} section{{ '' if j.sections == 1 else 's' }}): read it on {{ j.where }}.
+      {% elif j.state == 'stored' %}<span class="status-chip ok">Stored</span> The {{ j.month|month }} review ({{ j.sections }} section{{ '' if j.sections == 1 else 's' }}): read it on {{ j.where }}.
         {% if j.odd_count %}<br><span class="status-chip warn">Check it</span> The model wrote {{ j.sections }} section{{ '' if j.sections == 1 else 's' }}; the instructions ask for 5 to 7. Read it before relying on it, or generate again.{% endif %}
-      {% else %}<span class="status-chip bad">Not written</span> The {{ j.month }} review failed: {{ j.error }}{% endif %}
+      {% else %}<span class="status-chip bad">Not written</span> The {{ j.month|month }} review failed: {{ j.error }}{% endif %}
     </div>{% endif %}
   </div>
 </div>
@@ -91,13 +91,13 @@ addEventListener('DOMContentLoaded', () => {
 {% include "_checklist.html" %}
 <div class="panel" style="margin-top:var(--space-4)">
   <h2>Loaded months</h2>
-  <p class="muted">{{ files|length }} files · {{ months|length }} budget months{% if months %} · {{ months[-1] }} → {{ months[0] }}{% endif %}.</p>
+  <p class="muted">{{ files|length|number }} files · {{ months|length|number }} budget months{% if months %} · {{ months[-1]|month_short }} → {{ months[0]|month_short }}{% endif %}.</p>
   <form method="post" action="/rebuild" style="margin-bottom:var(--space-3)">{{ csrf_field(request) }}<button class="btn" type="submit" id="rebuild-btn" {% if build.state == 'running' %}disabled{% endif %}>Rebuild without uploading</button> <span class="muted">after editing the mapping, CPI, goals, events or rules</span></form>
   <details {% if files|selectattr('replaced_at')|list %}open{% endif %}><summary class="muted">Show the {{ files|length }} files</summary>
   <table class="plain" data-list="unbounded"><thead><tr><th>Month</th><th>Kind</th><th>File</th><th>Rows</th><th>Uploaded</th><th>Actions</th></tr></thead><tbody>
-  {% for f in files %}<tr><td class="mono">{{ f.budget_month }}</td><td>{{ f.kind }}</td><td>{{ f.filename }}</td><td class="mono">{{ f.row_count }}</td><td class="mono">{{ f.uploaded_at.strftime('%Y-%m-%d') }}
-    {%- if f.replaced_at %}<br><span class="muted replaced-note">replaced on {{ f.replaced_at.strftime('%Y-%m-%d') }}, {% if f.previous_sha256 == f.sha256 %}identical to the previous file{% else %}different from the previous file ({{ f.previous_sha256[:8] }} → {{ f.sha256[:8] }}){% endif %}</span>{% endif %}</td>
-    <td>{% if loop.first or files[loop.index0 - 1].budget_month != f.budget_month %}<form method="post" action="/months/{{ f.budget_month }}/delete" data-confirm="Delete both files for {{ f.budget_month }} and rebuild? Upload them again to bring the month back.">{{ csrf_field(request) }}<button class="btn" type="submit" {% if build.state == 'running' %}disabled title="A rebuild is running"{% endif %}>Delete {{ f.budget_month }}</button></form>{% endif %}</td></tr>{% endfor %}
+  {% for f in files %}<tr><td class="mono">{{ f.budget_month|month_short }}</td><td>{{ f.kind }}</td><td>{{ f.filename }}</td><td class="mono num">{{ f.row_count|number }}</td><td class="mono">{{ f.uploaded_at|date }}
+    {%- if f.replaced_at %}<br><span class="muted replaced-note">replaced on {{ f.replaced_at|date }}, {% if f.previous_sha256 == f.sha256 %}identical to the previous file{% else %}different from the previous file ({{ f.previous_sha256[:8] }} → {{ f.sha256[:8] }}){% endif %}</span>{% endif %}</td>
+    <td>{% if loop.first or files[loop.index0 - 1].budget_month != f.budget_month %}<form method="post" action="/months/{{ f.budget_month }}/delete" data-confirm="Delete both files for {{ f.budget_month|month }} and rebuild? Upload them again to bring the month back.">{{ csrf_field(request) }}<button class="btn" type="submit" {% if build.state == 'running' %}disabled title="A rebuild is running"{% endif %}>Delete {{ f.budget_month|month_short }}</button></form>{% endif %}</td></tr>{% endfor %}
   </tbody></table></details>
 
 </div>

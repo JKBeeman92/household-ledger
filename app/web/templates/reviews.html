@@ -13,7 +13,7 @@
       {% for k, v in providers.items() %}<option value="{{ k }}" {% if saved.get('provider') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></p>
     <p><label for="model">Model</label><br><input type="text" id="model" name="model" value="{{ saved.get('model', '') }}" placeholder="required for every provider except Anthropic" autocomplete="off"></p>
     <p><label for="base_url">Base URL</label><br><input type="text" id="base_url" name="base_url" value="{{ saved.get('base_url', '') }}" placeholder="OpenAI-compatible: https://host/v1 · Ollama: http://ollama:11434" autocomplete="off"></p>
-    <p class="muted"><code>REVIEW_MAX_TOKENS</code> (now {{ prov.max_tokens }}) is the reply's output limit, thinking included; a review that stops at it says so. Replies wrapped in markdown fences or lead-in prose are tolerated.</p>
+    <p class="muted"><code>REVIEW_MAX_TOKENS</code> (now {{ prov.max_tokens|number }}) is the reply's output limit, thinking included; a review that stops at it says so. Replies wrapped in markdown fences or lead-in prose are tolerated.</p>
     <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save provider</button></p>
   </form>
   <div class="panel">
@@ -23,7 +23,7 @@
     <form method="post" action="/reviews/test">{{ csrf_field(request) }}
       <p style="margin-top:var(--space-3)"><button class="btn" type="submit" {% if problem %}disabled{% endif %}>Test connection</button></p>
     </form>
-    {% if recent %}<h3>Recent reviews</h3><ul>{% for r in recent %}<li>{{ r.month }} · {{ r.model }}</li>{% endfor %}</ul>{% endif %}
+    {% if recent %}<h3>Recent reviews</h3><ul>{% for r in recent %}<li>{{ r.month|month }} · {{ r.model }}</li>{% endfor %}</ul>{% endif %}
     <p><a href="/reviews/prompt">Review instructions and context preview</a></p>
     <p><a href="/reviews/history">Past reviews, prompts and edits</a></p>
   </div>

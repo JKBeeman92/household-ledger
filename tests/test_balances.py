@@ -79,7 +79,7 @@ def test_account_with_balances_is_retired_not_deleted_and_a_rename_carries_its_h
 
 def test_close_a_month_suggests_then_stores_carried_or_entered_and_keeps_history(client, loaded):
     page = client.get("/upload?balances_month=2025-04").text
-    assert "Balances at the end of 2025-04" in page and 'value="17325.70"' in page and "To confirm" in page
+    assert "Balances at the end of April 2025" in page and 'value="17325.70"' in page and "To confirm" in page
     form = {"account": ["Lembas Student Loan", "Green Hills Savings", "Bag End Smial"], "amount": ["17325.70", "4,710.00", ""]}
     r = client.post("/balances/2025-04", data=form)
     assert r.status_code == 303 and r.headers["location"] == "/upload?balances_month=2025-04#balances"

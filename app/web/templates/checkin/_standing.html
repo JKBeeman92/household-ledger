@@ -1,9 +1,9 @@
 {# Step 6: where we stand, read-only (the Last month tab's figures). Context: c.monthly, c.nw, c.dti, c.ef #}
 <dl class="dti">
-  {% if c.monthly %}<dt>The month</dt><dd>Income {{ '{:,.0f}'.format(c.monthly.income) }}, living spend {{ '{:,.0f}'.format(c.monthly.spend) }}, debt paid {{ '{:,.0f}'.format(c.monthly.debt) }}: kept <strong>{{ '{:,.0f}'.format(c.monthly.net) }}</strong>{% if c.monthly.income %} ({{ '%.0f'|format(100 * c.monthly.net / c.monthly.income) }}% of take-home){% endif %}.</dd>{% endif %}
-  {% if c.nw %}<dt>Net worth</dt><dd><strong>{{ '{:,.0f}'.format(c.nw.net_worth) }}</strong>{% if c.nw.change is not none %}, {{ '{:+,.0f}'.format(c.nw.change) }} since last month{% if c.nw.you_did is not none %} (you did {{ '{:+,.0f}'.format(c.nw.you_did) }}, happened {{ '{:+,.0f}'.format(c.nw.happened) }}){% endif %}{% endif %}.</dd>{% endif %}
-  {% if c.ef and c.ef.months is not none %}<dt>Emergency fund</dt><dd>{{ '%.1f'|format(c.ef.months) }} months of outgo.</dd>{% endif %}
-  {% if c.dti and c.dti.dti is not none %}<dt>Debt-to-income</dt><dd>{{ '%.1f'|format(100 * c.dti.dti) }}% of gross; housing {{ '%.1f'|format(100 * c.dti.housing_dti) }}%.</dd>{% endif %}
+  {% if c.monthly %}<dt>The month</dt><dd>Income {{ c.monthly.income|money }}, living spend {{ c.monthly.spend|money }}, debt paid {{ c.monthly.debt|money }}: kept <strong>{{ c.monthly.net|money }}</strong>{% if c.monthly.income %} ({{ (c.monthly.net / c.monthly.income)|share }} of take-home){% endif %}.</dd>{% endif %}
+  {% if c.nw %}<dt>Net worth</dt><dd><strong>{{ c.nw.net_worth|money }}</strong>{% if c.nw.change is not none %}, {{ c.nw.change|money(signed=True) }} since last month{% if c.nw.you_did is not none %} (you did {{ c.nw.you_did|money(signed=True) }}, happened {{ c.nw.happened|money(signed=True) }}){% endif %}{% endif %}.</dd>{% endif %}
+  {% if c.ef and c.ef.months is not none %}<dt>Emergency fund</dt><dd>{{ c.ef.months|number(1) }} months of outgo.</dd>{% endif %}
+  {% if c.dti and c.dti.dti is not none %}<dt>Debt-to-income</dt><dd>{{ c.dti.dti|share(1) }} of gross; housing {{ c.dti.housing_dti|share(1) }}.</dd>{% endif %}
 </dl>
 {% if not c.monthly %}<p class="muted">Nothing built for this month yet: finish the Files step first.</p>{% endif %}
 <p><a href="/#lastmonth">The Last month tab</a> has the rest: envelopes over and under plan, the categories against their trailing twelve.</p>

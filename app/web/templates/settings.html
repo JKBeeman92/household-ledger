@@ -12,6 +12,14 @@
 <p id="rowstatus" class="rowstatus" role="status" aria-live="polite"></p>
 {% set by_key = {} %}{% for ed in editors %}{% if by_key.update({ed.key: ed}) %}{% endif %}{% endfor %}
 
+{# A figure in a grid is shown formatted (DS-WORD-6); the value as stored stays in data-v, which the row editor reads. #}
+{% macro cell(kind, c, r) -%}
+{%- if r[c] is none or r[c] == "" %}{{ none }}
+{%- elif kind == "goals" and c == "value" and (r.unit or "").startswith("share") %}{{ r[c]|share(2, trim=True) }}
+{%- elif kind == "goals" and c == "value" and (r.unit or "").startswith("usd") %}{{ r[c]|money }}
+{%- elif kind == "accounts" and c == "escrow" %}{{ r[c]|money(2) }}
+{%- endif %}
+{%- endmacro %}
 {% macro grid(kind, ed, cols, heads, rows, choices=none) %}
 <section class="panel" id="{{ kind }}-editor">
   <h2>{{ ed.title }}</h2>
@@ -26,7 +34,7 @@
     {% if kind == "mapping" %}<input type="search" data-filter="mapping" placeholder="Filter {{ rows|length }} rows" aria-label="Filter mapping rows">{% endif %}</p>
   <div class="tablewrap"><table class="plain edit" data-list="unbounded" data-kind="{{ kind }}" data-fields="{{ cols|join(',') }}"{% if kind == "mapping" %} data-flows="{{ flows|join(',') }}"{% endif %}{% if choices %} data-choices="{{ choices|tojson|forceescape }}"{% endif %}>
     <thead><tr>{% for c in cols %}<th data-sort="{{ c }}" scope="col"><button type="button" class="sortbtn">{{ heads[loop.index0] }}</button></th>{% endfor %}<th><span class="sr">Actions</span></th></tr></thead>
-    <tbody>{% for r in rows %}<tr>{% for c in cols %}<td data-f="{{ c }}">{{ r[c] if r[c] is not none else "" }}</td>{% endfor %}
+    <tbody>{% for r in rows %}<tr>{% for c in cols %}{% set shown = cell(kind, c, r) %}<td data-f="{{ c }}"{% if shown is not none %} data-v="{{ r[c] }}"{% endif %}>{{ shown if shown is not none else (r[c] if r[c] is not none else "") }}</td>{% endfor %}
       <td class="acts"><button type="button" class="btn" data-act="edit">Edit</button> <button type="button" class="btn" data-act="del">Delete</button></td></tr>{% endfor %}</tbody>
   </table></div>
 </section>
@@ -142,7 +150,7 @@
     <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save balances</button> <a class="btn" href="/settings/accounts/balances.csv" download>Download all balances</a></p>
   </form>
   {% if balance_counts %}<div class="tablewrap"><table class="plain" data-list="unbounded"><thead><tr><th scope="col">Account</th><th scope="col">Balances</th><th scope="col">From</th><th scope="col">To</th></tr></thead><tbody>
-    {% for name, c in balance_counts.items() %}<tr><td>{{ name }}</td><td class="mono">{{ c.n }}</td><td class="mono">{{ c.first }}</td><td class="mono">{{ c.last }}</td></tr>{% endfor %}
+    {% for name, c in balance_counts.items() %}<tr><td>{{ name }}</td><td class="mono">{{ c.n|number }}</td><td class="mono">{{ c.first|month_short }}</td><td class="mono">{{ c.last|month_short }}</td></tr>{% endfor %}
   </tbody></table></div>{% else %}<p class="muted">No balances yet.</p>{% endif %}
 </section>
 </div>

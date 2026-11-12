@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from .. import auth, db
 from ..builds import run_background
-from ..web_helpers import flash, render
+from ..web_helpers import flash, render, month_text
 from pipeline import sources as src
 from pipeline.run_pipeline import build_running, ingest, load_profiles, reapply_profile, save_profile
 
@@ -160,7 +160,7 @@ async def map_confirm(request: Request, batch: str, background: BackgroundTasks,
         running = build_running(conn)
     if not running:
         background.add_task(run_background)
-    flash(request, f"Stored {len(by_kind)} file{'s' if len(by_kind) != 1 else ''} for {month} with the profile “{name}”. "
+    flash(request, f"Stored {len(by_kind)} file{'s' if len(by_kind) != 1 else ''} for {month_text(month)} with the profile “{name}”. "
                    + ("A rebuild is already running; it will run again to include them." if running else "Rebuilding in the background."))
     return RedirectResponse("/upload", status_code=303)
 

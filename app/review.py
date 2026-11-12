@@ -202,7 +202,7 @@ def latest_job(conn) -> dict | None:
         return None
     job = dict(row)
     latest = conn.execute("SELECT max(budget_month) m FROM source_files").fetchone()["m"]
-    job["where"] = "the dashboard's Last month tab" if job["month"] == latest else f"Reviews → Past reviews ({job['month']})"
+    job["where"] = "the dashboard's Last month tab" if job["month"] == latest else "Reviews → Past reviews"   # the line already names the month
     job["odd_count"] = job["state"] == "stored" and job["sections"] is not None and not 5 <= job["sections"] <= 7
     return job
 

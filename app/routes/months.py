@@ -5,7 +5,7 @@ from fastapi import APIRouter, BackgroundTasks, Request, Depends
 from fastapi.responses import RedirectResponse
 
 from .. import db, auth
-from ..web_helpers import flash
+from ..web_helpers import flash, month_text
 from ..builds import run_background
 from pipeline.run_pipeline import build_running, record_history
 
@@ -23,10 +23,10 @@ def delete_month(month: str, request: Request, background: BackgroundTasks, user
         conn.commit()
         busy = build_running(conn) if n else False
     if not n:
-        flash(request, f"No files are loaded for {month}.", "bad")
+        flash(request, f"No files are loaded for {month_text(month)}.", "bad")
     elif busy:
-        flash(request, f"Deleted both files for {month}. A rebuild is already running; it will run again to drop the month from the ledger.", "bad")
+        flash(request, f"Deleted both files for {month_text(month)}. A rebuild is already running; it will run again to drop the month from the ledger.", "bad")
     else:
         background.add_task(run_background)
-        flash(request, f"Deleted both files for {month}. Rebuilding in the background; progress is shown below.")
+        flash(request, f"Deleted both files for {month_text(month)}. Rebuilding in the background; progress is shown below.")
     return RedirectResponse("/upload", status_code=303)

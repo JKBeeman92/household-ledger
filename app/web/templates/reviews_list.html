@@ -8,9 +8,9 @@
 {% if not reviews %}<div class="panel" style="margin-top:var(--space-4)"><p>No reviews yet. Write the first on <a href="/upload">Close a month</a>, after its exports are loaded.</p></div>
 {% else %}<ul class="review-list" style="margin-top:var(--space-4)">
   {% for r in reviews %}{% set secs = (r.sections or [])|sort(attribute='order') %}<li>
-    <div><strong>{{ r.month }}</strong> <span class="meta">· {{ secs|length }} section{{ '' if secs|length == 1 else 's' }} · {{ r.model }} · {{ r.generated_at.strftime('%Y-%m-%d') }}{% if r.hand_edited_at %} · hand-edited{% endif %}</span></div>
+    <div><strong>{{ r.month|month }}</strong> <span class="meta">· {{ secs|length }} section{{ '' if secs|length == 1 else 's' }} · {{ r.model }} · {{ r.generated_at|date }}{% if r.hand_edited_at %} · hand-edited{% endif %}</span></div>
     {% if secs %}<p class="lead"><b>{{ secs[0].heading }}.</b> {{ secs[0].text|truncate(220) }}</p>{% endif %}
-    {% if later[r.month] %}<p class="meta">Since this was written: {% for x in later[r.month] %}{{ x.old }} was renamed {{ x.new }} on {{ x.at.strftime('%-d %b %Y') }}{{ '; ' if not loop.last }}{% endfor %}.</p>{% endif %}
+    {% if later[r.month] %}<p class="meta">Since this was written: {% for x in later[r.month] %}{{ x.old }} was renamed {{ x.new }} on {{ x.at|date }}{{ '; ' if not loop.last }}{% endfor %}.</p>{% endif %}
     <details><summary>Read all of it</summary>{% for s in secs %}<h3>{{ s.heading }}</h3><p>{{ s.text }}</p>{% endfor %}</details>
     <p class="linkrow" style="margin:var(--space-2) 0 0"><a href="/reviews/edit/{{ r.month }}">Edit</a> <a href="/reviews/confirm?month={{ r.month }}">Write again</a></p>
   </li>{% endfor %}
