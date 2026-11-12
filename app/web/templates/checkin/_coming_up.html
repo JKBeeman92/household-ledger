@@ -1,0 +1,8 @@
+{# Step 7: what falls in the next three budget months (#144). Context: c.rows (coming_up rows), c.ahead, c.until. Opening the step marks it
+read (checkin.html); the button is the fallback without script. #}
+{% set kinds = {"payoff": "Payoff", "event": "Life event", "yearly_bill": "Yearly bill", "tax_deadline": "Tax deadline", "goal": "Goal"} %}
+<p class="muted">Further out: each debt's payoff month is on the dashboard's <a href="/#lastmonth">Last month tab</a>.</p>
+<noscript><form method="post" action="/checkin/{{ month }}/steps/coming_up/view">{{ csrf_field(request) }}<button class="btn" type="submit">Mark Coming up as read</button></form></noscript>
+{% if c.rows %}<ul data-list="unbounded">{% for r in c.rows %}<li><strong>{{ r.m|month }}</strong> · {{ kinds.get(r.kind, r.kind) }}: {{ r.label }}{% if r.amount is not none %}, {{ r.amount|money }}{% endif %}{% if r.source == "estimated" %} <span class="muted">(estimated)</span>{% endif %}</li>{% endfor %}</ul>
+{% else %}<p>Nothing is dated before {{ c.until|month_short }}. A life event you add shows here.</p>
+<p><a class="btn" href="/settings#events">Add a life event</a></p>{% endif %}

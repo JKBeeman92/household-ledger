@@ -93,6 +93,15 @@ _last = max([r["BudgetMonth"] for r in L] + [m for (_, m) in _bal.read_balances(
 _brows = _bal.series(_accts, _bal.read_balances(), _paid, _last)
 w("balances", _brows)
 w("balance_totals", _bal.totals(_brows))
+# payoff (#144): per debt, the month it is gone at last month's payment; coming_up: one row per future item (payoffs, and life
+# events dated after the last loaded month; yearly bills, tax deadlines and dated goals join it in their issues). Both are as of the
+# last loaded budget month, not `_last`, which a balance typed for a later month can push past the ledger (it would have no payment).
+import payoff as _payoff   # noqa: E402
+_loaded = {r["BudgetMonth"] for r in L}
+_closing = max(_loaded) if _loaded else None
+_payoffs = _payoff.estimates(_accts, _brows, _paid, _closing, _loaded)
+w("payoff", _payoffs)
+w("coming_up", _payoff.coming_up(_payoffs, D["events"], _closing))
 # net_worth (#146): what the household did in a month is its income less living spend (net plus debt payments: paying down a loan is
 # the household's doing; the interest in those payments shows up in "what happened")
 _did = {m: mn[m]["net"] + mn[m]["debt"] + (PRETAX or 0) for m in mn}   # plus pre-tax saving (#152): the household's doing too

@@ -30,11 +30,14 @@ DATASETS = ("monthly", "yearly", "cat_month", "cat_year", "item_year", "budget_i
             "balance_totals",   # balances by kind and type (#143); `balances` itself names accounts and stays private
             "debt_to_income",   # #145
             "net_worth",   # #146: totals and the split, no account names
-            "emergency_fund")   # #150
+            "emergency_fund",   # #150
+            "coming_up")   # #144: served with public labels only (PUBLIC below); `payoff` names accounts and stays private
 MAX_SECTIONS, MAX_HEADING, MAX_TEXT = 12, 200, 5000
 INSTRUCTIONS = ("Read-only access to a household's month-close figures (budget months, not calendar months): per-month and per-category "
                 "totals, envelopes planned vs spent, goals and the written month-close review. There are no transactions, merchants or notes. "
                 "`save_review` writes a month's review and needs a token with the review scope.")
+# datasets whose rows name an account: served with the name taken out (coming_up's label names a debt by its type instead)
+PUBLIC = {"coming_up": lambda r: {"m": r["m"], "kind": r["kind"], "label": r["public_label"], "amount": r["amount"], "source": r["source"]}}
 
 
 def _rows(conn, name: str) -> list[dict]:
@@ -87,7 +90,8 @@ def build_server() -> FastMCP:
         if name not in DATASETS:
             raise ValueError(f"unknown dataset {name!r}; available: {', '.join(DATASETS)}")
         with db.pool.connection() as conn:
-            return _rows(conn, name)
+            rows = _rows(conn, name)
+        return [PUBLIC[name](r) for r in rows] if name in PUBLIC else rows
 
     @mcp.tool()
     def month_summary(m: str) -> dict:

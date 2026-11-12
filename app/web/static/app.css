@@ -242,3 +242,7 @@ dl.dti dt { font-weight: 600; } dl.dti dd { margin: 0; } dl.dti .v { font-weight
 #dash-root.hl .seg button:focus-visible, #dash-root.hl .tabs button:focus-visible, #dash-root.hl select:focus-visible, #dash-root.hl details.how summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 #dash-root.hl th { border-bottom: 1.5px solid var(--ink); }
 td.num, th.num { text-align: right !important; font-variant-numeric: tabular-nums; }   /* figures compared down a column (DS-TYPE-3) */
+/* the check-in's Balances step: each debt's payoff line under the fields (issue 144) */
+.checkin-steps .step-sub { font-size: var(--text-small); font-weight: var(--weight-strong); margin: var(--space-4) 0 var(--space-2); }
+.checkin-steps .payoff-lines { margin: 0; padding-left: var(--space-6); display: grid; gap: var(--space-1); }
+.dti dd .muted { max-width: 75ch; }   /* DS-TYPE-4: a figure's explanation is running text */

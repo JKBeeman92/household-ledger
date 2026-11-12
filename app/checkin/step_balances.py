@@ -21,7 +21,8 @@ def _status(conn, month, state):
 
 def _context(conn, month, state):
     from app.routes.balances import form_context
-    return {"bal": form_context(conn, month)}
+    r = _x(conn, "SELECT rows FROM datasets WHERE name='payoff'").fetchone()   # as of the latest loaded month (#144)
+    return {"bal": form_context(conn, month), "payoff": [p for p in (r["rows"] if r else []) if p["m"] == month]}
 
 
 register(Step("balances", 30, "Balances", _status, applies=_applies, context=_context, in_short=True, issue="#143"))

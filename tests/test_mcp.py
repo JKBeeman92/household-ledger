@@ -109,6 +109,13 @@ def test_transactions_merchants_and_notes_are_never_served(loaded):
     assert not err and rows and not any("account" in r for r in rows)
     err, text = call(tok, "get_dataset", {"name": "verify"})
     assert err and "unknown dataset" in text
+    assert "payoff" not in mcp_endpoint.DATASETS   # names accounts (#144); coming_up is served with its public labels
+    err, text = call(tok, "get_dataset", {"name": "payoff"})
+    assert err and "unknown dataset" in text
+    accounts = {r["name"] for r in sql("SELECT name FROM accounts")}
+    err, rows = call(tok, "get_dataset", {"name": "coming_up"})
+    assert not err and all(set(r) == {"m", "kind", "label", "amount", "source"} for r in rows)
+    assert not any(a in json.dumps(rows) for a in accounts)
     names = {r["name"] for r in sql("SELECT name FROM datasets")}
     for n in names & set(mcp_endpoint.DATASETS):
         err, rows = call(tok, "get_dataset", {"name": n})
