@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from .. import db, auth, hooks, checkin
-from ..web_helpers import flash, render
+from ..web_helpers import flash, render, month_text
 
 router = APIRouter()
 
@@ -22,7 +22,7 @@ def _month(m: str) -> str:
 
 
 def month_name(m: str) -> str:
-    return dt.date(int(m[:4]), int(m[5:]), 1).strftime("%B %Y")
+    return month_text(m)
 
 
 @router.get("/checkin")

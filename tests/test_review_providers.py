@@ -267,7 +267,8 @@ def test_review_runs_in_the_background_and_the_page_says_where_to_read_it(client
     r = client.post("/review/generate", data={"month": months[-2], "confirm": "yes"})
     assert r.status_code == 303 and r.headers["location"] == "/upload#review-job"
     page = client.get("/upload").text   # the test client ran the background task before returning
-    assert f"The {months[-2]} review (1 section): read it on Reviews → Past reviews ({months[-2]})" in page and "ask for 5 to 7" in page
+    from app.formatting import month as month_words
+    assert f"The {month_words(months[-2])} review (1 section): read it on Reviews → Past reviews." in page and "ask for 5 to 7" in page
     client.post("/review/generate", data={"month": months[-1], "confirm": "yes"})
     assert "the dashboard&#39;s Last month tab" in client.get("/upload").text or "the dashboard's Last month tab" in client.get("/upload").text
     assert client.get("/review/status").json()["job"]["state"] == "stored"

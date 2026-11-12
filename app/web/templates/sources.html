@@ -20,7 +20,7 @@ time you upload that tool's files on <a href="/upload">Close a month</a>. Editin
 {% for p in profiles %}
 <form class="panel" method="post" action="/settings/sources" style="margin-top:var(--space-4)">{{ csrf_field(request) }}
   <h2>{{ p.name }}</h2>
-  <p class="muted">{{ p.files }} stored file{{ '' if p.files == 1 else 's' }} · last changed {{ p.updated_at.strftime('%Y-%m-%d %H:%M') }} ·
+  <p class="muted">{{ p.files }} stored file{{ '' if p.files == 1 else 's' }} · last changed {{ p.updated_at|datetime }} ·
     <a href="/settings/sources/{{ p.id }}.json" download>Export JSON</a></p>
   <textarea class="json" name="body" spellcheck="false" aria-label="Profile {{ p.name }} as JSON">{{ p.body }}</textarea>
   <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save and re-read its files</button>

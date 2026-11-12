@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Check-in {{ ov.month }} · {{ household.title }}{% endblock %}
+{% block title %}Check-in {{ ov.month|month }} · {{ household.title }}{% endblock %}
 {% block content %}
 {% set chip = {'todo': '', 'done': 'ok', 'skipped': 'info', 'attention': 'bad'} %}
 <p class="eyebrow">{{ {'month': 'Monthly', 'quarter': 'Quarterly', 'year': 'Year-end'}[ov.mode] }} check-in · {{ words.checkin_eyebrow }}{% if ov.short %} · catching up{% endif %}</p>
@@ -10,7 +10,7 @@
     <a class="btn" href="/checkin/{{ ov.missing[0] }}">Catch up</a> <span class="muted">a short form for each, oldest first; this month's full check-in after them.</span></p>
 </div>{% endif %}
 {% if ov.done %}<div class="panel" id="checkin-done" style="border-left:3px solid var(--success)">
-  <p style="margin:0"><span class="status-chip ok">Done</span> {{ ov.row.completed_at.strftime('%-d %b %Y') }}{% if ov.row.completed_by %} by {{ ov.row.completed_by }}{% endif %}.</p>
+  <p style="margin:0"><span class="status-chip ok">Done</span> {{ ov.row.completed_at|date }}{% if ov.row.completed_by %} by {{ ov.row.completed_by }}{% endif %}.</p>
   <form method="post" action="/checkin/{{ ov.month }}/reopen" style="margin-top:var(--space-2)">{{ csrf_field(request) }}<button class="btn" type="submit">Reopen</button> <span class="muted">the first completion date is kept</span></form>
 </div>{% endif %}
 <ol class="checkin-steps">

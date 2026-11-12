@@ -8,7 +8,7 @@
   <p class="muted" id="recon-bad" style="border-left:3px solid var(--danger);padding-left:var(--space-3)">{{ rec.problems|length }} envelope{{ '' if rec.problems|length == 1 else 's' }} do not reconcile. Fix or re-upload the month's exports; the dashboard's Method tab lists them too.</p>
   <details {% if rec.problems|length <= 5 %}open{% endif %}><summary>Show the {{ rec.problems|length }} envelope{{ '' if rec.problems|length == 1 else 's' }}</summary>
   <table class="plain" data-list="unbounded"><thead><tr><th>Month</th><th>Envelope</th><th>Σ transactions</th><th>Spent</th><th>Status</th></tr></thead><tbody>
-  {% for p in rec.problems %}<tr><td class="mono">{{ p.budget_month }}</td><td>{{ p.item }}</td><td class="mono">{{ '%.2f'|format(p.txn_sum) if p.txn_sum is not none else '—' }}</td><td class="mono">{{ '%.2f'|format(p.spent) if p.spent is not none else '—' }}</td><td>{{ p.status }}</td></tr>{% endfor %}
+  {% for p in rec.problems %}<tr><td class="mono">{{ p.budget_month|month_short }}</td><td>{{ p.item }}</td><td class="mono num">{{ p.txn_sum|money(2) }}</td><td class="mono num">{{ p.spent|money(2) }}</td><td>{{ p.status }}</td></tr>{% endfor %}
   </tbody></table></details>
   {% endif %}
 </div>
@@ -25,7 +25,7 @@
     <table class="plain" data-list="unbounded"><thead><tr><th>Item</th><th>Months</th><th>Rows</th><th>Canonical item</th><th>Category</th><th>Flow</th></tr></thead><tbody>
     {% for u in un %}<tr>
       <td>{{ u.item }}<input type="hidden" name="item" value="{{ u['item'] }}"><div class="muted">{{ u.group }}</div></td>
-      <td class="mono">{{ u.months[0] }}{% if u.months|length > 1 %} … {{ u.months[-1] }}{% endif %}</td>
+      <td class="mono">{{ u.months[0]|month_short }}{% if u.months|length > 1 %} … {{ u.months[-1]|month_short }}{% endif %}</td>
       <td class="mono">{{ u.rows }}</td>
       <td><input name="canonical" value="{{ u['canonical_guess'] }}" aria-label="Canonical item for {{ u['item'] }}"></td>
       <td><input name="category" list="map-categories" value="{{ u.category_guess or u.group or '' }}" aria-label="Category for {{ u['item'] }}"></td>

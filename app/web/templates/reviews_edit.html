@@ -2,7 +2,7 @@
 {% block title %}Edit review · {{ household.title }}{% endblock %}
 {% block content %}
 <p class="eyebrow">Month-close review</p>
-<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Edit the {{ r.month }} review</h1>
+<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Edit the {{ r.month|month }} review</h1>
 <p class="muted" style="max-width:70ch">Written by {{ r.model }}. Saving marks it as hand-edited and updates the dashboard. Clear both fields of a section to remove it; fill the last empty one to add a section. Generating the month again replaces your edits.</p>
 <form method="post" action="/reviews/edit/{{ r.month }}" style="max-width:50rem">{{ csrf_field(request) }}
   {% for s in r.sections + [{'heading': '', 'text': ''}] %}

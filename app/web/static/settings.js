@@ -49,7 +49,7 @@
       td.appendChild(eb); td.appendChild(db); tr.appendChild(td);
       eb.onclick = function () { edit(tr); }; db.onclick = function () { del(tr); };
     }
-    function rowOf(tr) { var r = {}; fields.forEach(function (f) { r[f] = tr.querySelector('td[data-f="' + f + '"]').textContent; }); return r; }
+    function rowOf(tr) { var r = {}; fields.forEach(function (f) { var td = tr.querySelector('td[data-f="' + f + '"]'); r[f] = td.hasAttribute("data-v") ? td.getAttribute("data-v") : td.textContent; }); return r; }   // data-v: the stored value behind a formatted figure
     function edit(tr, blank) {
       var row = blank ? {} : rowOf(tr); tr.className = "editing"; tr.textContent = "";
       fields.forEach(function (f) {
@@ -144,7 +144,7 @@
         var idx = fields.indexOf(th.dataset.sort), dir = th.getAttribute("aria-sort") === "ascending" ? -1 : 1;
         table.querySelectorAll("th").forEach(function (o) { o.removeAttribute("aria-sort"); });
         th.setAttribute("aria-sort", dir === 1 ? "ascending" : "descending");
-        var trs = Array.prototype.slice.call(tbody.rows), val = function (tr) { var c = tr.cells[idx]; var i = c.querySelector("input,select"); return (i ? i.value : c.textContent).trim(); };
+        var trs = Array.prototype.slice.call(tbody.rows), val = function (tr) { var c = tr.cells[idx]; var i = c.querySelector("input,select"); return (i ? i.value : c.hasAttribute("data-v") ? c.getAttribute("data-v") : c.textContent).trim(); };   // data-v: the stored figure behind a formatted one
         var num = trs.every(function (tr) { var v = val(tr); return v === "" || !isNaN(parseFloat(v)) && isFinite(v); });
         trs.sort(function (a, b) {
           var x = val(a), y = val(b);

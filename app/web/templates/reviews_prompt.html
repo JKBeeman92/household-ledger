@@ -14,7 +14,7 @@
     <h2>Preview the context</h2>
     <p class="muted">The exact JSON that would be sent with the instructions for a month. Nothing is sent to a provider.</p>
     <form method="get" action="/reviews/prompt">
-      <p><label for="month">Budget month</label><br><select id="month" name="month">{% for m in months %}<option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}</option>{% endfor %}</select></p>
+      <p><label for="month">Budget month</label><br><select id="month" name="month">{% for m in months %}<option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m|month_short }}</option>{% endfor %}</select></p>
       <p><button class="btn" type="submit" {% if not months %}disabled{% endif %}>Preview</button></p>
     </form>
     <form method="post" action="/reviews/prompt/reset">{{ csrf_field(request) }}
@@ -24,5 +24,5 @@
   </div>
 </div>
 {% if error %}<div class="panel" style="margin-top:var(--space-4)"><p>{{ error }}</p></div>{% endif %}
-{% if context %}<div class="panel" style="margin-top:var(--space-4)"><h2>Context for {{ month }}</h2><p class="muted">About {{ '{:,}'.format(tokens) }} input tokens with the instructions. Includes last month's review, life events and confirmed goals.</p><textarea class="json" id="ctx" readonly rows="16">{{ context }}</textarea></div>{% endif %}
+{% if context %}<div class="panel" style="margin-top:var(--space-4)"><h2>Context for {{ month|month }}</h2><p class="muted">About {{ tokens|number }} input tokens with the instructions. Includes last month's review, life events and confirmed goals.</p><textarea class="json" id="ctx" readonly rows="16">{{ context }}</textarea></div>{% endif %}
 {% endblock %}

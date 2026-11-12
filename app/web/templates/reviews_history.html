@@ -6,8 +6,8 @@
 <p class="muted" style="max-width:70ch">Every stored review with the model that wrote it and the exact prompt it was given. The review is advice: correct anything that is wrong and it is marked as hand-edited. <a href="/reviews">Provider settings</a></p>
 {% for r in reviews %}
 <div class="panel" style="margin-top:var(--space-4)">
-  <h2>{{ r.month }}{% if r.hand_edited_at %} <span class="muted">· hand-edited {{ r.hand_edited_at.strftime('%Y-%m-%d') }}</span>{% endif %}</h2>
-  <p class="muted">{{ r.model }} · generated {{ r.generated_at.strftime('%Y-%m-%d %H:%M') }} · {{ r.sections|length }} sections · prompt {{ "{:,}".format(r.prompt|length) }} characters</p>
+  <h2>{{ r.month|month }}{% if r.hand_edited_at %} <span class="muted">· hand-edited {{ r.hand_edited_at|date }}</span>{% endif %}</h2>
+  <p class="muted">{{ r.model }} · generated {{ r.generated_at|datetime }} · {{ r.sections|length }} sections · prompt {{ r.prompt|length|number }} characters</p>
   <p><a class="btn" href="/reviews/edit/{{ r.month }}">Edit sections</a></p>
   <details><summary class="muted">Show sections</summary>{% for s in r.sections %}<h3>{{ s.heading }}</h3><p>{{ s.text }}</p>{% endfor %}</details>
   <details><summary class="muted">Show prompt</summary><pre class="mono" style="white-space:pre-wrap;overflow-wrap:anywhere">{{ r.prompt }}</pre></details>
