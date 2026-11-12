@@ -13,7 +13,7 @@
 {% endmacro %}
 <p class="eyebrow">Month close</p>
 <h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Map your columns</h1>
-<p class="muted" style="max-width:75ch">These files are not EveryDollar exports, so tell the ledger once how to read them. The guesses below come from the
+<p class="muted" style="max-width:75ch">These files are not in a format the ledger reads as it is (the internal format, or EveryDollar's exports), so tell it once how to read them. The guesses below come from the
 column names{% if plan.profile_id %} and the saved profile <strong>{{ spec.name }}</strong>, which recognises these headers{% endif %}. Nothing is stored
 until you confirm. The files are kept exactly as uploaded, so a mapping corrected later is re-applied without uploading again.</p>
 {% if error %}<p class="flash bad" role="alert" id="map-error">{{ error }}</p>{% endif %}

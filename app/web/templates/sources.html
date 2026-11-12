@@ -3,11 +3,19 @@
 {% block content %}
 <p class="eyebrow">Configuration</p>
 <h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Sources</h1>
-<p class="muted" style="max-width:75ch">EveryDollar exports are read as they are. Any other tool's files are read through a <strong>source profile</strong>:
+<p class="muted" style="max-width:75ch">Files in the internal format, and EveryDollar's exports (the built-in profile below), are read as they are. Any other tool's files are read through a <strong>source profile</strong>:
 which column is the date, the amount, the group and the item, and how dates and numbers are written. A profile is created the first
 time you upload that tool's files on <a href="/upload">Close a month</a>. Editing a profile here re-reads every month stored with it
 (the files are kept as uploaded) and rebuilds. The format is described in the README, under "Other budget tools".</p>
 <p class="muted"><a href="/settings">Back to settings</a></p>
+
+<section class="panel" style="margin-top:var(--space-4)" id="builtin-everydollar">
+  <h2>EveryDollar (built in)</h2>
+  <p class="muted">EveryDollar's Transactions and BudgetItems exports are the internal format with MM/DD/YYYY dates, so files it names
+    (<code>…-MM-YYYY-EveryDollar-Transactions.csv</code>) need no mapping step. This profile is read-only; export it to start your own. ·
+    <a href="/settings/sources/everydollar.json" download>Export JSON</a></p>
+  <details><summary>Show the profile</summary><pre class="json" aria-label="The built-in EveryDollar profile as JSON">{{ builtin }}</pre></details>
+</section>
 
 {% for p in profiles %}
 <form class="panel" method="post" action="/settings/sources" style="margin-top:var(--space-4)">{{ csrf_field(request) }}
@@ -19,7 +27,7 @@ time you upload that tool's files on <a href="/upload">Close a month</a>. Editin
     {% if not p.files %}<button class="btn" type="submit" formaction="/settings/sources/{{ p.id }}/delete">Delete</button>{% endif %}</p>
 </form>
 {% else %}
-<p class="panel muted" style="margin-top:var(--space-4)">No source profiles yet: everything so far is EveryDollar's own exports.</p>
+<p class="panel muted" style="margin-top:var(--space-4)">No source profiles of your own yet: everything so far was read in the internal format or through the built-in EveryDollar profile.</p>
 {% endfor %}
 
 <form class="panel" method="post" action="/settings/sources" style="margin-top:var(--space-4)">{{ csrf_field(request) }}

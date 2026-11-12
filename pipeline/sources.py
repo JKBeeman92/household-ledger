@@ -1,9 +1,10 @@
 """Source profiles: read a budget tool's own two CSVs (transactions, budget) through a column mapping (issue #96).
 
-The pipeline's internal schema is EveryDollar's export format, which stays the built-in profile:
-  transactions  Group, Item, Type, Date (MM/DD/YYYY), Merchant, Account, Amount (income +, spending -), Note
-  budget items  Group, Item, Planned (>= 0), Spent (income +, spending -), Remaining
-A profile turns another tool's files into rows of that shape, so everything downstream (the database tables, the four pipeline
+The pipeline reads its own **internal format** (issue #161; file names and dates in pipeline/filenames.py):
+  YYYY-MM-transactions.csv  Group, Item, Type, Date (YYYY-MM-DD), Merchant, Account, Amount (income +, spending -), Note
+  YYYY-MM-budget.csv        Group, Item, Planned (>= 0), Spent (income +, spending -), Remaining
+EveryDollar's exports are that shape already, with MM/DD/YYYY dates and their own file names: EveryDollar is the built-in profile
+(BUILTIN), read without a mapping step. A profile turns another tool's files into rows of that shape, so everything downstream (the database tables, the four pipeline
 scripts, the goldens) is unchanged. The original bytes are kept as uploaded; a corrected profile is re-applied to them.
 
 A profile is plain JSON, so it can be exported and imported:
@@ -18,7 +19,7 @@ A profile is plain JSON, so it can be exported and imported:
               "decimal": ".", "thousands": ",", "spent_sign": "negative" | "positive", "income_groups": ["Wages"]}}
 
 Standalone: `python -m pipeline.sources normalize --profile p.json --month 2026-03 --transactions t.csv --budget b.csv --out DIR`
-writes the pair as EveryDollar-named files, which the pipeline scripts then read like any other export.
+writes the pair as internal-format files (YYYY-MM-transactions.csv, YYYY-MM-budget.csv), which the pipeline scripts read.
 """
 from __future__ import annotations
 import argparse, csv, hashlib, io, json, re, sys
@@ -26,13 +27,24 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
+from . import filenames
+
 KINDS = ("transactions", "budget_items")
 TXN_FIELDS = ("date", "amount", "debit", "credit", "type", "merchant", "account", "note", "group", "item")
 BUDGET_FIELDS = ("group", "item", "planned", "spent")
 REQUIRED = {"transactions": ("date", "group", "item"), "budget_items": ("group", "item", "planned", "spent")}
 DATE_FORMATS = ("MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD", "DD.MM.YYYY", "YYYY/MM/DD", "DD-MM-YYYY", "MM-DD-YYYY")
-ED_TXN = ["Group", "Item", "Type", "Date", "Merchant", "Account", "Amount", "Note"]
+ED_TXN = ["Group", "Item", "Type", "Date", "Merchant", "Account", "Amount", "Note"]   # the internal format's columns (EveryDollar's too)
 ED_BUDGET = ["Group", "Item", "Planned", "Spent", "Remaining"]
+# EveryDollar, the first built-in profile: its exports are the internal format with MM/DD/YYYY dates and their own file names, so
+# uploads named like them need no mapping step. Shown, read-only and exportable, on Settings -> Other budget tools (#161).
+BUILTIN = {"name": "EveryDollar (built in)",
+           "transactions": {"headers": ED_TXN, "columns": {"date": "Date", "amount": "Amount", "debit": None, "credit": None, "type": "Type",
+                                                           "merchant": "Merchant", "account": "Account", "note": "Note", "group": "Group", "item": "Item"},
+                            "date_format": "MM/DD/YYYY", "decimal": ".", "thousands": ",", "amount_mode": "signed", "expense_sign": "negative",
+                            "income_values": ["income"], "income_groups": ["Income"]},   # format value, not a role: EveryDollar's own group
+           "budget": {"headers": ED_BUDGET, "columns": {"group": "Group", "item": "Item", "planned": "Planned", "spent": "Spent"},
+                      "decimal": ".", "thousands": ",", "spent_sign": "negative", "income_groups": ["Income"]}}   # format value, not a role
 
 # header names that propose each field, best first; matching ignores case, spaces, underscores and punctuation
 SYNONYMS = {
@@ -194,12 +206,12 @@ def parse_money(v: str, decimal: str = ".", thousands: str = ",") -> Decimal:
 
 
 def parse_date(v: str, fmt: str) -> str:
-    """The date in EveryDollar's MM/DD/YYYY."""
+    """The date in the internal format's YYYY-MM-DD."""
     if fmt not in DATE_FORMATS:
         raise ProfileError(f"unknown date format {fmt!r}; use one of {', '.join(DATE_FORMATS)}")
     py = fmt.replace("YYYY", "%Y").replace("MM", "%m").replace("DD", "%d")
     try:
-        return datetime.strptime((v or "").strip(), py).strftime("%m/%d/%Y")
+        return datetime.strptime((v or "").strip(), py).strftime("%Y-%m-%d")
     except ValueError:
         raise ProfileError(f"{v!r} is not a date in {fmt}")
 
@@ -286,17 +298,17 @@ def apply(kind: str, data: bytes, profile: dict) -> list[dict]:
     return out
 
 
-def to_everydollar(kind: str, rows: list[dict], month: str, seed: bytes = b"") -> tuple[str, bytes]:
-    """The rows as an EveryDollar-named CSV for the standalone scripts: (filename, bytes)."""
+def to_internal(kind: str, rows: list[dict], month: str) -> tuple[str, bytes]:
+    """The rows as an internal-format CSV for the standalone scripts: (YYYY-MM-transactions.csv or YYYY-MM-budget.csv, bytes).
+    Dates are written YYYY-MM-DD, whichever form the rows carry."""
     if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", month or ""):
         raise ProfileError("the budget month must be YYYY-MM")
+    if kind == "transactions":
+        rows = [{**r, "Date": "-".join(filenames.iso_date(r["Date"]))} for r in rows]
     buf = io.StringIO()
     w = csv.DictWriter(buf, fieldnames=ED_TXN if kind == "transactions" else ED_BUDGET, lineterminator="\n")
     w.writeheader(); w.writerows(rows)
-    data = buf.getvalue().encode()
-    hx = hashlib.sha256(seed or data).hexdigest()[:8]
-    yyyy, mm = month.split("-")
-    return f"{hx}-{mm}-{yyyy}-EveryDollar-{'Transactions' if kind == 'transactions' else 'BudgetItems'}.csv", data
+    return filenames.neutral_name(kind, month), buf.getvalue().encode()
 
 
 # ---------------------------------------------------------------- CLI
@@ -305,7 +317,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     pr = sub.add_parser("propose", help="print a starting profile for a transactions file and a budget file")
     pr.add_argument("--name", required=True); pr.add_argument("--transactions", required=True, type=Path); pr.add_argument("--budget", required=True, type=Path)
-    nm = sub.add_parser("normalize", help="write a pair as EveryDollar-named files the pipeline scripts read")
+    nm = sub.add_parser("normalize", help="write a pair as internal-format files the pipeline scripts read")
     nm.add_argument("--profile", required=True, type=Path); nm.add_argument("--month", required=True)
     nm.add_argument("--transactions", required=True, type=Path); nm.add_argument("--budget", required=True, type=Path); nm.add_argument("--out", required=True, type=Path)
     a = ap.parse_args(argv)
@@ -318,7 +330,7 @@ def main(argv: list[str] | None = None) -> int:
         a.out.mkdir(parents=True, exist_ok=True)
         for kind, path in (("transactions", a.transactions), ("budget_items", a.budget)):
             raw = path.read_bytes()
-            name, data = to_everydollar(kind, apply(kind, raw, p), a.month, seed=raw)
+            name, data = to_internal(kind, apply(kind, raw, p), a.month)
             (a.out / name).write_bytes(data)
             print(a.out / name)
         return 0

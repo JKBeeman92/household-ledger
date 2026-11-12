@@ -1,6 +1,6 @@
-"""Non-EveryDollar sources (issue #96): the mapping step after an upload, and the saved source profiles.
+"""Other budget tools' sources (issue #96): the mapping step after an upload, and the saved source profiles.
 
-A pair of files that is not named like EveryDollar's exports waits in upload_pending while the editor confirms which file is which,
+A pair of files that is not named like exports (the internal format, or EveryDollar's) waits in upload_pending while the editor confirms which file is which,
 the budget month, and how the columns map (proposed from the headers, or taken from a saved profile that recognises them). On
 confirm the profile is saved, both files are stored as uploaded with their rows read through it, and the ledger is rebuilt."""
 from __future__ import annotations
@@ -45,7 +45,7 @@ def _month_guess(data: bytes, sec: dict) -> str:
         ms = collections.Counter()
         for r in rows:
             try:
-                mm, _, yy = src.parse_date(r.get(col, ""), fmt).split("/"); ms[f"{yy}-{mm}"] += 1
+                ms[src.parse_date(r.get(col, ""), fmt)[:7]] += 1   # YYYY-MM-DD: its budget-month part
             except src.ProfileError:
                 pass
         return ms.most_common(1)[0][0] if ms else ""
@@ -178,7 +178,15 @@ def map_discard(request: Request, batch: str, user=Depends(auth.require_editor))
 def profiles_page(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         profiles = load_profiles(conn)
-    return render(request, "sources.html", user, active="settings", profiles=[dict(p, body=json.dumps(p["spec"], indent=1, ensure_ascii=False)) for p in profiles])
+    return render(request, "sources.html", user, active="settings", profiles=[dict(p, body=json.dumps(p["spec"], indent=1, ensure_ascii=False)) for p in profiles],
+                  builtin=json.dumps(src.BUILTIN, indent=1))
+
+
+@router.get("/settings/sources/everydollar.json")
+def builtin_export(user=Depends(auth.require_editor)):
+    """The built-in EveryDollar profile (#161), as a profile JSON like any other; read-only here, importable elsewhere."""
+    return Response(json.dumps(src.BUILTIN, indent=1), media_type="application/json",
+                    headers={"Content-Disposition": 'attachment; filename="everydollar.json"'})
 
 
 @router.get("/settings/sources/{pid}.json")

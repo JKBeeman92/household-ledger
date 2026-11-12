@@ -1,27 +1,24 @@
 #!/usr/bin/env python3 -I
 """Reconcile raw exports: sum of transactions per (budget month, item) vs the BudgetItems "Spent" column.
 
-Standalone, like the other pipeline scripts: run it in a folder holding txns/ and summaries/ (the staged EveryDollar CSVs).
+Standalone, like the other pipeline scripts: run it in a folder holding txns/ and summaries/ (the staged monthly exports, internal format or EveryDollar's).
 Writes reconciliation_new_rows.csv and new_rows_with_budget_month.csv there and exits 1 if anything does not reconcile."""
 import csv, glob, os, re, sys
 from collections import defaultdict, Counter
 from decimal import Decimal as D
+import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # filenames.py sits beside this script
+import filenames   # noqa: E402
 
 def norm(x): return re.sub(r"\s+", " ", (x or "").replace("\u2006", " ").replace("\xa0", " ")).strip()
 
 ROOT = os.getcwd()
-rx = re.compile(r"^[0-9a-f]+-(\d\d)-(\d{4})-EveryDollar-(Transactions|BudgetItems)\.csv$")
-
-def bm_of(fn):
-    m = rx.match(os.path.basename(fn)); return f"{m.group(2)}-{m.group(1)}"
 
 if not (os.path.isdir(f"{ROOT}/txns") and os.path.isdir(f"{ROOT}/summaries")):
-    sys.exit("reconcile.py: run it in a folder containing txns/ and summaries/ (EveryDollar CSV exports)")
+    sys.exit("reconcile.py: run it in a folder containing txns/ and summaries/ (monthly CSV exports)")
 
 # --- transactions with Budget Month from filename ---
 txn = []
-for f in sorted(glob.glob(f"{ROOT}/txns/*.csv")):
-    bm = bm_of(f)
+for bm, f in ((bm, f"{ROOT}/txns/{fn}") for bm, fn in filenames.exports(f"{ROOT}/txns", "transactions")):
     with open(f, newline="", encoding="utf-8-sig") as fh:
         for r in csv.DictReader(fh):
             r["Item"] = norm(r["Item"]); r["BudgetMonth"] = bm; r["SourceFile"] = os.path.basename(f)
@@ -29,8 +26,7 @@ for f in sorted(glob.glob(f"{ROOT}/txns/*.csv")):
 
 # --- summaries ---
 summ = {}  # (bm, item) -> (group, planned, spent)
-for f in sorted(glob.glob(f"{ROOT}/summaries/*.csv")):
-    bm = bm_of(f)
+for bm, f in ((bm, f"{ROOT}/summaries/{fn}") for bm, fn in filenames.exports(f"{ROOT}/summaries", "budget_items")):
     with open(f, newline="", encoding="utf-8-sig") as fh:
         for r in csv.DictReader(fh):
             summ[(bm, norm(r["Item"]))] = (r["Group"], D(r["Planned"]), D(r["Spent"]))
@@ -40,7 +36,7 @@ agg = defaultdict(lambda: [D(0), 0])
 cal_mismatch = 0
 for r in txn:
     k = (r["BudgetMonth"], r["Item"]); agg[k][0] += D(r["Amount"]); agg[k][1] += 1
-    mm, dd, yy = r["Date"].split("/")
+    yy, mm, dd = filenames.iso_date(r["Date"])
     if f"{yy}-{mm}" != r["BudgetMonth"]: cal_mismatch += 1
 
 txn_months = sorted({r["BudgetMonth"] for r in txn})

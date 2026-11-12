@@ -12,7 +12,7 @@ from collections import Counter
 
 from pipeline.run_pipeline import norm
 
-# EveryDollar's habits: a year's copy of an envelope gets " 2", " 3" ..., and savings envelopes drift between "X", "X Fund" and "X Goal".
+# Budget tools' habits (EveryDollar's, for one): a year's copy of an envelope gets " 2", " 3" ..., and savings envelopes drift between "X", "X Fund" and "X Goal".
 DEFAULT_SUFFIXES = [r"\s+\d+", r"\s+fund", r"\s+goal"]
 # Whole item names that are moves between your own envelopes. An income-group item named "Fund Transfer" otherwise counts as income.
 DEFAULT_TRANSFER_ITEMS = r"(?:fund transfers?|transfer funds?|.*\brebalanc(?:e|ing)|transfer(?:ring)? (?:to|from)\b.*)"

@@ -86,7 +86,7 @@ def export_datasets(user=Depends(auth.require_user)):
 
 
 def _source_chunks(conn, f):
-    """The raw export rebuilt in EveryDollar's shape (same columns and quoting the pipeline reads), a batch of rows at a time."""
+    """The raw export rebuilt in the internal format's columns (and the quoting the pipeline reads), a batch of rows at a time."""
     if f["kind"] == "transactions":
         yield _csv_line(["Group", "Item", "Type", "Date", "Merchant", "Account", "Amount", "Note"]).encode()
         sql = "SELECT grp,item,type,to_char(date,'MM/DD/YYYY') d,merchant,account,amount,note FROM transactions WHERE source_file_id=%s ORDER BY row_no"
