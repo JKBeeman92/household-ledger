@@ -201,7 +201,7 @@
 
 <div id="dash-root" class="hl{% if not span.has_data %} empty{% endif %}">
   {% if freshness.stale %}<div class="flash warn" id="stale-banner" role="status">{{ freshness.message }}.{% if user and user.is_editor %} <a href="/upload">Close a month</a>{% endif %}</div>{% endif %}
-  <p class="eyebrow">{{ household.name or 'Household' }}{% if span.has_data %} · {{ span.years }}-year audit{% endif %}</p>
+  <p class="eyebrow">{{ words.dashboard_eyebrow }} · {{ household.name or 'Household' }}{% if span.has_data %} · {{ span.years }}-year audit{% endif %}</p>
   <div class="masthead">
     <img class="mark mark-day" src="/brand/mark.svg" alt=""><img class="mark mark-night" src="/brand/mark-dark.svg" alt="">
     <h1>{{ household.title or words.name }}{% if span.has_data %} {{ span.first_year }}{% if span.last_year != span.first_year %}–{{ span.last_year }}{% endif %}{% endif %}</h1>

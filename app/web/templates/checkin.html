@@ -2,7 +2,7 @@
 {% block title %}Check-in {{ ov.month }} · {{ household.title }}{% endblock %}
 {% block content %}
 {% set chip = {'todo': '', 'done': 'ok', 'skipped': 'info', 'attention': 'bad'} %}
-<p class="eyebrow">{{ {'month': 'Monthly', 'quarter': 'Quarterly', 'year': 'Year-end'}[ov.mode] }} check-in{% if ov.short %} · catching up{% endif %}</p>
+<p class="eyebrow">{{ {'month': 'Monthly', 'quarter': 'Quarterly', 'year': 'Year-end'}[ov.mode] }} check-in · {{ words.checkin_eyebrow }}{% if ov.short %} · catching up{% endif %}</p>
 <h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">{{ month_name(ov.month) }}</h1>
 <p class="muted" style="max-width:80ch">{% if ov.short %}An earlier month, so a short form: its files, clean books and balances. The full sit-down, with the review, is for {{ month_name(latest) }}.{% else %}Where the household stands, what to adjust, and when you are done. Each step opens here; work through them in order, or come back to any later: the page remembers. <a href="https://github.com/JKBeeman92/household-ledger/blob/main/docs/CHECK-IN.md">How to sit down with it</a>.{% endif %}{% if ov.mode != 'month' and not ov.short %} The {{ ov.mode }}'s own steps arrive in later releases.{% endif %}</p>
 {% if ov.missing %}<div class="panel" id="catch-up" style="border-left:3px solid var(--warning)">
@@ -27,7 +27,7 @@
 </ol>
 {% if not ov.done %}<form method="post" action="/checkin/{{ ov.month }}/complete" class="panel" id="checkin-complete">{{ csrf_field(request) }}
   <p style="margin:0 0 var(--space-2)">{% if ov.can_complete %}Every step is done or skipped.{% else %}{{ ov.to_do }} step{{ '' if ov.to_do == 1 else 's' }} still to do.{% endif %}</p>
-  <button class="btn primary" type="submit" {% if not ov.can_complete %}disabled aria-disabled="true"{% endif %}>Done</button>
+  <button class="btn primary" type="submit" {% if not ov.can_complete %}disabled aria-disabled="true"{% endif %}>Finish the check-in</button>
   <span class="muted">records who and when{% if not ov.short %}, and tells your webhook{% endif %}</span>
 </form>{% endif %}
 <script nonce="{{ csp_nonce(request) }}">

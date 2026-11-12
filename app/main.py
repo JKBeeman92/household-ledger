@@ -5,6 +5,7 @@ import logging
 import secrets
 from contextlib import asynccontextmanager
 
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -76,6 +77,18 @@ async def csrf_rejected(request: Request, exc: csrf.CsrfError):
     flash(request, msg, "bad")
     resp = render(request, "csrf_error.html", current_user(request))
     resp.status_code = 403
+    return resp
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_error(request: Request, exc: StarletteHTTPException):
+    """A mistyped or stale link gets a page with the header and a way back; API clients keep their JSON (docs/DESIGN.md, DS-WORD-4)."""
+    wants_page = "text/html" in request.headers.get("accept", "") and not request.url.path.startswith(("/api/", "/static/", "/brand/", MCP_PATH))
+    if exc.status_code != 404 or not wants_page or bearer(request) is not None:
+        return JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=getattr(exc, "headers", None))
+    detail = "" if exc.detail in (None, "Not Found") else str(exc.detail).rstrip(".") + "."
+    resp = render(request, "not_found.html", current_user(request), detail=detail)
+    resp.status_code = 404
     return resp
 
 

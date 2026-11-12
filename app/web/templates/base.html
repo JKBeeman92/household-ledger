@@ -15,6 +15,7 @@
 {% block head %}{% endblock %}
 </head>
 <body>
+<a class="skip" href="#main">Skip to the page</a>
 <div class="shell">
   <header class="topbar">
     <a class="wordmark" href="/"><img class="mark-day" src="/brand/mark-small.svg" alt=""><img class="mark-night" src="/brand/mark-small-dark.svg" alt=""> {{ words.name }}</a>
@@ -22,7 +23,7 @@
     {# administration sits apart from the monthly work, at the right (docs/DESIGN.md, DS-NAV-2) #}
     <div class="admin">
       {% if user and user.is_editor %}<a class="btn" href="/settings" {% if active == 'settings' %}aria-current="page"{% endif %}>{{ glyph('settings') }} Settings</a>{% endif %}
-      <button type="button" class="btn" id="theme-toggle" aria-label="Switch between day and night" title="Switch between day and night"><span class="sun">{{ glyph('day') }} Day</span><span class="moon">{{ glyph('night') }} Night</span></button>
+      <button type="button" class="btn" id="theme-toggle" aria-label="Switch to day mode"><span class="sun">{{ glyph('day') }} Day</span><span class="moon">{{ glyph('night') }} Night</span></button>
       {% if user %}<a class="btn" href="/logout" title="{{ user.email }}">{{ glyph('sign-out') }} Sign out</a>{% endif %}
     </div>
     <nav aria-label="Pages">
@@ -38,7 +39,9 @@
     <form method="post" action="/rebuild" class="rebuild-banner">{{ csrf_field(request) }}<input type="hidden" name="next" value="{{ request.url.path }}" data-here><span><strong>Settings changed since the last rebuild.</strong>
     The dashboard still shows the old figures.</span> <button class="btn primary" type="submit">Rebuild now</button></form></div>{% endif %}
   {% with flashes = get_flashes() %}{% for f in flashes %}<div class="flash {{ f.kind }}">{{ f.text }}</div>{% endfor %}{% endwith %}
+  <main id="main" tabindex="-1">
   {% block content %}{% endblock %}
+  </main>
   <p class="foot">{{ household.name }} · {{ words.name }} · built from your budget tool's exports. {{ words.footer }}</p>
 </div>
 <script nonce="{{ csp_nonce(request) }}">
@@ -47,18 +50,23 @@
     const next = cur === 'light' ? 'dark' : 'light';
     if (next === 'light') document.documentElement.setAttribute('data-theme', 'light'); else document.documentElement.removeAttribute('data-theme');
     try { localStorage.setItem('theme', next); } catch (e) {}
+    nameToggle();
   });
+  // the switch names the mode it will change to, to a screen reader as well as to the eye (DS-NAV-3)
+  function nameToggle() { document.getElementById('theme-toggle').setAttribute('aria-label', document.documentElement.getAttribute('data-theme') === 'light' ? 'Switch to night mode' : 'Switch to day mode'); }
+  nameToggle();
   // horizontal scrollers say where more is hidden (CSS fades that edge)
   const more = (el) => { const l = el.scrollLeft > 4, r = el.scrollWidth - el.clientWidth - el.scrollLeft > 4; if (l || r) el.dataset.more = l && r ? 'both' : l ? 'start' : 'end'; else delete el.dataset.more; };
   const scrollers = () => document.querySelectorAll('.topbar nav, #dash-root .tabs');
-  addEventListener('load', () => scrollers().forEach((el) => { more(el); el.addEventListener('scroll', () => more(el), { passive: true }); }));
+  addEventListener('load', () => { const cur = document.querySelector('.topbar nav [aria-current=page]'); if (cur) cur.scrollIntoView({ inline: 'nearest', block: 'nearest' });   // on a phone the current tab is never off-screen (DS-NAV-1)
+    scrollers().forEach((el) => { more(el); el.addEventListener('scroll', () => more(el), { passive: true }); }); });
   addEventListener('resize', () => scrollers().forEach(more));
   // a form that returns where it was sent from keeps the URL's hash too (Settings tabs), which the server never sees
   document.addEventListener('submit', (e) => { const n = e.target.querySelector('input[name=next][data-here]'); if (n) n.value = location.pathname + location.search + location.hash; });
   // forms that need a second thought carry data-confirm (inline handlers are blocked by the CSP)
   document.addEventListener('submit', (e) => { const m = e.target.getAttribute('data-confirm'); if (m && !confirm(m)) e.preventDefault(); });
   // honour the OS when no choice is stored
-  matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => { try { if (localStorage.getItem('theme')) return; } catch (x) {} if (e.matches) document.documentElement.setAttribute('data-theme', 'light'); else document.documentElement.removeAttribute('data-theme'); });
+  matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => { try { if (localStorage.getItem('theme')) return; } catch (x) {} if (e.matches) document.documentElement.setAttribute('data-theme', 'light'); else document.documentElement.removeAttribute('data-theme'); nameToggle(); });
 </script>
 {% block scripts %}{% endblock %}
 </body>

@@ -87,3 +87,16 @@ def test_the_shell_draws_the_system(client):
     sprite = client.get("/brand/glyphs.svg")
     assert sprite.status_code == 200 and sprite.headers["content-type"].startswith("image/svg+xml") and sprite.text.count("<symbol") == len(GLYPH_IDS)
     assert client.get("/brand/mark-small-dark.svg").status_code == 200 and client.get("/brand/words.json").status_code == 200
+
+
+def test_a_page_that_does_not_exist_keeps_the_header_and_a_way_back(client):
+    page = client.get("/no-such-page", headers={"accept": "text/html"})   # DS-ERROR-1
+    assert page.status_code == 404 and "That page does not exist" in page.text and 'aria-label="Pages"' in page.text and 'href="/"' in page.text
+    api = client.get("/no-such-page", headers={"accept": "application/json"})
+    assert api.status_code == 404 and api.json() == {"detail": "Not Found"}
+
+
+def test_every_page_has_a_main_landmark_and_a_skip_link_first(client):
+    page = client.get("/").text   # DS-A11Y-4
+    assert page.count("<main") == 1 and page.index('class="skip"') < page.index('class="topbar"')
+    assert "Switch to day mode" in page and "Switch between day and night" not in page   # DS-NAV-3

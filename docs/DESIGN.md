@@ -45,15 +45,17 @@ reaching a waypoint, and a chart border.
 
 - **DS-WORD-1** A control says plainly what it does: *Check-in*, *Close a month*, *Rebuild*, *Reconciled*. No kit may change
   the words a person acts on, and no nautical term replaces a plain one on a control, a heading or an error.
-- **DS-WORD-2** Flourish belongs to the kit and lives in `words.json`: the name, the tagline, the eyebrow above a heading, the
-  sign-in line, the footer. A page reads them from `words`; it never types them.
+- **DS-WORD-2** Flourish belongs to the kit and lives in `words.json`. The keys are `name`, `tagline`, `dashboard_eyebrow`,
+  `checkin_eyebrow`, `login_line` and `footer`, and there are no others: the eyebrows of working pages (Close a month, Settings,
+  Reviews) are plain and typed. A page reads the six from `words`; it never types them.
 - **DS-WORD-3** The same thing has the same name on every page. *Budget month*, *check-in*, *close a month*, *review*,
   *rebuild* and *reconciled* are fixed terms.
 - **DS-WORD-4** Sentences are short and say what happened and what to do next. An error names the cause and the remedy; it
   does not apologise. No exclamation marks.
 - **DS-WORD-5** Sentence case everywhere. Capitals with letter-spacing are for eyebrows and stamps only.
 - **DS-WORD-6** Money is written with the household's currency and locale (`fmt`); dates as `1 Nov 2026`; a month as
-  `November 2026`. A missing figure is an em dash with the reason nearby, never a zero.
+  `November 2026` in a heading and `Nov 2026` in a table or on a chart. A missing figure is an em dash with the reason nearby,
+  never a zero. What a person types into a field stays a plain number; what the page shows them is formatted.
 
 ## 3. Foundations (the kit contract)
 
@@ -109,7 +111,7 @@ Spacing `--space-1 2 3 4 6 8 12 16` (4 to 64 px). Radius `--radius-sm md lg full
 - **DS-MOTION-1** Motion shows where something came from, and lasts no longer than `--dur-slow`. Nothing moves under
   `prefers-reduced-motion`.
 - **DS-LAYOUT-1** Every page works at 390 px with no sideways scroll of the page; a wide table scrolls inside its own box.
-- **DS-LAYOUT-2** Every control is at least 44 px tall on a phone.
+- **DS-LAYOUT-2** Every control is at least 44 px tall on a phone. A link inside a sentence is exempt; a link that stands alone is not.
 
 ### Glyphs
 
@@ -148,10 +150,13 @@ out falls back. Ids: `dashboard check-in close-month reviews settings day night 
 
 - **DS-BTN-1** A button has a visible border and a ground. One primary button (`.btn.primary`, the accent) to a view; the
   rest are plain.
-- **DS-BTN-2** A button's label is a verb and its object: *Close the month*, not *Submit*.
+- **DS-BTN-2** A button's label is a verb and its object: *Close the month*, not *Submit*. In a table, where the row is the
+  object, a bare verb (*Edit*, *Delete*) is allowed if the button's accessible name adds the row (*Edit Groceries*). A button
+  never shares its word with a status: the stamp says *Done*, the button says *Finish the check-in*.
 - **DS-FORM-1** A field has a visible label above it, a shoal ground and a strong border. An error sits under its field in
   words, and the field is marked `aria-invalid`.
-- **DS-FOCUS-1** Keyboard focus is a 2 px `--focus` ring, 2 px off the control, on every control without exception.
+- **DS-FOCUS-1** Keyboard focus is a 2 px `--focus` ring, 2 px off the control, on every control without exception: buttons,
+  fields, links, the wordmark and disclosure summaries. A box that scrolls keeps room for the ring of what is inside it.
 
 ### Figures, tables, status
 
@@ -185,6 +190,11 @@ WCAG 2.1 AA is the floor (DS-COLOR-3, DS-COLOR-4, DS-FOCUS-1, DS-LAYOUT-2, DS-GL
 - **DS-A11Y-1** Everything works from the keyboard, in an order that follows the page.
 - **DS-A11Y-2** Every control has a name that says what it does, without its neighbours.
 - **DS-A11Y-3** Both modes are designed. Night is not day inverted.
+- **DS-A11Y-4** Every page has one `<main>`, and a skip link to it is the first thing the keyboard reaches.
+- **DS-A11Y-5** After an action in a list (save, cancel, delete), focus stays with the row or its neighbour; it never falls
+  to the top of the page.
+- **DS-ERROR-1** A page that cannot be shown (not found, not allowed, an expired form) keeps the header, says what happened
+  in plain words, and offers the way back.
 
 ## 7. What a kit supplies
 
@@ -212,3 +222,15 @@ and the critique reports them only on the surfaces a change touches.
 | Templates | DS-SPACE-1 | About 135 inline `style` attributes, most of them margins |
 | Check-in, dashboard | DS-SHEET-4 | No page turn between months |
 | Dashboard tiles | DS-GLYPH-1 | The figure glyphs (`savings-rate`, `net-worth`, `emergency-fund`) are drawn but not yet placed |
+| Check-in steps, Close a month, Reviews, Sources, Tokens, Webhooks | DS-WORD-6 | Dates as ISO strings and amounts as bare numbers; the server has no money, date or month formatter yet |
+| Dashboard (Leaks, CPI tables) | DS-WORD-6 | Months as ISO strings in three places |
+| Dashboard (catch-all envelopes, radar charts) | DS-CHART-5 | No table of their figures |
+| Dashboard | DS-COLOR-2 | `--accent-2` marks card headings, summaries and definitions, which are not destinations |
+| Dashboard gauges | DS-STATUS-1 | Verdicts are round pills with a dot, not stamps |
+| Dashboard, Reviews list, Settings | DS-SHEET-1, 2 | Cards and lists lie straight on the paper; one sheet is nested in another |
+| Reviews, Close a month | DS-WORD-3 | One act is named five ways ("Write the month-close review", "Generate review", "Write one", "Write again", "Send and generate") |
+| Check-in | DS-BTN-2 | "Reopen", "Undo skip" and "Catch up" lack their objects; the net-worth line "you did / happened" needs a gloss |
+| Check-in, Balances step | DS-FIRST-1 | A long method paragraph stands above the fields |
+| Settings, Reviews | DS-FORM-1, DS-EMPTY-1 | Filter boxes have no visible label; empty states link in prose where a button should be |
+| Settings tables | DS-TYPE-3 | Number columns are left-aligned (`.num` exists; the columns do not yet use it) |
+| Close a month, Settings | DS-BTN-1 | More than one primary button in a view; which is primary is the owner's choice |

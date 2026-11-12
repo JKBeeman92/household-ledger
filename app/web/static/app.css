@@ -17,6 +17,11 @@ html, body { margin: 0; background: var(--surface-100); color: var(--ink); font-
 /* the page is a chart table: a faint graticule under everything (a kit sets --graticule: transparent to leave the paper plain) */
 body { background-image: linear-gradient(var(--graticule) 1px, transparent 1px), linear-gradient(90deg, var(--graticule) 1px, transparent 1px); background-size: 44px 44px; }
 h1, h2, h3 { font-family: var(--font-display); font-weight: var(--weight-heading); }
+h1 { font-size: var(--text-title); }
+/* a skip link, first in the page: off-screen until it has the keyboard (DS-A11Y-4) */
+.skip { position: absolute; left: -999px; top: var(--space-2); z-index: 100; background: var(--surface-200); color: var(--ink); border: 2px solid var(--ink); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); }
+.skip:focus { left: var(--space-2); }
+main:focus { outline: none; }
 .glyph { width: 1.15em; height: 1.15em; flex: none; vertical-align: -.2em; }
 /* the mark has a day cut and a night cut; night is the default mode, as in the theme */
 .mark-day { display: none !important; } :root[data-theme="light"] .mark-day { display: inline-block !important; } :root[data-theme="light"] .mark-night { display: none !important; }
@@ -24,23 +29,23 @@ a { color: var(--accent); }
 .shell { max-width: 1280px; margin: 0 auto; padding-block: var(--space-4) var(--space-12); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 /* Header: the name at the left, administration at the right, and the monthly pages as index tabs standing on a ruled line. */
 .topbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); padding: var(--space-3) 0 0; border-bottom: 2px solid var(--ink); margin-bottom: var(--space-6); }
-.topbar .household { font-family: var(--font-display); font-style: italic; color: var(--ink-muted); font-size: var(--text-small); }
+.topbar .household { color: var(--ink-muted); font-size: var(--text-small); }
 .topbar .admin { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-left: auto; }
 .topbar .admin .btn { display: inline-flex; align-items: center; gap: var(--space-1); }
 .topbar .admin a[aria-current="page"] { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
 .topbar .wordmark { font-family: var(--font-display); font-weight: 700; letter-spacing: .01em; font-size: var(--text-heading); color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: var(--space-2); }
 .topbar .wordmark img { width: 30px; height: 30px; }
-.topbar nav { display: flex; gap: 3px; flex-wrap: wrap; width: 100%; padding-left: var(--space-3); margin-top: var(--space-2); }
-.btn { font: inherit; font-size: var(--text-small); font-weight: var(--weight-strong); text-decoration: none; color: var(--ink); border: 1.5px solid var(--line-strong); border-radius: var(--radius-sm); padding: 6px 12px; background: var(--surface-200); cursor: pointer; }
+.topbar nav { display: flex; gap: var(--space-1); flex-wrap: wrap; width: 100%; padding-left: var(--space-3); margin-top: var(--space-2); }
+.btn { font: inherit; font-size: var(--text-small); font-weight: var(--weight-strong); text-decoration: none; color: var(--ink); border: 1.5px solid var(--line-strong); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); background: var(--surface-200); cursor: pointer; }
 .btn:hover { background: var(--surface-300); border-color: var(--ink); }
-.topbar nav a { font-size: var(--text-small); text-decoration: none; color: var(--ink); display: inline-flex; align-items: center; gap: var(--space-1); background: var(--surface-300); border: 1px solid var(--line-strong); border-bottom: 0; border-radius: calc(var(--radius-sm) + 3px) calc(var(--radius-sm) + 3px) 0 0; padding: 6px 12px; }
+.topbar nav a { font-size: var(--text-small); text-decoration: none; color: var(--ink); display: inline-flex; align-items: center; gap: var(--space-1); background: var(--surface-300); border: 1px solid var(--line-strong); border-bottom: 0; border-radius: var(--radius-sm) var(--radius-sm) 0 0; padding: var(--space-2) var(--space-3); }
 .topbar nav a:hover { background: var(--surface-200); }
 /* the current page's tab is cut from the page itself: it joins the paper below the ruled line */
-.topbar nav a[aria-current="page"] { background: var(--surface-100); font-weight: 700; border: 2px solid var(--ink); border-bottom: 0; padding-bottom: 8px; margin-bottom: -2px; }
-.topbar nav a[aria-current="page"] .glyph { color: var(--accent); }
+.topbar nav a[aria-current="page"] { background: var(--surface-100); font-weight: 700; border: 2px solid var(--ink); border-bottom: 0; padding-bottom: calc(var(--space-2) + 2px); margin-bottom: -2px; }
 .btn.primary { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
 .btn.primary:hover { background: var(--accent-hover); }
-.btn:focus-visible, .topbar nav a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* one ring for every control, links and disclosure summaries included (DS-FOCUS-1) */
+a:focus-visible, button:focus-visible, summary:focus-visible, .btn:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .muted { color: var(--ink-muted); }
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 /* A sheet: square, ruled twice like a chart's border (DS-SHEET-1). */
@@ -94,9 +99,11 @@ table.edit [aria-invalid=true] { border-color: var(--danger); }
 @media (max-width: 820px) {
   .topbar { flex-wrap: wrap; row-gap: var(--space-2); }
   .topbar .wordmark { min-height: 44px; }
-  .topbar nav { margin-left: 0; padding-left: 0; width: 100%; flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: var(--space-1); -webkit-overflow-scrolling: touch; }
+  .topbar nav { margin-left: 0; padding: var(--space-1) var(--space-1) 0; box-sizing: border-box; width: 100%; flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity;   /* the padding keeps a tab's focus ring inside the scroller */ -webkit-overflow-scrolling: touch; }
   .topbar nav a, .btn { min-height: 44px; min-width: 44px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); white-space: nowrap; scroll-snap-align: start; flex: none; }
-  .topbar .household { display: none; }
+  .topbar .household { font-size: var(--text-caption); }
+  .linkrow a, .flash a, th .sortbtn { display: inline-flex; align-items: center; min-height: 44px; }
+  input[type=search] { min-height: 44px; }
   input[type=file], input[type=text], input[type=number], input[type=month], input[type=url], input[type=password], input[type=email], input:not([type]), select { min-height: 44px; }
   input[type=file]::file-selector-button { min-height: 32px; }
   .panel { padding: var(--space-4); }
@@ -191,9 +198,9 @@ table.edit [aria-invalid=true] { border-color: var(--danger); }
 .formgrid label, .panel > label { font-weight: 600; } .formgrid input, .panel > label input { margin-top: var(--space-1); font-weight: 400; }
 .flowlist { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-1) var(--space-3); margin: var(--space-2) 0; }
 .flowlist dt, .flowlist dd { margin: 0; }
-table.edit .hint { font-size: .85em; color: var(--ink-muted); margin-top: var(--space-1); max-width: 22rem; white-space: normal; }
+table.edit .hint { font-size: var(--text-caption); color: var(--ink-muted); margin-top: var(--space-1); max-width: 22rem; white-space: normal; }
 /* Month-end balances (issue 143): the input keeps room for a six-figure balance at phone width; the explanation wraps under the name */
-table.balances-form .hint { font-size: .85em; margin-top: var(--space-1); white-space: normal; }
+table.balances-form .hint { font-size: var(--text-caption); margin-top: var(--space-1); white-space: normal; }
 table.balances-form input { width: 9.5rem; max-width: 100%; }
 @media (max-width: 600px) { table.balances-form input { width: 7.5rem; } table.balances-form td:first-child { min-width: 9rem; } }
 table.edit tr.saved td { background: color-mix(in srgb, var(--success) 14%, transparent); transition: background-color calc(var(--dur-slow) * 2) var(--ease); }
@@ -202,7 +209,7 @@ th .sortbtn { all: unset; cursor: pointer; font: inherit; color: inherit; } th .
 th[aria-sort="ascending"] .sortbtn::after { content: " ▲"; } th[aria-sort="descending"] .sortbtn::after { content: " ▼"; }
 /* Status chip: the one-word answer before the detail (Close a month's build status). */
 /* A stamp: the word is the status, the colour only repeats it (DS-STATUS-1). */
-.status-chip { display: inline-flex; align-items: center; border: 3px double currentColor; border-radius: var(--radius-sm); padding: 1px 9px; margin-right: var(--space-2); font-weight: 700; font-size: .78em; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--info); background: var(--surface-200); }
+.status-chip { display: inline-flex; align-items: center; border: 3px double currentColor; border-radius: var(--radius-sm); padding: 0 var(--space-2); margin-right: var(--space-2); font-weight: 700; font-size: var(--text-caption); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--info); background: var(--surface-200); }
 .status-chip.ok { color: var(--success); } .status-chip.warn { color: var(--warning); } .status-chip.bad { color: var(--danger); }
 .review-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
 .review-list li { padding: var(--space-3) var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-200); }
@@ -222,7 +229,7 @@ dl.dti dt { font-weight: 600; } dl.dti dd { margin: 0; } dl.dti .v { font-weight
 .checkin-steps { list-style: none; margin: var(--space-4) 0; padding: 0; display: grid; gap: var(--space-3); }
 .checkin-steps details.step > summary { cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .checkin-steps .n { display: inline-grid; place-items: center; width: 1.8em; height: 1.8em; border-radius: 50%; border: 1px solid var(--line); font-variant-numeric: tabular-nums; }
-.checkin-steps .step-summary { flex-basis: 100%; font-size: .9em; }
+.checkin-steps .step-summary { flex-basis: 100%; font-size: var(--text-small); }
 .checkin-steps .step-body { margin-top: var(--space-3); } .checkin-steps .step-body .panel { margin-top: 0 !important; padding: 0; border: 0; box-shadow: none; background: none; }
 .checkin-steps .inline-actions { margin-top: var(--space-2); }
 
@@ -234,3 +241,4 @@ dl.dti dt { font-weight: 600; } dl.dti dd { margin: 0; } dl.dti .v { font-weight
 #dash-root.hl .tabs button, #dash-root.hl .seg, #dash-root.hl select { border-color: var(--line-strong); border-radius: var(--radius-sm); }
 #dash-root.hl .seg button:focus-visible, #dash-root.hl .tabs button:focus-visible, #dash-root.hl select:focus-visible, #dash-root.hl details.how summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 #dash-root.hl th { border-bottom: 1.5px solid var(--ink); }
+td.num, th.num { text-align: right !important; font-variant-numeric: tabular-nums; }   /* figures compared down a column (DS-TYPE-3) */
