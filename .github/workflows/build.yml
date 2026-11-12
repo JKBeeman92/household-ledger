@@ -59,6 +59,9 @@ jobs:
           cache: pip
           cache-dependency-path: requirements*.txt
       - run: pip install -r requirements-dev.txt
+      # The backup test dumps and restores with the tools of the server's own major (postgres:16 above). The runner image ships a
+      # newer client, whose pg_restore sends settings a 16 server refuses, so install the matching one.
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-16
       - run: python -m pytest -q
 
   image:

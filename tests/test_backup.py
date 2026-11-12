@@ -17,8 +17,24 @@ def script(backups: Path) -> str:
     return service()["command"][0].replace("$$", "$").replace("/backups", str(backups))
 
 
+_major: list[int] = []
+
+
+def server_major() -> int | None:
+    """The test server's major version. A dump is restored with the tools of the server's own major, as the compose backup service
+    does (postgres:16 beside a postgres:16 database): a newer pg_restore sends settings an older server does not know."""
+    if not _major:
+        try:
+            with psycopg.connect(os.environ["DATABASE_URL"]) as c:
+                _major.append(int(c.execute("SHOW server_version_num").fetchone()[0]) // 10000)
+        except (KeyError, psycopg.Error):
+            _major.append(0)
+    return _major[0] or None
+
+
 def pg_bin(name: str) -> str:
-    found = shutil.which(name) or next(iter(sorted(glob.glob(f"/usr/lib/postgresql/*/bin/{name}"))), None)
+    same = f"/usr/lib/postgresql/{server_major()}/bin/{name}"
+    found = (same if os.path.exists(same) else None) or shutil.which(name) or next(iter(sorted(glob.glob(f"/usr/lib/postgresql/*/bin/{name}"))), None)
     if not found:
         pytest.skip(f"{name} not installed")
     return found
