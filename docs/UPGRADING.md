@@ -25,6 +25,8 @@ Migrations run at start; read this list before upgrading.
   gross) on Settings → Goals. Housing counts the `goal_housing_categories` rule, so Utilities are in it unless you change that rule.
   For agents: MCP gains the `debt_to_income` dataset, and the review's data gains `debt_to_income`.
 - **Net worth** (#146): no migration. It appears once accounts have balances (above). MCP and the review's data gain `net_worth`.
+- **Emergency-fund coverage** (#150): no migration. Cash and savings accounts count by default; switch one off (Emergency no) on
+  Settings → Accounts. Add `emergency_months` on Settings → Goals for a target. MCP and the review's data gain `emergency_fund`.
 
 ## 0.5.0
 

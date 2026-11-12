@@ -58,7 +58,7 @@ PAYCHECK_ITEMS_DEFAULT = ["Paycheck"]   # role default: build_ledger.RULES["payc
 
 
 def build_context(conn, month: str) -> dict:
-    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals','debt_to_income','net_worth')").fetchall()}
+    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals','debt_to_income','net_worth','emergency_fund')").fetchall()}
     monthly = {r["m"]: r for r in ds.get("monthly", [])}
     months = sorted(monthly)
     if month not in monthly:
@@ -87,6 +87,7 @@ def build_context(conn, month: str) -> dict:
         **({"balances": balances_context(ds.get("balance_totals", []), month, prev)} if ds.get("balance_totals") else {}),
         **({"debt_to_income": dti_context(ds.get("debt_to_income", []), goals, month)} if ds.get("debt_to_income") else {}),
         **({"net_worth": nw_context(ds.get("net_worth", []), month)} if any(r["m"] == month for r in ds.get("net_worth", [])) else {}),
+        **({"emergency_fund": ef_context(ds.get("emergency_fund", []), goals, month)} if any(r["m"] == month and r["months"] is not None for r in ds.get("emergency_fund", [])) else {}),
         "continuity": continuity(conn, month, prev),
     }
 
@@ -230,3 +231,13 @@ def nw_context(rows: list[dict], month: str) -> dict:
     keep = ("assets", "debts", "net_worth", "net_worth_ex_home", "change", "you_did", "happened", "added", "closed", "estimated",
             "change_12", "you_did_12", "happened_12")
     return {"note": NW_NOTE, **{k: r[k] for k in keep}}
+
+
+EF_NOTE = ("Emergency fund (#150): months of outgo (living spend plus debt payments, averaged over the trailing twelve months) that the "
+           "accounts marked emergency would cover. target is the household's own emergency_months, when set.")
+
+
+def ef_context(rows: list[dict], goals: dict, month: str) -> dict:
+    r = next(x for x in rows if x["m"] == month)
+    t = goals.get("emergency_months", {}).get("value")
+    return {"note": EF_NOTE, **{k: r[k] for k in ("months", "change", "emergency", "outgo", "outgo_months")}, "target": t}

@@ -56,6 +56,13 @@
   "note": "Rent, utilities and any mortgage over gross."
  },
  {
+  "key": "emergency_months",
+  "value": 6,
+  "unit": "months",
+  "label": "Emergency fund target",
+  "note": "Months of outgo the emergency savings should cover."
+ },
+ {
   "key": "investing_per_paycheck",
   "value": 150,
   "unit": "usd",

@@ -398,6 +398,15 @@ line (dashed where a debt is estimated). A twelve-month change needs a balance f
 as balances history. The `net_worth` dataset carries the totals and the split, never an account's name, and reaches the review and MCP.
 Investment returns, allocation and performance are out of scope (What this is, and isn't).
 
+## Emergency fund
+
+"If income stopped tomorrow, how many months could we cover?" Coverage is the month-end balance of the asset accounts marked
+**Emergency** (Settings → Accounts; on by default for cash and savings, so a holiday fund can be switched off) divided by the average
+monthly outgo, living spend plus debt payments, over the trailing twelve budget months. Total outgo, not a bare-bones budget: it is the
+honest figure. The Last month tab gives it with its change since last month ("4.2 months (target 6)"), the Goals tab draws it month
+by month, and `emergency_months` on Settings → Goals sets the target. With no emergency account it shows "—" and says where to mark
+one. The `emergency_fund` dataset reaches the review and MCP.
+
 ## Debt-to-income
 
 "How much of what we earn is already spoken for by debt, and is that shrinking?" The Last month tab's **Debt against income** card
