@@ -486,6 +486,31 @@ null), `source` (`estimated` or `planned`) and `ref` (the account or event it co
 written to the life events. The check-in's **Coming up** step lists the next three months, the review reads the same months with
 public labels, and MCP serves `coming_up` with `public_label` as its label and no `ref`.
 
+## Decisions
+
+"Last month we said we'd cut eating out to $400 and put $200 extra on the car loan. Did we?" The check-in's **Next month** step writes
+down what the household decides, up to three a month as a habit; the next check-in's **Last month's decisions** step asks how each
+went. A decision can say what it is about and how much, so the app checks it against the month's budget and says so ("Eating Out was
+$372: kept"):
+
+| Kind | Target | Kept when | Partly when |
+|---|---|---|---|
+| Spend cap | a category or item, a most | spent ≤ the most | within `decision_partly_over` (10%) of it |
+| Save | an item or category, a least | put in ≥ the least | ≥ `decision_partly_share` (half) of it |
+| Extra payment | a debt, an extra | paid ≥ the usual payment + the extra | ≥ half the extra |
+| Plan change | a category or item, a new plan | next month's planned figure within $1 of it | moved at least halfway |
+
+The household's verdict is the one that counts. A decision can span months (until a month, or until a debt is paid off) and is
+checked each month it is in force; one that ends can be carried on. A month whose files are not loaded yet is *waiting*, never "not
+kept". The app's check and the figure it rested on are kept with each confirmation, so a later rebuild cannot change what was agreed.
+The Last month tab lists the decisions in force and the share kept over six months, without judgement.
+
+From the command line: `python -m app.admin decisions list|add|check|carry|remove` (see `--help`). The log travels in `settings.zip`
+as `decisions.json`. The review reads the decisions and verdicts (the household's own words, as with life events), and comments on
+them in place of its own earlier suggestion; a decision's note never leaves the install. The Suggested plan the Last month tab shows
+is now worked out in the pipeline (`plan_suggestions`), so the tab and the check-in cannot disagree. Renaming a category, an item or
+an account updates the decisions that name it.
+
 ## Try it with the sample household
 
 `examples/sample-household/` is a synthetic household (two earners, 18 budget months, a student loan, a transfer pair, three-paycheck

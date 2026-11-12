@@ -32,6 +32,7 @@ def finish_latest(client, month="2025-04"):
         conn.execute("UPDATE goals SET value=coalesce(value, 1), note='', confirmed_at=now()"); conn.commit()
     client.post(f"/checkin/{month}/steps/standing/view")
     client.post(f"/checkin/{month}/steps/coming_up/view")
+    client.post(f"/checkin/{month}/steps/next/ack")   # no changes for next month (#155)
 
 
 def test_modes_follow_the_year_start_rule(client, reset_db):
@@ -43,7 +44,7 @@ def test_modes_follow_the_year_start_rule(client, reset_db):
 
 def test_steps_registry_and_statuses(client, loaded):
     st = status("2025-04")
-    assert list(st) == ["files", "books", "balances", "goals", "standing", "coming_up", "review"]   # 4 and 9 arrive with #155
+    assert list(st) == ["files", "books", "balances", "goals", "standing", "coming_up", "review", "next"]   # 4 (decisions) only once one is in force
     assert st["files"] == "done" and st["books"] == "done" and st["balances"] == "todo" and st["standing"] == "todo" and st["coming_up"] == "todo"
     assert st["review"] == "skipped"   # no review provider: optional
     page = client.get("/checkin/2025-04").text

@@ -251,6 +251,13 @@ def export_for_pipeline(conn: psycopg.Connection, wd: Path) -> None:
         with open(wd / "balances.csv", "w", newline="") as out:
             w = csv.writer(out); w.writerow(balances.BALANCE_COLUMNS)
             for r in cur: w.writerow([r["account"], r["budget_month"], f"{r['amount']:.2f}", r["source"]])
+        # decisions (#155): read by make_budget_items.py through pipeline/decisions.py; the private note stays behind
+        cur.execute("SELECT id, made_in, text, kind, target, until, person, status FROM decisions ORDER BY made_in, id")
+        decisions = [dict(r) for r in cur]
+        cur.execute("SELECT decision_id, month, verdict, auto_verdict, auto_figure FROM decision_checks ORDER BY decision_id, month")
+        checks = [dict(r, auto_figure=float(r["auto_figure"]) if r["auto_figure"] is not None else None) for r in cur]
+        with open(wd / "decisions.json", "w") as out:
+            json.dump({"decisions": decisions, "checks": checks}, out)
         cur.execute("SELECT value FROM settings WHERE key='rules'")
         row = cur.fetchone()
     with open(wd / "rules.json", "w") as out:
@@ -564,6 +571,16 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
             for c in json.loads(_read(seed_dir / "checkins.json")):
                 cur.execute("INSERT INTO checkins (month, mode, steps, completed_at, completed_by, reopened_at) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
                             (c["month"], c.get("mode") or "month", json.dumps(c.get("steps") or {}), c.get("completed_at"), c.get("completed_by"), c.get("reopened_at")))
+        cur.execute("SELECT count(*) FROM decisions")
+        if cur.fetchone()[0] == 0 and (seed_dir / "decisions.json").exists():   # the decisions log and its checks (#155), from settings.zip
+            for d in json.loads(_read(seed_dir / "decisions.json")):
+                cur.execute("INSERT INTO decisions (made_in, text, kind, target, until, person, status, note) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                            (d["made_in"], d["text"], d.get("kind") or "other", json.dumps(d["target"]) if d.get("target") else None, d.get("until"),
+                             d.get("person"), d.get("status") or "open", d.get("note") or ""))
+                did = cur.fetchone()[0]
+                for c in d.get("checks") or []:
+                    cur.execute("INSERT INTO decision_checks (decision_id, month, verdict, auto_verdict, auto_figure) VALUES (%s,%s,%s,%s,%s)",
+                                (did, c["month"], c.get("verdict"), c.get("auto_verdict") or "unknown", c.get("auto_figure")))
         cur.execute("SELECT count(*) FROM reviews")
         if cur.fetchone()[0] == 0 and (seed_dir / "review.json").exists():
             with open(seed_dir / "review.json") as f:

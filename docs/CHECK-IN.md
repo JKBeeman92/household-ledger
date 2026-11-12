@@ -18,17 +18,24 @@ Set aside half an hour, with last month's statements to hand (or your bank's app
    (last month's balance; for a debt, less the month's payment, plus interest at its APR). Saving a suggestion unchanged confirms it.
    The step appears once you have accounts (Settings → Accounts). Under each debt, its estimated payoff month at last month's
    payment and how it moved since last month's estimate (README, "Payoff estimates and coming up").
-4. **Goals to confirm.** The standing figures the app asks about each month (gross pay, pre-tax saving, and any goal whose note says
+4. **Last month's decisions.** What you decided at an earlier check-in, each with the app's own check where it names a category,
+   item or debt and an amount ("Eating Out was $372: kept"), and your verdict: kept, partly kept or not kept. A decision that ends
+   this month can be carried on to the next. A month whose files are not in yet shows as waiting, never as not kept. The step
+   appears once a decision is in force, and is part of the catch-up form, so each missed month is checked in turn.
+5. **Goals to confirm.** The standing figures the app asks about each month (gross pay, pre-tax saving, and any goal whose note says
    to ask). Confirm each as it is, or give the new value.
-5. **Where we stand.** The month in a few lines: what was kept, net worth and how it moved (what you did, what happened to you), the
+6. **Where we stand.** The month in a few lines: what was kept, net worth and how it moved (what you did, what happened to you), the
    emergency fund, debt-to-income. Read it together; opening it marks it read. The Last month tab has the detail.
-6. **Coming up.** What falls in the next three months: estimated payoffs and life events already dated, and, as they arrive, the
+7. **Coming up.** What falls in the next three months: estimated payoffs and life events already dated, and, as they arrive, the
    yearly bills and tax deadlines. Read it together; opening it marks it read.
-7. **Review.** If a review provider is set up, have the month read back to you, and read it. Without one, the step is skipped.
+8. **Review.** If a review provider is set up, have the month read back to you, and read it. Without one, the step is skipped.
 
 Then **Done**. The Last month tab says "October check-in: done 2 Nov", or how many steps are left.
 
-Coming in a later release, as its own steps: last month's decisions and up to three for next month (#155).
+9. **Next month.** Write down what to do differently next month: up to three is usually enough (a fourth is allowed, with a note).
+   A decision can name a category, a budget item or a debt and an amount, so the next check-in can check it: a spend cap, a save,
+   an extra payment (until a date, or until the debt is paid off), or a plan change, checked against next month's planned figure.
+   A row of the Suggested plan can be taken in one press. "No changes this month" completes the step too.
 
 ## Catching up
 

@@ -31,7 +31,8 @@ DATASETS = ("monthly", "yearly", "cat_month", "cat_year", "item_year", "budget_i
             "debt_to_income",   # #145
             "net_worth",   # #146: totals and the split, no account names
             "emergency_fund",   # #150
-            "coming_up")   # #144: served with public labels only (PUBLIC below); `payoff` names accounts and stays private
+            "coming_up",   # #144: served with public labels only (PUBLIC below); `payoff` names accounts and stays private
+            "decisions", "decision_summary", "plan_suggestions")   # #155: read only; a decision's private note is never in the dataset
 MAX_SECTIONS, MAX_HEADING, MAX_TEXT = 12, 200, 5000
 INSTRUCTIONS = ("Read-only access to a household's month-close figures (budget months, not calendar months): per-month and per-category "
                 "totals, envelopes planned vs spent, goals and the written month-close review. There are no transactions, merchants or notes. "

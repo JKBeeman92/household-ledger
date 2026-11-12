@@ -31,6 +31,10 @@
   <span class="muted">records who and when{% if not ov.short %}, and tells your webhook{% endif %}</span>
 </form>{% endif %}
 <script nonce="{{ csp_nonce(request) }}">
+// A save returns to its step (#step-<key>, DS-FLASH-1): open that step and put focus on it, on load and when the hash changes.
+const openHash = () => { const d = location.hash && document.getElementById(location.hash.slice(1)); if (!d || !d.matches('details.step')) return;
+  d.open = true; const s = d.querySelector('summary'); if (s) { s.setAttribute('tabindex', '-1'); s.focus({ preventScroll: true }); } d.scrollIntoView({ block: 'start' }); };
+openHash(); addEventListener('load', openHash); window.addEventListener('hashchange', openHash);   // again on load: the browser's own jump to the fragment comes after this script
 // A read-only step is read once it is opened: say so to the server, then the page shows it done on the next load.
 document.querySelectorAll('details.step[data-view]').forEach((d) => d.addEventListener('toggle', () => {
   if (!d.open || d.dataset.sent) return; d.dataset.sent = '1';

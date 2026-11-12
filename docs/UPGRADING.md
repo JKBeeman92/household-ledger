@@ -13,6 +13,12 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
 
 ## 0.7.0
 
+- **A decisions log** (#155, `0155_decisions.sql`): new tables only (`decisions`, `decision_checks`), so nothing existing changes and
+  there is nothing to do. The `renames` log also accepts account renames. The check-in gains two steps, Last month's decisions (4) and
+  Next month (9); `settings.zip` gains `decisions.json` (read back by the seed loader); `datasets.zip` and MCP gain `decisions`,
+  `decision_summary` and `plan_suggestions`; the review's data gains the household's decisions and verdicts, in place of last
+  month's own suggestion. Two new rules, `decision_partly_over` and `decision_partly_share`, have defaults.
+
 - **Payoff estimates and coming up** (#144): no migration, nothing to do. `datasets.zip` gains `payoff` and `coming_up`. For agents:
   MCP's `get_dataset` adds `coming_up` (labels name a debt by its type, never an account), and the month-close review's data gains
   `coming_up` for the next three months.

@@ -1,0 +1,27 @@
+{# Step 9: decisions for next month (#155). Context: c.made, c.suggestions (plan_suggestions rows), c.categories, c.item_names, c.debts,
+c.people, c.kinds, c.cap, c.next, c.acked #}
+<p class="muted">Write down up to {{ c.cap }} things to do differently in {{ c.next|month }}; the next check-in asks how each went. A target the app can check (a category, an amount) lets it say so itself.</p>
+<form method="post" action="/checkin/{{ month }}/decisions" class="decision-form">{{ csrf_field(request) }}
+  <p><label for="dec-text">What you decided</label><br><input id="dec-text" name="text" required maxlength="300" size="48" placeholder="Eating out under 400 a month"></p>
+  <p class="tools"><label for="dec-kind">Kind</label> <select id="dec-kind" name="kind">{% for k, w in c.kinds.items() %}<option value="{{ k }}">{{ w }}</option>{% endfor %}</select>
+    <label for="dec-what">About</label> <select id="dec-what" name="what"><option value="">(nothing the app can check)</option>
+      <optgroup label="Categories">{% for x in c.categories %}<option value="category:{{ x }}">{{ x }}</option>{% endfor %}</optgroup>
+      <optgroup label="Budget items">{% for x in c.item_names %}<option value="item:{{ x }}">{{ x }}</option>{% endfor %}</optgroup>
+      {% if c.debts %}<optgroup label="Debts">{% for x in c.debts %}<option value="debt:{{ x }}">{{ x }}</option>{% endfor %}</optgroup>{% endif %}</select>
+    <label for="dec-amount">Amount</label> <input id="dec-amount" name="amount" inputmode="decimal" size="8"></p>
+  <p class="tools"><label for="dec-until">In force until</label> <input id="dec-until" name="until" type="month" min="{{ c.next }}" value="{{ c.next }}">
+    {% if c.debts %}<label class="check"><input type="checkbox" name="until_payoff" value="1"> an extra payment: until the debt is paid off</label>{% endif %}
+    {% if c.people %}<label for="dec-person">Whose</label> <select id="dec-person" name="person"><option value="">(both of us)</option>{% for p in c.people %}<option>{{ p }}</option>{% endfor %}</select>{% endif %}</p>
+  <p><button class="btn" type="submit">Add the decision</button></p>
+</form>
+{% if not c.made and not c.acked %}<form method="post" action="/checkin/{{ month }}/steps/next/ack" class="inline-actions">{{ csrf_field(request) }}<button class="btn" type="submit">No changes this month</button></form>
+{% elif not c.made %}<p class="muted">No changes this month.</p>{% endif %}
+{% if c.suggestions %}<details class="listcount" {% if not c.made %}open{% endif %}><summary>{{ c.suggestions|length }} from the Suggested plan</summary>
+<p class="muted">The twelve-month average, rounded up to the next ten, where it differs from this month's plan. Adding one makes it a decision: next month's check-in compares the plan you set with it.</p>
+<ul class="suggest-list" data-list="unbounded">{% for s in c.suggestions %}<li><form method="post" action="/checkin/{{ month }}/decisions" class="inline">{{ csrf_field(request) }}
+  <input type="hidden" name="kind" value="plan_change"><input type="hidden" name="what" value="category:{{ s.category }}"><input type="hidden" name="amount" value="{{ s.suggest|plain }}">
+  <input type="hidden" name="text" value="Plan {{ s.category }} at {{ s.suggest|money }}">
+  {{ s.category }}: {{ s.planned|money }} to {{ s.suggest|money }}, {{ "down" if s.suggest < s.planned else "up" }} {{ (s.suggest - s.planned)|abs|money }} <button class="btn" type="submit">Add “Plan {{ s.category }} at {{ s.suggest|money }}”</button></form></li>{% endfor %}</ul></details>{% endif %}
+{% if c.made %}<p class="step-sub">For {{ c.next|month }}</p>
+<ul class="decision-list" data-list="unbounded">{% for d in c.made %}<li>{{ d.text }}{% if d.until %} <span class="muted">until {{ d.until|month }}</span>{% endif %}
+  <form method="post" action="/checkin/{{ month }}/decisions/{{ d.id }}/delete" class="inline">{{ csrf_field(request) }}<input type="hidden" name="step" value="next"><button class="btn" type="submit" aria-label="Remove this decision: {{ d.text }}">Remove this decision</button></form></li>{% endfor %}</ul>{% endif %}

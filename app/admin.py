@@ -18,7 +18,7 @@ EX_TEMPFAIL = 75
 log = logging.getLogger("ledger.admin")
 SETTERS = {"import-mapping": "mapping", "set-rules": "rules", "set-events": "events", "set-goals": "goals", "set-cpi": "cpi", "set-household": "household",
            "set-accounts": "accounts", "set-balances": "balances"}   # set-balances adds or corrects month-ends (account,YYYY-MM,amount); it never deletes
-EXPORTABLE = ("mapping", "rules", "events", "goals", "cpi", "household", "accounts", "balances")
+EXPORTABLE = ("mapping", "rules", "events", "goals", "cpi", "household", "accounts", "balances", "decisions")
 
 
 def _read(path: str) -> str:
@@ -117,6 +117,40 @@ def rebuild_cmd() -> int:
     return 0 if res["reconciliation"]["clean"] else 1
 
 
+def decisions_cmd(a) -> int:
+    """`python -m app.admin decisions ...`: what the check-in's two decision steps do, from the command line (#155)."""
+    from app import checkin, decisions
+    with _connect() as conn:
+        try:
+            if a.dcmd == "list":
+                month = a.month or checkin.latest(conn)
+                for d in decisions.in_force(conn, month):
+                    v = (d["check"] or {}).get("verdict") or "-"
+                    print(f"{d['id']}\tchecked {month}\t{d['kind']}\tapp: {d['auto_verdict']}\tyou: {v}\t{d['text']}")
+                for d in decisions.made_in(conn, month):
+                    print(f"{d['id']}\tmade {month}\t{d['kind']}\tuntil {d['until'] or decisions.rules.add_months(month, 1)}\t{d['text']}")
+                return 0
+            if a.dcmd == "add":
+                t = {k: v for k, v in (("category", a.category), ("item", a.item), ("debt", a.debt)) if v}
+                key = {"spend_cap": "max", "save": "min", "extra_payment": "extra", "plan_change": "planned"}.get(a.kind)
+                if key and a.amount is not None:
+                    t[key] = a.amount
+                if a.until_payoff:
+                    t["until_payoff"] = True
+                i, n = decisions.add(conn, a.month, a.text, a.kind, t or None, a.until, a.person, a.note, f"{_who()} (cli)")
+                print(f"Added decision {i} at the {a.month} check-in" + (f" ({n} that month: three is usually enough)" if n > decisions.rules.SOFT_CAP else "") + ".")
+            elif a.dcmd == "check":
+                decisions.confirm(conn, a.id, a.month, a.verdict, f"{_who()} (cli)"); print(f"Decision {a.id}: {a.verdict} in {a.month}.")
+            elif a.dcmd == "carry":
+                print(f"Decision {a.id} carries on to {decisions.carry_on(conn, a.id, a.month)}.")
+            elif a.dcmd == "remove":
+                decisions.delete(conn, a.id); print(f"Removed decision {a.id}.")
+            conn.commit()
+            return 0
+        except ValueError as e:
+            conn.rollback(); print(f"decisions {a.dcmd}: {e}", file=sys.stderr); return 2
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m app.admin", description=__doc__.split("\n\n")[0])
     sub = p.add_subparsers(dest="cmd", required=True, metavar="command")
@@ -138,6 +172,19 @@ def main(argv: list[str] | None = None) -> int:
     sp.add_argument("name"); sp.add_argument("debt_type")
     sp = sub.add_parser("checkin", help="print where a month's check-in stands (completing it stays a browser action: the household's sign-off)")
     sp.add_argument("what", choices=["status"]); sp.add_argument("month", nargs="?", help="YYYY-MM (default: the latest loaded month)")
+    sp = sub.add_parser("decisions", help="the decisions log (#155): list a month's, add one, confirm a month, carry one on, remove one")
+    dsub = sp.add_subparsers(dest="dcmd", required=True, metavar="action")
+    x = dsub.add_parser("list", help="the decisions in force at MONTH's check-in, and those made at it"); x.add_argument("month", nargs="?")
+    x = dsub.add_parser("add", help="a decision made at MONTH's check-in, in force from the month after")
+    x.add_argument("month"); x.add_argument("text")
+    x.add_argument("--kind", default="other", choices=["spend_cap", "extra_payment", "save", "plan_change", "other"])
+    g = x.add_mutually_exclusive_group(); g.add_argument("--category"); g.add_argument("--item"); g.add_argument("--debt", help="a debt account (extra_payment)")
+    x.add_argument("--amount", type=float, help="the cap, the least to put in, the extra to pay or the new plan, by kind")
+    x.add_argument("--until", help="the last month in force (YYYY-MM); default one month"); x.add_argument("--until-payoff", action="store_true")
+    x.add_argument("--person"); x.add_argument("--note", default="")
+    x = dsub.add_parser("check", help="the household's verdict on decision ID for MONTH"); x.add_argument("id", type=int); x.add_argument("month"); x.add_argument("verdict", choices=["kept", "partly", "dropped"])
+    x = dsub.add_parser("carry", help="keep decision ID in force one month after MONTH"); x.add_argument("id", type=int); x.add_argument("month")
+    x = dsub.add_parser("remove", help="delete decision ID and its checks"); x.add_argument("id", type=int)
     sub.add_parser("preview-mapping-migration", help="before upgrading to 0.5.0: print what migration 0133 would change in the item mapping "
                                                      "(nothing is changed; run it against a copy of the 0.4.x database)")
     a = p.parse_args(argv)
@@ -163,6 +210,8 @@ def main(argv: list[str] | None = None) -> int:
         return preview_mapping_migration()
     if a.cmd == "checkin":
         return checkin_status(a.month)
+    if a.cmd == "decisions":
+        return decisions_cmd(a)
     with _connect() as conn:
         if a.cmd == "export-settings":
             from app.settings_export import write_dir

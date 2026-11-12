@@ -58,6 +58,8 @@ def _log_and_rules(conn, dimension: str, old: str, new: str, by: str) -> list[st
     rules, changed = rules_after_rename(db.get_setting(conn, "rules", {}) or {}, dimension, old, new)
     if changed:
         db.put_setting(conn, "rules", rules)
+    from . import decisions   # a decision's target names a category or item in JSON no foreign key follows (#155)
+    decisions.rewrite_targets(conn, dimension, old, new)
     conn.execute("INSERT INTO renames (dimension, old, new, by) VALUES (%s, %s, %s, %s)", (dimension, old, new, by or ""))
     db.mark_inputs_changed(conn)
     return changed

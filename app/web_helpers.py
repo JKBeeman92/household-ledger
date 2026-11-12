@@ -46,6 +46,16 @@ def _register_formatters(env) -> None:
 _register_formatters(templates.env)
 
 
+def _decision_text(ctx, d) -> str:
+    """'Eating Out was $372: kept', with the amount in the household's currency (#155)."""
+    from . import decisions
+    f = _fmt_of(ctx)
+    return decisions.auto_text(d, lambda v: formatting.money(v, f["currency"], f["locale"]))
+
+
+templates.env.globals["auto_text"] = pass_context(_decision_text)
+
+
 def flash(request: Request, text: str, kind: str = "ok"):
     # reassign rather than append in place: the session only persists when a key is set, so a flash added to a pending list would be lost
     request.session["flashes"] = [*request.session.get("flashes", []), {"text": text, "kind": kind}]

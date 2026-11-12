@@ -1,0 +1,81 @@
+[
+ {
+  "made_in": "2026-03",
+  "text": "Eating out under $150",
+  "kind": "spend_cap",
+  "target": {
+   "item": "Eating Out",
+   "max": 150
+  },
+  "until": "2026-05",
+  "person": null,
+  "status": "dropped",
+  "note": "",
+  "checks": [
+   {
+    "month": "2026-04",
+    "verdict": "kept",
+    "auto_verdict": "kept",
+    "auto_figure": 125.73
+   },
+   {
+    "month": "2026-05",
+    "verdict": "dropped",
+    "auto_verdict": "dropped",
+    "auto_figure": 207.48
+   }
+  ]
+ },
+ {
+  "made_in": "2026-04",
+  "text": "Put at least $300 in the emergency fund",
+  "kind": "save",
+  "target": {
+   "item": "Emergency Fund",
+   "min": 300
+  },
+  "until": null,
+  "person": "Rosie",
+  "status": "kept",
+  "note": "",
+  "checks": [
+   {
+    "month": "2026-05",
+    "verdict": "kept",
+    "auto_verdict": "kept",
+    "auto_figure": 300.0
+   }
+  ]
+ },
+ {
+  "made_in": "2026-05",
+  "text": "An extra $50 on the student loan",
+  "kind": "extra_payment",
+  "target": {
+   "debt": "Lembas Student Loan",
+   "item": "Student Loan",
+   "extra": 50,
+   "base": 275
+  },
+  "until": null,
+  "person": "Rosie",
+  "status": "open",
+  "note": "",
+  "checks": []
+ },
+ {
+  "made_in": "2026-05",
+  "text": "Plan groceries at $750 for the baby",
+  "kind": "plan_change",
+  "target": {
+   "item": "Groceries",
+   "planned": 750,
+   "from": 720
+  },
+  "until": null,
+  "person": null,
+  "status": "open",
+  "note": "",
+  "checks": []
+ }
+]
