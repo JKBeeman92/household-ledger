@@ -11,6 +11,12 @@ Every upgrade, whatever the version:
 
 Migrations are not reversible. To roll back, pin the previous image tag in `docker-compose.yml` and restore the backup from step 2.
 
+## 0.7.0
+
+- **Payoff estimates and coming up** (#144): no migration, nothing to do. `datasets.zip` gains `payoff` and `coming_up`. For agents:
+  MCP's `get_dataset` adds `coming_up` (labels name a debt by its type, never an account), and the month-close review's data gains
+  `coming_up` for the next three months.
+
 ## 0.6.0
 
 Migrations run at start; read this list before upgrading.

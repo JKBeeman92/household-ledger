@@ -24,13 +24,14 @@ def status(month):
 
 
 def finish_latest(client, month="2025-04"):
-    """Confirm the open balances and goals, read the standing step: what a household does at the sit-down."""
+    """Confirm the open balances and goals, read the standing and coming-up steps: what a household does at the sit-down."""
     o = ov(month)
     bal = next(s for s in o["steps"] if s["key"] == "balances")["context"]["bal"]["rows"]
     client.post(f"/balances/{month}", data={"account": [r["name"] for r in bal], "amount": [f"{r['value']:.2f}" for r in bal]})
     with db.pool.connection() as conn:
         conn.execute("UPDATE goals SET value=coalesce(value, 1), note='', confirmed_at=now()"); conn.commit()
     client.post(f"/checkin/{month}/steps/standing/view")
+    client.post(f"/checkin/{month}/steps/coming_up/view")
 
 
 def test_modes_follow_the_year_start_rule(client, reset_db):
@@ -42,8 +43,8 @@ def test_modes_follow_the_year_start_rule(client, reset_db):
 
 def test_steps_registry_and_statuses(client, loaded):
     st = status("2025-04")
-    assert list(st) == ["files", "books", "balances", "goals", "standing", "review"]   # 4, 7 and 9 arrive with #155 and #144
-    assert st["files"] == "done" and st["books"] == "done" and st["balances"] == "todo" and st["standing"] == "todo"
+    assert list(st) == ["files", "books", "balances", "goals", "standing", "coming_up", "review"]   # 4 and 9 arrive with #155
+    assert st["files"] == "done" and st["books"] == "done" and st["balances"] == "todo" and st["standing"] == "todo" and st["coming_up"] == "todo"
     assert st["review"] == "skipped"   # no review provider: optional
     page = client.get("/checkin/2025-04").text
     assert "April 2025" in page and 'id="step-balances"' in page and "disabled" in page.split('id="checkin-complete"')[1]

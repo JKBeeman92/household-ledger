@@ -58,7 +58,7 @@ PAYCHECK_ITEMS_DEFAULT = ["Paycheck"]   # role default: build_ledger.RULES["payc
 
 
 def build_context(conn, month: str) -> dict:
-    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals','debt_to_income','net_worth','emergency_fund')").fetchall()}
+    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals','debt_to_income','net_worth','emergency_fund','coming_up')").fetchall()}
     monthly = {r["m"]: r for r in ds.get("monthly", [])}
     months = sorted(monthly)
     if month not in monthly:
@@ -89,8 +89,22 @@ def build_context(conn, month: str) -> dict:
         **({"debt_to_income": dti_context(ds.get("debt_to_income", []), goals, month)} if ds.get("debt_to_income") else {}),
         **({"net_worth": nw_context(ds.get("net_worth", []), month)} if any(r["m"] == month for r in ds.get("net_worth", [])) else {}),
         **({"emergency_fund": ef_context(ds.get("emergency_fund", []), goals, month)} if any(r["m"] == month and r["months"] is not None for r in ds.get("emergency_fund", [])) else {}),
+        **({"coming_up": coming_up_context(ds.get("coming_up", []), month)} if coming_up_context(ds.get("coming_up", []), month) else {}),
         "continuity": continuity(conn, month, prev),
     }
+
+
+COMING_UP_NOTE = ("What falls due in the three budget months after this one: estimated payoffs at last month's payment and life events "
+                  "already on the calendar. Labels name a debt by its type, not its account.")
+
+
+def coming_up_context(rows: list[dict], month: str, ahead: int = 3) -> dict | None:
+    """coming_up (#144) for the review: the next `ahead` months, with public labels (no account names, the privacy line)."""
+    y, m = int(month[:4]), int(month[5:]) + ahead
+    until = f"{y + (m - 1) // 12}-{(m - 1) % 12 + 1:02d}"
+    items = [{"m": r["m"], "kind": r["kind"], "label": r["public_label"], "amount": r["amount"], "source": r["source"]}
+             for r in rows if month < r["m"] <= until]
+    return {"note": COMING_UP_NOTE, "items": items} if items else None
 
 
 BALANCES_NOTE = ("Month-end balances by account type (no account names): debts are what is owed, assets what is held, over the accounts "

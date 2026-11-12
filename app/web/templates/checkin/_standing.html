@@ -7,4 +7,4 @@
 </dl>
 {% if not c.monthly %}<p class="muted">Nothing built for this month yet: finish the Files step first.</p>{% endif %}
 <p><a href="/#lastmonth">The Last month tab</a> has the rest: envelopes over and under plan, the categories against their trailing twelve.</p>
-<form method="post" action="/checkin/{{ month }}/steps/standing/view">{{ csrf_field(request) }}<button class="btn" type="submit">Mark as read</button></form>
+<noscript><form method="post" action="/checkin/{{ month }}/steps/standing/view">{{ csrf_field(request) }}<button class="btn" type="submit">Mark Where we stand as read</button></form></noscript>

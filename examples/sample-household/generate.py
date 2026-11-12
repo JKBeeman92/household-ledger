@@ -55,7 +55,8 @@ NET_PAY = 1880
 MAPPING_NOTES = {"Paycheck": "Rosie, paid every two weeks", "Contract Income": "Sam, garden contracts",
                  "Venmo Pass-Through": "money moved for friends, not part of the household budget"}
 EVENTS = [("2025-03", "Sam takes on garden contracts", "job", "Sam"), ("2025-07", "Rosie promoted at Hobbiton Mill", "job", "Rosie"),
-          ("2025-10", "Moved to a bigger hole, rent goes up", "move", None), ("2026-02", "Elanor is born", "family", None)]   # (m, label, kind, person)
+          ("2025-10", "Moved to a bigger hole, rent goes up", "move", None), ("2026-02", "Elanor is born", "family", None),
+          ("2026-09", "Elanor starts at the Bywater nursery", "family", None)]   # (m, label, kind, person); the last is still to come (#144, coming_up)
 RULES = {
     "people": ["Rosie", "Sam"],
     "income_by_person": {"Rosie": ["Paycheck"], "Sam": ["Contract Income"]},

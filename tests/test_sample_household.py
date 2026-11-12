@@ -32,3 +32,15 @@ def test_sample_household_has_accounts_and_two_years_of_balances(client, reset_d
     last = [r for r in rows if r["m"] == "2026-06"]
     assert {r["source"] for r in last if r["kind"] == "debt"} == {"estimated"} and {r["source"] for r in last if r["kind"] == "asset"} == {"carried"}
     assert any(r["source"] == "carried" and r["account"] == "Pony and Cart" for r in rows if r["m"] < "2026-06")   # valued quarterly
+
+
+def test_sample_household_has_a_payoff_estimate_and_something_coming_up(client, reset_db):
+    """#144: the student loan's payoff at last month's $275, from June's estimated balance, and the nursery start still to come."""
+    reset_db(SAMPLE)
+    assert import_exports.main([str(SAMPLE)]) == 0
+    data = client.get("/api/datasets").json()
+    (loan,) = data["payoff"]
+    assert loan["account"] == "Lembas Student Loan" and loan["m"] == "2026-06" and loan["status"] == "date" and loan["payment"] == 275
+    assert loan["payoff"] > "2026-06" and [n["code"] for n in loan["notes"]] == ["estimated"] and loan["moved"] == 0
+    kinds = {(r["kind"], r["m"]) for r in data["coming_up"]}
+    assert ("event", "2026-09") in kinds and ("payoff", loan["payoff"]) in kinds

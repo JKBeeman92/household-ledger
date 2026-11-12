@@ -16,17 +16,19 @@ Set aside half an hour, with last month's statements to hand (or your bank's app
    mapping. Fix what you can (map a new item, re-export a month); a difference you have decided to live with can be acknowledged.
 3. **Balances.** One figure per account: what it stood at on the last day of the month. Each field is filled in with a suggestion
    (last month's balance; for a debt, less the month's payment, plus interest at its APR). Saving a suggestion unchanged confirms it.
-   The step appears once you have accounts (Settings → Accounts).
+   The step appears once you have accounts (Settings → Accounts). Under each debt, its estimated payoff month at last month's
+   payment and how it moved since last month's estimate (README, "Payoff estimates and coming up").
 4. **Goals to confirm.** The standing figures the app asks about each month (gross pay, pre-tax saving, and any goal whose note says
    to ask). Confirm each as it is, or give the new value.
 5. **Where we stand.** The month in a few lines: what was kept, net worth and how it moved (what you did, what happened to you), the
    emergency fund, debt-to-income. Read it together; opening it marks it read. The Last month tab has the detail.
-6. **Review.** If a review provider is set up, have the month read back to you, and read it. Without one, the step is skipped.
+6. **Coming up.** What falls in the next three months: estimated payoffs and life events already dated, and, as they arrive, the
+   yearly bills and tax deadlines. Read it together; opening it marks it read.
+7. **Review.** If a review provider is set up, have the month read back to you, and read it. Without one, the step is skipped.
 
 Then **Done**. The Last month tab says "October check-in: done 2 Nov", or how many steps are left.
 
-Coming in later releases, as their own steps: last month's decisions and up to three for next month (#155), and what is coming up
-in the next three months (#144).
+Coming in a later release, as its own steps: last month's decisions and up to three for next month (#155).
 
 ## Catching up
 

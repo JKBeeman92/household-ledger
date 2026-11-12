@@ -457,6 +457,35 @@ take-home ("31% of gross, 41% of take-home"), because take-home is what the hous
 "—", not 0%. There is no built-in judgement: a cap line appears only when the household adds `dti_cap` or `housing_dti_cap` (a share
 of gross) on Settings → Goals. The `debt_to_income` dataset carries every figure, and reaches the month-close review and MCP.
 
+## Payoff estimates and coming up
+
+"At what we paid last month, when is the mortgage gone? The car? The cards?" For each active debt account with a month-end balance and
+a linked item, the build works out the months left at last month's payment P (paid to the linked item, less escrow) and the APR's
+monthly rate r: n = −ln(1 − r·B/P) ÷ ln(1 + r) for a balance B, and B ÷ P with no APR. The payoff month is the closing month plus n,
+rounded up, except that a last sliver under 1% of a month is not counted (a 30-year loan's textbook payment, rounded to the cent,
+comes out 360.0009 months: that is 360). Each estimate says what it rests on, and never shows a misleading date:
+
+| When | It says |
+|---|---|
+| The payment is no more than a month's interest | "At this payment the balance does not go down", and no date |
+| No payment last month | the 3-month average, if there is one, saying so; else "No payment in `<month>`", and no date |
+| No APR entered | the date, as "at least": it ignores interest |
+| A card | "at this payment, with no new charges" |
+| A mortgage with no escrow set | "set the escrow part of the payment for an honest date" |
+| The balance is estimated (no balance entered for the month) | "from an estimated balance" |
+| More than 100 years | "More than 100 years at this payment", and no date |
+
+The Last month tab gives each debt's balance, its change, the payoff month and how it moved since last month's estimate ("3 months
+sooner: you paid extra"); the check-in's Balances step gives the same line. This is a monthly check-in, so there are no amortization
+schedules, refinance or extra-payment calculators.
+
+The `payoff` dataset carries one row per debt; it names accounts, so it stays out of the review and MCP. **`coming_up`** has one row per
+future item: `m` (budget month), `kind` (`payoff` now; `event` for a life event dated after the last loaded month; `yearly_bill`,
+`tax_deadline` and `goal` arrive with their features), `label`, `public_label` (a debt by its type, not its account), `amount` (or
+null), `source` (`estimated` or `planned`) and `ref` (the account or event it comes from). It is rebuilt at every build and never
+written to the life events. The check-in's **Coming up** step lists the next three months, the review reads the same months with
+public labels, and MCP serves `coming_up` with `public_label` as its label and no `ref`.
+
 ## Try it with the sample household
 
 `examples/sample-household/` is a synthetic household (two earners, 18 budget months, a student loan, a transfer pair, three-paycheck

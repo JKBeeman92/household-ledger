@@ -15,7 +15,7 @@
 </div>{% endif %}
 <ol class="checkin-steps">
 {% for s in ov.steps %}<li>
-  <details id="step-{{ s.key }}" class="panel step" data-step="{{ s.key }}" {% if s.key == first_open %}open{% endif %}>
+  <details id="step-{{ s.key }}" class="panel step" data-step="{{ s.key }}"{% if 'view' in s.actions %} data-view{% endif %} {% if s.key == first_open %}open{% endif %}>
     <summary><span class="n">{{ s.n }}</span> <strong>{{ s.title }}</strong> <span class="status-chip {{ chip[s.status] }}">{{ s.label }}</span><span class="muted step-summary">{{ s.summary }}</span></summary>
     <div class="step-body">
       {% with c = s.context, month = ov.month %}{% include s.template %}{% endwith %}
@@ -26,17 +26,26 @@
 </li>{% endfor %}
 </ol>
 {% if not ov.done %}<form method="post" action="/checkin/{{ ov.month }}/complete" class="panel" id="checkin-complete">{{ csrf_field(request) }}
-  <p style="margin:0 0 var(--space-2)">{% if ov.can_complete %}Every step is done or skipped.{% else %}{{ ov.to_do }} step{{ '' if ov.to_do == 1 else 's' }} still to do.{% endif %}</p>
-  <button class="btn primary" type="submit" {% if not ov.can_complete %}disabled aria-disabled="true"{% endif %}>Finish the check-in</button>
+  <p style="margin:0 0 var(--space-2)" id="checkin-left" data-left="{{ ov.to_do }}" aria-live="polite">{% if ov.can_complete %}Every step is done or skipped.{% else %}{{ ov.to_do }} step{{ '' if ov.to_do == 1 else 's' }} still to do.{% endif %}</p>
+  <button class="btn primary" type="submit" id="checkin-finish" {% if not ov.can_complete %}disabled aria-disabled="true"{% endif %}>Finish the check-in</button>
   <span class="muted">records who and when{% if not ov.short %}, and tells your webhook{% endif %}</span>
 </form>{% endif %}
 <script nonce="{{ csp_nonce(request) }}">
 // A read-only step is read once it is opened: say so to the server, then the page shows it done on the next load.
-document.querySelectorAll('details.step[data-step="standing"]').forEach((d) => d.addEventListener('toggle', () => {
+document.querySelectorAll('details.step[data-view]').forEach((d) => d.addEventListener('toggle', () => {
   if (!d.open || d.dataset.sent) return; d.dataset.sent = '1';
   const fd = new FormData(); const t = document.querySelector('input[name="csrf_token"]'); if (t) fd.append('csrf_token', t.value);
-  fetch('/checkin/{{ ov.month }}/steps/standing/view', { method: 'POST', body: fd, headers: { Accept: 'application/json' }, credentials: 'same-origin' })
-    .then((r) => { if (r.ok) { const c = d.querySelector('.status-chip'); if (c) { c.className = 'status-chip ok'; c.textContent = 'done'; } } }).catch(() => {});
+  fetch('/checkin/{{ ov.month }}/steps/' + d.dataset.step + '/view', { method: 'POST', body: fd, headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+    .then((r) => {
+      if (!r.ok) throw new Error(String(r.status));
+      const c = d.querySelector('.status-chip'), was = c && c.textContent.trim(), sm = d.querySelector('.step-summary');
+      if (c) { c.className = 'status-chip ok'; c.textContent = 'done'; } if (sm) sm.textContent = 'read';
+      const left = document.getElementById('checkin-left'), fin = document.getElementById('checkin-finish');
+      if (left && was === 'to do') { const n = Math.max(0, Number(left.dataset.left) - 1); left.dataset.left = String(n);
+        left.textContent = n ? n + ' step' + (n === 1 ? '' : 's') + ' still to do.' : 'Every step is done or skipped.';
+        if (!n && fin) { fin.disabled = false; fin.removeAttribute('aria-disabled'); } }
+    }).catch(() => { delete d.dataset.sent; const p = document.createElement('p'); p.className = 'flash bad'; p.setAttribute('role', 'alert');
+      p.textContent = 'Could not mark this step read. Reload the page and open it again.'; d.querySelector('.step-body').prepend(p); });
 }));
 </script>
 {% endblock %}

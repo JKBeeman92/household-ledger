@@ -320,6 +320,14 @@
       <details class="how"><summary>How to read this</summary><p>Net worth is every account's month-end balance (Settings → Accounts; entered at Close a month), assets less debts, leaving out accounts marked not in net worth. Its change since last month is split in two. <b>What you did</b> is the month's income less living spend: what was kept plus what was paid on debts, since paying a loan down is the household's own doing (and, once stated, pre-tax saving such as a 401(k)). <b>What happened to you</b> is the rest: investments and the home's estimate moving, interest charged, and money moving into or out of accounts this page does not track. An account's first month is shown on its own, so adding one is not read as progress. A debt with no balance entered is estimated, and the figure says so. One thing lands on the wrong side: money your budget counts as spent that goes into an account tracked here (a savings envelope paid into a savings account) shows under what happened, not what you did. <b>Excluding home</b> takes a home's typed estimate out, since it moves the total more than any month's decisions.</p></details>
       <dl class="dti" data-draw="lm-nw" data-source="net_worth balances"></dl>
     </div>
+    <div class="card" id="lm-payoff-card">
+      <h2 id="lm-payoff">When the debts are gone</h2>
+      <ul class="key row"><li>each debt's month-end balance and its change</li><li>the month it is paid off at last month's payment (est.)</li></ul>
+      <details class="how"><summary>How to read this</summary><p>For each debt with a month-end balance and a linked budget item (Settings → Accounts), the months left at last month's payment to that item, less escrow, at its APR: the payoff month is when the balance reaches zero if every month's payment is the same. With no APR the date ignores interest, so it is the earliest the debt could be gone ("at least"). A card's date assumes no new charges. When last month had no payment the 3-month average is used, and says so. Each date moves as payments change: "3 months sooner: you paid extra". It is an estimate for the check-in, not a loan schedule.</p></details>
+      <div data-draw="lm-payoff-empty" data-source="payoff"></div>
+      <details class="listcount" id="lm-payoff-list" open><summary data-draw="lm-payoff-count" data-source="payoff">Debts</summary>
+        <dl class="dti" data-draw="lm-payoff" data-source="payoff" data-list="unbounded"></dl></details>
+    </div>
     <div class="card" id="lm-ef-card">
       <h2 id="lm-ef">Emergency fund</h2>
       <ul class="key row"><li>if income stopped: months of outgo the emergency savings would cover</li></ul>
@@ -1097,6 +1105,36 @@ const nwCard = (el) => {
   else add('Over 12 months', '—', 'needs balances from a year before (Settings → Accounts → Balances history)', false);
 };
 dash.draw('lm-nw', nwCard);
+// payoff (#144): no rows yet (say what will appear and offer the first step), or a dataset not built yet (say to rebuild)
+dash.draw('lm-payoff-empty', (el) => {
+  const g = dash.data('payoff'); el.replaceChildren(); const list = document.getElementById('lm-payoff-list');
+  if (g.status === 'ok' && g.data.length) { if (list) list.hidden = false; return; }
+  if (list) list.hidden = true;
+  const p = document.createElement('p');
+  if (g.status === 'ok') { p.textContent = 'Each debt with a month-end balance shows here, with the month it is paid off at last month’s payment.';
+    const a = Object.assign(document.createElement('a'), { className: 'btn', href: '/settings#accounts', textContent: 'Add a debt' }); el.append(p, a); }
+  else { p.className = 'muted'; p.textContent = g.status === 'missing' ? 'Rebuild the ledger to see payoff dates (Close a month).' : '—'; el.append(p); }
+});
+dash.draw('lm-payoff-count', (el) => { const g = dash.data('payoff'); if (g.status !== 'ok') return; const n = g.data.length;
+  el.textContent = n + ' debt' + (n === 1 ? '' : 's'); const d = el.closest('details'); if (d) d.open = n <= 3; });
+// payoff (#144): each debt's balance, the estimated payoff month and how it moved; the words come from the pipeline (pipeline/payoff.py)
+dash.draw('lm-payoff', (el) => {
+  const g = dash.data('payoff'); el.replaceChildren();
+  if (g.status !== 'ok' || !g.data.length) return;   // lm-payoff-empty says why
+  const verdict = { paid_off: 'Paid off', no_link: '—', no_payment: 'No date', not_down: 'No date', too_long: 'No date' };
+  for (const r of g.data) {
+    const dt = document.createElement('dt'), dd = document.createElement('dd'), v = document.createElement('span'), d = document.createElement('div');
+    dt.textContent = r.account; v.className = 'v';
+    v.textContent = r.status === 'date' ? (r.at_least ? 'at least ' : '') + HL.fmtM(HL.parseM(r.payoff)) : verdict[r.status] || '—';
+    const bits = [`${HL.usd0(r.balance)} owed` + (r.change != null ? ` (${r.change > 0 ? '+' : r.change < 0 ? '−' : ''}${HL.usd0(Math.abs(r.change))} since last month)` : '')];
+    if (r.payment != null) bits.push(`at ${HL.usd0(r.payment)} a month`);
+    if (r.moved_text) bits.push(r.moved_text);
+    d.className = 'muted'; d.textContent = bits.join(' · ');
+    dd.append(v, d);
+    for (const n of r.notes || []) { const p = document.createElement('div'); p.className = 'muted'; p.textContent = n.m ? n.text.replace('{m}', HL.fmtM(HL.parseM(n.m))) : n.text; dd.append(p); }
+    el.append(dt, dd);
+  }
+});
 const NW_TYPES = ['cash', 'savings', 'retirement', 'brokerage', 'home', 'vehicle', 'other', 'mortgage', 'student', 'auto', 'card', 'medical', 'personal'];
 const nwSeries = () => { const g = dash.data('balances'); if (g.status !== 'ok') return null; const rows = g.data.filter((r) => r.in_net_worth);
   const keys = [...new Set(rows.map((r) => r.kind + ':' + (r.type || 'other')))].sort((a, b) => (a[0] === b[0] ? 0 : a < b ? 1 : -1) || NW_TYPES.indexOf(a.split(':')[1]) - NW_TYPES.indexOf(b.split(':')[1]));

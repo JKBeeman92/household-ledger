@@ -1,2 +1,8 @@
 {# Step 3: month-end balances (#143), the Close a month form for this month. #}
 {% with bal = c.bal %}{% include "_balances.html" %}{% endwith %}
+{% if c.payoff %}<p class="step-sub">When the debts are gone</p>
+<p class="muted">Estimated from last month's payment; the figures update once the balances above are saved and the ledger rebuilds.</p>
+<ul class="payoff-lines" data-list="unbounded">{% for p in c.payoff %}<li><strong>{{ p.account }}</strong>:
+  {% if p.status == "date" %}{{ "at least " if p.at_least }}{{ p.payoff|month }} at {{ p.payment|money }} a month{% if p.moved_text %}, {{ p.moved_text }}{% endif %}.
+  {%- elif p.status == "paid_off" %} paid off.{% else %} no date.{% endif %}
+  {% for n in p.notes %}<span class="muted">{{ n.text|replace("{m}", n.m|month if n.m else "") }}</span> {% endfor %}</li>{% endfor %}</ul>{% endif %}
