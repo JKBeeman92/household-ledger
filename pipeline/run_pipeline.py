@@ -9,7 +9,7 @@ The database is the source of truth. For a rebuild we:
 Everything here is callable from the web app; `python -m pipeline.run_pipeline` runs a rebuild from the CLI.
 """
 from __future__ import annotations
-import csv, json, os, re, shutil, subprocess, sys, tempfile, hashlib
+import csv, io, json, os, re, shutil, subprocess, sys, tempfile, hashlib
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -258,6 +258,11 @@ def export_for_pipeline(conn: psycopg.Connection, wd: Path) -> None:
         checks = [dict(r, auto_figure=float(r["auto_figure"]) if r["auto_figure"] is not None else None) for r in cur]
         with open(wd / "decisions.json", "w") as out:
             json.dump({"decisions": decisions, "checks": checks}, out)
+        # yearly bills (#151): the household's own list, read by make_budget_items.py through pipeline/yearly_bills.py
+        cur.execute("SELECT item, month, amount, every_years, funded_by, source FROM yearly_bills ORDER BY item")
+        with open(wd / "yearly_bills.csv", "w", newline="") as out:
+            w = csv.writer(out); w.writerow(["item", "month", "amount", "every_years", "funded_by", "source"])
+            for r in cur: w.writerow([r["item"], r["month"], "" if r["amount"] is None else f"{r['amount']:.2f}", r["every_years"], r["funded_by"] or "", r["source"]])
         cur.execute("SELECT value FROM settings WHERE key='rules'")
         row = cur.fetchone()
     with open(wd / "rules.json", "w") as out:
@@ -571,6 +576,12 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
             for c in json.loads(_read(seed_dir / "checkins.json")):
                 cur.execute("INSERT INTO checkins (month, mode, steps, completed_at, completed_by, reopened_at) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
                             (c["month"], c.get("mode") or "month", json.dumps(c.get("steps") or {}), c.get("completed_at"), c.get("completed_by"), c.get("reopened_at")))
+        cur.execute("SELECT count(*) FROM yearly_bills")
+        if cur.fetchone()[0] == 0 and (seed_dir / "yearly_bills.csv").exists():   # the household's yearly bills (#151), from settings.zip
+            for r in csv.DictReader(io.StringIO(_read(seed_dir / "yearly_bills.csv"))):
+                cur.execute("INSERT INTO yearly_bills (item, month, amount, every_years, funded_by, source) SELECT %s,%s,%s,%s,%s,%s "
+                            "WHERE EXISTS (SELECT 1 FROM canonical_items WHERE name=%s) ON CONFLICT DO NOTHING",
+                            (r["item"], int(r["month"]), r.get("amount") or None, int(r.get("every_years") or 1), r.get("funded_by") or None, r["source"], r["item"]))
         cur.execute("SELECT count(*) FROM decisions")
         if cur.fetchone()[0] == 0 and (seed_dir / "decisions.json").exists():   # the decisions log and its checks (#155), from settings.zip
             for d in json.loads(_read(seed_dir / "decisions.json")):

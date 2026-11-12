@@ -13,6 +13,11 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
 
 ## 0.7.0
 
+- **Yearly bills** (#151, `0151_yearly_bills.sql`): a new table only, so nothing existing changes. After upgrading, rebuild once and
+  look at Settings → Yearly bills (or `python -m app.admin yearly-bills`): confirm what was found, dismiss what is not a yearly bill,
+  add what was missed. `settings.zip` gains `yearly_bills.csv`; `datasets.zip` and MCP gain `yearly_bills`; `coming_up` gains
+  `yearly_bill` rows. Two new rules, `yearly_bill_tolerance` and `yearly_bill_min_years`, have defaults.
+
 - **A decisions log** (#155, `0155_decisions.sql`): new tables only (`decisions`, `decision_checks`), so nothing existing changes and
   there is nothing to do. The `renames` log also accepts account renames. The check-in gains two steps, Last month's decisions (4) and
   Next month (9); `settings.zip` gains `decisions.json` (read back by the seed loader); `datasets.zip` and MCP gain `decisions`,

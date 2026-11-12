@@ -111,6 +111,14 @@
       "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
       "description": "Categories the Recurring tab lists: their expense rows, by canonical item. Empty (null) means [\"Subscriptions\", \"Utilities\", \"Insurance\"]."
     },
+    "yearly_bill_tolerance": {
+      "type": ["integer", "null"], "minimum": 0, "maximum": 3,
+      "description": "A yearly bill is paid within this many months of the same calendar month each year (#151). Empty (null) means 1."
+    },
+    "yearly_bill_min_years": {
+      "type": ["integer", "null"], "minimum": 1, "maximum": 3,
+      "description": "A yearly bill is one paid in at least this many of the last three budget years (#151). Empty (null) means 2."
+    },
     "decision_partly_over": {
       "type": ["number", "null"], "minimum": 0, "maximum": 1,
       "description": "A spend-cap decision missed by up to this share of its cap counts as partly kept, not dropped (#155). Empty (null) means 0.10."

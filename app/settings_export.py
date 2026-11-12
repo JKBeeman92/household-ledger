@@ -12,7 +12,7 @@ from pathlib import Path
 
 # seed-directory file -> Settings editor key; the order is the order in the zip
 FILES = {"item_mapping.csv": "mapping", "cpi_u.csv": "cpi", "goals.json": "goals", "events.json": "events",
-         "accounts.csv": "accounts", "checkins.json": "checkins", "decisions.json": "decisions", "rules.json": "rules", "household.json": "household"}
+         "accounts.csv": "accounts", "checkins.json": "checkins", "decisions.json": "decisions", "yearly_bills.csv": "yearly_bills", "rules.json": "rules", "household.json": "household"}
 VERSION_FILE = Path(__file__).resolve().parents[1] / "version.txt"   # bumped by release-please; copied into the image
 
 

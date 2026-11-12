@@ -23,7 +23,8 @@ def _status(conn, month, state):
 
 
 def _context(conn, month, state):
-    return {"rows": items(conn, month), "ahead": AHEAD, "until": _until(month)}
+    r = _x(conn, "SELECT rows FROM datasets WHERE name='yearly_bills'").fetchone()   # set aside for each bill due (#151)
+    return {"rows": items(conn, month), "ahead": AHEAD, "until": _until(month), "bills": {b["item"]: b for b in (r["rows"] if r else [])}}
 
 
 register(Step("coming_up", 70, "Coming up", _status, context=_context, actions=("view",), issue="#144"))

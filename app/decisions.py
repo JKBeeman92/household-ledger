@@ -176,6 +176,9 @@ def delete(conn, decision_id: int) -> None:
 def rewrite_targets(conn, dimension: str, old: str, new: str) -> int:
     """A rename reaches decisions too (#155): a target names a category, a canonical item or (an extra payment's) an account by name,
     in JSON that no foreign key follows. Called in the rename's own transaction."""
+    if dimension in ("canonical_item", "account"):   # a yearly bill's funding names an envelope or an account (#151)
+        from . import yearly_bills
+        yearly_bills.rename_fund(conn, old, new)
     key = {"category": "category", "canonical_item": "item", "account": "debt"}[dimension]
     return _x(conn, "UPDATE decisions SET target = jsonb_set(target, %s, to_jsonb(%s::text)) WHERE target->>%s = %s",
               ("{" + key + "}", new, key, old)).rowcount

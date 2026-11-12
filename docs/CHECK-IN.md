@@ -26,8 +26,8 @@ Set aside half an hour, with last month's statements to hand (or your bank's app
    to ask). Confirm each as it is, or give the new value.
 6. **Where we stand.** The month in a few lines: what was kept, net worth and how it moved (what you did, what happened to you), the
    emergency fund, debt-to-income. Read it together; opening it marks it read. The Last month tab has the detail.
-7. **Coming up.** What falls in the next three months: estimated payoffs and life events already dated, and, as they arrive, the
-   yearly bills and tax deadlines. Read it together; opening it marks it read.
+7. **Coming up.** What falls in the next three months: estimated payoffs, yearly bills (with what is set aside for each, and
+   what a month would cover the rest), life events already dated, and, as they arrive, tax deadlines. Read it together; opening it marks it read.
 8. **Review.** If a review provider is set up, have the month read back to you, and read it. Without one, the step is skipped.
 
 Then **Done**. The Last month tab says "October check-in: done 2 Nov", or how many steps are left.

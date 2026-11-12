@@ -31,4 +31,16 @@ _built = {r["m"] for r in rows} | {bm for bm, _ in filenames.exports("summaries"
 _through = max(_built | {bm for bm, _ in filenames.exports("txns", "transactions")}, default=None)
 _rows = _dec.judge(_D["decisions"], _checks, rows, _built, _through, _rl("decision_partly_over", _dec.PARTLY_OVER), _rl("decision_partly_share", _dec.PARTLY_SHARE))
 w("decisions", _rows)
+# yearly bills (#151): detected from the same budget rows, merged with the household's list; their next due month joins coming_up
+import yearly_bills as _yb, csv as _csv   # noqa: E402
+_stored = list(_csv.DictReader(open("yearly_bills.csv", newline=""))) if os.path.exists("yearly_bills.csv") else []
+_acct = {}
+if os.path.exists("dash_data/balances.json"):   # make_datasets.py ran first: the latest balance per account
+    for b in json.load(open("dash_data/balances.json")): _acct[b["account"]] = b["amount"]
+_names = sorted({r["canonical"] for r in rows})
+_bills = _yb.bills(rows, _stored, _through, {r["m"] for r in rows}, _names, _acct, int(_rl("yearly_bill_tolerance", _yb.TOLERANCE)), int(_rl("yearly_bill_min_years", _yb.MIN_YEARS)))
+w("yearly_bills", _bills)
+if os.path.exists("dash_data/coming_up.json"):
+    _cu = [r for r in json.load(open("dash_data/coming_up.json")) if r["kind"] != "yearly_bill"] + _yb.coming_up_rows(_bills)
+    _cu.sort(key=lambda r: (r["m"], r["kind"], r["label"])); w("coming_up", _cu)
 w("decision_summary", [{**_dec.keep_rate(_rows, _through), "in_force": len({r["id"] for r in _rows if r["m"] == _through})}] if _through else [])
