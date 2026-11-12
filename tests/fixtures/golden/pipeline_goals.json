@@ -1,2 +1,4 @@
 [{"key": "gross_annual", "value": 72000, "unit": "usd", "label": "Gross salary, annual", "note": "", "confirmed_at": null},
- {"key": "dti_cap", "value": 0.2, "unit": "share of gross", "label": "Debt-to-income cap", "note": "", "confirmed_at": null}]
+ {"key": "dti_cap", "value": 0.2, "unit": "share of gross", "label": "Debt-to-income cap", "note": "", "confirmed_at": null},
+ {"key": "pretax_contribution:Rosie", "value": 0.1, "unit": "share of gross", "label": "Pre-tax saving, Rosie", "note": "", "confirmed_at": null},
+ {"key": "pretax_contribution:Sam", "value": 50, "unit": "usd/month", "label": "Pre-tax saving, Sam", "note": "", "confirmed_at": null}]

@@ -63,6 +63,13 @@
   "note": "Months of outgo the emergency savings should cover."
  },
  {
+  "key": "pretax_contribution:Rosie",
+  "value": 0.1,
+  "unit": "share of gross",
+  "label": "Pre-tax saving, Rosie",
+  "note": "Ask at each month-close: 401(k), 403(b), HSA and the like, taken from pay before it reaches the budget."
+ },
+ {
   "key": "investing_per_paycheck",
   "value": 150,
   "unit": "usd",

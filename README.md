@@ -398,6 +398,22 @@ line (dashed where a debt is estimated). A twelve-month change needs a balance f
 as balances history. The `net_worth` dataset carries the totals and the split, never an account's name, and reaches the review and MCP.
 Investment returns, allocation and performance are out of scope (What this is, and isn't).
 
+## Pre-tax saving
+
+401(k), 403(b), HSA and similar deductions never reach the budget tool, so a household saving 15% before tax sees a lower savings
+rate than it really has. Settings → Goals → **Pre-tax saving** takes each person's contribution (one row per person in the people rule)
+as a share of the household's gross pay (`7%`) or dollars a month; they are stored as the goals `pretax_contribution:<person>` and
+asked at month-close like the others. Then:
+
+- the savings rate is given twice: **take-home only** (net ÷ income, as before) and **counting pre-tax saving**, (net + pre-tax) ÷
+  (income + pre-tax), on the Overview tile, the Year by year table and in the review;
+- net worth's split (above) counts the contributions as **what you did**, and the rest of a retirement account's movement as what
+  happened to you.
+
+A share needs a gross pay to be a share of; without `gross_annual` the second rate shows "—" (a dollar amount works alone). The stated
+figure applies to every month, as the stated gross does. The `monthly` and `yearly` datasets carry `pretax` and the yearly
+`savings_rate_pretax`.
+
 ## Emergency fund
 
 "If income stopped tomorrow, how many months could we cover?" Coverage is the month-end balance of the asset accounts marked

@@ -504,10 +504,10 @@
     <p class="intro">The year-end view: what came in, what went out, what was kept, and the debts that were paid down and taken on.</p>
     <div class="card">
       <h2 id="yearly-table">Year by year</h2>
-        <ul class="key row"><li><span class="glyph">%</span>savings rate is net ÷ income</li><li><span class="glyph">$</span>real columns in {{ span.cpi_base_long }} prices (Method)</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Savings rate is net divided by income. Real columns restate each month in {{ span.cpi_base_long }} prices using the price index; see Method. Savings rate is net divided by income: positive means the year added to savings, negative means it drew them down. Real columns restate every month in {{ span.cpi_base_long }} prices; the Method tab explains the index used.</p></details>
+        <ul class="key row"><li><span class="glyph">%</span>savings rate is net ÷ income; with pre-tax, (net + pre-tax saving) ÷ (income + pre-tax saving)</li><li><span class="glyph">$</span>real columns in {{ span.cpi_base_long }} prices (Method)</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Savings rate is net divided by income, both as they reach the budget (take-home). With pre-tax adds the 401(k), 403(b), HSA and similar saving taken from pay before it reaches the budget, as stated per person on Settings → Goals, to both sides; it shows "—" until one is stated. Real columns restate each month in {{ span.cpi_base_long }} prices using the price index; see Method. Savings rate is net divided by income: positive means the year added to savings, negative means it drew them down. Real columns restate every month in {{ span.cpi_base_long }} prices; the Method tab explains the index used.</p></details>
       <div class="tbl"><table data-source="yearly" data-row-key="y"><thead><tr>
-        <th data-field="y">Year</th><th data-field="months">Months</th><th data-field="income">Income</th><th data-field="spend">Living spend</th><th data-field="debt">Debt paid</th><th data-field="net">Net</th><th data-field="savings_rate">Savings rate</th><th data-field="income_real">Income (real)</th><th data-field="spend_real">Spend (real)</th><th data-field="net_real">Net (real)</th>
+        <th data-field="y">Year</th><th data-field="months">Months</th><th data-field="income">Income</th><th data-field="spend">Living spend</th><th data-field="debt">Debt paid</th><th data-field="net">Net</th><th data-field="savings_rate">Savings rate</th><th data-field="savings_rate_pretax">With pre-tax</th><th data-field="income_real">Income (real)</th><th data-field="spend_real">Spend (real)</th><th data-field="net_real">Net (real)</th>
       </tr></thead><tbody data-draw="yearly"></tbody></table></div>
     </div>
     <div class="grid">
@@ -739,8 +739,8 @@ const last12 = (monthly, sfx) => {
   const sum = (rows, k) => d3.sum(rows, (r) => Number(r[k + sfx]));
   const inc = sum(cur, 'income'), sp = sum(cur, 'spend'), db = sum(cur, 'debt');
   const pinc = sum(prev, 'income'), psp = sum(prev, 'spend'), pdb = sum(prev, 'debt');
-  const net = inc - sp - db;
-  return [{ income: inc, spend: sp, debt: db, net, savings_rate: inc ? net / inc : null,
+  const net = inc - sp - db, pre = cur.length && cur.every((r) => r['pretax' + sfx] != null) ? sum(cur, 'pretax') : null;   // pre-tax saving (#152)
+  return [{ income: inc, spend: sp, debt: db, net, savings_rate: inc ? net / inc : null, pretax: pre, savings_rate_pretax: pre != null && inc + pre ? (net + pre) / (inc + pre) : null,
             income_delta: full && pinc ? inc / pinc - 1 : null, spend_delta: full && psp ? sp / psp - 1 : null, debt_delta: full && pdb ? db / pdb - 1 : null, prior_months: prev.length,
             from: cur[0] ? cur[0].m : null, to: cur.length ? cur[cur.length - 1].m : null }];
 };
@@ -878,7 +878,8 @@ const delta = (name, calc, field, goodUp) => dash.draw(name, (el) => {
   if (g.status !== 'ok' || !g.data[0]) { el.textContent = '—'; return; }
   const v = g.data[0][field];
   if (v == null) { const n = g.data[0].prior_months; el.textContent = field === 'savings_rate' || n == null ? '—' : n ? `no full year before to compare (${n} month${n === 1 ? '' : 's'})` : 'no earlier year to compare'; return; }
-  el.textContent = (field === 'savings_rate' ? dash.fmt.pct(1)(v) + ' of income kept' : HL.pct(v) + ' vs prior 12 months');
+  const pre = field === 'savings_rate' ? g.data[0].savings_rate_pretax : null;
+  el.textContent = (field === 'savings_rate' ? dash.fmt.pct(1)(v) + ' of take-home kept' + (pre != null ? `, ${dash.fmt.pct(1)(pre)} counting pre-tax saving` : '') : HL.pct(v) + ' vs prior 12 months');
   if (field !== 'savings_rate') el.classList.add((v >= 0) === goodUp ? 'up' : 'down'); else el.classList.add(v >= 0 ? 'up' : 'down');
 });
 for (const [sfx, calc] of [['n', 'last12'], ['r', 'last12_real']]) {
@@ -1068,6 +1069,7 @@ dash.draw('yearly', (tb) => {
   const neg = (v, td) => { if (Number(v) < 0) td.classList.add('neg'); return HL.usd0(Number(v)); };
   HL.fillTable(tb, rows, [(r) => r.y, (r) => r.months, (r) => HL.usd0(Number(r.income)), (r) => HL.usd0(Number(r.spend)), (r) => HL.usd0(Number(r.debt)), (r, td) => neg(r.net, td),
     (r, td) => { if (Number(r.savings_rate) < 0) td.classList.add('neg'); return r.savings_rate == null ? '—' : dash.fmt.pct(1)(Number(r.savings_rate)); },
+    (r) => r.savings_rate_pretax == null ? '—' : dash.fmt.pct(1)(Number(r.savings_rate_pretax)),
     (r) => HL.usd0(Number(r.income_real)), (r) => HL.usd0(Number(r.spend_real)), (r, td) => neg(r.net_real, td)]);
 });
 // Net worth (#146): the latest month with its split; a home's estimate can be left out

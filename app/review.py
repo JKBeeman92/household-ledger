@@ -79,6 +79,7 @@ def build_context(conn, month: str) -> dict:
     goals = {g["key"]: {"value": g["value"], "unit": g["unit"], "label": g["label"]} for g in ds.get("goals", [])}
     return {
         "month": month, "prior_month": prev,
+        "savings_rate": savings_rates(monthly, month, t12 + [month]),
         "ledger_totals": {"month": monthly[month], "prior": monthly.get(prev), "trailing12_avg": {k: round(mean(monthly[m][k] for m in t12), 2) for k in ("income", "spend", "debt", "net")} if t12 else None},
         "categories": {"month": cat.get(month, {}), "prior": cat.get(prev, {}), "trailing12_avg": t12_cat},
         "envelopes_planned_vs_actual": items,
@@ -241,3 +242,16 @@ def ef_context(rows: list[dict], goals: dict, month: str) -> dict:
     r = next(x for x in rows if x["m"] == month)
     t = goals.get("emergency_months", {}).get("value")
     return {"note": EF_NOTE, **{k: r[k] for k in ("months", "change", "emergency", "outgo", "outgo_months")}, "target": t}
+
+
+def savings_rates(monthly: dict, month: str, window: list[str]) -> dict:
+    """Net over income as the budget sees it (take-home), and with the stated pre-tax saving (#152) added to both sides; month and
+    the twelve months to it. including_pretax is None when no pre-tax saving is stated."""
+    def rate(ms, pre):
+        inc, net = sum(monthly[m]["income"] for m in ms), sum(monthly[m]["net"] for m in ms)
+        p = sum(monthly[m].get("pretax") or 0 for m in ms) if pre else 0
+        return round((net + p) / (inc + p), 4) if inc + p else None
+    has = all(monthly[m].get("pretax") is not None for m in window)
+    return {"note": "take_home: net / income as they reach the budget. including_pretax: (net + pre-tax saving) / (income + pre-tax saving).",
+            "month": {"take_home": rate([month], False), "including_pretax": rate([month], True) if has else None},
+            "trailing12": {"take_home": rate(window[-12:], False), "including_pretax": rate(window[-12:], True) if has else None}}

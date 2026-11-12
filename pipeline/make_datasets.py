@@ -9,16 +9,30 @@ def w(name, rows):
     json.dump(rows, open(f"dash_data/{name}.json","w"), separators=(",",":"))
     print(f"{name:16s} {len(rows):>5} rows")
 
+# pre-tax saving (#152): 401(k), 403(b), HSA and the like, taken from pay before it reaches the budget. Stated per person as goals
+# pretax_contribution:<person>, a share of the household's gross (gross_annual) or dollars a month (unit usd/month); applied to every
+# month, as the stated gross is. None when nothing is stated, or a share is stated with no gross to take it of.
+_goals = json.load(open("dash_data/goals.json")) if os.path.exists("dash_data/goals.json") else []   # run_pipeline writes it
+_gv = {g["key"]: g.get("value") for g in _goals}
+_gross = float(_gv["gross_annual"]) / 12 if _gv.get("gross_annual") else None
+_pre = [g for g in _goals if str(g["key"]).startswith("pretax_contribution:") and g.get("value") is not None]
+_pre_share = [g for g in _pre if str(g.get("unit") or "").lower().startswith("share")]
+PRETAX = None if not _pre or (_pre_share and not _gross) else round(sum(float(g["value"]) * (_gross if g in _pre_share else 1) for g in _pre), 2)
+
 # monthly: nominal + real side by side
 mn = {r["m"]:r for r in D["monthly"]["nominal"]}; mr = {r["m"]:r for r in D["monthly"]["real"]}
+_rf = lambda m: (mr[m]["net"] / mn[m]["net"]) if mn[m]["net"] else (mr[m]["spend"] / mn[m]["spend"] if mn[m]["spend"] else 1)   # the month's price factor
+_sr = lambda net, inc, pre: round((net + (pre or 0)) / (inc + (pre or 0)), 4) if inc + (pre or 0) else None
 w("monthly", [{"m":m, "income":mn[m]["income"], "spend":mn[m]["spend"], "debt":mn[m]["debt"], "net":mn[m]["net"],
                "income_real":mr[m]["income_real"] if "income_real" in mr[m] else mr[m]["income"],
-               "spend_real":mr[m]["spend"], "debt_real":mr[m]["debt"], "net_real":mr[m]["net"]} for m in mn])
+               "spend_real":mr[m]["spend"], "debt_real":mr[m]["debt"], "net_real":mr[m]["net"],
+               "pretax":PRETAX, "pretax_real":round(PRETAX * _rf(m), 2) if PRETAX is not None else None} for m in mn])
 
 yn = {r["y"]:r for r in D["yearly"]["nominal"]}; yr = {r["y"]:r for r in D["yearly"]["real"]}
 w("yearly", [{"y":y, "months":yn[y]["months"], "income":yn[y]["income"], "spend":yn[y]["spend"], "debt":yn[y]["debt"], "net":yn[y]["net"],
               "savings_rate":yn[y]["savings_rate"], "income_real":yr[y]["income"], "spend_real":yr[y]["spend"], "debt_real":yr[y]["debt"],
-              "net_real":yr[y]["net"]} for y in yn])
+              "net_real":yr[y]["net"], "pretax":round(PRETAX * yn[y]["months"], 2) if PRETAX is not None else None,
+              "savings_rate_pretax":_sr(yn[y]["net"], yn[y]["income"], PRETAX * yn[y]["months"]) if PRETAX is not None else None} for y in yn])
 
 cy = D["category"]["by_year"]
 w("cat_year", [{"y":y, "category":c, "amount":cy["nominal"][y][c], "amount_real":cy["real"][y][c]}
@@ -81,7 +95,7 @@ w("balances", _brows)
 w("balance_totals", _bal.totals(_brows))
 # net_worth (#146): what the household did in a month is its income less living spend (net plus debt payments: paying down a loan is
 # the household's doing; the interest in those payments shows up in "what happened")
-_did = {m: mn[m]["net"] + mn[m]["debt"] for m in mn}
+_did = {m: mn[m]["net"] + mn[m]["debt"] + (PRETAX or 0) for m in mn}   # plus pre-tax saving (#152): the household's doing too
 _cpi = {r["month"]: float(r["cpi"]) for r in csv.DictReader(open("cpi_u.csv"))}
 w("net_worth", _bal.net_worth(_brows, _did, _cpi, D["meta"]["cpi_base"]))
 # emergency_fund (#150): emergency money (asset accounts marked emergency) over the average monthly outgo (living spend plus debt
@@ -127,9 +141,6 @@ w("reconciliation", rec)
 # trailing twelve, and the same payments over take-home (paychecks, as the Goals tab counts them). Housing is the goal_housing_categories'
 # spending and debt payments plus any debt of type mortgage (#141), counted row by row so a mortgage in a housing category counts once.
 # No gross stated: the ratios are null ("—"), never 0. Goals come from dash_data/goals.json (run_pipeline writes it); absent, no gross.
-_goals = json.load(open("dash_data/goals.json")) if os.path.exists("dash_data/goals.json") else []
-_gv = {g["key"]: g.get("value") for g in _goals}
-_gross = float(_gv["gross_annual"]) / 12 if _gv.get("gross_annual") else None
 _house_cats = set(_rl("goal_housing_categories", ["Housing", "Utilities"]))   # role default
 _pay_items = set(_rl("paycheck_items", ["Paycheck"]))   # role default
 _dm = collections.defaultdict(lambda: {"debt": 0.0, "housing": 0.0, "takehome": 0.0})
