@@ -213,24 +213,24 @@ symbols or wording. `docs/BRANDING.md` has the steps; `examples/brand-kits/` has
 ## 8. Not yet in keeping
 
 The system was written after the app. These parts of the app break a rule today; a change that touches one of them mends it,
-and the critique reports them only on the surfaces a change touches.
+and the critique reports them only on the surfaces a change touches. Each row names the issue that will mend it.
 
-| Where | Rule | What is wrong |
-|---|---|---|
-| Dashboard charts (`dashboard.html`) | DS-CHART-1, 2, 3 | Lines and areas, not fixes, courses and waypoints |
-| Dashboard page | DS-TOKEN-1 | A 200-line `<style>` block of its own, with raw `em` sizes |
-| Templates | DS-SPACE-1 | About 135 inline `style` attributes, most of them margins |
-| Check-in, dashboard | DS-SHEET-4 | No page turn between months |
-| Dashboard tiles | DS-GLYPH-1 | The figure glyphs (`savings-rate`, `net-worth`, `emergency-fund`) are drawn but not yet placed |
-| Check-in steps, Close a month, Reviews, Sources, Tokens, Webhooks | DS-WORD-6 | Dates as ISO strings and amounts as bare numbers; the server has no money, date or month formatter yet |
-| Dashboard (Leaks, CPI tables) | DS-WORD-6 | Months as ISO strings in three places |
-| Dashboard (catch-all envelopes, radar charts) | DS-CHART-5 | No table of their figures |
-| Dashboard | DS-COLOR-2 | `--accent-2` marks card headings, summaries and definitions, which are not destinations |
-| Dashboard gauges | DS-STATUS-1 | Verdicts are round pills with a dot, not stamps |
-| Dashboard, Reviews list, Settings | DS-SHEET-1, 2 | Cards and lists lie straight on the paper; one sheet is nested in another |
-| Reviews, Close a month | DS-WORD-3 | One act is named five ways ("Write the month-close review", "Generate review", "Write one", "Write again", "Send and generate") |
-| Check-in | DS-BTN-2 | "Reopen", "Undo skip" and "Catch up" lack their objects; the net-worth line "you did / happened" needs a gloss |
-| Check-in, Balances step | DS-FIRST-1 | A long method paragraph stands above the fields |
-| Settings, Reviews | DS-FORM-1, DS-EMPTY-1 | Filter boxes have no visible label; empty states link in prose where a button should be |
-| Settings tables | DS-TYPE-3 | Number columns are left-aligned (`.num` exists; the columns do not yet use it) |
-| Close a month, Settings | DS-BTN-1 | More than one primary button in a view; which is primary is the owner's choice |
+| Where | Rule | What is wrong | Issue |
+|---|---|---|---|
+| Dashboard charts (`dashboard.html`) | DS-CHART-1, 2, 3 | Lines and areas, not fixes, courses and waypoints | #191 |
+| Dashboard page | DS-TOKEN-1 | A 200-line `<style>` block of its own, with raw `em` sizes | #191 |
+| Templates | DS-SPACE-1 | About 135 inline `style` attributes, most of them margins | #193 |
+| Check-in, dashboard | DS-SHEET-4 | No page turn between months | #191 |
+| Dashboard tiles | DS-GLYPH-1 | The figure glyphs (`savings-rate`, `net-worth`, `emergency-fund`) are drawn but not yet placed | #191 |
+| Check-in steps, Close a month, Reviews, Sources, Tokens, Webhooks | DS-WORD-6 | Dates as ISO strings and amounts as bare numbers; the server has no money, date or month formatter yet | #190 |
+| Dashboard (Leaks, CPI tables) | DS-WORD-6 | Months as ISO strings in three places | #190 |
+| Dashboard (catch-all envelopes, radar charts) | DS-CHART-5 | No table of their figures | #191 |
+| Dashboard | DS-COLOR-2 | `--accent-2` marks card headings, summaries and definitions, which are not destinations | #191 |
+| Dashboard gauges | DS-STATUS-1 | Verdicts are round pills with a dot, not stamps | #191 |
+| Dashboard, Reviews list, Settings | DS-SHEET-1, 2 | Cards and lists lie straight on the paper; one sheet is nested in another | #191 |
+| Reviews, Close a month | DS-WORD-3 | One act is named five ways ("Write the month-close review", "Generate review", "Write one", "Write again", "Send and generate") | #192 |
+| Check-in | DS-BTN-2 | "Reopen", "Undo skip" and "Catch up" lack their objects; the net-worth line "you did / happened" needs a gloss | #192 |
+| Check-in, Balances step | DS-FIRST-1 | A long method paragraph stands above the fields | #192 |
+| Settings, Reviews | DS-FORM-1, DS-EMPTY-1 | Filter boxes have no visible label; empty states link in prose where a button should be | #193 |
+| Settings tables | DS-TYPE-3 | Number columns are left-aligned (`.num` exists; the columns do not yet use it) | #193 |
+| Close a month, Settings | DS-BTN-1 | More than one primary button in a view; which is primary is the owner's choice | #193 |
