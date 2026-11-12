@@ -1,6 +1,8 @@
 #!/usr/bin/env python3 -I
 """Write dashboard dataset files (JSON row arrays) from dashboard_data.json + ledger.csv."""
 import json, csv, os, collections
+import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # filenames.py sits beside this script
+import filenames   # noqa: E402
 D = json.load(open("dashboard_data.json"))
 os.makedirs("dash_data", exist_ok=True)
 def w(name, rows):
@@ -73,15 +75,12 @@ w("goal_config", [{"giving_categories": _rl("goal_giving_categories", ["Giving"]
 
 # reconciliation: every envelope whose transactions do not sum to its BudgetItems Spent (empty when the books are clean)
 from decimal import Decimal as _D
-_rx = __import__("re").compile(r"^[0-9a-f]+-(\d\d)-(\d{4})-EveryDollar-(Transactions|BudgetItems)\.csv$")
 def _files(folder, kind):
-    for fn in sorted(os.listdir(folder)) if os.path.isdir(folder) else []:
-        m = _rx.match(fn)
-        if m and m.group(3) == kind: yield f"{m.group(2)}-{m.group(1)}", os.path.join(folder, fn)
+    for bm, fn in filenames.exports(folder, kind): yield bm, os.path.join(folder, fn)
 _tx, _sp = collections.defaultdict(_D), {}
-for _bm, _p in _files("txns", "Transactions"):
+for _bm, _p in _files("txns", "transactions"):
     for r in csv.DictReader(open(_p, newline="", encoding="utf-8-sig")): _tx[(_bm, r["Item"])] += _D(r["Amount"])
-for _bm, _p in _files("summaries", "BudgetItems"):
+for _bm, _p in _files("summaries", "budget_items"):
     for r in csv.DictReader(open(_p, newline="", encoding="utf-8-sig")): _sp[(_bm, r["Item"])] = _D(r["Spent"])
 rec = []
 for (_bm, _it) in sorted(set(_sp) | set(_tx)):

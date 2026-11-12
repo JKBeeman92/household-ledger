@@ -1,5 +1,7 @@
 #!/usr/bin/env python3 -I
-"""Generate the synthetic sample household: 18 months of EveryDollar-shaped exports plus the seed files.
+"""Generate the synthetic sample household: 18 months of exports plus the seed files. The last month is in the internal format
+(YYYY-MM-transactions.csv / YYYY-MM-budget.csv, ISO dates; pipeline/filenames.py), the others as EveryDollar names its exports,
+so a first run exercises both (#161).
 
 Deterministic (fixed seed, no clock, no environment). Everything here is invented.
     python -I generate.py [output-dir]      # default: the directory this script lives in
@@ -139,14 +141,19 @@ def build_month(rng, y, m):
 def main(out: Path):
     out.mkdir(parents=True, exist_ok=True)
     rng = random.Random(SEED)
-    for y, m in month_list():
+    months = list(month_list())
+    for y, m in months:
         bm, txns, planned = build_month(rng, y, m)
-        with open(out / f"{HEX}-{m:02d}-{y}-EveryDollar-Transactions.csv", "w", newline="", encoding="utf-8") as f:
+        neutral = (y, m) == months[-1]
+        tname, bname = (f"{y}-{m:02d}-transactions.csv", f"{y}-{m:02d}-budget.csv") if neutral else \
+                       (f"{HEX}-{m:02d}-{y}-EveryDollar-Transactions.csv", f"{HEX}-{m:02d}-{y}-EveryDollar-BudgetItems.csv")
+        with open(out / tname, "w", newline="", encoding="utf-8") as f:
             w = csv.writer(f, lineterminator="\n"); w.writerow(["Group", "Item", "Type", "Date", "Merchant", "Account", "Amount", "Note"])
-            for d, g, item, typ, merch, c, note in txns: w.writerow([g, item, typ, f"{m:02d}/{d:02d}/{y}", merch, ACCOUNT, money(c), note])
+            for d, g, item, typ, merch, c, note in txns:
+                w.writerow([g, item, typ, f"{y}-{m:02d}-{d:02d}" if neutral else f"{m:02d}/{d:02d}/{y}", merch, ACCOUNT, money(c), note])
         spent = {}
         for d, g, item, typ, merch, c, note in txns: spent[item] = spent.get(item, 0) + c
-        with open(out / f"{HEX}-{m:02d}-{y}-EveryDollar-BudgetItems.csv", "w", newline="", encoding="utf-8") as f:
+        with open(out / bname, "w", newline="", encoding="utf-8") as f:
             w = csv.writer(f, lineterminator="\n"); w.writerow(["Group", "Item", "Planned", "Spent", "Remaining"])
             for g, item, canon, cat, flow, *_ in ITEMS:
                 p, s = planned.get(item, 0), spent.get(item, 0)

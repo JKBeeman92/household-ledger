@@ -14,7 +14,7 @@ from psycopg.types.json import Jsonb
 from ..builds import build_status, run_background
 from .findings import latest_findings
 from .checklist import checklist_goals
-from pipeline.run_pipeline import ingest, build_running, FN_RX
+from pipeline.run_pipeline import ingest, build_running, FN_RX, EXPORT_NAMES
 from .sources import stash
 
 router = APIRouter()
@@ -55,15 +55,15 @@ async def upload(request: Request, background: BackgroundTasks, files: list[Uplo
             items += expand_zip(name, data)
         else:
             items.append(Item(name, data))
-    # files not named like EveryDollar's exports go to the mapping step (#96); a zip stays an EveryDollar back catalogue
+    # files not named like exports (internal format or EveryDollar's) go to the mapping step (#96); a zip holds named exports only
     loose = [it for it in items if it.data is not None and not it.source and not FN_RX.match(it.name)]
     other = [it for it in loose if it.name.lower().endswith(".csv")]
     items = [it for it in items if it not in loose] + [
-        Item(it.name, error="not an EveryDollar export filename (<hex>-MM-YYYY-EveryDollar-Transactions|BudgetItems.csv), "
+        Item(it.name, error=f"not named like a monthly export ({EXPORT_NAMES}), "
                             "and not a CSV another budget tool could have written") for it in loose if it not in other]
     if len(other) > 2:
         for it in other:
-            items.append(Item(it.name, error="more than two files that are not EveryDollar exports: upload one month's pair (transactions and budget) at a time"))
+            items.append(Item(it.name, error="more than two files that are not named like exports: upload one month's pair (transactions and budget) at a time"))
         other = []
     results, stored = [], 0
     with db.pool.connection() as conn:

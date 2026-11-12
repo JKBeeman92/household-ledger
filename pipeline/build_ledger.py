@@ -1,10 +1,11 @@
 #!/usr/bin/env python3 -I
-"""Build the canonical ledger from staged EveryDollar exports + item_mapping.csv + cpi_u.csv."""
+"""Build the canonical ledger from the staged monthly exports (the internal format, or EveryDollar's; pipeline/filenames.py) + item_mapping.csv + cpi_u.csv."""
 import csv, os, re, json, collections
 from decimal import Decimal as D
+import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # filenames.py sits beside this script
+import filenames   # noqa: E402
 
 def norm(x): return re.sub(r"\s+"," ",(x or "").replace(" "," ")).strip()
-rx = re.compile(r"^[0-9a-f]+-(\d\d)-(\d{4})-EveryDollar-Transactions\.csv$")
 
 # ---- reference tables ----
 mapping = {norm(r["Item"]): r for r in csv.DictReader(open("item_mapping.csv", newline=""))}
@@ -89,10 +90,7 @@ def merchant_norm(m):
 
 # ---- load ----
 rows = []
-for fn in sorted(os.listdir("txns")):
-    m = rx.match(fn)
-    if not m: continue
-    bm = f"{m.group(2)}-{m.group(1)}"
+for bm, fn in filenames.exports("txns", "transactions"):
     with open(os.path.join("txns", fn), newline="", encoding="utf-8-sig") as f:
         for i, r in enumerate(csv.DictReader(f)):
             rows.append({"BudgetMonth": bm, "SourceFile": fn, "SourceRow": i+2,
@@ -106,7 +104,7 @@ for r in rows:
     if mp is None: raise SystemExit(f"unmapped item: {r['Item']!r}")
     flow = mp["Flow"]
     if flow == "exclude": excluded[r["Item"]] += 1; excluded_amt[r["Item"]] += abs(float(r["Amount"])); continue
-    mm, dd, yy = r["Date"].split("/")
+    yy, mm, dd = filenames.iso_date(r["Date"])
     cal = f"{yy}-{mm}"
     amt = float(r["Amount"])
     is_plug = (flow == "plug") or (r["Group"] in DEBT_GROUPS and flow == "debt" and amt > 0 and r["BudgetMonth"] <= (RULES["debt_plug_until"] or "0000-00"))

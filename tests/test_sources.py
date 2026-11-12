@@ -9,7 +9,7 @@ from pathlib import Path
 from conftest import GOLDEN, ROOT
 from test_pipeline_golden import run_scripts
 
-from pipeline import sources as src
+from pipeline import sources as src, filenames
 
 BREE = ROOT / "tests" / "fixtures" / "bree"
 TXN, BUD = BREE / "bree-bank-2025-01-transactions.csv", BREE / "bree-bank-2025-01-budget.csv"
@@ -17,8 +17,10 @@ ED = GOLDEN / "exports"
 
 
 def ed_rows(month_mm: str, kind: str) -> list[dict]:
+    """An EveryDollar export's rows in the internal format: the same rows, dates as YYYY-MM-DD (#161)."""
     name = f"c0ffee-{month_mm}-2025-EveryDollar-{'Transactions' if kind == 'transactions' else 'BudgetItems'}.csv"
-    return list(csv.DictReader(open(ED / name, encoding="utf-8-sig")))
+    rows = list(csv.DictReader(open(ED / name, encoding="utf-8-sig")))
+    return [{**r, "Date": "-".join(filenames.iso_date(r["Date"]))} if "Date" in r else r for r in rows]
 
 
 def _eu(d: Decimal) -> str:
@@ -30,7 +32,7 @@ def to_bree(month_mm: str) -> tuple[bytes, bytes]:
     t, b = io.StringIO(), io.StringIO()
     w = csv.writer(t, delimiter=";", lineterminator="\n"); w.writerow(["Posted", "Description", "Category", "Subcategory", "Debit", "Credit", "Memo"])
     for r in ed_rows(month_mm, "transactions"):
-        a = Decimal(r["Amount"]); mm, dd, yy = r["Date"].split("/")
+        a = Decimal(r["Amount"]); yy, mm, dd = filenames.iso_date(r["Date"])
         w.writerow([f"{dd}/{mm}/{yy}", r["Merchant"], r["Group"], r["Item"], _eu(a) if a < 0 else "", _eu(a) if a > 0 else "", r.get("Note", "")])
     w = csv.writer(b, delimiter=";", lineterminator="\n"); w.writerow(["Category", "Subcategory", "Budgeted", "Actual"])
     for r in ed_rows(month_mm, "budget_items"):
@@ -85,7 +87,7 @@ def test_signed_and_type_layouts():
     p = {"transactions": src.propose("transactions", signed)}
     assert p["transactions"]["amount_mode"] == "signed" and p["transactions"]["date_format"] == "YYYY-MM-DD"
     rows = src.apply("transactions", signed, p)
-    assert [(r["Date"], r["Amount"], r["Type"]) for r in rows] == [("03/02/2025", "-12.50", "Expense"), ("03/05/2025", "100.00", "Income")]
+    assert [(r["Date"], r["Amount"], r["Type"]) for r in rows] == [("2025-03-02", "-12.50", "Expense"), ("2025-03-05", "100.00", "Income")]
     typed = b"Date,Payee,Group,Item,Amount,Kind\n03/02/2025,Bywater Market,Food,Groceries,12.50,debit\n03/05/2025,Hobbiton Mill,Income,Paycheck,100,credit\n"
     t = src.propose("transactions", typed)
     assert t["amount_mode"] == "type"
@@ -98,7 +100,8 @@ def test_standalone_normalize_feeds_the_unchanged_pipeline_scripts(tmp_path):
     assert src.main(["normalize", "--profile", str(tmp_path / "p.json"), "--month", "2025-01", "--transactions", str(TXN), "--budget", str(BUD), "--out", str(out)]) == 0
     wd = tmp_path / "wd"; (wd / "txns").mkdir(parents=True); (wd / "summaries").mkdir()
     for f in out.iterdir():
-        (wd / ("txns" if "Transactions" in f.name else "summaries") / f.name).write_bytes(f.read_bytes())
+        assert filenames.parse(f.name)[1] == "2025-01" and not f.name.startswith(("c0ffee", "EveryDollar"))   # internal-format names
+        (wd / ("txns" if filenames.parse(f.name)[0] == "transactions" else "summaries") / f.name).write_bytes(f.read_bytes())
     for n in ("item_mapping.csv", "cpi_u.csv", "rules.json", "events.json"):
         (wd / n).write_bytes((GOLDEN / n).read_bytes())
     run_scripts(wd)

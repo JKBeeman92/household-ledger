@@ -15,6 +15,11 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
 
 Migrations run at start; read this list before upgrading.
 
+- **A tool-neutral internal format** (#161). Nothing to do: EveryDollar's exports are read as before, and files named
+  `YYYY-MM-transactions.csv` / `YYYY-MM-budget.csv` (ISO dates) are now read as they are too (README, "The internal format").
+  Rebuilds stage files under those names, so the ledger's `SourceFile` column now shows `2026-03-transactions.csv` where it
+  showed `db-03-2026-EveryDollar-Transactions.csv`, and its rows come in budget-month order; no figure changes. Anything that
+  ran the standalone scripts by hand needs `pipeline/filenames.py` beside them.
 - **Life events gain an optional kind and person** (#109, `0109_life_event_kind.sql`). Existing events keep both empty and draw
   as before; nothing is guessed from their labels. Set them on Settings → Life events. The Employer chart now marks job events,
   and events with no kind, so existing events appear there too until you give them a kind. For agents: MCP's `month_summary`

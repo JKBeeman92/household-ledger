@@ -117,7 +117,7 @@ def test_review_counts_paychecks_by_the_rule(client, reset_db):
     from conftest import SAMPLE
     from app import db, review
     reset_db(SAMPLE)
-    client.post("/upload", files=[("files", (p.name, p.read_bytes(), "text/csv")) for p in sorted(SAMPLE.glob("*EveryDollar*.csv"))])
+    client.post("/upload", files=[("files", (p.name, p.read_bytes(), "text/csv")) for p in sorted(p for p in SAMPLE.glob("*.csv") if __import__("pipeline.filenames", fromlist=["x"]).is_export(p.name))])
     with db.pool.connection() as conn:
         month = conn.execute("SELECT max(budget_month) m FROM source_files").fetchone()["m"]
         n = review.build_context(conn, month)["paycheck_envelopes_with_money"]

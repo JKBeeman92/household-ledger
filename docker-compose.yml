@@ -24,7 +24,7 @@ services:
       - "8010:8010"                 # with a reverse proxy on this host, use "127.0.0.1:8010:8010" (README, "Reverse proxy and HTTPS")
     volumes:
       - ${LEDGER_DATA:-./data}/brand:/data/brand:ro   # optional: theme.css, mark.svg, images, custom.css
-      - ${LEDGER_DATA:-./data}/import:/data/import:ro # optional: drop EveryDollar exports here; new/changed files load on every start
+      - ${LEDGER_DATA:-./data}/import:/data/import:ro # optional: drop monthly exports (internal format or EveryDollar's) here; new/changed files load on every start
       - ${LEDGER_DATA:-./data}/seed:/data/seed:ro     # optional, first boot only: item_mapping.csv, goals.json, events.json, rules.json, review.json, household.json
     depends_on:
       ledger-db:

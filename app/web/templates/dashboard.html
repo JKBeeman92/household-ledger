@@ -208,15 +208,15 @@
     <img class="mark" src="/brand/mark.svg" alt="">
     <h1>{{ household.title or 'Household Ledger' }}{% if span.has_data %} {{ span.first_year }}{% if span.last_year != span.first_year %}–{{ span.last_year }}{% endif %}{% endif %}</h1>
   </div>
-  <p class="lede">Over the last twelve <dfn title="EveryDollar files each transaction into the month whose budget it belonged to, which is not always its calendar month. Every figure here uses the budget month.">budget months</dfn> the household took in <b data-draw="lede-income">—</b>, spent <b data-draw="lede-spend">—</b> on <dfn title="Everything that is not income, debt principal or a transfer: housing, food, giving, insurance, projects, envelope spending.">living</dfn> and <b data-draw="lede-debt">—</b> on debt, and kept <b data-draw="lede-net">—</b>.
-    <span class="aside-note">From the EveryDollar exports, with moves between envelopes and your rules' exclusions taken out (Method tab). Dotted terms have a definition: hover, focus or tap them.</span></p>
+  <p class="lede">Over the last twelve <dfn title="Your budget tool files each transaction into the month whose budget it belonged to, which is not always its calendar month. Every figure here uses the budget month.">budget months</dfn> the household took in <b data-draw="lede-income">—</b>, spent <b data-draw="lede-spend">—</b> on <dfn title="Everything that is not income, debt principal or a transfer: housing, food, giving, insurance, projects, envelope spending.">living</dfn> and <b data-draw="lede-debt">—</b> on debt, and kept <b data-draw="lede-net">—</b>.
+    <span class="aside-note">From your budget tool's exports, with moves between envelopes and your rules' exclusions taken out (Method tab). Dotted terms have a definition: hover, focus or tap them.</span></p>
 
   {% if not span.has_data %}<div class="card firstrun" id="empty-state">
     <p class="eyebrow">Nothing loaded yet</p>
     <h2>Close your first month</h2>
     {% if user and user.is_editor %}
     <ol class="steps">
-      <li>Export the month from EveryDollar: <b>Transactions</b> and <b>BudgetItems</b>, two CSV files named like <code>…-06-2026-EveryDollar-Transactions.csv</code>.</li>
+      <li>Export the month from your budget tool: a transactions file and a budget file. From EveryDollar these are <b>Transactions</b> and <b>BudgetItems</b>, named like <code>…-06-2026-EveryDollar-Transactions.csv</code>; another tool's pair is mapped once on upload.</li>
       <li>Upload both on <a href="/upload">Close a month</a> (a <code>.zip</code> of several months works too). Another budget tool's files work through a column mapping.</li>
       <li>Map any item the ledger has not seen, then the dashboard fills in.</li>
     </ol>
@@ -311,7 +311,7 @@
       <div class="lead"><p class="eyebrow"><b data-draw="lm-name">—</b> · against its plan</p><div class="fig" data-draw="lm-fig" data-source="lm_totals">—</div></div>
       <p class="take" data-draw="lm-take" data-source="lm_totals">—</p>
       <ul class="chips" data-draw="lm-chips" data-source="lm_totals lm_cats" aria-label="The month at a glance"></ul>
-      <p class="aside-note">Planned and spent are EveryDollar's own figures, so moves between envelopes count as they did in the app; the other tabs use the cleaned ledger.</p>
+      <p class="aside-note">Planned and spent are your budget tool's own figures, so moves between envelopes count as they did in the app; the other tabs use the cleaned ledger.</p>
     </div>
     <div class="card">
       <div class="aside">
@@ -396,7 +396,7 @@
         <h2 id="goal-params">The targets as recorded</h2>
         <ul class="key row"><li>your stated figures, not derived from data</li><li>gross salary is asked for at every month-close</li></ul>
         <div class="tbl"><table data-source="goals" data-row-key="key"><thead><tr><th data-field="label">Target</th><th data-field="value">Value</th><th data-field="note">Note</th><th data-field="confirmed_at">Last confirmed</th></tr></thead><tbody data-draw="goal-params"></tbody></table></div>
-        <details class="how"><summary>What is not here yet</summary><p>These are the user's stated figures, not derived from the data. Gross salary is asked for at every month-close; the others change only when the user says so. Investing that is deposited outside EveryDollar never appears in the exports, so this page cannot see it. Once the amount is recorded in the targets table it can be shown as a share of gross alongside the others, and it should be: it is the one goal this page currently cannot check.</p></details>
+        <details class="how"><summary>What is not here yet</summary><p>These are the user's stated figures, not derived from the data. Gross salary is asked for at every month-close; the others change only when the user says so. Investing that is deposited outside your budget tool never appears in the exports, so this page cannot see it. Once the amount is recorded in the targets table it can be shown as a share of gross alongside the others, and it should be: it is the one goal this page currently cannot check.</p></details>
       </div>
     </div>
   </section>
@@ -428,7 +428,7 @@
         <h3 class="visually-hidden" id="item-table">Items inside a category</h3>
         <ul class="key row"><li>pick a category</li><li>merged names from the mapping</li></ul>
       
-      <details class="how"><summary>How to read this</summary><p>Pick a category to see its canonical items by year. Item names are the merged names from the mapping, not EveryDollar's originals. Items are EveryDollar envelopes after merging renamed copies (Grocery 2 and Grocery are one item). Pick a category above to change the list.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Pick a category to see its canonical items by year. Item names are the merged names from the mapping, not the budget tool's originals. Items are the budget tool's envelopes after merging renamed copies (Grocery 2 and Grocery are one item). Pick a category above to change the list.</p></details>
       <div class="controls"><select class="cat-pick" aria-label="Category" data-draw="cat-pick" data-source="cat_year"></select></div>
       <div class="tbl"><table data-source="item_pivot" data-row-key="item"><thead><tr>
         <th data-field="item">Item</th><th data-field="total">Total</th>
@@ -452,7 +452,7 @@
       <div class="card">
         <h2 id="slush-chart">Catch-all envelopes</h2>
         <ul class="key row"><li><span class="glyph">Σ</span>catch-alls: <span data-draw="slush-items" data-source="goal_config">none yet</span></li><li><span class="glyph">↑</span>a tall bar is spending under a saving label</li><li><code>catchall_items</code> in the rules on Settings</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Spending booked to the envelopes your rules name as catch-alls; name them as <code>catchall_items</code> in the rules on the Settings page. EveryDollar envelopes named like savings can end up holding everyday spending. When a bar here is tall, real spending was hidden under a saving label that year. An empty chart means nothing was booked to these envelopes.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Spending booked to the envelopes your rules name as catch-alls; name them as <code>catchall_items</code> in the rules on the Settings page. Envelopes named like savings can end up holding everyday spending. When a bar here is tall, real spending was hidden under a saving label that year. An empty chart means nothing was booked to these envelopes.</p></details>
         <div class="chart" data-draw="slush" data-source="slush"></div>
         <div class="legend" data-draw="slush-legend" data-source="slush"></div>
       </div>
@@ -480,7 +480,7 @@
       <div class="card">
         <h2 id="debt-chart">Debt timeline</h2>
         <ul class="key row"><li><span class="glyph">↔</span>first to last payment month</li><li><span class="glyph">Σ</span>label: total paid, interest included</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Each bar spans the months a debt item received payments; the label is the total paid. Bars run from first to last payment month. Total paid includes principal and interest as EveryDollar recorded them, not the original loan balance.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Debt</th><th scope="col">First payment</th><th scope="col">Last payment</th><th scope="col">Months</th><th scope="col">Total paid</th></tr></thead><tbody data-draw="dt-debts" data-source="debts"></tbody></table></div></details>
+      <details class="how"><summary>How to read this</summary><p>Each bar spans the months a debt item received payments; the label is the total paid. Bars run from first to last payment month. Total paid includes principal and interest as the budget tool recorded them, not the original loan balance.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Debt</th><th scope="col">First payment</th><th scope="col">Last payment</th><th scope="col">Months</th><th scope="col">Total paid</th></tr></thead><tbody data-draw="dt-debts" data-source="debts"></tbody></table></div></details>
         <div class="chart" data-draw="debts" data-source="debts"></div>
       </div>
       <div class="card">
@@ -507,7 +507,7 @@
       <div class="card">
         <h2 id="payer-chart">Spend by payer</h2>
         <ul class="key row"><li>payer means envelope owner, not who paid</li><li>shared envelopes left out: <span data-draw="payer-shared" data-source="people">—</span></li></ul>
-      <details class="how"><summary>How to read this</summary><p>Payer is envelope ownership, the only signal EveryDollar carries: each person's discretionary envelopes versus everything shared. Expect Household to dominate. EveryDollar has no payer field, so payer here means envelope ownership, matched by the payer_prefix_by_person and payer_items_by_person rules, with the shared remainder as Household. It answers “how much discretionary money did each person direct,” not “who tapped the card.”</p></details>
+      <details class="how"><summary>How to read this</summary><p>Payer is envelope ownership, the only signal a budget tool's export carries: each person's discretionary envelopes versus everything shared. Expect Household to dominate. The exports have no payer field, so payer here means envelope ownership, matched by the payer_prefix_by_person and payer_items_by_person rules, with the shared remainder as Household. It answers “how much discretionary money did each person direct,” not “who tapped the card.”</p></details>
         <div class="chart" data-draw="payer" data-source="people"></div>
         <div class="legend" data-draw="payer-legend" data-source="people"></div>
       </div>
@@ -527,14 +527,14 @@
     <div class="card">
       <h2>How the numbers are made</h2>
       <div class="topics">
-        <details class="topic"><summary><b>Budget month, not calendar month</b><span>Rows count in the budget month EveryDollar filed them in.</span></summary><div class="prose"><p>EveryDollar files transactions into budget months, and about one row in thirteen sits in a different budget month than its calendar date. Everything here uses the budget month, so a late-January rent payment filed into February stays in February, matching what the budget showed at the time.</p></div></details>
+        <details class="topic"><summary><b>Budget month, not calendar month</b><span>Rows count in the budget month your budget tool filed them in.</span></summary><div class="prose"><p>Your budget tool files transactions into budget months, and about one row in thirteen sits in a different budget month than its calendar date. Everything here uses the budget month, so a late-January rent payment filed into February stays in February, matching what the budget showed at the time.</p></div></details>
         <details class="topic"><summary><b>Nominal versus real amounts</b><span>Real restates every month in one month's prices.</span></summary><div class="prose"><p>Nominal is what the bank saw. Real restates each month's amounts in {{ span.cpi_base_long }} prices by multiplying by the ratio of the {{ span.cpi_base_long }} price index to that month's price index. For US households the documented source is CPI-U (all urban consumers, all items, seasonally adjusted, series CPIAUCSL from FRED); other countries use their own consumer price index, entered on the Settings page. Use real to compare lifestyle across years; use nominal to reconcile against statements. <span data-draw="cpi-note" data-source="cpi" data-base="{{ span.cpi_base_iso }}" data-first="{{ span.first_month or '' }}"></span></p></div></details>
-        <details class="topic" open><summary><b>What was taken out</b><span>Transfers and other non-spending rows removed before any total.</span></summary><div class="prose"><p>Transfers between envelopes appear in EveryDollar as a negative row in one item and a positive row in another, so summing them would inflate both income and spend. They are recognised by merchant text, by item name and by amount pairing, and removed. What follows is generated from the data loaded, so it lists only what this household's rules actually removed.</p>
+        <details class="topic" open><summary><b>What was taken out</b><span>Transfers and other non-spending rows removed before any total.</span></summary><div class="prose"><p>Transfers between envelopes appear in the export as a negative row in one item and a positive row in another, so summing them would inflate both income and spend. They are recognised by merchant text, by item name and by amount pairing, and removed. What follows is generated from the data loaded, so it lists only what this household's rules actually removed.</p>
       <div id="method-exclusions" data-draw="method-exclusions" data-source="exclusions verify"></div></div></details>
-        <details class="topic"><summary><b>Item names</b><span>Renamed envelopes are merged through the mapping.</span></summary><div class="prose"><p>EveryDollar items get renamed and recreated, so the same envelope can appear under several names. Each original name is mapped to a canonical item and a category; the mapping file lives beside the ledger and is the thing to edit (Settings) if a category looks wrong. <span data-draw="method-items" data-source="item_year cat_year"></span></p></div></details>
-        <details class="topic"><summary><b>Refreshing</b><span>Every figure is rebuilt from the stored exports.</span></summary><div class="prose"><p>Each month the two EveryDollar exports for the closed budget month are added to the set, the ledger and these files are rebuilt, and the page redraws from them. Nothing on the page is typed in by hand, so a corrected export changes every dependent figure at once.</p></div></details>
+        <details class="topic"><summary><b>Item names</b><span>Renamed envelopes are merged through the mapping.</span></summary><div class="prose"><p>Budget items get renamed and recreated, so the same envelope can appear under several names. Each original name is mapped to a canonical item and a category; the mapping file lives beside the ledger and is the thing to edit (Settings) if a category looks wrong. <span data-draw="method-items" data-source="item_year cat_year"></span></p></div></details>
+        <details class="topic"><summary><b>Refreshing</b><span>Every figure is rebuilt from the stored exports.</span></summary><div class="prose"><p>Each month the two exports for the closed budget month are added to the set, the ledger and these files are rebuilt, and the page redraws from them. Nothing on the page is typed in by hand, so a corrected export changes every dependent figure at once.</p></div></details>
         <details class="topic"><summary><b>Reading the colors</b><span>Green and red mark direction, not judgment.</span></summary><div class="prose"><p>Green and red mark direction, not judgment: green is money kept or a category under its envelope, red is money drawn down or an envelope exceeded. Chart series take the brand palette in order (series 1 through 8 in the theme).</p></div></details>
-        <details class="topic"><summary><b>Notes</b><span>EveryDollar notes are kept in the ledger, never shown here.</span></summary><div class="prose"><p>The ledger carries every EveryDollar note, but notes are not shown on this page, because they can hold private details such as medication and people's names.</p></div></details>
+        <details class="topic"><summary><b>Notes</b><span>Notes from the exports are kept in the ledger, never shown here.</span></summary><div class="prose"><p>The ledger carries every note from the exports, but notes are not shown on this page, because they can hold private details such as medication and people's names.</p></div></details>
       </div>
     </div>
     <div class="card" id="recon-card">
@@ -564,12 +564,12 @@
         <p data-draw="cpi-estimated"></p>
       </div>
       <div id="m-t-verify" hidden><h3 class="visually-hidden" id="verify-table">Unverified inflows</h3>
-        <p class="note">Booked as income in EveryDollar but not yet identified. Kept out of every total until confirmed.</p>
+        <p class="note">Booked as income in the budget tool but not yet identified. Kept out of every total until confirmed.</p>
         <div class="tbl"><table data-source="verify" data-row-key="m,item"><thead><tr><th data-field="m">Month</th><th data-field="item">Item</th><th data-field="merchant">Merchant</th><th data-field="amount">Amount</th></tr></thead><tbody data-draw="verify"></tbody></table></div>
       </div>
     </div>
   </section>
-  <p class="foot">Built from EveryDollar Transactions and BudgetItems exports, one pair per budget month{% if span.has_data %}, {{ span.first_month }} through {{ span.last_month }}{% endif %}. The figures change when the ledger is rebuilt (Close a month); real figures use the price index with {{ span.cpi_base_long }} as the base month.</p>
+  <p class="foot">Built from your budget tool's monthly exports, a transactions file and a budget file per budget month{% if span.has_data %}, {{ span.first_month }} through {{ span.last_month }}{% endif %}. The figures change when the ledger is rebuilt (Close a month); real figures use the price index with {{ span.cpi_base_long }} as the base month.</p>
 </div>
 
 <script nonce="{{ csp_nonce(request) }}">(() => {
@@ -735,7 +735,7 @@ dash.calc('lm_cats', { inputs: ['budget_items', 'goal_config'], title: 'Last mon
     return { category: c, flow, planned, actual, vs_plan: actual - planned, avg12, vs_avg: actual - avg12, suggest, want_more };
   }).filter((r) => r.planned || r.actual || r.avg12).sort((a, b) => Math.abs(b.vs_plan) - Math.abs(a.vs_plan));
 } });
-dash.calc('lm_items', { inputs: ['budget_items'], title: 'Last month envelopes by gap to plan', description: 'For the latest budget month, every EveryDollar item with planned, spent and the gap (spent minus planned), largest absolute gap first.', fn: (budget_items) => {
+dash.calc('lm_items', { inputs: ['budget_items'], title: 'Last month envelopes by gap to plan', description: 'For the latest budget month, every budget item with planned, spent and the gap (spent minus planned), largest absolute gap first.', fn: (budget_items) => {
   const last = [...new Set(budget_items.map((r) => r.m))].sort().pop();
   return budget_items.filter((r) => r.m === last && r.flow !== 'income').map((r) => ({ item: r.item, category: r.category, planned: Number(r.planned), actual: Number(r.actual), gap: Number(r.actual) - Number(r.planned) })).filter((r) => Math.abs(r.gap) >= 1).sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap)).slice(0, 25);
 } });

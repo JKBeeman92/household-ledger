@@ -1,7 +1,7 @@
 """Run the file-based pipeline against the database.
 
 The database is the source of truth. For a rebuild we:
-  1. export raw exports (transactions, budget_items) from Postgres into EveryDollar-shaped CSVs,
+  1. export raw exports (transactions, budget_items) from Postgres as internal-format CSVs (pipeline/filenames.py),
   2. export the reference tables (item_mapping, cpi, goals, life_events, rules) into the files the scripts read,
   3. run the unchanged pipeline scripts in a scratch working directory,
   4. load ledger.csv and dash_data/*.json back into Postgres (tables `ledger`, `datasets`).
@@ -16,11 +16,20 @@ from datetime import datetime, timezone
 import psycopg
 from psycopg.rows import dict_row, tuple_row
 
-from . import mapping_store
+from . import filenames, mapping_store
 
 HERE = Path(__file__).resolve().parent
 SCRIPTS = ["build_ledger.py", "aggregate.py", "make_datasets.py", "make_budget_items.py"]
-FN_RX = re.compile(r"^(?P<hex>[0-9a-f]+)-(?P<mm>\d\d)-(?P<yyyy>\d{4})-EveryDollar-(?P<kind>Transactions|BudgetItems)\.csv$")
+EXPORT_NAMES = "YYYY-MM-transactions.csv / YYYY-MM-budget.csv, or EveryDollar's <hex>-MM-YYYY-EveryDollar-Transactions|BudgetItems.csv"
+
+
+class _Names:   # FN_RX.match(name): is it an export's file name, in either naming scheme (pipeline/filenames.py)
+    @staticmethod
+    def match(name: str) -> bool:
+        return filenames.is_export(name)
+
+
+FN_RX = _Names()
 
 
 def norm(x: str) -> str:
@@ -29,12 +38,11 @@ def norm(x: str) -> str:
 
 # ---------------------------------------------------------------- intake
 def parse_export(filename: str, data: bytes):
-    """Return (kind, budget_month, rows) for an EveryDollar export, or raise ValueError."""
-    m = FN_RX.match(os.path.basename(filename))
-    if not m:
-        raise ValueError(f"{filename}: not an EveryDollar export filename (<hex>-MM-YYYY-EveryDollar-Transactions|BudgetItems.csv)")
-    kind = "transactions" if m["kind"] == "Transactions" else "budget_items"
-    bm = f"{m['yyyy']}-{m['mm']}"
+    """Return (kind, budget_month, rows) for an export in the internal format or EveryDollar's, or raise ValueError."""
+    p = filenames.parse(filename)
+    if not p:
+        raise ValueError(f"{filename}: not named like a monthly export ({EXPORT_NAMES})")
+    kind, bm = p
     text = data.decode("utf-8-sig")
     rows = list(csv.DictReader(text.splitlines(keepends=True)))
     need = {"transactions": {"Group", "Item", "Type", "Date", "Merchant", "Amount"}, "budget_items": {"Group", "Item", "Planned", "Spent", "Remaining"}}[kind]
@@ -140,8 +148,8 @@ def load_profiles(conn: psycopg.Connection) -> list[dict]:
         return cur.fetchall()
 
 
-def _date(mmddyyyy: str) -> str:
-    mm, dd, yy = mmddyyyy.split("/")
+def _date(value: str) -> str:
+    yy, mm, dd = filenames.iso_date(value)   # YYYY-MM-DD, or EveryDollar's MM/DD/YYYY
     return f"{yy}-{mm}-{dd}"
 
 
@@ -204,16 +212,19 @@ def export_for_pipeline(conn: psycopg.Connection, wd: Path) -> None:
         cur.execute("SELECT id, kind, budget_month, filename FROM source_files ORDER BY budget_month")
         files = cur.fetchall()
         for f in files:
-            bm = f["budget_month"]; yyyy, mm = bm.split("-")
+            bm = f["budget_month"]
+            if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", bm):   # only an upload from before 0.5.0 could have stored one
+                raise ValueError(f"{f['filename']} is stored under budget month {bm}, which is not a month: delete that month on Close a month, "
+                                 "then rebuild")
             if f["kind"] == "transactions":
-                cur.execute("SELECT grp,item,type,to_char(date,'MM/DD/YYYY') d,merchant,account,amount,note FROM transactions WHERE source_file_id=%s ORDER BY row_no", (f["id"],))
-                path = wd / "txns" / f"db-{mm}-{yyyy}-EveryDollar-Transactions.csv"
+                cur.execute("SELECT grp,item,type,to_char(date,'YYYY-MM-DD') d,merchant,account,amount,note FROM transactions WHERE source_file_id=%s ORDER BY row_no", (f["id"],))
+                path = wd / "txns" / filenames.neutral_name("transactions", bm)   # the internal format (#161)
                 with open(path, "w", newline="", encoding="utf-8") as out:
                     w = csv.writer(out, quoting=csv.QUOTE_ALL); w.writerow(["Group", "Item", "Type", "Date", "Merchant", "Account", "Amount", "Note"])
                     for r in cur: w.writerow([r["grp"], r["item"], r["type"], r["d"], r["merchant"], r["account"], f"{r['amount']:.2f}", r["note"]])
             else:
                 cur.execute("SELECT grp,item,planned,spent,remaining FROM budget_items WHERE source_file_id=%s ORDER BY id", (f["id"],))
-                path = wd / "summaries" / f"db-{mm}-{yyyy}-EveryDollar-BudgetItems.csv"
+                path = wd / "summaries" / filenames.neutral_name("budget_items", bm)
                 with open(path, "w", newline="", encoding="utf-8") as out:
                     w = csv.writer(out, quoting=csv.QUOTE_ALL); w.writerow(["Group", "Item", "Planned", "Spent", "Remaining"])
                     for r in cur: w.writerow([r["grp"], r["item"], f"{r['planned']:.2f}", f"{r['spent']:.2f}", f"{r['remaining']:.2f}"])
@@ -448,11 +459,10 @@ def import_dir(conn: psycopg.Connection, import_dir: Path, uploaded_by: str = "i
         known = {(k, m): sha for k, m, sha in cur.fetchall()}
     loaded = skipped = 0
     failed: list[dict] = []
-    for f in sorted(x for x in import_dir.rglob("*.csv") if FN_RX.match(x.name)):
+    for f in sorted(x for x in import_dir.rglob("*.csv") if filenames.is_export(x.name)):
         data = f.read_bytes()
-        m = FN_RX.match(f.name)
-        kind = "transactions" if m["kind"] == "Transactions" else "budget_items"
-        if known.get((kind, f"{m['yyyy']}-{m['mm']}")) == hashlib.sha256(data).hexdigest():
+        kind, bm = filenames.parse(f.name)
+        if known.get((kind, bm)) == hashlib.sha256(data).hexdigest():
             skipped += 1; continue
         try:
             ingest(conn, f.name, data, uploaded_by=uploaded_by); loaded += 1

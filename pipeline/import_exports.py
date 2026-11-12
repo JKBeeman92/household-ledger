@@ -13,7 +13,7 @@ def main(paths: list[str]) -> int:
         P = Path(p)
         files += sorted(x for x in (P.rglob("*.csv") if P.is_dir() else [P]) if FN_RX.match(x.name))
     if not files:
-        print("no EveryDollar export files found", file=sys.stderr); return 2
+        print("no monthly export files found (internal format or EveryDollar's names)", file=sys.stderr); return 2
     with psycopg.connect(os.environ["DATABASE_URL"]) as conn:
         for f in files:
             info = ingest(conn, f.name, f.read_bytes(), uploaded_by="import")

@@ -34,7 +34,7 @@
     The dashboard still shows the old figures.</span> <button class="btn primary" type="submit">Rebuild now</button></form></div>{% endif %}
   {% with flashes = get_flashes() %}{% for f in flashes %}<div class="flash {{ f.kind }}">{{ f.text }}</div>{% endfor %}{% endwith %}
   {% block content %}{% endblock %}
-  <p class="foot">{{ household.name }} · {{ household.title }} · built from EveryDollar exports; every figure is recomputed from the stored files on each rebuild.</p>
+  <p class="foot">{{ household.name }} · {{ household.title }} · built from your budget tool's exports; every figure is recomputed from the stored files on each rebuild.</p>
 </div>
 <script nonce="{{ csp_nonce(request) }}">
   document.getElementById('theme-toggle').addEventListener('click', () => {

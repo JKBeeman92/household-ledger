@@ -5,7 +5,7 @@
   {% if findings.build_id is none %}<p class="muted">Nothing to report until the first build finishes.</p>
   {% elif not un %}<p class="muted" id="unmapped-none">Every item in the last build has a mapping.</p>
   {% else %}
-  <p class="muted" style="margin:0 0 var(--space-2)">Pre-filled from each item's EveryDollar group: check the guesses, change what is wrong, then add them.</p>
+  <p class="muted" style="margin:0 0 var(--space-2)">Pre-filled from each item's budget group: check the guesses, change what is wrong, then add them.</p>
   <p class="muted" id="unmapped-intro" style="border-left:3px solid var(--danger);padding-left:var(--space-3)">{{ un|length }} item{{ '' if un|length == 1 else 's' }} in the exports {{ 'has' if un|length == 1 else 'have' }} no mapping, so the ledger could not be built. Give each a category and flow (reuse existing names) and the mapping is extended and rebuilt. Items left blank stay unmapped.</p>
   <form method="post" action="/upload/map" id="unmapped-form">{{ csrf_field(request) }}
     <datalist id="map-categories">{% for c in findings.categories %}<option value="{{ c }}">{% endfor %}</datalist>

@@ -6,6 +6,8 @@ import csv, io, json, zipfile
 from pathlib import Path
 
 from psycopg.rows import tuple_row
+
+from pipeline import filenames
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import StreamingResponse, RedirectResponse
 
@@ -86,10 +88,11 @@ def export_datasets(user=Depends(auth.require_user)):
 
 
 def _source_chunks(conn, f):
-    """The raw export rebuilt in EveryDollar's shape (same columns and quoting the pipeline reads), a batch of rows at a time."""
+    """The raw export rebuilt in the internal format's columns (and the quoting the pipeline reads), a batch of rows at a time."""
     if f["kind"] == "transactions":
         yield _csv_line(["Group", "Item", "Type", "Date", "Merchant", "Account", "Amount", "Note"]).encode()
-        sql = "SELECT grp,item,type,to_char(date,'MM/DD/YYYY') d,merchant,account,amount,note FROM transactions WHERE source_file_id=%s ORDER BY row_no"
+        dates = "YYYY-MM-DD" if filenames.NEUTRAL.match(f["filename"]) else "MM/DD/YYYY"   # each file in its own format's dates (#161)
+        sql = f"SELECT grp,item,type,to_char(date,'{dates}') d,merchant,account,amount,note FROM transactions WHERE source_file_id=%s ORDER BY row_no"
         fmt = lambda r: [r["grp"], r["item"], r["type"], r["d"], r["merchant"], r["account"], f"{r['amount']:.2f}", r["note"]]
     else:
         yield _csv_line(["Group", "Item", "Planned", "Spent", "Remaining"]).encode()

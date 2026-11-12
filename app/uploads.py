@@ -7,7 +7,7 @@ import io
 import zipfile
 from dataclasses import dataclass
 
-from pipeline.run_pipeline import FN_RX
+from pipeline.run_pipeline import FN_RX, EXPORT_NAMES
 
 MAX_ENTRIES = 200               # entries in one archive, directories included
 MAX_FILE_BYTES = 25 * 2**20     # one export, uncompressed
@@ -64,7 +64,7 @@ def expand_zip(zname: str, data: bytes) -> list[Item]:
             if name.lower().endswith(".zip"):
                 items.append(Item(name, error="nested archives are not accepted", source=zname)); continue
             if not FN_RX.match(name):
-                items.append(Item(name, error="not an EveryDollar export filename (<hex>-MM-YYYY-EveryDollar-Transactions|BudgetItems.csv)", source=zname)); continue
+                items.append(Item(name, error=f"not named like a monthly export ({EXPORT_NAMES})", source=zname)); continue
             if name in seen:
                 items.append(Item(name, error="duplicate name in the archive; only the first is used", source=zname)); continue
             seen.add(name)

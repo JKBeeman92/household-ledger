@@ -60,7 +60,7 @@ def test_upload_with_reconciliation_failure_is_reported(client, reset_db):
 
 def test_upload_rejects_a_file_that_is_not_an_export(client, reset_db):
     r = client.post("/upload", files=[("files", ("notes.txt", b"a,b\n1,2\n", "text/plain"))])
-    assert "not an EveryDollar export filename" in flashes_after(client, r)
+    assert "not named like a monthly export" in flashes_after(client, r)
     assert client.get("/api/status").json()["months"] == 0
 
 
