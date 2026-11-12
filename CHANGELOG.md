@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0](https://github.com/JKBeeman92/household-ledger/compare/v0.4.0...v0.5.0) (2026-11-12)
+
+
+### Features
+
+* a tool-neutral internal format, with EveryDollar as one built-in source profile ([#180](https://github.com/JKBeeman92/household-ledger/issues/180)) ([d270011](https://github.com/JKBeeman92/household-ledger/commit/d2700112838fa11816ccb53265e73ecf0e46c49d))
+* category and item roles in rules, so no chart depends on a name typed in the code ([#177](https://github.com/JKBeeman92/household-ledger/issues/177)) ([f42d94d](https://github.com/JKBeeman92/household-ledger/commit/f42d94da6386c85b424890259abd79f40cc48edf))
+* debt types, and a Debts tab you can order, group and hide ([#181](https://github.com/JKBeeman92/household-ledger/issues/181)) ([5c35846](https://github.com/JKBeeman92/household-ledger/commit/5c35846e1638dc246ee554ab2b8e6e9be544b921))
+* define categories and canonical items once, so a rename is one edit ([#179](https://github.com/JKBeeman92/household-ledger/issues/179)) ([81d1c82](https://github.com/JKBeeman92/household-ledger/commit/81d1c82f7b36e1138acd772af71b640d48f96efc))
+* optional kind and person on life events, so the timeline can group or filter them ([#176](https://github.com/JKBeeman92/household-ledger/issues/176)) ([275d05e](https://github.com/JKBeeman92/household-ledger/commit/275d05e808f3fa55b3aa8c70e399492c0e2f257a))
+
 ## [0.4.0](https://github.com/JKBeeman92/household-ledger/compare/v0.3.0...v0.4.0) (2026-11-11)
 
 

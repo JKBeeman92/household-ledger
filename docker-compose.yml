@@ -4,7 +4,7 @@
 # backup, change the tag, then `docker compose pull && docker compose up -d`. `:latest` follows main, unreleased.
 services:
   ledger:
-    image: ghcr.io/jkbeeman92/household-ledger:0.4.0   # x-release-please-version
+    image: ghcr.io/jkbeeman92/household-ledger:0.5.0   # x-release-please-version
     container_name: ledger
     restart: unless-stopped
     env_file: .env
