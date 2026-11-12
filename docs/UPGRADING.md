@@ -27,6 +27,9 @@ Migrations run at start; read this list before upgrading.
 - **Net worth** (#146): no migration. It appears once accounts have balances (above). MCP and the review's data gain `net_worth`.
 - **Emergency-fund coverage** (#150): no migration. Cash and savings accounts count by default; switch one off (Emergency no) on
   Settings → Accounts. Add `emergency_months` on Settings → Goals for a target. MCP and the review's data gain `emergency_fund`.
+- **Pre-tax saving** (#152): no migration. State each person's contribution on Settings → Goals → Pre-tax saving. The `monthly`
+  dataset gains `pretax` and `pretax_real`, `yearly` gains `pretax` and `savings_rate_pretax` (all null until stated); the review's
+  data gains `savings_rate`. The Overview's savings-rate line now says "of take-home kept".
 
 ## 0.5.0
 

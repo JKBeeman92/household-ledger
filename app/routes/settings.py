@@ -337,6 +337,7 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         balance_counts = {r["account"]: r for r in conn.execute("SELECT account, count(*) n, min(budget_month) first, max(budget_month) last FROM balances GROUP BY account").fetchall()}
         categories = sorted({r["category"] for r in rows["mapping"] if r["category"]})
         rules = db.get_setting(conn, "rules", {}) or {}
+        pretax = pretax_rows(conn, list(rules.get("people") or []))
         household = db.get_setting(conn, "household", {}) or {}
         name_families = mapping_hints.families(rows["mapping"], rules)
         unmapped = len(unmapped_items(conn))
@@ -346,7 +347,7 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS,
                   event_choices={"kind": [""] + list(EVENT_KINDS)}, people=list(rules.get("people") or []),
                   defs=defs, mapping_notes=mapping_notes, canonical_category={c["name"]: c["category"] for c in defs["canonical"]},
-                  debt_types=mapping_store.DEBT_TYPES, balance_counts=balance_counts,
+                  debt_types=mapping_store.DEBT_TYPES, balance_counts=balance_counts, pretax=pretax,
                   account_choices={"kind": list(accounts_store.KINDS), "type": [""] + sorted(set(accounts_store.bal.DEBT_TYPES + accounts_store.bal.ASSET_TYPES)),
                                    "emergency": ["", "yes", "no"], "in_net_worth": ["yes", "no"], "active": ["yes", "no"]})
 
@@ -497,6 +498,50 @@ async def settings_row_delete(request: Request, kind: str, user=Depends(auth.req
             db.mark_inputs_changed(conn)
         conn.commit()
     return JSONResponse({"ok": n > 0, "deleted": n, "rebuild_needed": n > 0}, status_code=200 if n else 404)
+
+
+PRETAX = "pretax_contribution:"   # goals per person (#152): pre-tax saving that never reaches the budget
+PRETAX_UNITS = {"share": "share of gross", "usd": "usd/month"}
+PRETAX_NOTE = "Ask at each month-close: 401(k), 403(b), HSA and the like, taken from pay before it reaches the budget."
+
+
+def pretax_rows(conn, people: list) -> list[dict]:
+    """One row per person in the people rule (and any other person with a contribution stored): value as typed, and its unit."""
+    have = {r["key"][len(PRETAX):]: r for r in conn.execute("SELECT key, value, unit FROM goals WHERE key LIKE %s ORDER BY key", (PRETAX + "%",)).fetchall()}
+    out = []
+    for p in list(people) + [p for p in have if p not in people]:
+        r = have.get(p); share = not r or str(r["unit"]).startswith("share")
+        v = None if not r or r["value"] is None else (f"{(r['value'] * 100).normalize():f}%" if share else f"{r['value'].normalize():f}")
+        out.append({"person": p, "value": v or "", "unit": "share" if share else "usd"})
+    return out
+
+
+@router.post("/settings/goals/pretax")
+async def pretax_form(request: Request, user=Depends(auth.require_editor)):
+    """Pre-tax saving per person (#152): a share of the household's gross (7% or 0.07) or dollars a month. Blank removes it."""
+    f = await request.form()
+    rows = list(zip(f.getlist("person"), f.getlist("value"), f.getlist("unit")))
+    problems, done = [], 0
+    with db.pool.connection() as conn:
+        for person, raw, unit in rows:
+            person, raw = str(person).strip(), str(raw).strip()
+            key, u = PRETAX + person, PRETAX_UNITS.get(str(unit), "share of gross")
+            if not person:
+                continue
+            if not raw:
+                done += conn.execute("DELETE FROM goals WHERE key=%s", (key,)).rowcount; continue
+            v, problem = parse_goal_value(raw, u)
+            if problem or v is None:
+                problems.append(f"{person}: {problem or 'enter a number'}"); continue
+            conn.execute("INSERT INTO goals (key, value, unit, label, note, confirmed_at) VALUES (%s,%s,%s,%s,%s,now()) ON CONFLICT (key) DO UPDATE "
+                         "SET value=EXCLUDED.value, unit=EXCLUDED.unit, confirmed_at=now(), updated_at=now()", (key, v, u, f"Pre-tax saving, {person}", PRETAX_NOTE))
+            done += 1
+        if problems:
+            conn.rollback(); flash(request, "Not saved — " + "; ".join(problems), "bad")
+        else:
+            db.mark_inputs_changed(conn); conn.commit()
+            flash(request, f"Saved pre-tax saving for {done} {'person' if done == 1 else 'people'}. The dashboard shows it after a rebuild: press Rebuild now.")
+    return RedirectResponse("/settings#goals", status_code=303)
 
 
 @router.post("/settings/accounts/balances")

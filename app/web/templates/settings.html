@@ -105,6 +105,14 @@
 </div>
 </div>
 <div role="tabpanel" id="sp-goals" aria-labelledby="st-goals">
+<form class="panel" method="post" action="/settings/goals/pretax" id="pretax">{{ csrf_field(request) }}
+  <h2>Pre-tax saving</h2>
+  <p class="muted">401(k), 403(b), HSA and the like, taken from pay before it reaches the budget, so the savings rate and net worth's "what you did" can count it. Per person: a share of the household's gross pay (7% or 0.07) or dollars a month. Blank means none. Each is asked at month-close with the other goals.</p>
+  {% if not pretax %}<p class="muted">Add the household's people under <a href="#rules">Pipeline rules</a> first.</p>{% endif %}
+  {% for r in pretax %}<p class="tools"><input type="hidden" name="person" value="{{ r.person }}"><label>{{ r.person }} <input name="value" inputmode="decimal" value="{{ r.value }}" size="8" aria-label="Pre-tax saving for {{ r.person }}"></label>
+    <select name="unit" aria-label="Unit for {{ r.person }}"><option value="share"{% if r.unit == 'share' %} selected{% endif %}>% of gross</option><option value="usd"{% if r.unit == 'usd' %} selected{% endif %}>$ a month</option></select></p>{% endfor %}
+  {% if pretax %}<p><button class="btn primary" type="submit">Save pre-tax saving</button></p>{% endif %}
+</form>
 {% call grid("goals", by_key.goals, ["key","label","value","unit","note"], ["Key","Label","Value","Unit","Note"], rows.goals) %}{% endcall %}
 </div>
 <div role="tabpanel" id="sp-events" aria-labelledby="st-events">
