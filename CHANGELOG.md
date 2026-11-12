@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.6.0](https://github.com/JKBeeman92/household-ledger/compare/v0.5.0...v0.6.0) (2026-11-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* the container image moves from ghcr.io/jkbeeman92/household-ledger to ghcr.io/jkbeeman92/bearings. Change the image in docker-compose.yml (docs/UPGRADING.md).
+
+### Features
+
+* Bearings, a design system and a new default brand kit ([#194](https://github.com/JKBeeman92/household-ledger/issues/194)) ([5e379bf](https://github.com/JKBeeman92/household-ledger/commit/5e379bf042dc406d716ce9b9e72f6551238d2534))
+* count pre-tax saving in a second savings rate and in net worth's split ([#188](https://github.com/JKBeeman92/household-ledger/issues/188)) ([2bde60a](https://github.com/JKBeeman92/household-ledger/commit/2bde60ad938f89fe2121e7a352053f70be24e84b))
+* debt-to-income on Last month and Goals, with optional caps ([#185](https://github.com/JKBeeman92/household-ledger/issues/185)) ([ed04925](https://github.com/JKBeeman92/household-ledger/commit/ed04925210497c5e5a088e4c680c9f5b48cc9917))
+* emergency-fund coverage on Last month and Goals ([#187](https://github.com/JKBeeman92/household-ledger/issues/187)) ([28ba28e](https://github.com/JKBeeman92/household-ledger/commit/28ba28e84087442caba3d234cdc1a00aa707e96c))
+* long lists end their panel; Settings gets sub-tabs, debt types their own ([#184](https://github.com/JKBeeman92/household-ledger/issues/184)) ([bc10c9a](https://github.com/JKBeeman92/household-ledger/commit/bc10c9acb9e8db497a6098340263f31830ab9751))
+* net worth on Last month and Position, split into what you did and what happened ([#186](https://github.com/JKBeeman92/household-ledger/issues/186)) ([6c72ee0](https://github.com/JKBeeman92/household-ledger/commit/6c72ee04ffc58d4ba8aaba56e9d8e9c78607d56f))
+* record month-end balances for debts and assets ([#182](https://github.com/JKBeeman92/household-ledger/issues/182)) ([1b2d18b](https://github.com/JKBeeman92/household-ledger/commit/1b2d18b2c42d11c238ce912170de3a5af22251cd))
+* the monthly check-in, one guided, resumable page per month ([#189](https://github.com/JKBeeman92/household-ledger/issues/189)) ([a4ae05d](https://github.com/JKBeeman92/household-ledger/commit/a4ae05d5220dfe20807b8d54bbf9f955afe83293))
+
 ## [0.5.0](https://github.com/JKBeeman92/household-ledger/compare/v0.4.0...v0.5.0) (2026-11-12)
 
 
