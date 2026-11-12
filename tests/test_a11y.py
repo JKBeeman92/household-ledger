@@ -53,8 +53,8 @@ def test_accent_2_text_variant_used_for_small_text(client, reset_db):
 def test_charts_without_a_table_get_one_and_say_their_span():
     """Issue #122: the figures behind each chart are reachable without a mouse, and the label states the data's own range."""
     html = (ROOT / "app" / "web" / "templates" / "dashboard.html").read_text()
-    for name in ("monthly", "annual", "employer", "goal-lines", "debts", "net", "dti", "nw"):
+    for name in ("monthly", "annual", "employer", "goal-lines", "debts", "net", "dti", "nw", "ef"):
         assert f'data-draw="dt-{name}"' in html, name
-    assert html.count('<details class="datatable"><summary>Show the figures as a table</summary>') == 8
+    assert html.count('<details class="datatable"><summary>Show the figures as a table</summary>') == 9
     assert "if (chart.dataset.span) parts.push('Figures from ' + chart.dataset.span + '.');" in JS
     assert "The same figures are in a table after the chart." in JS

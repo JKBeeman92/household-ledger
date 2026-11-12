@@ -84,6 +84,19 @@ w("balance_totals", _bal.totals(_brows))
 _did = {m: mn[m]["net"] + mn[m]["debt"] for m in mn}
 _cpi = {r["month"]: float(r["cpi"]) for r in csv.DictReader(open("cpi_u.csv"))}
 w("net_worth", _bal.net_worth(_brows, _did, _cpi, D["meta"]["cpi_base"]))
+# emergency_fund (#150): emergency money (asset accounts marked emergency) over the average monthly outgo (living spend plus debt
+# payments) of the trailing twelve budget months, or as many as there are. null coverage: no emergency account, or no outgo yet.
+_ems, _efr = sorted(mn), []
+for i, m in enumerate(_ems):
+    held = [r["amount"] for r in _brows if r["m"] == m and r["emergency"]]
+    win = _ems[max(0, i - 11):i + 1]; outgo = sum(mn[x]["spend"] + mn[x]["debt"] for x in win) / len(win)
+    money = round(sum(held), 2) if held else None
+    _efr.append({"m": m, "emergency": money, "accounts": len(held), "unconfirmed": sum(1 for r in _brows if r["m"] == m and r["emergency"] and not r["confirmed"]),
+                 "outgo": round(outgo, 2), "outgo_months": len(win), "months": round(money / outgo, 2) if money is not None and outgo > 0 else None})
+for a, b in zip(_efr, _efr[1:]):
+    b["change"] = round(b["months"] - a["months"], 2) if a["months"] is not None and b["months"] is not None else None
+if _efr: _efr[0]["change"] = None
+w("emergency_fund", _efr)
 
 
 # what the Goals tab counts as giving, housing and savings (defaults as in build_ledger.RULES), and the catch-all list for its copy

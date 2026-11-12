@@ -320,6 +320,12 @@
       <details class="how"><summary>How to read this</summary><p>Net worth is every account's month-end balance (Settings → Accounts; entered at Close a month), assets less debts, leaving out accounts marked not in net worth. Its change since last month is split in two. <b>What you did</b> is the month's income less living spend: what was kept plus what was paid on debts, since paying a loan down is the household's own doing (and, once stated, pre-tax saving such as a 401(k)). <b>What happened to you</b> is the rest: investments and the home's estimate moving, interest charged, and money moving into or out of accounts this page does not track. An account's first month is shown on its own, so adding one is not read as progress. A debt with no balance entered is estimated, and the figure says so. One thing lands on the wrong side: money your budget counts as spent that goes into an account tracked here (a savings envelope paid into a savings account) shows under what happened, not what you did. <b>Excluding home</b> takes a home's typed estimate out, since it moves the total more than any month's decisions.</p></details>
       <dl class="dti" data-draw="lm-nw" data-source="net_worth balances"></dl>
     </div>
+    <div class="card" id="lm-ef-card">
+      <h2 id="lm-ef">Emergency fund</h2>
+      <ul class="key row"><li>if income stopped: months of outgo the emergency savings would cover</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Emergency money is the month-end balance of the asset accounts marked Emergency (Settings → Accounts; cash and savings accounts are, unless you switch one off, such as a holiday fund). Outgo is living spend plus debt payments, averaged over the last twelve budget months, so one heavy month does not swing it. Total outgo is used, not a bare-bones budget: it is the honest figure. A target shows when you set emergency_months on Settings → Goals.</p></details>
+      <dl class="dti" data-draw="lm-ef" data-source="emergency_fund goals"></dl>
+    </div>
     <div class="card" id="lm-dti-card">
       <h2 id="lm-dti">Debt against income</h2>
       <ul class="key row"><li>debt payments ÷ gross pay (the stated salary ÷ 12)</li><li>the same payments ÷ take-home, after it</li></ul>
@@ -395,6 +401,13 @@
         <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Giving / gross</th><th scope="col">Savings / gross</th><th scope="col">Housing / take-home</th></tr></thead><tbody data-draw="dt-goal-lines" data-source="goal_month"></tbody></table></div></details>
       <div class="legend"><span data-c="0">Giving / gross</span><span data-c="1">Savings funding / gross</span><span data-c="2">Housing + utilities / take-home</span></div>
       <details class="how"><summary>How to read this</summary><p>Giving as a share of gross (floor and target lines), savings-group funding as a share of gross (target line), and housing plus utilities as a share of take-home (cap line). Twelve-month trailing averages, so a three-paycheck month or a lump payment does not whip the line around. A solid line above its dashed target is good for giving and savings, and bad for housing. The lines are twelve-month trailing averages, so a change in behaviour takes a few months to show. Gross is the stated annual salary spread evenly across months; take-home is the net paychecks that actually landed, so the housing ratio is honest about months with two versus three paychecks only in the trailing view.</p></details>
+    </div>
+    <div class="card">
+      <h2 id="ef-chart">Emergency fund coverage, month by month</h2>
+        <ul class="key row"><li><span class="glyph ln" aria-hidden="true"></span>months of outgo the emergency savings cover</li><li><span class="glyph ln dash" aria-hidden="true"></span>dashed: your target, when set</li><li><span class="glyph">↑</span>higher is safer</li></ul>
+      <div class="chart" data-draw="ef-lines" data-source="emergency_fund goals"></div>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Emergency money</th><th scope="col">Outgo a month</th><th scope="col">Months covered</th></tr></thead><tbody data-draw="dt-ef" data-source="emergency_fund"></tbody></table></div></details>
+      <details class="how"><summary>How to read this</summary><p>Each month-end's emergency money (accounts marked Emergency on Settings → Accounts) divided by the average monthly living spend plus debt payments over the twelve budget months to then. The dashed line is emergency_months from Settings → Goals.</p></details>
     </div>
     <div class="card">
       <h2 id="dti-chart">Debt-to-income, month by month</h2>
@@ -1487,6 +1500,40 @@ dash.draw('lm-dti', (el) => {
   if (r.gross == null) { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = 'Gross pay'; dd.className = 'muted';
     dd.textContent = 'not recorded: set gross_annual on Settings → Goals to see these as a share of gross.'; el.append(dt, dd); }
 });
+// Emergency fund (#150)
+const months1 = (v) => v == null ? '—' : `${Number(v).toFixed(1)} month${Number(v).toFixed(1) === '1.0' ? '' : 's'}`;
+dash.draw('lm-ef', (el) => {
+  const g = dash.data('emergency_fund'), G = dash.data('goals'); el.replaceChildren();
+  const add = (label, main, sub, bad, link) => { const dt = document.createElement('dt'), dd = document.createElement('dd'), v = document.createElement('span'); dt.textContent = label; v.className = 'v'; v.textContent = main; dd.append(v);
+    if (sub) { const d = document.createElement('div'); d.className = 'muted' + (bad ? ' down' : ''); d.textContent = sub; if (link) { const a = document.createElement('a'); a.href = link[1]; a.textContent = link[0]; d.append(' ', a); } dd.append(d); } el.append(dt, dd); };
+  const r = g.status === 'ok' && g.data.length ? g.data[g.data.length - 1] : null, target = goalValue(G, 'emergency_months');
+  if (!r || r.emergency == null) { add('Coverage', '—', 'No account counts toward the emergency fund yet.', false, ['Mark one on Settings → Accounts', '/settings#accounts']); return; }
+  add(`End of ${HL.fmtM(HL.parseM(r.m))}`, months1(r.months) + (target != null ? ` (target ${target})` : ''),
+    (r.change != null ? (Math.abs(r.change) < 0.05 ? 'About the same as last month. ' : `${r.change >= 0 ? '+' : '−'}${Math.abs(r.change).toFixed(1)} since last month. `) : '') + (target != null && r.months != null && r.months < target ? `${(target - r.months).toFixed(1)} short of the target.` : target == null ? 'No target set (emergency_months on Settings → Goals).' : 'At or above the target.'),
+    target != null && r.months != null && r.months < target);
+  add('From', HL.usd0(r.emergency), `in ${r.accounts} account${r.accounts === 1 ? '' : 's'}, over ${HL.usd0(r.outgo)} a month of outgo (the ${r.outgo_months}-month average)` + (r.unconfirmed ? `; ${r.unconfirmed} balance${r.unconfirmed === 1 ? '' : 's'} not yet confirmed` : ''));
+});
+dash.draw('ef-lines', (el) => {
+  const g = HL.rd('emergency_fund'), G = dash.data('goals'); el.replaceChildren();
+  const rows = g.status === 'ok' ? g.data.filter((r) => r.months != null).map((r) => ({ d: HL.parseM(r.m), v: r.months })) : [];
+  if (!rows.length) { el.textContent = 'Nothing to draw yet: mark an account as Emergency on Settings → Accounts, and enter its balances.'; return; }
+  const target = goalValue(G, 'emergency_months');
+  const W = el.clientWidth || 600, H = 240, mt = 10, mb = 28;
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
+  const y = d3.scaleLinear([0, Math.max(1, d3.max(rows, (r) => r.v), target || 0)], [H - mb, mt]).nice();
+  const ml = HL.margins(svg, y.ticks(5), (v) => `${v}`);
+  const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
+  svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
+  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--cds-chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
+  const c = HL.colors();
+  if (target != null) { svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(target)).attr('y2', y(target)).attr('stroke', c[1]).attr('stroke-dasharray', '5 4').attr('stroke-opacity', .7);
+    svg.append('text').attr('x', W - 8).attr('y', y(target) - 4).attr('text-anchor', 'end').attr('fill', c[1]).text('target'); }
+  svg.append('path').datum(rows).attr('fill', 'none').attr('stroke', c[1]).attr('stroke-width', 2).attr('d', d3.line().x((r) => x(r.d)).y((r) => y(r.v)));
+  const t = HL.tip(el), bis = d3.bisector((r) => r.d).center;
+  svg.append('rect').attr('x', ml).attr('y', mt).attr('width', Math.max(0, W - ml - 8)).attr('height', H - mt - mb).attr('fill', 'transparent')
+    .on('pointermove', (pe) => { const [px, py] = d3.pointer(pe, el); const r = rows[bis(rows, x.invert(px))]; if (r) t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}</div><div>${months1(r.v)} of outgo</div>`); })
+    .on('pointerleave', () => t.hide());
+});
 dash.draw('dti-lines', (el) => {
   const g = HL.rd('debt_to_income'), G = dash.data('goals'); el.replaceChildren();
   if (g.status !== 'ok') { el.textContent = '—'; return; }
@@ -1586,6 +1633,7 @@ table('goal-lines', 'goal_month', byM, [(r) => M(r.m), (r) => P1(r.giving_share_
 table('debts', 'debts', (rows) => [...rows].sort((a, b) => a.first < b.first ? -1 : 1), [(r) => r.item + (r.paid_off && HL.debtsTyped() ? ' (paid off)' : ''), (r) => r.debt_type || '—', (r) => M(r.first), (r) => M(r.last), (r) => String(r.months), (r) => $(r.total)],
   (rows) => rows.length ? [M(rows.map((r) => r.first).sort()[0]), M(rows.map((r) => r.last).sort().pop())] : []);
 table('nw', 'net_worth', byM, [(r) => M(r.m), (r) => $(r.assets), (r) => $(r.debts), (r) => $(r.net_worth) + (r.estimated ? ' (est.)' : ''), (r) => r.change == null ? '—' : $(r.change), (r) => r.you_did == null ? '—' : $(r.you_did), (r) => r.happened == null ? '—' : $(r.happened)], mSpan);
+table('ef', 'emergency_fund', byM, [(r) => M(r.m), (r) => r.emergency == null ? '—' : $(r.emergency), (r) => $(r.outgo), (r) => r.months == null ? '—' : Number(r.months).toFixed(1)], mSpan);
 table('dti', 'debt_to_income', byM, [(r) => M(r.m), (r) => P1(r.dti_12), (r) => P1(r.housing_dti_12), (r) => P1(r.dti_takehome_12), (r) => P1(r.housing_takehome_12)], mSpan);
 table('net', 'yearly', byY, [(r) => HL.yearLabel(r.y), (r) => $(r[HL.fld('net')]), (r) => P1(r.savings_rate)], ySpan);
 })();</script>
