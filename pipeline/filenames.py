@@ -12,10 +12,10 @@ file name, never from the dates inside.
 The scripts beside this file import it; when they are run by hand (`python -I build_ledger.py` in a folder of CSVs), keep this file
 next to them."""
 from __future__ import annotations
-import os, re
+import datetime, os, re
 
 NEUTRAL = re.compile(r"^(?P<yyyy>\d{4})-(?P<mm>0[1-9]|1[0-2])-(?P<kind>transactions|budget)\.csv$")
-EVERYDOLLAR = re.compile(r"^(?P<hex>[0-9a-f]+)-(?P<mm>\d\d)-(?P<yyyy>\d{4})-EveryDollar-(?P<kind>Transactions|BudgetItems)\.csv$")
+EVERYDOLLAR = re.compile(r"^(?P<hex>[0-9a-f]+)-(?P<mm>0[1-9]|1[0-2])-(?P<yyyy>\d{4})-EveryDollar-(?P<kind>Transactions|BudgetItems)\.csv$")
 
 
 def parse(name: str) -> tuple[str, str] | None:
@@ -55,10 +55,15 @@ def exports(folder: str, kind: str) -> list[tuple[str, str]]:
 
 
 def iso_date(value: str) -> tuple[str, str, str]:
-    """(yyyy, mm, dd) from an export's date: YYYY-MM-DD (internal format) or MM/DD/YYYY (EveryDollar)."""
+    """(yyyy, mm, dd) from an export's date: YYYY-MM-DD (internal format) or MM/DD/YYYY (EveryDollar). Anything else, or a day
+    that does not exist, raises ValueError quoting the value, so the scripts and the app refuse it alike."""
     v = (value or "").strip()
-    if "-" in v:
-        yy, mm, dd = v.split("-")
+    m = re.fullmatch(r"(\d{4})-(\d{1,2})-(\d{1,2})", v)
+    if m:
+        yy, mm, dd = m.groups()
+    elif (m := re.fullmatch(r"(\d{1,2})/(\d{1,2})/(\d{4})", v)):
+        mm, dd, yy = m.groups()
     else:
-        mm, dd, yy = v.split("/")
+        raise ValueError(f"{value!r} is not a date (YYYY-MM-DD, or MM/DD/YYYY)")
+    datetime.date(int(yy), int(mm), int(dd))   # raises ValueError for 2025-02-30
     return yy, mm.zfill(2), dd.zfill(2)

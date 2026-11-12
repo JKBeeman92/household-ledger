@@ -71,3 +71,35 @@ def test_builtin_everydollar_profile_reads_its_files_as_the_no_mapping_path_does
         via = src.apply(kind, f.read_bytes(), p)
         norm = lambda rs: [{k: ("-".join(filenames.iso_date(v)) if k == "Date" else v) for k, v in r.items() if k in via[0]} for r in rs]
         assert norm(via) == norm(rows), f.name
+
+
+def test_bad_months_and_dates_are_refused_not_misread():
+    assert filenames.parse("c0ffee-13-2025-EveryDollar-Transactions.csv") is None and filenames.parse("c0ffee-00-2025-EveryDollar-Transactions.csv") is None
+    for bad in ("03-02-2025", "2025-03-02T10:00", "2025/03/02", "2025-02-30", "", "Feb 3 2025"):
+        with pytest.raises(ValueError, match="not a date|day is out of range"):
+            filenames.iso_date(bad)
+    assert filenames.iso_date(" 3/2/2025 ") == ("2025", "03", "02")
+
+
+def test_reconcile_and_inventory_scripts_agree_on_either_naming(tmp_path):
+    import subprocess, sys
+    from test_pipeline_golden import PIPELINE
+    neutral_copy(GOLDEN / "exports", tmp_path / "neutral")
+    outs = {}
+    for name, src in (("ed", GOLDEN / "exports"), ("nt", tmp_path / "neutral")):
+        wd = build(tmp_path / name, src)
+        for s in ("reconcile.py", "inventory.py"):
+            p = subprocess.run([sys.executable, "-I", str(PIPELINE / s)], cwd=wd, capture_output=True, text=True, timeout=60)
+            assert p.returncode == 0, p.stderr
+        strip = lambda f: [{k: v for k, v in r.items() if k != "SourceFile"} for r in csv.DictReader(open(wd / f))]
+        outs[name] = {f: strip(f) for f in ("reconciliation_new_rows.csv", "new_rows_with_budget_month.csv", "item_inventory.csv")}
+    assert outs["ed"] == outs["nt"]
+
+
+def test_sources_zip_gives_internal_format_files_back_with_iso_dates(client, reset_db, tmp_path):
+    import io, zipfile
+    neutral_copy(GOLDEN / "exports", tmp_path / "neutral")
+    upload_files(client, tmp_path / "neutral")
+    z = zipfile.ZipFile(io.BytesIO(client.get("/export/sources.zip").content))
+    rows = list(csv.DictReader(io.StringIO(z.read("2025-01-transactions.csv").decode())))
+    assert rows and all(len(r["Date"]) == 10 and r["Date"][4] == "-" for r in rows)

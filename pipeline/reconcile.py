@@ -62,7 +62,7 @@ with open(out, "w", newline="") as fh:
 newrows = f"{ROOT}/new_rows_with_budget_month.csv"
 with open(newrows, "w", newline="") as fh:
     w = csv.writer(fh); w.writerow(["Group","Item","Type","Date","Merchant","Amount","BudgetMonth","SourceFile"])
-    for r in txn: w.writerow([r["Group"],r["Item"],r["Type"],r["Date"],r["Merchant"],r["Amount"],r["BudgetMonth"],r["SourceFile"]])
+    for r in txn: w.writerow([r["Group"],r["Item"],r["Type"],"-".join(filenames.iso_date(r["Date"])),r["Merchant"],r["Amount"],r["BudgetMonth"],r["SourceFile"]])
 
 c = Counter(s for *_, s in rows)
 print(f"txn rows: {len(txn)}  calendar-month != budget-month: {cal_mismatch}")

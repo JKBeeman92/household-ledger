@@ -213,6 +213,9 @@ def export_for_pipeline(conn: psycopg.Connection, wd: Path) -> None:
         files = cur.fetchall()
         for f in files:
             bm = f["budget_month"]
+            if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", bm):   # only an upload from before 0.5.0 could have stored one
+                raise ValueError(f"{f['filename']} is stored under budget month {bm}, which is not a month: delete that month on Close a month, "
+                                 "then rebuild")
             if f["kind"] == "transactions":
                 cur.execute("SELECT grp,item,type,to_char(date,'YYYY-MM-DD') d,merchant,account,amount,note FROM transactions WHERE source_file_id=%s ORDER BY row_no", (f["id"],))
                 path = wd / "txns" / filenames.neutral_name("transactions", bm)   # the internal format (#161)
