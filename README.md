@@ -265,6 +265,7 @@ matches the sample household; set it on Settings → Pipeline rules → **Roles*
 | `plan_keep_categories` | `["Housing", "Debt", "Insurance"]` | Category | The Last month tab's suggested plan keeps the current plan for these instead of the twelve-month average. |
 | `income_groups` | `["Income"]` | Budget group | An inflow whose merchant equals its item name is read as a carry-forward into a fund (a transfer), except in these groups; income-typed transfers are counted from them. New source profiles for other tools, and the mapping draft, start from these. |
 | `debt_groups` | `["Debt"]` | Budget group | The `debt_plug_until` rule looks at these groups; the off-budget outflow count leaves them out; the mapping draft gives their items Flow `debt`. |
+| `loan_categories` | `["Family Loan"]` | Category | The Method tab's two family-loan lines: inflows kept out of income, repayments kept out of spend. |
 | `goal_housing_categories` | `["Housing", "Utilities"]` | Category | The housing share on the Goals tab. |
 | `goal_giving_categories` | `["Giving"]` | Category | The giving share on the Goals tab. |
 

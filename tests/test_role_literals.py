@@ -12,7 +12,7 @@ from test_pipeline_golden import EXPECTED
 from test_rules_defaults import ds
 
 ROOT = Path(__file__).resolve().parent.parent
-ROLE_KEYS = ("paycheck_items", "recurring_categories", "plan_keep_categories", "income_groups", "debt_groups",
+ROLE_KEYS = ("paycheck_items", "recurring_categories", "plan_keep_categories", "income_groups", "debt_groups", "loan_categories",
              "goal_housing_categories", "goal_giving_categories")
 MARKERS = ("role default", "label, not a role", "format value, not a role")
 
@@ -148,3 +148,27 @@ def test_roles_form_saves_names_and_blank_means_default(client, reset_db):
     client.post("/settings/rules/roles", data={"recurring_categories": "", "recurring_categories__was": "Bills, monthly"})   # cleared: back to the default
     with db.pool.connection() as conn:
         assert "recurring_categories" not in db.get_setting(conn, "rules", {})
+
+
+def test_loan_categories_decide_the_family_loan_lines(tmp_path):
+    """The Method tab's family-loan lines count the categories loan_categories names (issue #162's pattern, for Family Loan)."""
+    from test_pipeline_golden import run_scripts
+
+    def run(wd, rules):
+        shutil.copytree(GOLDEN / "exports", wd / "exports")
+        (wd / "txns").mkdir(); (wd / "summaries").mkdir()
+        for f in sorted((wd / "exports").glob("*.csv")):
+            shutil.copy(f, wd / ("txns" if "Transactions" in f.name else "summaries") / f.name)
+        for n in ("cpi_u.csv", "events.json"):
+            shutil.copy(GOLDEN / n, wd / n)
+        (wd / "item_mapping.csv").write_text((GOLDEN / "item_mapping.csv").read_text() + "Uncle Loan,Uncle Loan,Kin Loan,transfer,\n")
+        with open(wd / "txns" / "c0ffee-01-2025-EveryDollar-Transactions.csv", "a", newline="") as f:
+            csv.writer(f, lineterminator="\n").writerows([["Other", "Uncle Loan", "Income", "01/10/2025", "Uncle Bilbo", "Bywater Checking", "500.00", ""],
+                                                          ["Other", "Uncle Loan", "Expense", "01/20/2025", "Uncle Bilbo", "Bywater Checking", "-200.00", ""]])
+        (wd / "rules.json").write_text(json.dumps({**json.loads((GOLDEN / "rules.json").read_text()), **rules}))
+        run_scripts(wd)
+        return {r["kind"]: r["value"] for r in ds(wd, "exclusions")}
+    plain = run(tmp_path / "a", {})
+    ruled = run(tmp_path / "b", {"loan_categories": ["Kin Loan"]})
+    assert plain["loan_in"] == 0 and plain["loan_out"] == 0
+    assert ruled["loan_in"] == 500.0 and ruled["loan_out"] == 200.0

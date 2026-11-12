@@ -431,12 +431,14 @@ ROLE_FIELDS = [   # (rules key, plain label, what it changes) for the Roles form
     ("plan_keep_categories", "Categories whose plan is kept", "On the Last month tab, their suggested plan stays the current plan instead of the twelve-month average."),
     ("income_groups", "Budget groups that hold income", "As named in the export. New source profiles and the mapping draft start from these."),
     ("debt_groups", "Budget groups that hold debt payments", "As named in the export. The debt-plug rule and the off-budget count read them."),
+    ("loan_categories", "Categories of loans between family", "The Method tab counts their inflows and repayments."),
 ]
 
 
 ROLE_DEFAULTS = {   # shown as placeholders; equal to build_ledger.RULES (tests/test_role_literals.py checks it)
     "paycheck_items": ["Paycheck"], "recurring_categories": ["Subscriptions", "Utilities", "Insurance"],   # role default
     "plan_keep_categories": ["Housing", "Debt", "Insurance"], "income_groups": ["Income"], "debt_groups": ["Debt"],   # role default
+    "loan_categories": ["Family Loan"],   # role default
 }
 
 

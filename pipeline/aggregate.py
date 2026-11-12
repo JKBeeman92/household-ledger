@@ -15,6 +15,7 @@ PAYCHECK_ITEMS = _role("paycheck_items", ["Paycheck"])   # role default
 RECURRING_CATEGORIES = _role("recurring_categories", ["Subscriptions", "Utilities", "Insurance"])   # role default
 INCOME_GROUPS = _role("income_groups", ["Income"])   # role default
 DEBT_GROUPS = _role("debt_groups", ["Debt"])   # role default
+LOAN_CATEGORIES = _role("loan_categories", ["Family Loan"])   # role default
 months = sorted({r["BudgetMonth"] for r in L})
 years = sorted({m[:4] for m in months})
 
@@ -107,8 +108,8 @@ excl = {
  "transfers_paired": sum(1 for r in L if r["TransferPair"]),
  "plugs": sum(1 for r in L if r["IsPlug"]=="1"),
  "income_typed_transfers_total": round(sum(r["amt"] for r in L if r["IsTransfer"]=="1" and r["Group"] in INCOME_GROUPS and r["amt"]>0),2),
- "family_loan_in": round(sum(r["amt"] for r in L if r["Category"]=="Family Loan" and r["amt"]>0),2),
- "family_loan_out": round(-sum(r["amt"] for r in L if r["Category"]=="Family Loan" and r["amt"]<0),2),
+ "family_loan_in": round(sum(r["amt"] for r in L if r["Category"] in LOAN_CATEGORIES and r["amt"]>0),2),
+ "family_loan_out": round(-sum(r["amt"] for r in L if r["Category"] in LOAN_CATEGORIES and r["amt"]<0),2),
  "offbudget_outflows_unpaired": round(-sum(r["amt"] for r in L if r["IsTransfer"]=="1" and not r["TransferPair"] and r["amt"]<0 and r["Group"] not in DEBT_GROUPS and r["BudgetMonth"]>=OFFBUDGET_SINCE),2),
  "verify_rows": [{"m":r["BudgetMonth"],"item":r["Item"],"merchant":r["Merchant"],"amt":r["amt"]} for r in L if r["Flow"]=="verify"],
  "excluded_items": json.load(open("excluded.json")) if os.path.exists("excluded.json") else {},

@@ -35,6 +35,7 @@ RULES = {
   "plan_keep_categories": ["Housing", "Debt", "Insurance"],              # categories whose suggested plan stays the current plan (Last month tab)
   "income_groups": ["Income"],         # budget groups that hold income: no carry-forward-into-a-fund there; source profiles and the draft default to them
   "debt_groups": ["Debt"],             # budget groups that hold debt payments: the debt-plug rule and the off-budget outflow count
+  "loan_categories": ["Family Loan"],  # categories of loans between family: their inflows and repayments are counted on the Method tab
   "offbudget_since": None,             # "YYYY-MM": count unpaired off-budget outflows from here (exclusions table)
   "merchant_rules": [                  # [regex, display name]; household extras go in rules.json and are tried first
     [r"^(amzn|amazon)", "Amazon"], [r"^wal-?mart|^wm supercenter", "Walmart"], [r"^sams ?club", "Sam's Club"], [r"^costco", "Costco"],
