@@ -1,11 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Review instructions · {{ household.title }}{% endblock %}
+{% block title %}Review instructions · {{ household.title }}<script nonce="{{ csp_nonce(request) }}">
+// Preview reloads the page: while the instructions have unsaved edits it waits, and says why, so the edits are not lost
+(() => { const ta = document.getElementById('instructions'), btn = document.getElementById('preview-btn'), note = document.getElementById('preview-note'); if (!ta || !btn || btn.disabled) return;
+  const first = ta.value; ta.addEventListener('input', () => { const dirty = ta.value !== first; btn.disabled = dirty;
+    note.textContent = dirty ? 'Save the instructions first: Preview uses the saved ones.' : 'Uses the saved instructions.'; }); })();
+</script>
+{% endblock %}
 {% block content %}
 <p class="eyebrow">Month-close review</p>
 <h1 class="page-title">Review instructions</h1>
 <p class="muted measure">The system prompt sent with every review, whichever provider writes it. Use it to say what this household wants emphasised (debt payoff, giving, a business's cash flow). Keep the reply format line (JSON with <code>sections</code>) or the review will not parse. <a href="/reviews">Back to Reviews</a></p>
 <div class="row mt-4">
-  <form class="panel" method="post" action="/reviews/prompt">{{ csrf_field(request) }}
+  <form class="panel" method="post" action="/reviews/prompt">{{ csrf_field(request) }}<input type="hidden" name="month" value="{{ month or '' }}">
     <h2>Instructions {% if customised %}<span class="muted">(customised)</span>{% else %}<span class="muted">(built-in)</span>{% endif %}</h2>
     <p><label for="instructions">System prompt</label><br><textarea id="instructions" name="instructions" rows="16" maxlength="20000">{{ text }}</textarea></p>
     <p class="mt-3"><button class="btn primary" type="submit">Save instructions</button></p>
@@ -13,11 +19,11 @@
   <div class="panel">
     <h2>Preview the context</h2>
     <p class="muted">The exact JSON that would be sent with the instructions for a month. Nothing is sent to a provider.</p>
-    <form method="get" action="/reviews/prompt">
+    <form method="get" action="/reviews/prompt#ctx-h">
       <p><label for="month">Budget month</label><br><select id="month" name="month">{% for m in months %}<option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m|month_short }}</option>{% endfor %}</select></p>
-      <p><button class="btn" type="submit" {% if not months %}disabled{% endif %}>Preview</button></p>
+      <p><button class="btn" type="submit" id="preview-btn" {% if not months %}disabled{% endif %}>Preview</button> <span class="muted" id="preview-note" aria-live="polite">Uses the saved instructions.</span></p>
     </form>
-    <form method="post" action="/reviews/prompt/reset">{{ csrf_field(request) }}
+    <form method="post" action="/reviews/prompt/reset">{{ csrf_field(request) }}<input type="hidden" name="month" value="{{ month or '' }}">
       <h3>Reset</h3><p class="muted">Discard the saved text and use the built-in instructions.</p>
       <p><button class="btn" type="submit" {% if not customised %}disabled{% endif %}>Reset to default</button></p>
     </form>

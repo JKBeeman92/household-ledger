@@ -31,11 +31,12 @@ def prompt_page(request: Request, month: str = "", user=Depends(auth.require_edi
 
 
 @router.post("/reviews/prompt")
-def prompt_save(request: Request, instructions: str = Form(""), user=Depends(auth.require_editor)):
+def prompt_save(request: Request, instructions: str = Form(""), month: str = Form(""), user=Depends(auth.require_editor)):
+    back = "/reviews/prompt" + (f"?month={month}" if MONTH.match(month or "") else "")   # the month being previewed is kept
     text = instructions.replace("\r\n", "\n").strip()
     if len(text) > MAX_LEN:
         flash(request, f"Not saved: instructions are limited to {MAX_LEN:,} characters.", "bad")
-        return RedirectResponse("/reviews/prompt", status_code=303)
+        return RedirectResponse(back, status_code=303)
     with db.pool.connection() as conn:
         if not text or text == review.SYSTEM:   # blank or identical to the built-in means "use the built-in"
             conn.execute("DELETE FROM settings WHERE key=%s", (review.SETTING,))
@@ -44,12 +45,13 @@ def prompt_save(request: Request, instructions: str = Form(""), user=Depends(aut
             db.put_setting(conn, review.SETTING, text)
             flash(request, "Saved. Every provider will use these instructions from the next review.")
         conn.commit()
-    return RedirectResponse("/reviews/prompt", status_code=303)
+    return RedirectResponse(back, status_code=303)
 
 
 @router.post("/reviews/prompt/reset")
-def prompt_reset(request: Request, user=Depends(auth.require_editor)):
+def prompt_reset(request: Request, month: str = Form(""), user=Depends(auth.require_editor)):
+    back = "/reviews/prompt" + (f"?month={month}" if MONTH.match(month or "") else "")
     with db.pool.connection() as conn:
         conn.execute("DELETE FROM settings WHERE key=%s", (review.SETTING,)); conn.commit()
     flash(request, "Reset to the built-in instructions.")
-    return RedirectResponse("/reviews/prompt", status_code=303)
+    return RedirectResponse(back, status_code=303)

@@ -1,5 +1,6 @@
 """Review cost guard, audit list and hand-editing: confirm before a provider call, list past reviews with prompt and model, correct stored sections."""
 import json, re
+from urllib.parse import quote
 
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -45,7 +46,9 @@ def _get(conn, month: str):
 def review_edit(request: Request, month: str, back: str = "", user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         row = _get(conn, month)
-    return render(request, "reviews_edit.html", user, active="reviews", r=row, back=auth._safe_next(back) if back else "/reviews")
+    typed = request.session.pop("review_edit", None)
+    typed = typed["sections"] if typed and typed.get("month") == month else None
+    return render(request, "reviews_edit.html", user, active="reviews", r=row, typed=typed, back=auth._safe_next(back) if back else "/reviews")
 
 
 @router.post("/reviews/edit/{month}")
@@ -53,7 +56,9 @@ def review_edit_save(request: Request, month: str, heading: list[str] = Form(def
     pairs = [(h.strip(), t.strip()) for h, t in zip(heading, text) if h.strip() or t.strip()]
     if not pairs or any(not h or not t for h, t in pairs):
         flash(request, "Not saved: every section needs both a heading and text, and at least one section must remain.", "bad")
-        return RedirectResponse(f"/reviews/edit/{month}" + (f"?back={back}" if back else ""), status_code=303)
+        # what was typed comes back, with the half-filled sections marked, and the way back kept (DS-FORM-1)
+        request.session["review_edit"] = {"month": month, "sections": [{"heading": h, "text": t, "bad": bool(h) != bool(t)} for h, t in zip(heading, text)]}
+        return RedirectResponse(f"/reviews/edit/{month}" + (f"?back={quote(back)}" if back else ""), status_code=303)
     sections = [{"order": i, "heading": h, "text": t} for i, (h, t) in enumerate(pairs, 1)]
     with db.pool.connection() as conn:
         _get(conn, month)

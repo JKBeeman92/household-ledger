@@ -11,8 +11,8 @@
     <p><label for="provider">Provider</label><br>
     <select id="provider" name="provider"><option value="">Environment default ({{ providers.get(prov.name, prov.name) }})</option>
       {% for k, v in providers.items() %}<option value="{{ k }}" {% if saved.get('provider') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></p>
-    <p><label for="model">Model</label><br><input type="text" id="model" name="model" value="{{ saved.get('model', '') }}" placeholder="required for every provider except Anthropic" autocomplete="off"></p>
-    <p><label for="base_url">Base URL</label><br><input type="text" id="base_url" name="base_url" value="{{ saved.get('base_url', '') }}" placeholder="OpenAI-compatible: https://host/v1 · Ollama: http://ollama:11434" autocomplete="off"></p>
+    <p><label for="model">Model</label><br><input type="text" id="model" name="model" value="{{ saved.get('model', '') }}" autocomplete="off" aria-describedby="model-h"><br><span class="muted hint" id="model-h">Required for every provider except Anthropic.</span></p>
+    <p><label for="base_url">Base URL</label><br><input type="text" id="base_url" name="base_url" value="{{ saved.get('base_url', '') }}" autocomplete="off" aria-describedby="base-url-h"><br><span class="muted hint" id="base-url-h">OpenAI-compatible: <code>https://host/v1</code>. Ollama: <code>http://ollama:11434</code>.</span></p>
     <p class="muted"><code>REVIEW_MAX_TOKENS</code> (now {{ prov.max_tokens|number }}) is the reply's output limit, thinking included; a review that stops at it says so. Replies wrapped in markdown fences or lead-in prose are tolerated.</p>
     <p class="mt-3"><button class="btn primary" type="submit">Save provider</button></p>
   </form>

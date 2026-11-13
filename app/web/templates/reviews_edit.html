@@ -5,12 +5,13 @@
 <h1 class="page-title">Edit the {{ r.month|month }} review</h1>
 <p class="muted measure">Written by {{ r.model }}. Saving marks it as hand-edited and updates the dashboard. Clear both fields of a section to remove it; fill the last empty one to add a section. Writing the review again replaces your edits.</p>
 <form method="post" action="/reviews/edit/{{ r.month }}" class="w-form">{{ csrf_field(request) }}<input type="hidden" name="back" value="{{ back }}">
-  {% for s in r.sections + [{'heading': '', 'text': ''}] %}
+  {% for s in (typed if typed is not none else r.sections + [{'heading': '', 'text': ''}]) %}
   <div class="panel mt-3">
     <label for="h{{ loop.index }}">Heading {{ loop.index }}</label>
-    <input type="text" id="h{{ loop.index }}" name="heading" value="{{ s.heading }}" autocomplete="off">
+    <input type="text" id="h{{ loop.index }}" name="heading" value="{{ s.heading }}" autocomplete="off"{% if s.bad and not s.heading %} aria-invalid="true" aria-describedby="e{{ loop.index }}"{% endif %}>
     <label for="t{{ loop.index }}" class="mt-3">Text</label>
-    <textarea id="t{{ loop.index }}" name="text" rows="5">{{ s.text }}</textarea>
+    <textarea id="t{{ loop.index }}" name="text" rows="5"{% if s.bad and not s.text %} aria-invalid="true" aria-describedby="e{{ loop.index }}"{% endif %}>{{ s.text }}</textarea>
+    {% if s.bad %}<p class="err" id="e{{ loop.index }}" role="alert">This section needs both a heading and text, or clear both to remove it.</p>{% endif %}
   </div>
   {% endfor %}
   <p class="mt-4"><button class="btn primary" type="submit">Save edits</button> <a class="btn ml-2" href="{{ back }}">Cancel</a></p>
