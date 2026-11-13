@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 GOLDEN = ROOT / "tests" / "fixtures" / "golden"
 RECON_FAIL = ROOT / "tests" / "fixtures" / "recon_fail"
 SAMPLE = ROOT / "examples" / "sample-household"
-TABLES = "source_files, transactions, budget_items, item_mapping, canonical_items, categories, renames, mapping_migration_notes, cpi, goals, life_events, ledger, datasets, reviews, build_log, settings, auth_sessions, source_file_history, upload_batches, api_tokens, webhook_deliveries, webhook_months_notified, source_profiles, upload_pending, review_jobs, accounts, balances, balance_history, checkins, decisions, decision_checks, yearly_bills"
+TABLES = "source_files, transactions, budget_items, item_mapping, canonical_items, categories, renames, mapping_migration_notes, cpi, goals, life_events, ledger, datasets, reviews, build_log, settings, auth_sessions, source_file_history, upload_batches, api_tokens, webhook_deliveries, webhook_months_notified, source_profiles, upload_pending, review_jobs, accounts, balances, balance_history, checkins, decisions, decision_checks, yearly_bills, tax_payments"
 
 
 def csrf_token_of(c) -> str | None:

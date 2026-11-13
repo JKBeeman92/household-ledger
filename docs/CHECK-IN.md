@@ -46,9 +46,11 @@ statement balances under Settings → Accounts → Balances history if you have 
 
 ## A quarter
 
-On the last budget month of a quarter the check-in runs in **quarter** mode. The quarter's own steps (how the quarter went, estimated
-tax) arrive with #147 and #153; until then a quarter's check-in is a month's. A good habit meanwhile: look at the Goals tab's lines
-over the last three months, not just the last one.
+On the last budget month of a quarter the check-in runs in **quarter** mode. If the household has contract income (Settings → Goals →
+Estimated tax), an **Estimated tax** step asks whether the quarter's estimated payment was made: the quarter's contract income and the
+share to set aside, the next deadline, and a tick, with the amount paid. The quarter's own comparisons (how this quarter went against
+the last and the same quarter a year ago) arrive with #147. A good habit meanwhile: look at the Goals tab's lines over the last three
+months, not just the last one.
 
 ## A year
 

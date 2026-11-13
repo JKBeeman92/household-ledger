@@ -43,4 +43,14 @@ w("yearly_bills", _bills)
 if os.path.exists("dash_data/coming_up.json"):
     _cu = [r for r in json.load(open("dash_data/coming_up.json")) if r["kind"] != "yearly_bill"] + _yb.coming_up_rows(_bills)
     _cu.sort(key=lambda r: (r["m"], r["kind"], r["label"])); w("coming_up", _cu)
+# estimated tax (#153): the tax year's contract income against what is set aside, and the deadlines into coming_up
+import tax as _tax   # noqa: E402
+_goals = {g["key"]: g.get("value") for g in json.load(open("dash_data/goals.json"))} if os.path.exists("dash_data/goals.json") else {}
+_pay = json.load(open("tax_payments.json")) if os.path.exists("tax_payments.json") else []
+_ts = _tax.summary(rows, _rl("contract_income_items", []), _rl("tax_set_aside_items", []),
+                   float(_goals["tax_set_aside_pct"]) if _goals.get("tax_set_aside_pct") is not None else None, _rl("tax_deadlines", []), _pay, _through, _acct)
+w("tax", [_ts] if _ts else [])
+if _ts and os.path.exists("dash_data/coming_up.json"):
+    _cu = [r for r in json.load(open("dash_data/coming_up.json")) if r["kind"] != "tax_deadline"] + _tax.deadline_rows(_rl("tax_deadlines", []), _through, _ts["quarter_expected"])
+    _cu.sort(key=lambda r: (r["m"], r["kind"], r["label"])); w("coming_up", _cu)
 w("decision_summary", [{**_dec.keep_rate(_rows, _through), "in_force": len({r["id"] for r in _rows if r["m"] == _through})}] if _through else [])

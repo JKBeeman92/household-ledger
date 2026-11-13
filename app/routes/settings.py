@@ -274,6 +274,9 @@ def _editor_body(conn, key: str) -> str:
     if key == "checkins":   # not a Settings editor: the check-ins done, for settings.zip and the seed loader (#164)
         rows = conn.execute("SELECT month, mode, steps, completed_at, completed_by, reopened_at FROM checkins ORDER BY month").fetchall()
         return json.dumps([{**r, **{k: r[k].isoformat() if r[k] else None for k in ("completed_at", "reopened_at")}} for r in rows], indent=1)
+    if key == "tax_payments":   # not a Settings editor: the quarters' estimated tax ticked paid (#153), for settings.zip and the seed loader
+        from .. import tax
+        return tax.export_json(conn)
     if key == "yearly_bills":   # not a Settings editor: the household's word on yearly bills (#151), for settings.zip and the seed loader
         from .. import yearly_bills
         return yearly_bills.export_csv(conn)
@@ -340,6 +343,13 @@ def _save_editor(conn, key: str, body: str, by: str = "") -> str:
     raise ValueError("unknown editor")
 
 
+def _tax_cfg() -> dict:
+    """Settings → Goals → Estimated tax (#153): the rules and the goal as the form shows them."""
+    from .. import tax
+    with db.pool.connection() as conn:
+        return {**tax.rules(conn), "pct": tax.goal(conn)}
+
+
 @router.get("/settings", response_class=HTMLResponse)
 def settings_page(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
@@ -361,7 +371,7 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         bills = _yb.for_page(conn)
     from .yearly_bills import slug as _yb_slug
     return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP, bills=bills,
-                  yb_form=request.session.pop("yb_form", None), yb_slug=_yb_slug,
+                  yb_form=request.session.pop("yb_form", None), yb_slug=_yb_slug, tax_cfg=_tax_cfg(),
                   categories=categories, rules=rules, hh=household, name_families=name_families, unmapped=unmapped,
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS,
                   event_choices={"kind": [""] + list(EVENT_KINDS)}, people=list(rules.get("people") or []),

@@ -114,6 +114,16 @@
     <select name="unit" aria-label="Unit for {{ r.person }}"><option value="share"{% if r.unit == 'share' %} selected{% endif %}>% of gross</option><option value="usd"{% if r.unit == 'usd' %} selected{% endif %}>$ a month</option></select></p>{% endfor %}
   {% if pretax %}<p><button class="btn primary" type="submit">Save pre-tax saving</button></p>{% endif %}
 </form>
+<form class="panel" method="post" action="/tax/settings" id="tax-settings" tabindex="-1">{{ csrf_field(request) }}
+  <h2>Estimated tax</h2>
+  <p class="muted" style="max-width:75ch">For income with no tax withheld (contract or self-employment work): the share set aside for the quarterly estimated payments, and where. The check-in shows the year's set-aside against what is expected, and on a quarter's last month asks whether that quarter's estimate was paid. Leave the income blank to turn it off.</p>
+  <p><label for="tax-items">Income with no tax withheld</label><br><input id="tax-items" name="items" list="settings-canonicals" size="48" value="{{ tax_cfg.income_items|join(', ') }}" placeholder="Contract Income"><br><span class="muted hint">Budget items, separated by commas.</span></p>
+  <p><label for="tax-pct">Share to set aside</label><br><input id="tax-pct" name="pct" inputmode="decimal" size="8" value="{{ (tax_cfg.pct * 100)|plain ~ '%' if tax_cfg.pct is not none else '' }}" placeholder="25%"><br><span class="muted hint">Asked again at each month-close: it changes with income and tax law.</span></p>
+  <p><label for="tax-aside">Set aside in</label><br><input id="tax-aside" name="aside" size="48" value="{{ tax_cfg.aside_items|join(', ') }}" placeholder="Tax Set-Aside"><br><span class="muted hint">The envelopes (budget items) or accounts the tax goes into, separated by commas.</span></p>
+  <p><label for="tax-deadlines">Deadlines</label><br><textarea id="tax-deadlines" name="deadlines" rows="4" cols="40" placeholder="2026-09 Q3 federal estimate">{% for d in tax_cfg.deadlines %}{{ d.m }} {{ d.label }}
+{% endfor %}</textarea><br><span class="muted hint">One per line, the budget month then a label. Enter each year's dates yourself: they move with weekends and holidays and differ by state.</span></p>
+  <p><button class="btn" type="submit">Save estimated tax</button></p>
+</form>
 {% call grid("goals", by_key.goals, ["key","label","value","unit","note"], ["Key","Label","Value","Unit","Note"], rows.goals) %}{% endcall %}
 </div>
 <div role="tabpanel" id="sp-events" aria-labelledby="st-events">

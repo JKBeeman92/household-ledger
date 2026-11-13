@@ -3,6 +3,30 @@
   "Rosie",
   "Sam"
  ],
+ "contract_income_items": [
+  "Contract Income"
+ ],
+ "tax_set_aside_items": [
+  "Tax Set-Aside"
+ ],
+ "tax_deadlines": [
+  {
+   "m": "2026-04",
+   "label": "Q1 federal estimate"
+  },
+  {
+   "m": "2026-06",
+   "label": "Q2 federal estimate"
+  },
+  {
+   "m": "2026-09",
+   "label": "Q3 federal estimate"
+  },
+  {
+   "m": "2027-01",
+   "label": "Q4 federal estimate"
+  }
+ ],
  "income_by_person": {
   "Rosie": [
    "Paycheck"

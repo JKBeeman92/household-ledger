@@ -70,7 +70,7 @@ PAYCHECK_ITEMS_DEFAULT = ["Paycheck"]   # role default: build_ledger.RULES["payc
 
 
 def build_context(conn, month: str) -> dict:
-    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals','debt_to_income','net_worth','emergency_fund','coming_up')").fetchall()}
+    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals','debt_to_income','net_worth','emergency_fund','coming_up','tax')").fetchall()}
     monthly = {r["m"]: r for r in ds.get("monthly", [])}
     months = sorted(monthly)
     if month not in monthly:
@@ -101,6 +101,8 @@ def build_context(conn, month: str) -> dict:
         **({"debt_to_income": dti_context(ds.get("debt_to_income", []), goals, month)} if ds.get("debt_to_income") else {}),
         **({"net_worth": nw_context(ds.get("net_worth", []), month)} if any(r["m"] == month for r in ds.get("net_worth", [])) else {}),
         **({"emergency_fund": ef_context(ds.get("emergency_fund", []), goals, month)} if any(r["m"] == month and r["months"] is not None for r in ds.get("emergency_fund", [])) else {}),
+        **({"estimated_tax": {k: (ds.get("tax") or [{}])[0].get(k) for k in ("year", "contract_income", "pct", "expected", "set_aside", "short", "quarter_income", "quarter_expected", "next_deadline", "next_label")}}
+           if ds.get("tax") and ds["tax"][0].get("m") == month else {}),   # #153
         **({"coming_up": coming_up_context(ds.get("coming_up", []), month)} if coming_up_context(ds.get("coming_up", []), month) else {}),
         "continuity": continuity(conn, month, prev),
     }

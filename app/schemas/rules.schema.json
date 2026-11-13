@@ -111,6 +111,19 @@
       "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
       "description": "Categories the Recurring tab lists: their expense rows, by canonical item. Empty (null) means [\"Subscriptions\", \"Utilities\", \"Insurance\"]."
     },
+    "contract_income_items": {
+      "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
+      "description": "Canonical items of income with no tax withheld (contract, self-employment): estimated tax is set aside from them (#153). Empty means none, and no estimated tax is shown anywhere."
+    },
+    "tax_set_aside_items": {
+      "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
+      "description": "The envelopes (canonical items) or accounts the estimated tax is set aside in (#153)."
+    },
+    "tax_deadlines": {
+      "type": ["array", "null"], "items": {"type": "object", "additionalProperties": false, "required": ["m"],
+        "properties": {"m": {"type": "string", "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"}, "label": {"type": "string"}}},
+      "description": "Estimated-tax deadlines, as budget months with a label: [{\"m\": \"YYYY-MM\", \"label\": \"Q3 federal estimate\"}]. Kept current by the household: they move with weekends and holidays and differ by state (#153)."
+    },
     "yearly_bill_tolerance": {
       "type": ["integer", "null"], "minimum": 0, "maximum": 3,
       "description": "A yearly bill is paid within this many months of the same calendar month each year (#151). Empty (null) means 1."

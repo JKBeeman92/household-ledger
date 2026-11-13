@@ -2,6 +2,7 @@
 <dl class="dti">
   {% if c.monthly %}<dt>The month</dt><dd>Income {{ c.monthly.income|money }}, living spend {{ c.monthly.spend|money }}, debt paid {{ c.monthly.debt|money }}: kept <strong>{{ c.monthly.net|money }}</strong>{% if c.monthly.income %} ({{ (c.monthly.net / c.monthly.income)|share }} of take-home){% endif %}.</dd>{% endif %}
   {% if c.nw %}<dt>Net worth</dt><dd><strong>{{ c.nw.net_worth|money }}</strong>{% if c.nw.change is not none %}, {{ c.nw.change|money(signed=True) }} since last month{% if c.nw.you_did is not none %} (you did {{ c.nw.you_did|money(signed=True) }}, happened {{ c.nw.happened|money(signed=True) }}){% endif %}{% endif %}.{% if c.nw.you_did is not none %}<br><span class="muted">What you did is what was kept and paid down; what happened is the rest: values moving, and interest.</span>{% endif %}</dd>{% endif %}
+  {% if c.tax and c.tax.expected is not none %}<dt>Estimated tax</dt><dd>{{ c.tax.expected|money }} expected this year on {{ c.tax.contract_income|money }} of contract income{% if c.tax.set_aside is not none %}; {{ c.tax.set_aside|money }} set aside{% if c.tax.short %}, <strong>{{ c.tax.short|money }} short</strong>{% endif %}{% endif %}.</dd>{% endif %}
   {% if c.ef and c.ef.months is not none %}<dt>Emergency fund</dt><dd>{{ c.ef.months|number(1) }} months of outgo.</dd>{% endif %}
   {% if c.dti and c.dti.dti is not none %}<dt>Debt-to-income</dt><dd>{{ c.dti.dti|share(1) }} of gross; housing {{ c.dti.housing_dti|share(1) }}.</dd>{% endif %}
 </dl>

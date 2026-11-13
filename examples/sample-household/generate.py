@@ -46,6 +46,8 @@ ITEMS = [
     ("Insurance", "Smial Insurance", "Smial Insurance", "Insurance", "expense", 0, ["Brandybuck Mutual"], (0, 0), (1.0, 1.0)),
     ("Savings", "Smial Insurance Fund", "Smial Insurance Fund", "Savings", "expense", 80, ["Green Hills Credit Union"], (0, 0), (1.0, 1.0)),
     ("Transportation", "Cart Registration", "Cart Registration", "Transportation", "expense", 0, ["Shire Cart Office"], (0, 0), (1.0, 1.0)),
+    # estimated tax (#153): Sam's garden contracts have no tax withheld; a quarter of them is planned into this envelope each month
+    ("Savings", "Tax Set-Aside", "Tax Set-Aside", "Savings", "expense", 450, ["Green Hills Credit Union"], (0, 0), (1.0, 1.0)),
 ]
 YEARLY = {"Smial Insurance": (2, 96000, 11), "Cart Registration": (3, 18600, 8)}   # item: (month, cents, day)
 DEBT_TYPES = {"Student Loan": "student"}   # the mapping's optional DebtType column (#141)
@@ -65,6 +67,9 @@ EVENTS = [("2025-03", "Sam takes on garden contracts", "job", "Sam"), ("2025-07"
           ("2026-09", "Elanor starts at the Bywater nursery", "family", None)]   # (m, label, kind, person); the last is still to come (#144, coming_up)
 RULES = {
     "people": ["Rosie", "Sam"],
+    "contract_income_items": ["Contract Income"], "tax_set_aside_items": ["Tax Set-Aside"],   # #153
+    "tax_deadlines": [{"m": "2026-04", "label": "Q1 federal estimate"}, {"m": "2026-06", "label": "Q2 federal estimate"},
+                      {"m": "2026-09", "label": "Q3 federal estimate"}, {"m": "2027-01", "label": "Q4 federal estimate"}],
     "income_by_person": {"Rosie": ["Paycheck"], "Sam": ["Contract Income"]},
     "payer_prefix_by_person": {"Rosie": ["Rosie "], "Sam": ["Sam "]},
     "employers": [{"match": "hobbiton mill", "name": "Hobbiton Mill"}],
@@ -73,6 +78,8 @@ RULES = {
     "goal_savings_groups": ["Savings"],
 }
 GOALS = [
+    {"key": "tax_set_aside_pct", "value": 0.25, "unit": "share of contract income", "label": "Estimated tax set aside",
+     "note": "Ask at each month-close: the share of contract income set aside for estimated tax; it changes with income and tax law."},
     {"key": "gross_annual", "value": 78000, "unit": "usd", "label": "Gross salary, annual", "note": "Invented for the sample household."},
     {"key": "pay_frequency", "value": 26, "unit": "paychecks/yr", "label": "Pay frequency", "note": "26 = every two weeks; two or three months carry three paychecks."},
     {"key": "giving_floor", "value": 0.05, "unit": "share of gross", "label": "Giving floor", "note": "Never below this share of gross."},
@@ -142,7 +149,7 @@ def build_month(rng, y, m):
             planned[item] = cents if m == mo else 0
             if m == mo: txns.append((day, g, item, "Expense", merch[0], -cents, "the yearly bill"))
             continue
-        if item == "Smial Insurance Fund":   # the envelope saving for it: planned each month, spent only by moving money in
+        if item in ("Smial Insurance Fund", "Tax Set-Aside"):   # envelopes saving for a bill or the tax: planned each month, nothing spent
             planned[item] = base
             continue
         if item == "Rosie Paycheck":

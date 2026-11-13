@@ -230,3 +230,12 @@ def test_no_step_template_reads_a_context_key_named_like_a_dict_method():
     root = Path(__file__).resolve().parent.parent / "app" / "web" / "templates" / "checkin"
     bad = [f"{p.name}: {m.group(0)}" for p in root.glob("*.html") for m in re.finditer(r"\bc\.(items|keys|values|get|update|pop)\b(?!\()", p.read_text())]
     assert not bad, bad
+
+
+def test_no_template_reads_a_context_dict_key_named_like_a_dict_method():
+    """The same trap outside the check-in: settings.html once read tax_cfg.items (#153). Any `<name>.items|` or `.keys|` in a template
+    is the dict's method, not a key."""
+    import re
+    root = Path(__file__).resolve().parent.parent / "app" / "web" / "templates"
+    bad = [f"{p.name}: {m.group(0)}" for p in root.rglob("*.html") for m in re.finditer(r"\b\w+\.(items|keys|values)\s*\|", p.read_text())]
+    assert not bad, bad
