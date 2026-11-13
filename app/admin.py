@@ -200,6 +200,76 @@ def yearly_bills_cmd(a) -> int:
             conn.rollback(); print(f"yearly-bills {a.ycmd}: {e}", file=sys.stderr); return 2
 
 
+def quarter_cmd(which: str | None) -> int:
+    """`python -m app.admin quarter [YYYY-Qn]` (#147): read only, safe against a live install. On an install not yet built with
+    quarters it works them out from the last build's monthly datasets; nothing is saved."""
+    import re
+    from pipeline import quarters
+    with _connect() as conn:
+        conn.execute("SET TRANSACTION READ ONLY")
+        ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN "
+              "('monthly','cat_month','quarterly','cat_quarter','net_worth','balance_totals','coming_up','budget_items')").fetchall()}
+        stored = [dict(r) for r in conn.execute("SELECT item, month, amount, every_years, funded_by, source FROM yearly_bills").fetchall()] \
+            if conn.execute("SELECT to_regclass('yearly_bills') IS NOT NULL AS t").fetchone()["t"] else []
+        rr = conn.execute("SELECT value FROM settings WHERE key='rules'").fetchone()
+        conn.rollback()
+    rules = (rr or {}).get("value") or {}
+    ys = int(rules.get("year_start_month") or 1)
+    apart = set(rules.get("debt_groups") if rules.get("debt_groups") is not None else ["Debt"]) | set(rules.get("goal_savings_groups") or [])   # role default
+    monthly = ds.get("monthly") or []
+    if not monthly:
+        print("No build to read: the install has no monthly dataset yet.", file=sys.stderr); return 1
+    how = "from the last build" if ds.get("quarterly") else "worked out now from the last build's monthly figures; nothing saved"
+    rows = ds.get("quarterly") or quarters.quarterly(monthly, ys)
+    cats = ds.get("cat_quarter") or quarters.cat_quarter(ds.get("cat_month") or [], ys)
+    which = which or quarters.quarter_of(max(r["m"] for r in monthly), ys)[0]
+    if not re.match(r"^\d{4}-Q[1-4]$", which):
+        print("quarter: give it as YYYY-Qn, such as 2026-Q3", file=sys.stderr); return 2
+    coming = ds.get("coming_up")
+    if coming is None and ds.get("budget_items"):   # an install built before coming_up: its yearly bills, worked out as `yearly-bills` does
+        from pipeline import yearly_bills as yb
+        b = ds["budget_items"]; loaded = {r["m"] for r in b}
+        coming = yb.coming_up_rows(yb.bills(b, stored, max(loaded), loaded, sorted({r["canonical"] for r in b})))
+        how += "; coming up: yearly bills only"
+    c = quarters.compare(which, rows, cats, ds.get("net_worth"), ds.get("balance_totals"), coming, monthly, ys, set_apart=apart)
+    print(f"# the quarter, {how}; year_start_month {ys}", file=sys.stderr)
+    if not c:
+        print(f"{which} is not loaded.", file=sys.stderr); return 1
+    by_m = {r["m"]: r for r in monthly}
+    ok = all(abs(sum(float(by_m[m][f]) for m in r["loaded"]) - r[f]) < 0.01 for r in rows for f in quarters.FIELDS)
+    pc = lambda v: "" if v is None else f"{v * 100:+.1f}%"
+    def chg(o, f):   # the change in percent; a change of sign in words, since -358% says nothing
+        if not o:
+            return "not loaded"
+        if o.get(f + "_turned"):
+            return f"{o[f + '_change']:+.2f}/month, turned {o[f + '_turned']}"
+        return pc(o.get(f + "_pct"))
+    mv = lambda x: "new" if x.get("new") else pc(x["pct"])
+    print(f"quarter\t{c['quarter']}\t{c['first']} to {c['last']}\t{c['months']} of 3 months" + (" (partial: compared per month)" if c["partial"] else ""))
+    print(f"check\tquarters equal the sum of their months\t{'pass' if ok else 'FAIL'}")
+    t = c["this"]
+    print("figure\tthis, a month\tvs previous\tvs a year before")
+    for f in ("income", "spend", "debt", "net"):
+        p, y = c["previous"] or {}, c["year_ago"] or {}
+        print(f"{f}\t{t[f]:.2f}\t{chg(c['previous'], f)}\t{chg(c['year_ago'], f)}")
+    sr = lambda v: "" if v is None else f"{v * 100:.1f}%"
+    print(f"savings rate\t{sr(t['savings_rate'])}\t{sr((c['previous'] or {}).get('savings_rate')) or 'not loaded'}\t{sr((c['year_ago'] or {}).get('savings_rate')) or 'not loaded'}")
+    for key, title in (("movers_previous", "vs previous"), ("movers_year_ago", "vs a year before")):
+        m = c[key]
+        if m:
+            print(f"movers {title}, by dollars\t" + "; ".join(f"{x['category']} {x['change']:+.0f}/month ({mv(x)})" + (", also last year" if x.get("also_last_year") else "") for x in m["by_dollars"]))
+            print(f"movers {title}, by percent\t" + "; ".join(f"{x['category']} {pc(x['pct'])}" + (", also last year" if x.get("also_last_year") else "") for x in m["by_pct"]))
+            if m.get("set_apart"):
+                print(f"set apart {title} (debt and savings)\t" + "; ".join(f"{x['category']} {x['change']:+.0f}/month" for x in m["set_apart"]))
+    print(f"net worth change\t{'' if c['net_worth_change'] is None else format(c['net_worth_change'], '+.2f')}")
+    print(f"debt balance change\t{'' if c['debt_change'] is None else format(c['debt_change'], '+.2f')}")
+    n = c["next"]
+    print(f"next quarter\t{n['quarter']}\t{n['months'][0]} to {n['months'][-1]}\texpected a month: income {n['expected']['income']}, spend {n['expected']['spend']}, debt {n['expected']['debt']} ({n['basis']})")
+    for x in n["coming_up"]:
+        print(f"coming up\t{x['m']}\t{x['kind']}\t{x.get('public_label') or x['label']}\t{'' if x.get('amount') is None else x['amount']}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m app.admin", description=__doc__.split("\n\n")[0])
     sub = p.add_subparsers(dest="cmd", required=True, metavar="command")
@@ -242,6 +312,8 @@ def main(argv: list[str] | None = None) -> int:
         x.add_argument("--amount", type=float); x.add_argument("--every", type=int, default=1); x.add_argument("--fund", help="the envelope or account that saves for it")
     x = ysub.add_parser("dismiss", help="not a yearly bill: stays dismissed across rebuilds"); x.add_argument("item")
     x = ysub.add_parser("restore", help="hand a bill back to the detector"); x.add_argument("item")
+    sp = sub.add_parser("quarter", help="the quarter (#147): a read-only report of a quarter against the one before and a year before, and the next")
+    sp.add_argument("which", nargs="?", help="YYYY-Qn (default: the quarter of the latest loaded month)")
     sp = sub.add_parser("tax", help="estimated tax (#153): mark a quarter's estimate paid at its check-in month, or unmark it")
     tsub = sp.add_subparsers(dest="tcmd", required=True, metavar="action")
     x = tsub.add_parser("paid", help="the quarter ending MONTH: its estimated tax is paid"); x.add_argument("month"); x.add_argument("--amount")
@@ -275,6 +347,8 @@ def main(argv: list[str] | None = None) -> int:
         return decisions_cmd(a)
     if a.cmd == "yearly-bills":
         return yearly_bills_cmd(a)
+    if a.cmd == "quarter":
+        return quarter_cmd(a.which)
     if a.cmd == "tax":
         from app import tax
         with _connect() as conn:

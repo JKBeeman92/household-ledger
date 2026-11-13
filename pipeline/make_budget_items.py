@@ -53,4 +53,17 @@ w("tax", [_ts] if _ts else [])
 if _ts and os.path.exists("dash_data/coming_up.json"):
     _cu = [r for r in json.load(open("dash_data/coming_up.json")) if r["kind"] != "tax_deadline"] + _tax.deadline_rows(_rl("tax_deadlines", []), _through, _ts["quarter_expected"])
     _cu.sort(key=lambda r: (r["m"], r["kind"], r["label"])); w("coming_up", _cu)
+# quarter_review (#147): the latest quarter against the one before and a year before, and a look at the next; last, so that its
+# look ahead sees coming_up with the yearly bills and tax deadlines in it
+import quarters as _qr   # noqa: E402
+def _j(n): return json.load(open(f"dash_data/{n}.json")) if os.path.exists(f"dash_data/{n}.json") else []
+_mon = _j("monthly")
+if _mon:
+    _ys = int(_rl("year_start_month", 1))
+    _qq = _qr.quarter_of(max(r["m"] for r in _mon), _ys)[0]
+    _qrev = _qr.compare(_qq, _j("quarterly"), _j("cat_quarter"), _j("net_worth"), _j("balance_totals"), _j("coming_up"), _mon, _ys,
+                        set_apart=set(_rl("debt_groups", ["Debt"])) | set(_rl("goal_savings_groups", [])))   # movers are living spend; role default
+    w("quarter_review", [_qrev] if _qrev else [])
+else:
+    w("quarter_review", [])
 w("decision_summary", [{**_dec.keep_rate(_rows, _through), "in_force": len({r["id"] for r in _rows if r["m"] == _through})}] if _through else [])

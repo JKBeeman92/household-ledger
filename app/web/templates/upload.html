@@ -81,7 +81,7 @@ addEventListener('DOMContentLoaded', () => {
       {% if j.state in ('queued', 'running') %}<span class="status-chip">Writing</span> The {{ j.month|month }} review is being written by {{ j.provider }}: <span data-elapsed>0:00</span>.
         You can leave this page; the review is stored when the model answers.
       {% elif j.state == 'stored' %}<span class="status-chip ok">Stored</span> The {{ j.month|month }} review ({{ j.sections }} section{{ '' if j.sections == 1 else 's' }}): read it on {{ j.where }}.
-        {% if j.odd_count %}<br><span class="status-chip warn">Check it</span> The model wrote {{ j.sections }} section{{ '' if j.sections == 1 else 's' }}; the instructions ask for 5 to 7. Read it before relying on it, or write it again.{% endif %}
+        {% if j.odd_count %}<br><span class="status-chip warn">Check it</span> The model wrote {{ j.sections }} section{{ '' if j.sections == 1 else 's' }}; the instructions ask for {{ j.expected_sections or "5 to 7" }}. Read it before relying on it, or write it again.{% endif %}
       {% else %}<span class="status-chip bad">Not written</span> The {{ j.month|month }} review failed: {{ j.error }}{% endif %}
     </div>{% endif %}
   </div>

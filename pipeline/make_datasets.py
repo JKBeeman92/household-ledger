@@ -40,6 +40,12 @@ w("cat_year", [{"y":y, "category":c, "amount":cy["nominal"][y][c], "amount_real"
 cm = D["category"]["by_month"]
 w("cat_month", [{"m":m, "category":c, "amount":v, "amount_real":cm["real"][m].get(c,0)} for m in cm["nominal"] for c,v in cm["nominal"][m].items()])
 
+# quarterly and cat_quarter (#147): budget quarters counted from the year_start_month rule, the sums of their months
+import quarters as _q   # noqa: E402
+_YS = int((json.load(open("rules.json")) if os.path.exists("rules.json") else {}).get("year_start_month") or 1)
+w("quarterly", _q.quarterly([{**r} for r in json.load(open("dash_data/monthly.json"))], _YS))
+w("cat_quarter", _q.cat_quarter(json.load(open("dash_data/cat_month.json")), _YS))
+
 w("item_year", [{"y":k, "category":r["cat"], "item":r["item"], "amount":v} for r in D["item_year"] for k,v in r.items() if k not in ("cat","item")])
 
 ep = D["earner_payer"]

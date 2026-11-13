@@ -13,12 +13,12 @@ JS = (STATIC / "a11y.js").read_text()
 def test_tabs_are_wired_to_panels(client, reset_db):
     html = client.get("/").text
     tabs = re.findall(r'<button[^>]*role="tab"[^>]*>', html)
-    assert len(tabs) == 8
+    assert len(tabs) == 9   # Quarter (#147)
     for t in tabs:
         name = re.search(r'data-tab="(\w+)"', t).group(1)
         assert f'id="tab-{name}"' in t and f'aria-controls="{name}"' in t
         assert re.search(rf'<section id="{name}" class="page" role="tabpanel" aria-labelledby="tab-{name}" tabindex="0"', html)
-    assert [re.search(r'tabindex="(-?\d)"', t).group(1) for t in tabs] == ["0"] + ["-1"] * 7, "roving tabindex: only the selected tab is in the tab order"
+    assert [re.search(r'tabindex="(-?\d)"', t).group(1) for t in tabs] == ["0"] + ["-1"] * 8, "roving tabindex: only the selected tab is in the tab order"
 
 
 def test_tab_keys_and_helper_script(client, reset_db):

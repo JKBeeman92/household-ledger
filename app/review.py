@@ -24,7 +24,10 @@ SYSTEM = (
     "If the month had three paychecks, say so and do not read it as a raise. "
     "The data may also carry last month's review, the household's own decisions with how each went, life events and goal confirmations: "
     "comment on the household's decisions (kept, partly, not kept, or still waiting for the month's files), not on a suggestion of your own, "
-    "and name a life event (a move, a job change) rather than inferring it. Return only the JSON object."
+    "and name a life event (a move, a job change) rather than inferring it. "
+    "When the data carries `quarter` (the month ends a quarter), add one more section, last, headed \"The quarter\": the quarter against "
+    "the one before and the same quarter a year before, a month at a time (say so when a quarter is partial or not loaded), the "
+    "categories that moved most, and what falls in the next quarter. Return only the JSON object."
 )
 
 
@@ -103,9 +106,31 @@ def build_context(conn, month: str) -> dict:
         **({"emergency_fund": ef_context(ds.get("emergency_fund", []), goals, month)} if any(r["m"] == month and r["months"] is not None for r in ds.get("emergency_fund", [])) else {}),
         **({"estimated_tax": {k: (ds.get("tax") or [{}])[0].get(k) for k in ("year", "contract_income", "pct", "expected", "set_aside", "short", "quarter_income", "quarter_expected", "next_deadline", "next_label")}}
            if ds.get("tax") and ds["tax"][0].get("m") == month else {}),   # #153
+        **({"quarter": qc} if (qc := quarter_context(conn, month)) else {}),   # #147: one review a month, extended at a quarter's end
         **({"coming_up": coming_up_context(ds.get("coming_up", []), month)} if coming_up_context(ds.get("coming_up", []), month) else {}),
         "continuity": continuity(conn, month, prev),
     }
+
+
+QUARTER_NOTE = ("This month ends a budget quarter. Figures are a month's average, so a partial quarter compares fairly; previous and year_ago "
+                "are null when that quarter is not loaded (say so; never read it as zero). Movers are living-spend categories by change in monthly "
+                "spend; debt and savings groups are in set_apart, not movers. also_last_year marks a mover the same quarter a year before moved "
+                "the same way (a yearly bill or a season: say so, not a change in habit). A *_turned value means the figure changed sign; give "
+                "the dollar change, not a percent. next.expected is a month's figures from the same months a year before, an estimate.")
+
+
+def quarter_context(conn, month: str) -> dict | None:
+    """quarter_review (#147) for the review of a quarter's last month: only derived figures, no account names."""
+    from .checkin import mode_of
+    if mode_of(conn, month) not in ("quarter", "year"):
+        return None
+    r = conn.execute("SELECT rows FROM datasets WHERE name='quarter_review'").fetchone()
+    q = (r["rows"] or [None])[0] if r and r["rows"] else None
+    if not q or q.get("last") != month:
+        return None
+    nxt = {**q["next"], "coming_up": [{"m": c["m"], "kind": c["kind"], "label": c.get("public_label") or c["label"], "amount": c.get("amount")} for c in q["next"]["coming_up"]]}
+    return {"note": QUARTER_NOTE, **{k: q[k] for k in ("quarter", "first", "last", "months", "partial", "this", "previous", "year_ago",
+                                                       "movers_previous", "movers_year_ago", "net_worth_change", "debt_change")}, "next": nxt}
 
 
 COMING_UP_NOTE = ("What falls due in the three budget months after this one: estimated payoffs at last month's payment and life events "
@@ -231,7 +256,10 @@ def latest_job(conn) -> dict | None:
     job = dict(row)
     latest = conn.execute("SELECT max(budget_month) m FROM source_files").fetchone()["m"]
     job["where"] = "the dashboard's Last month tab" if job["month"] == latest else "Reviews → Past reviews"   # the line already names the month
-    job["odd_count"] = job["state"] == "stored" and job["sections"] is not None and not 5 <= job["sections"] <= 7
+    from .checkin import mode_of   # a quarter's last month carries one more section, "The quarter" (#147)
+    lo, hi = (6, 8) if mode_of(conn, job["month"]) in ("quarter", "year") else (5, 7)
+    job["odd_count"] = job["state"] == "stored" and job["sections"] is not None and not lo <= job["sections"] <= hi
+    job["expected_sections"] = f"{lo} to {hi}"
     return job
 
 

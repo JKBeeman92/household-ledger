@@ -48,9 +48,11 @@ statement balances under Settings → Accounts → Balances history if you have 
 
 On the last budget month of a quarter the check-in runs in **quarter** mode. If the household has contract income (Settings → Goals →
 Estimated tax), an **Estimated tax** step asks whether the quarter's estimated payment was made: the quarter's contract income and the
-share to set aside, the next deadline, and a tick, with the amount paid. The quarter's own comparisons (how this quarter went against
-the last and the same quarter a year ago) arrive with #147. A good habit meanwhile: look at the Goals tab's lines over the last three
-months, not just the last one.
+share to set aside, the next deadline, and a tick, with the amount paid. **The quarter** step is read in place: this quarter against the last
+and the same quarter a year ago, a month at a time; the living-spend categories that moved most (marked *also last year* when last
+year moved the same way, which is a yearly bill or a season rather than a habit); net worth and debt balances over the quarter; and the
+next quarter's expected month with what is dated in it. Talk over what moved; a decision for next month (step 9) is where a change in
+habit goes. The Quarter tab on the dashboard has the percentages and the full lists.
 
 ## A year
 
