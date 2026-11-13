@@ -30,23 +30,24 @@ async def save_purchase(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         try:
             key = purchases.save(conn, str(f.get("label") or ""), f.get("amount"), str(f.get("month") or ""), str(f.get("funded_by") or ""),
-                                 str(f.get("since") or ""), original, str(f.get("note") or "").strip())
+                                 str(f.get("since") or ""), original, str(f["note"]).strip() if "note" in f else None)
             conn.commit()
         except purchases.PurchaseError as e:
             conn.rollback()
             flash(request, f"Not saved: {e}", "bad")
             request.session["pp_form"] = {k: str(f.get(k) or "") for k in FIELDS} | {"original": original, "field": e.field, "error": str(e)}
             return _back(purchases.anchor(original) if original else "pp-add")
-    flash(request, f"Saved {f.get('label')}. Rebuild to see what is saved so far and whether the pace gets there.")
+    flash(request, f"Saved {str(f.get('label') or '').strip()}. Press Rebuild now to see what is saved so far and whether the pace gets there.")
     return _back(purchases.anchor(key))
 
 
 @router.post("/purchases/{key}/delete")
 def delete_purchase(key: str, request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
-        rows = [p["key"] for p in purchases.for_page(conn)]
+        page = purchases.for_page(conn)
+        rows, label = [p["key"] for p in page], next((p["label"] for p in page if p["key"] == key), "")
         n = purchases.delete(conn, key); conn.commit()
-    flash(request, f"Deleted the planned purchase {key[len(purchases.PREFIX):]}." if n else "That planned purchase was already gone.")
+    flash(request, f"Deleted {label}." if n else "That planned purchase was already gone.")
     rest = [k for k in rows if k != key]
     if key in rows and rest:   # land on the neighbour, else the add form (DS-A11Y-5)
         i = rows.index(key)
@@ -71,7 +72,7 @@ async def bought(key: str, request: Request, user=Depends(auth.require_editor)):
             return _back(purchases.anchor(key), back)
     extra = [x for x in ((f"added the life event {done['event']}" if done["event"] else None),
                          (f"set up {done['debt']} with the account {done['account']}" if done["debt"] else None)) if x]
-    flash(request, "Marked bought" + (": " + " and ".join(extra) if extra else "") + ". Rebuild to apply it.")
+    flash(request, "Recorded the purchase" + (": " + " and ".join(extra) if extra else "") + ". It leaves the check-in's list after Rebuild now.")
     return _back(purchases.anchor(key), back)
 
 

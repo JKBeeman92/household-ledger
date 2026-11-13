@@ -400,7 +400,7 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         purchases, debt_cat = _pp.for_page(conn), _pp.debt_category(conn)
         fund_choices = sorted({r["name"] for r in conn.execute("SELECT name FROM accounts WHERE active ORDER BY name").fetchall()})
-    return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP, bills=bills, purchases=purchases, pp_form=request.session.pop("pp_form", None), pp_bought=request.session.pop("pp_bought", None), debt_category=debt_cat, fund_accounts=fund_choices,
+    return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP, bills=bills, purchases=purchases, pp_form=request.session.pop("pp_form", None), pp_bought=request.session.pop("pp_bought", None), debt_category=debt_cat, loan_categories=categories, fund_accounts=fund_choices,
                   yb_form=request.session.pop("yb_form", None), tax_form=request.session.pop("tax_form", None), bal_hist=request.session.pop("bh_form", None), yb_slug=_yb_slug, tax_cfg=_tax_cfg(),
                   categories=categories, rules={**rules, **(request.session.pop("people_typed", None) or {})}, hh=household, name_families=name_families, unmapped=unmapped,
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS,

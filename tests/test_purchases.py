@@ -104,13 +104,17 @@ def test_settings_add_change_delete_and_a_failed_add_keeps_what_was_typed(client
     assert 'value="lots" aria-invalid="true"' in page and "The amount is a number" in page
     r = client.post("/purchases", data={"label": "Boat", "amount": "100", "month": "2027-03", "funded_by": "The Shire Bank"})
     assert "is not one of your budget items or accounts" in client.get(r.headers["location"]).text
+    with _db() as conn:
+        conn.execute("UPDATE goals SET note='from the goals file' WHERE key='purchase:pony'"); conn.commit()
     client.post("/purchases", data={"original": "purchase:pony", "label": "Pony and trap", "amount": "1800", "month": "2027-06", "funded_by": "Green Hills Savings"})
+    with _db() as conn:   # the form has no note field: a change keeps the note
+        assert conn.execute("SELECT note FROM goals WHERE key='purchase:pony'").fetchone()["note"] == "from the goals file"
     with _db() as conn:
         g = conn.execute("SELECT label, target_amount, funded_kind FROM goals WHERE key='purchase:pony'").fetchone()
     assert (g["label"], float(g["target_amount"]), g["funded_kind"]) == ("Pony and trap", 1800.0, "account")
     page = client.get("/settings").text
     assert 'id="st-goals-purchases"' in page and 'id="pp-pony"' in page
-    assert "with A new cart: each counts all of it" in page   # both kept in Green Hills Savings
+    assert "Same money as A new cart: each counts all of it." in page   # both kept in Green Hills Savings
     assert 'data-key="purchase:pony"' not in page   # not in the plain goals grid
     from app.routes.checklist import checklist_goals
     with _db() as conn:
@@ -124,7 +128,8 @@ def test_bought_with_a_loan_sets_up_only_what_was_ticked(client, sample):
     client.post("/purchases", data={"label": "Cart", "amount": "100", "month": "2026-09", "funded_by": "Green Hills Savings"})
     client.post("/rebuild")
     page = client.get("/checkin/2026-06").text   # reached (the account holds far more): the check-in asks
-    assert "Did you buy Cart?" in page and 'value="Cart Loan"' in page
+    assert "Did you buy Cart?" in page and 'value="Cart Loan"' in page and "Record the purchase of Cart" in page
+    assert '<label class="check"><input type="checkbox" name="add_event"' in page   # a 44px target on a phone (DS-LAYOUT-2)
     # nothing ticked: only marked bought
     r = client.post("/purchases/purchase:cart/bought", data={"month": "2026-06", "back": "2026-06"})
     assert r.headers["location"] == "/checkin/2026-06#pp-cart"
@@ -132,9 +137,12 @@ def test_bought_with_a_loan_sets_up_only_what_was_ticked(client, sample):
         assert conn.execute("SELECT done_month FROM goals WHERE key='purchase:cart'").fetchone()["done_month"] == "2026-06"
         assert conn.execute("SELECT 1 FROM life_events WHERE label='Bought Cart'").fetchone() is None
     client.post("/purchases/purchase:cart/reopen")
-    # a bad APR: nothing is written, the field is named
+    # a bad APR: nothing is written, and the error sits under the APR field (DS-FORM-1)
     r = client.post("/purchases/purchase:cart/bought", data={"month": "2026-06", "add_event": "1", "with_loan": "1", "loan_item": "Cart Loan",
                                                                "loan_category": "Debt", "loan_type": "auto", "loan_account": "Cart Loan", "loan_balance": "2500", "loan_apr": "lots"})
+    page = client.get(r.headers["location"]).text
+    i = page.index('name="loan_apr"')
+    assert 'class="err" id="pp-cart-buy-err"' in page[i:i + 400] and 'aria-invalid="true"' in page[i:i + 300]
     with _db() as conn:
         assert conn.execute("SELECT done_at FROM goals WHERE key='purchase:cart'").fetchone()["done_at"] is None
         assert conn.execute("SELECT 1 FROM accounts WHERE name='Cart Loan'").fetchone() is None

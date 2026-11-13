@@ -3,11 +3,10 @@ and `fund_accounts` (account names for the "kept in" list; budget items come fro
 {% from "_purchase_macros.html" import verdict, figures, bought_form with context %}
 {% set f = pp_form or {} %}{% set bad = f.get("field") %}{% set adding = f and not f.get("original") %}
 <datalist id="pp-funds">{% for c in canonical_category %}<option value="{{ c }}">{% endfor %}{% for a in fund_accounts %}<option value="{{ a }}">{% endfor %}</datalist>
-<datalist id="pp-categories">{% for c in categories %}<option value="{{ c }}">{% endfor %}</datalist>
 {% macro inv(field, err_id, row_bad) %}{% if row_bad == field %} aria-invalid="true" aria-describedby="{{ err_id }}"{% endif %}{% endmacro %}
 <section class="panel" id="purchases">
   <h2>Planned purchases</h2>
-  <p class="muted measure">Something to buy by a date: a car down payment, a new roof. Say how much, by when, and where the money is kept (a budget item, as an envelope, or an account). Each check-in says what is saved so far, what it takes a month from here, and whether the last three months' saving gets there.</p>
+  <p class="muted measure">Something to buy by a date, such as a car down payment, and where its money is kept: a budget item (an envelope) or an account. Each check-in says whether the last three months' saving gets there.</p>
   <details class="how" id="pp-add" tabindex="-1" {% if adding or not purchases %}open{% endif %}><summary>Add a planned purchase</summary>
     <form method="post" action="/purchases" class="tools">{{ csrf_field(request) }}
       <span><label for="pp-new-label">What</label> <input id="pp-new-label" name="label" required size="20" value="{{ f.get('label', '') if adding else '' }}" placeholder="Car down payment"{{ inv('label', 'pp-new-err', bad if adding else '') }}></span>
@@ -21,18 +20,18 @@ and `fund_accounts` (account names for the "kept in" list; budget items come fro
   {% if purchases %}<div class="tablewrap" role="region" tabindex="0" aria-label="Planned purchases table"><table class="plain" data-list="unbounded"><thead><tr><th scope="col">Purchase</th><th scope="col">By</th><th scope="col" class="num">How much</th><th scope="col">Kept in</th><th scope="col">Progress</th><th scope="col"><span class="sr">Actions</span></th></tr></thead><tbody>
   {% for p in purchases %}{% set id = p.anchor %}{% set g = p.progress %}{% set mine = f if f.get("original") == p.key else {} %}{% set rb = mine.get("field") %}
   <tr id="{{ id }}" tabindex="-1"><td><strong>{{ p.label }}</strong></td><td>{{ p.target_month|month_short }}</td><td class="num">{{ p.target_amount|money }}</td>
-    <td>{{ p.funded_by }} <span class="muted">({{ 'an account' if p.funded_kind == 'account' else 'an envelope' }})</span>{% if p.shared_with %}<br><span class="status-chip warn">Shared</span> <span class="muted">with {{ p.shared_with|join(', ') }}: each counts all of it</span>{% endif %}</td>
+    <td>{{ p.funded_by }} <span class="muted">({{ 'an account' if p.funded_kind == 'account' else 'an envelope' }})</span>{% if p.shared_with %}<br><span class="muted">Same money as {{ p.shared_with|join(', ') }}: each counts all of it.</span>{% endif %}</td>
     <td>{% if p.done %}<span class="status-chip ok">Bought</span>{% if p.done_month %} <span class="muted">in {{ p.done_month|month_short }}</span>{% endif %}{% elif g %}{{ verdict(g) }}<br><span class="muted">{{ figures(g) }}</span>{% else %}<span class="muted">Rebuild to see the progress.</span>{% endif %}</td>
     <td>{% if p.done %}<form method="post" action="/purchases/{{ p.key|urlencode }}/reopen" class="inline">{{ csrf_field(request) }}<button class="btn" type="submit">Not bought after all</button></form>
       {% else %}<details{% if mine %} open{% endif %}><summary>Change {{ p.label }}</summary>
       <form method="post" action="/purchases" class="tools">{{ csrf_field(request) }}<input type="hidden" name="original" value="{{ p.key }}">
         <span><label for="{{ id }}-l">What</label> <input id="{{ id }}-l" name="label" size="18" value="{{ mine.get('label') or p.label }}"{{ inv('label', id ~ '-err', rb) }}></span>
         <span><label for="{{ id }}-a">How much</label> <input id="{{ id }}-a" name="amount" inputmode="decimal" size="8" value="{{ mine.get('amount') or p.target_amount|plain }}"{{ inv('amount', id ~ '-err', rb) }}></span>
-        <span><label for="{{ id }}-m">By</label> <input id="{{ id }}-m" name="month" size="8" value="{{ mine.get('month') or p.target_month }}"{{ inv('month', id ~ '-err', rb) }}></span>
+        <span><label for="{{ id }}-m">By (budget month)</label> <input id="{{ id }}-m" name="month" size="8" value="{{ mine.get('month') or p.target_month }}"{{ inv('month', id ~ '-err', rb) }}></span>
         <span><label for="{{ id }}-f">Kept in</label> <input id="{{ id }}-f" name="funded_by" list="pp-funds" size="18" value="{{ mine.get('funded_by') or p.funded_by }}"{{ inv('funded_by', id ~ '-err', rb) }}></span>
-        <span><label for="{{ id }}-s">Saving since</label> <input id="{{ id }}-s" name="since" size="8" value="{{ mine.get('since') or p.since_month or '' }}"{{ inv('since', id ~ '-err', rb) }}></span>
+        <span><label for="{{ id }}-s">Saving since</label> <input id="{{ id }}-s" name="since" size="8" placeholder="keeps the current" value="{{ mine.get('since') or p.since_month or '' }}"{{ inv('since', id ~ '-err', rb) }}></span>
         <button class="btn" type="submit">Save {{ p.label }}</button></form>{% if mine.get("error") %}<p class="err" id="{{ id }}-err" role="alert" tabindex="-1">{{ mine.error[:1]|upper ~ mine.error[1:] }}</p>{% endif %}</details>
-      {% if g and g.verdict in ("reached", "past") %}<details><summary>Bought {{ p.label }}?</summary>{{ bought_form(p, "", pp_bought, g.m) }}</details>{% endif %}
+      {% if g and g.verdict in ("reached", "past") %}<details><summary>Record the purchase of {{ p.label }}</summary>{{ bought_form(p, "", pp_bought, g.m) }}</details>{% endif %}
       <form method="post" action="/purchases/{{ p.key|urlencode }}/delete" class="inline">{{ csrf_field(request) }}<button class="btn" type="submit" aria-label="Delete {{ p.label }}">Delete</button></form>{% endif %}</td></tr>{% endfor %}
   </tbody></table></div>
   {% else %}<p>No planned purchase yet. Add one above.</p>{% endif %}

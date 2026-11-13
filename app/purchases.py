@@ -84,7 +84,7 @@ def fund_kind(conn, name: str) -> str | None:
     return None
 
 
-def save(conn, label: str, amount, month: str, funded_by: str, since: str | None = None, original: str = "", note: str = "") -> str:
+def save(conn, label: str, amount, month: str, funded_by: str, since: str | None = None, original: str = "", note: str | None = None) -> str:
     """Add or change a planned purchase; returns its key. `original` is the key of the one being changed (its label may change)."""
     label, month, funded_by, since = (label or "").strip(), (month or "").strip(), (funded_by or "").strip(), (since or "").strip() or None
     if not label:
@@ -111,12 +111,12 @@ def save(conn, label: str, amount, month: str, funded_by: str, since: str | None
     if original:
         if not _x(conn, "SELECT 1 FROM goals WHERE key=%s AND target_amount IS NOT NULL", (original,)).fetchone():
             raise PurchaseError(f"{label} is no longer a planned purchase.", "label")
-        _x(conn, "UPDATE goals SET label=%s, note=%s, target_amount=%s, target_month=%s, funded_by=%s, funded_kind=%s, "
+        _x(conn, "UPDATE goals SET label=%s, note=COALESCE(%s, note), target_amount=%s, target_month=%s, funded_by=%s, funded_kind=%s, "
                  "since_month=COALESCE(%s, since_month), updated_at=now() WHERE key=%s",
            (label, note, amount, month, funded_by, kind, since, original))
     else:
         _x(conn, "INSERT INTO goals (key, value, unit, label, note, target_amount, target_month, funded_by, funded_kind, since_month) "
-                 "VALUES (%s, NULL, 'usd', %s, %s, %s, %s, %s, %s, %s)", (key, label, note, amount, month, funded_by, kind, since))
+                 "VALUES (%s, NULL, 'usd', %s, %s, %s, %s, %s, %s, %s)", (key, label, note or "", amount, month, funded_by, kind, since))
     db.mark_inputs_changed(conn)
     return key
 
