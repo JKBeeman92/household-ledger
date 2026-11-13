@@ -7,7 +7,7 @@
 <div class="row mt-4">
   <form class="panel" method="post" action="/webhooks">{{ csrf_field(request) }}
     <h2>Destination</h2>
-    <p><label for="hookurl">Webhook URL</label><br><input type="url" id="hookurl" name="url" value="{{ cfg.url }}" placeholder="https://ntfy.example.lan/ledger" autocomplete="off" spellcheck="false"></p>
+    <p><label for="hookurl">Webhook URL</label><br><input type="url" id="hookurl" name="url" value="{{ hook_form.url if hook_form else cfg.url }}" placeholder="https://ntfy.example.lan/ledger" autocomplete="off" spellcheck="false"{% if hook_form %} aria-invalid="true" aria-describedby="hookurl-err"{% endif %}>{% if hook_form %}<br><span class="err" id="hookurl-err" role="alert">{{ hook_form.error }}</span>{% endif %}</p>
     <p><label for="hooksecret">Shared secret</label><br><input type="password" id="hooksecret" name="secret" autocomplete="new-password" spellcheck="false" placeholder="{{ 'set; leave blank to keep it' if cfg.secret_set else 'a long random string' }}" aria-describedby="hooksecret-h"></p>
     <p class="muted" id="hooksecret-h">{% if cfg.secret_set %}A secret is stored. It is never shown again; type a new one to replace it.{% else %}No secret stored yet.{% endif %} It signs every request.</p>
     <p><label class="check"><input type="checkbox" name="enabled" value="1" {% if cfg.enabled %}checked{% endif %}> Send events</label></p>

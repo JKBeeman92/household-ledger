@@ -182,7 +182,7 @@
     {% set hf = hh_form or {} %}
     <div class="formgrid">
       {% for k, lab, extra in [("name", "Household name", ' required'), ("title", "Dashboard title", ' required'), ("currency", "Currency", ' maxlength="3" pattern="[A-Za-z]{3}" title="Three letters, for example USD or EUR"'), ("locale", "Locale", ' title="Number and date format, for example en-US or de-DE"')] %}
-      <label>{{ lab }} <input type="text" name="{{ k }}" value="{{ hf[k] if hf else (hh[k] or ('USD' if k == 'currency' else ('en-US' if k == 'locale' else ''))) }}"{{ extra|safe }}{% if hf.get('field') == k %} aria-invalid="true" aria-describedby="hh-{{ k }}-err"{% endif %}>{% if hf.get('field') == k %}<span class="err" id="hh-{{ k }}-err" role="alert">{{ hf.error[:1]|upper ~ hf.error[1:] }}</span>{% endif %}</label>{% endfor %}
+      <label>{{ lab }} <input type="text" name="{{ k }}" value="{{ hf[k] if hf else (hh[k] or ('USD' if k == 'currency' else ('en-US' if k == 'locale' else ''))) }}"{{ extra|safe }}{% if hf.get('field') == k %} aria-invalid="true" aria-describedby="hh-{{ k }}-err"{% endif %}></label>{% if hf.get('field') == k %}<span class="err" id="hh-{{ k }}-err" role="alert">{{ hf.error[:1]|upper ~ hf.error[1:] }}</span>{% endif %}{% endfor %}
     </div>
     <p class="mt-3"><button class="btn primary" type="submit">Save household</button></p>
   </form>

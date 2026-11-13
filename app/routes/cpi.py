@@ -14,7 +14,7 @@ def cpi_page(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         url = cpi_fetch.series_url(conn)
         rows = conn.execute("SELECT month, cpi, source FROM cpi ORDER BY month DESC").fetchall()
-    est = [r for r in rows if cpi_fetch.is_estimate(r["source"])]
+    est = [r for r in rows if cpi_fetch.is_estimate(r["source"])]   # newest first, like rows
     return render(request, "cpi.html", user, active="settings", url=url, default_url=cpi_fetch.DEFAULT_URL, latest=rows[0] if rows else None, latest_label=cpi_fetch.source_display(rows[0]["source"]) if rows else "", estimated=est, cpi_form=request.session.pop("cpi_form", None))
 
 

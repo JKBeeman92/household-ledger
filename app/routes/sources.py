@@ -178,7 +178,7 @@ def map_discard(request: Request, batch: str, user=Depends(auth.require_editor))
 def profiles_page(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         profiles = load_profiles(conn)
-    return render(request, "sources.html", user, active="settings", profiles=[dict(p, body=json.dumps(p["spec"], indent=1, ensure_ascii=False)) for p in profiles],
+    return render(request, "sources.html", user, active="settings", src_form=request.session.pop("src_form", None), profiles=[dict(p, body=json.dumps(p["spec"], indent=1, ensure_ascii=False)) for p in profiles],
                   builtin=json.dumps(src.BUILTIN, indent=1))
 
 
@@ -201,12 +201,14 @@ def profile_export(pid: int, user=Depends(auth.require_editor)):
 
 
 @router.post("/settings/sources")
-def profile_save(request: Request, background: BackgroundTasks, body: str = Form(...), user=Depends(auth.require_editor)):
+def profile_save(request: Request, background: BackgroundTasks, body: str = Form(...), form: str = Form("import"), user=Depends(auth.require_editor)):
     """Import a profile, or save an edited one (same name). An edit is re-applied to every file stored with it, then rebuilt."""
     try:
         spec = json.loads(body)
     except json.JSONDecodeError as e:
-        flash(request, f"Not valid JSON: {e}", "bad"); return RedirectResponse("/settings/sources", status_code=303)
+        flash(request, "Not saved: the profile is not valid JSON.", "bad")
+        request.session["src_form"] = {"form": form, "body": body, "error": f"Not valid JSON: {e}."}   # kept, with the error under it (DS-FORM-1)
+        return RedirectResponse("/settings/sources", status_code=303)
     with db.pool.connection() as conn:
         try:
             src.validate_profile(spec)
@@ -216,7 +218,9 @@ def profile_save(request: Request, background: BackgroundTasks, body: str = Form
             n = reapply_profile(conn, pid) if changed else 0   # commits the profile with the re-read rows, or rolls both back
         except (src.ProfileError, ValueError) as e:
             conn.rollback()
-            flash(request, f"Profile not saved: {e}", "bad"); return RedirectResponse("/settings/sources", status_code=303)
+            flash(request, "Not saved: see the profile marked below.", "bad")
+            request.session["src_form"] = {"form": form, "body": body, "error": f"{str(e)[:1].upper()}{str(e)[1:]}."}
+            return RedirectResponse("/settings/sources", status_code=303)
         running = build_running(conn)
     if n and not running:
         background.add_task(run_background)

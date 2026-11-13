@@ -139,7 +139,7 @@ def month_name(n, locale: str = "en-US") -> str:
     """A calendar month by its number, in the household's language: 2 → "February" (a yearly bill's month, #151)."""
     import datetime as _dt
     try:
-        return format_skeleton("MMMM", _dt.date(2000, int(n), 1), locale=_locale(locale))
+        return format_date(_dt.date(2000, int(n), 1), "LLLL", locale=_locale(locale))   # stand-alone full name: "February"
     except (TypeError, ValueError):
         return DASH
 

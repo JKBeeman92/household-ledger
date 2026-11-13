@@ -15,7 +15,7 @@ def webhooks_page(request: Request, user=Depends(auth.require_editor)):
         cfg = hooks.config(conn)
         log = conn.execute("SELECT created_at, event, month, target, ok, http_status, error, duration_ms FROM webhook_deliveries ORDER BY id DESC LIMIT 50").fetchall()
     shown = {"url": cfg["url"], "enabled": cfg["enabled"], "secret_set": bool(cfg["secret"])}   # the secret itself never reaches a template
-    return render(request, "webhooks.html", user, active="settings", cfg=shown, log=log, events=hooks.EVENTS[:3], base_url=settings.base_url)
+    return render(request, "webhooks.html", user, active="settings", hook_form=request.session.pop("hook_form", None), cfg=shown, log=log, events=hooks.EVENTS[:3], base_url=settings.base_url)
 
 
 @router.post("/webhooks")
@@ -25,7 +25,8 @@ def webhooks_save(request: Request, url: str = Form(""), secret: str = Form(""),
         cur = hooks.config(conn)
         secret = secret or cur["secret"]   # blank keeps the stored secret
         if url and (why := hooks.check_url(url)):
-            flash(request, f"Not saved: {why}.", "bad")
+            flash(request, "Not saved: see the URL below.", "bad")
+            request.session["hook_form"] = {"url": url, "error": f"{why[:1].upper()}{why[1:]}."}   # kept, with the error under it (DS-FORM-1)
         elif enabled and not (url and secret):
             flash(request, "Not saved: enabling hooks needs a URL and a shared secret.", "bad")
         else:

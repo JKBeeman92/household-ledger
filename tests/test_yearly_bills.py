@@ -103,7 +103,7 @@ def test_sample_household_bills_are_found_with_their_envelope(client, sample):
 def test_settings_confirm_dismiss_restore_and_rebuild(client, sample):
     page = client.get("/settings").text
     assert 'id="st-yearly-bills"' in page and 'id="yb-smial-insurance"' in page and '<span class="status-chip ">Found</span>' in page
-    assert 'aria-label="Accept Smial Insurance as found">Accept as found</button>' in page and 'aria-label="Dismiss Cart Registration">Dismiss</button>' in page
+    assert 'aria-label="Accept as found: Smial Insurance">Accept as found</button>' in page and 'aria-label="Dismiss: Cart Registration">Dismiss</button>' in page
     r = client.post("/yearly-bills", data={"item": "Smial Insurance", "month": "2", "amount": "1000", "every_years": "1", "funded_by": "Smial Insurance Fund", "source": "confirmed"})
     assert r.status_code == 303 and r.headers["location"] == "/settings?focus=yb-smial-insurance#yearly-bills"   # back to the row (DS-A11Y-5)
     client.post("/yearly-bills/Cart Registration/dismiss")
