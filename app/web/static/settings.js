@@ -40,17 +40,22 @@
     }
     function origOf(tr) { var o = {}; origKeys.forEach(function (k, i) { o[k] = tr.dataset["o" + i] || ""; }); return o; }
     function setOrig(tr, row) { origFields.forEach(function (f, i) { tr.dataset["o" + i] = row[f] == null ? "" : row[f]; }); }
+    function whatOf(row) {   // the name a row's buttons carry (DS-A11Y-2); the grid macro in settings.html says the same
+      var v = function (f) { return row[f] == null ? "" : String(row[f]); };
+      return kind === "events" ? (v(fields[0]) + " " + v(fields[1])).trim() || "this row" : v(fields[0]) || "this row";
+    }
     function show(tr, row) {
       tr.className = ""; tr.textContent = "";
-      fields.forEach(function (f) { tr.appendChild(el("td", { "data-f": f }, row[f] == null ? "" : String(row[f]))); });
+      fields.forEach(function (f) { var th = table.querySelector('th[data-sort="' + f + '"]'), at = { "data-f": f }, empty = row[f] == null || row[f] === ""; if (th && th.classList.contains("num")) at["class"] = "num"; if (empty) at["data-v"] = ""; tr.appendChild(el("td", at, empty ? "\u2014" : String(row[f]))); });   // a missing figure is a dash, the stored value kept in data-v (DS-WORD-6)   // a figure column stays right-aligned (DS-TYPE-3)
       var td = el("td", { "class": "acts" });
-      var what = String(row[fields[0]] == null ? "this row" : row[fields[0]]);   // a button names its row to a screen reader (DS-A11Y-2)
+      var what = whatOf(row);   // a button names its row to a screen reader (DS-A11Y-2)
       var eb = el("button", { type: "button", "class": "btn", "data-act": "edit", "aria-label": "Edit " + what }, "Edit"), db = el("button", { type: "button", "class": "btn", "data-act": "del", "aria-label": "Delete " + what }, "Delete");
       td.appendChild(eb); td.appendChild(db); tr.appendChild(td);
       eb.onclick = function () { edit(tr); }; db.onclick = function () { del(tr); };
     }
     function rowOf(tr) { var r = {}; fields.forEach(function (f) { var td = tr.querySelector('td[data-f="' + f + '"]'); r[f] = td.hasAttribute("data-v") ? td.getAttribute("data-v") : td.textContent; }); return r; }   // data-v: the stored value behind a formatted figure
     function edit(tr, blank) {
+      Array.prototype.forEach.call(document.querySelectorAll("tr.editing"), function (o) { if (o !== tr && o.cancelEdit) o.cancelEdit(); });   // one editor open at a time, so one primary Save (DS-BTN-1)
       var row = blank ? {} : rowOf(tr); tr.className = "editing"; tr.textContent = "";
       fields.forEach(function (f) {
         var td = el("td", { "data-f": f }), inp;
@@ -76,7 +81,8 @@
         }
         td.appendChild(inp); td.appendChild(el("div", { "class": "err", role: "alert" })); tr.appendChild(td);
       });
-      var acts = el("td", { "class": "acts" }), sv = el("button", { type: "button", "class": "btn primary" }, "Save"), cn = el("button", { type: "button", "class": "btn" }, "Cancel");
+      var named = blank ? "the new row" : whatOf(row);
+      var acts = el("td", { "class": "acts" }), sv = el("button", { type: "button", "class": "btn primary", "aria-label": "Save " + named }, "Save"), cn = el("button", { type: "button", "class": "btn", "aria-label": "Cancel " + named }, "Cancel");
       acts.appendChild(sv); acts.appendChild(cn); tr.appendChild(acts);
       if (kind === "mapping") {   // #133: a canonical item has one category, so picking a known one fills it in
         var canonIn = tr.querySelector('input[name="canonical_item"]'), catIn = tr.querySelector('input[name="category"]');
@@ -97,6 +103,7 @@
           }).catch(function () {});
         };
       }
+      tr.cancelEdit = function () { cn.click(); };
       sv.onclick = function () { save(tr); };
       cn.onclick = function () { if (tr.dataset.new) { var a = tr.closest("section, .panel, body").querySelector("[data-act=add]"); tr.remove(); if (a) a.focus(); } else { show(tr, row); back(tr); } };
       tr.onkeydown = function (e) { if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); save(tr); } else if (e.key === "Escape") cn.click(); };

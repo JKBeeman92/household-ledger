@@ -34,25 +34,25 @@ addEventListener('DOMContentLoaded', () => {
 </script>{% endblock %}
 {% block content %}
 <p class="eyebrow">Month close</p>
-<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-4)">Close a month</h1>
-<div class="panel" id="build-panel" style="margin-top:var(--space-4)" data-state="{{ build.state }}">
+<h1 class="page-title loose">Close a month</h1>
+<div class="panel mt-4" id="build-panel" data-state="{{ build.state }}">
   <h2>Build status</h2>
-  <p id="build-line" role="status" aria-live="polite" style="margin:0 0 var(--space-2);border-left:3px solid var({{ '--info' if build.state in ('running', 'never') else '--success' if build.state == 'ok' else '--danger' }});padding-left:var(--space-3)">
+  <p id="build-line" role="status" aria-live="polite" class="mt-0 mb-2 edge edge-note" style="--edge: var({{ '--info' if build.state in ('running', 'never') else '--success' if build.state == 'ok' else '--danger' }})">
     {%- set chip = {'running': ('info', 'Rebuilding'), 'never': ('info', 'No build yet'), 'ok': ('ok' if not build.problems else 'warn', 'Up to date' if not build.problems else 'Needs a look'), 'failed': ('bad', 'Needs attention'), 'interrupted': ('bad', 'Interrupted')}[build.state] %}
     <span class="status-chip {{ chip[0] }}">{{ chip[1] }}</span>
     {%- if build.state == 'running' %}<strong>Rebuilding</strong>{% if build.started_at %} since {{ build.started_at|clock }}{% endif %}. This page updates when it finishes.
     {%- elif build.state == 'never' %}No build yet.
     {%- else %}<strong>{{ {'ok': 'Last build finished', 'failed': 'Last build failed', 'interrupted': 'Last build was interrupted'}[build.state] }}</strong>{% if build.finished_at %} {{ build.finished_at|datetime }}{% endif %}: {{ build.summary }}{% endif -%}
   </p>
-  <ul id="build-problems" class="muted" style="margin:0;padding-left:var(--space-6)">{% for p in build.problems or [] %}<li>Reconciliation: {{ p }}</li>{% endfor %}</ul>
+  <ul id="build-problems" class="muted indent-list">{% for p in build.problems or [] %}<li>Reconciliation: {{ p }}</li>{% endfor %}</ul>
 </div>
-{% if last_upload %}<div class="panel" id="upload-result" style="margin-top:var(--space-4)">
+{% if last_upload %}<div class="panel mt-4" id="upload-result">
   <h2>Last upload</h2>
   <p class="muted">{{ last_upload.created_at|datetime }} · {{ last_upload.results|selectattr('ok')|list|length }} of {{ last_upload.results|length }} files stored.</p>
   {% set rejected = last_upload.results|rejectattr('ok')|list %}<details {% if rejected or last_upload.results|length <= 8 %}open{% endif %}><summary>Show the {{ last_upload.results|length }} file{{ '' if last_upload.results|length == 1 else 's' }}{% if rejected %} ({{ rejected|length }} rejected){% endif %}</summary>
   <ul class="upload-results" data-list="unbounded">{% for r in last_upload.results %}<li class="{{ 'ok' if r.ok else 'bad' }}"><strong>{{ 'Stored' if r.ok else 'Rejected' }}</strong> <span class="mono">{{ r.name }}</span>{% if r.source %} <span class="muted">(from {{ r.source }})</span>{% endif %}: {{ r.detail }}</li>{% endfor %}</ul></details>
 </div>{% endif %}
-<div class="row" style="margin-top:var(--space-4)">
+<div class="row mt-4">
   <form class="panel" method="post" action="/upload" enctype="multipart/form-data">{{ csrf_field(request) }}
     <h2>1 · Upload the month's two files</h2>
     <ul class="checks">
@@ -65,15 +65,15 @@ addEventListener('DOMContentLoaded', () => {
     <div id="dropzone" class="dropzone"><input id="files" name="files" type="file" accept=".csv,.zip" multiple required>
       <p class="muted dz-hint" hidden>Drop CSV or zip files here, or choose them above.</p></div>
     <ul id="file-list" class="muted file-list" aria-live="polite"></ul>
-    <p style="margin-top:var(--space-4)"><button class="btn primary" type="submit" id="upload-btn" {% if build.state == 'running' %}disabled title="A rebuild is running"{% endif %}>Upload and rebuild</button></p>
+    <p class="mt-4"><button class="btn primary" type="submit" id="upload-btn" {% if build.state == 'running' %}disabled title="A rebuild is running"{% endif %}>Upload and rebuild</button></p>
   </form>
   <div class="panel" id="review">
-    <h2>2 · The month-close review</h2>
+    <h2>2 · Write the month's review</h2>
     <p class="muted">Sends the closed month's figures (planned vs spent, category gaps against plan and against the trailing twelve months, the ledger's clean totals, and the standing targets) to the model and stores the result. Nothing else leaves the server. The review appears on the dashboard's Last month tab.</p>
     {% if review_enabled %}<form method="get" action="/reviews/confirm"><input type="hidden" name="back" value="/upload#review">
       <label for="month">Budget month</label>
       <select id="month" name="month">{% for m in months %}<option value="{{ m }}" {% if loop.first %}selected{% endif %}>{{ m|month_short }}</option>{% endfor %}</select>
-      <p style="margin-top:var(--space-4)"><button class="btn" type="submit">Write review</button></p>
+      <p class="mt-4"><button class="btn" type="submit">Write review</button></p>
     </form>
     {% else %}<p>A review is written by a model you choose; none is set up yet.</p><p><a class="btn" href="/reviews/provider">Set up a review provider</a></p>{% endif %}
     {% if review_job %}{% set j = review_job %}
@@ -89,11 +89,11 @@ addEventListener('DOMContentLoaded', () => {
 {% include "_findings.html" %}
 {% include "_balances.html" %}
 {% include "_checklist.html" %}
-<div class="panel" style="margin-top:var(--space-4)">
+<div class="panel mt-4">
   <h2>Loaded months</h2>
   <p class="muted">{{ files|length|number }} files · {{ months|length|number }} budget months{% if months %} · {{ months[-1]|month_short }} → {{ months[0]|month_short }}{% endif %}.</p>
-  <form method="post" action="/rebuild" style="margin-bottom:var(--space-3)">{{ csrf_field(request) }}<button class="btn" type="submit" id="rebuild-btn" {% if build.state == 'running' %}disabled{% endif %}>Rebuild without uploading</button> <span class="muted">after editing the mapping, CPI, goals, events or rules</span></form>
-  <details {% if files|selectattr('replaced_at')|list %}open{% endif %}><summary class="muted">Show the {{ files|length }} files</summary>
+  <form method="post" action="/rebuild" class="mb-3">{{ csrf_field(request) }}<button class="btn" type="submit" id="rebuild-btn" {% if build.state == 'running' %}disabled{% endif %}>Rebuild without uploading</button> <span class="muted">after editing the mapping, CPI, goals, events or rules</span></form>
+  {% set replaced = files|selectattr('replaced_at')|list %}<details {% if files|length <= 8 %}open{% endif %}><summary class="muted">Show the {{ files|length }} file{{ '' if files|length == 1 else 's' }}{% if replaced %} ({{ replaced|length }} replaced){% endif %}</summary>
   <table class="plain" data-list="unbounded"><thead><tr><th>Month</th><th>Kind</th><th>File</th><th>Rows</th><th>Uploaded</th><th>Actions</th></tr></thead><tbody>
   {% for f in files %}<tr><td class="mono">{{ f.budget_month|month_short }}</td><td>{{ f.kind }}</td><td>{{ f.filename }}</td><td class="mono num">{{ f.row_count|number }}</td><td class="mono">{{ f.uploaded_at|date }}
     {%- if f.replaced_at %}<br><span class="muted replaced-note">replaced on {{ f.replaced_at|date }}, {% if f.previous_sha256 == f.sha256 %}identical to the previous file{% else %}different from the previous file ({{ f.previous_sha256[:8] }} → {{ f.sha256[:8] }}){% endif %}</span>{% endif %}</td>
@@ -101,9 +101,14 @@ addEventListener('DOMContentLoaded', () => {
   </tbody></table></details>
 
 </div>
-<div class="panel" style="margin-top:var(--space-4)">
+<div class="panel mt-4">
   <h2>Take your data out, or scan for new files</h2>
-  <p class="muted">Downloads: <a href="/export/ledger.csv">ledger.csv</a> · <a href="/export/datasets.zip">datasets.zip</a> · <a href="/export/sources.zip">sources.zip</a> (the raw exports and the month-end balances you typed: the internal format and EveryDollar's files in their shape and original filenames, other sources exactly as uploaded) · <a href="/export/settings.zip">settings.zip</a> (mapping, CPI, goals, events, accounts, rules and household as seed files: unzip into <code>SEED_DIR</code> to start a new install with them; no secrets).</p>
+  <ul class="downloads">
+    <li><a href="/export/ledger.csv">ledger.csv</a>: every transaction, mapped.</li>
+    <li><a href="/export/datasets.zip">datasets.zip</a>: the figures the dashboard draws.</li>
+    <li><a href="/export/sources.zip">sources.zip</a>: the raw exports and the month-end balances you typed, in their original filenames.</li>
+    <li><a href="/export/settings.zip">settings.zip</a>: mapping, CPI, goals, events, accounts, rules and household as seed files; unzip into <code>SEED_DIR</code> to start a new install with them. No secrets.</li>
+  </ul>
   {% if import_dir_set %}  <form method="post" action="/import/scan">{{ csrf_field(request) }}<button class="btn" type="submit">Scan import directory now</button> <span class="muted">loads new or changed exports from IMPORT_DIR without a restart</span></form>{% endif %}
 </div>
 {% endblock %}

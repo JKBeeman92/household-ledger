@@ -10,7 +10,7 @@ from . import db
 
 GOAL = "tax_set_aside_pct"
 GOAL_UNIT = "share of contract income"
-GOAL_NOTE = "Ask at each month-close: the share of contract income set aside for estimated tax; it changes with income and tax law."
+GOAL_NOTE = "Ask when you close a month: the share of contract income set aside for estimated tax; it changes with income and tax law."
 MONTH_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 
 

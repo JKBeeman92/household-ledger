@@ -170,7 +170,7 @@ def test_one_name_for_writing_a_review_and_cancel_returns_where_it_came_from(cli
     with db.pool.connection() as conn:
         conn.execute("INSERT INTO reviews (month, model, sections, prompt) VALUES ('2025-01', 'm', '[{\"order\":1,\"heading\":\"H\",\"text\":\"T\"}]'::jsonb, 'p')"); conn.commit()
     page = client.get("/reviews/edit/2025-01?back=/reviews").text
-    assert 'name="back" value="/reviews"' in page and 'href="/reviews" style' in page
+    assert 'name="back" value="/reviews"' in page and 'class="btn ml-2" href="/reviews"' in page
     r = client.post("/reviews/edit/2025-01", data={"heading": ["H2"], "text": ["T2"], "back": "/reviews"})
     assert r.headers["location"] == "/reviews"
     assert 'href="/checkin/2025-01#step-review"' in client.get("/reviews/confirm?month=2025-01&back=/checkin/2025-01%23step-review").text

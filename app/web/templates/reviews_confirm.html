@@ -2,10 +2,10 @@
 {% block title %}Confirm review · {{ household.title }}{% endblock %}
 {% block content %}
 <p class="eyebrow">Month-close review</p>
-<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Write the {{ month|month }} review{{ " again" if existing }}?</h1>
-<div class="panel" style="max-width:44rem;margin-top:var(--space-4)">
+<h1 class="page-title">Write the {{ month|month }} review{{ " again" if existing }}?</h1>
+<div class="panel w-confirm mt-4">
   {% if error %}<p>{{ error }}. Upload that month and rebuild first.</p>
-  <p><a class="btn" href="/upload">Close a month</a> <a class="btn" href="{{ back }}" style="margin-left:var(--space-2)">Cancel</a></p>
+  <p><a class="btn" href="/upload">Close a month</a> <a class="btn ml-2" href="{{ back }}">Cancel</a></p>
   {% else %}
   <p>This sends the {{ month|month }} figures to <strong>{{ prov.display }}</strong>: {% if tokens < 1500 %}under a page{% else %}about {{ ((tokens / 700) | round | int) }} pages{% endif %} of text.</p>
   <ul class="muted">
@@ -16,8 +16,8 @@
   {% if problem %}<p>Not configured: {{ problem }}. Set it up first: <a class="btn" href="/reviews/provider">Set up a review provider</a></p>{% endif %}
   <form method="post" action="/review/generate" id="gen-form">{{ csrf_field(request) }}
     <input type="hidden" name="month" value="{{ month }}"><input type="hidden" name="confirm" value="yes"><input type="hidden" name="back" value="{{ back }}">
-    <p style="margin-top:var(--space-4)"><button class="btn primary" type="submit" id="gen-btn" data-label="{{ "Write review again" if existing else "Write review" }}" {% if problem %}disabled{% endif %}>{{ "Write review again" if existing else "Write review" }}</button>
-    <a class="btn" href="{{ back }}" style="margin-left:var(--space-2)">Cancel</a></p>
+    <p class="mt-4"><button class="btn primary" type="submit" id="gen-btn" data-label="{{ "Write review again" if existing else "Write review" }}" {% if problem %}disabled{% endif %}>{{ "Write review again" if existing else "Write review" }}</button>
+    <a class="btn ml-2" href="{{ back }}">Cancel</a></p>
     <p id="gen-status" class="muted" role="status" aria-live="polite" hidden data-label="{{ prov.display }}"></p>
   </form>
   {% endif %}

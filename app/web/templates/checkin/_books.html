@@ -1,5 +1,5 @@
 {# Step 2: reconciliation and unmapped items for the month (#164). Context: c.rec, c.unmapped, c.acked #}
-{% if c.rec.problems %}<details {% if c.rec.problems|length <= 5 %}open{% endif %}><summary>{{ c.rec.problems|length }} envelope{{ '' if c.rec.problems|length == 1 else 's' }} do not reconcile</summary>
+{% if c.rec.problems %}<details {% if c.rec.problems|length <= 5 %}open{% endif %}><summary>{{ c.rec.problems|length }} envelope-month{{ '' if c.rec.problems|length == 1 else 's' }} do not reconcile</summary>
   <ul data-list="unbounded">{% for p in c.rec.problems %}<li>{{ p.item }}: transactions {{ p.txn_sum|money(2) }}, Spent {{ p.spent|money(2) }} ({{ p.status }})</li>{% endfor %}</ul></details>{% endif %}
 {% if c.unmapped %}<p>{{ c.unmapped|length }} item{{ '' if c.unmapped|length == 1 else 's' }} without a mapping: {{ c.unmapped|map(attribute='item')|join(', ') }}. <a href="/upload#unmapped-panel">Map them on Close a month</a>.</p>{% endif %}
 {% if not c.rec.problems and not c.unmapped %}<p class="muted">Every envelope's transactions sum to its Spent, and every item is mapped.</p>

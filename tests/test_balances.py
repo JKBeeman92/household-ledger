@@ -92,7 +92,7 @@ def test_close_a_month_suggests_then_stores_carried_or_entered_and_keeps_history
     r = client.post("/balances/2025-04", data={"account": ["Lembas Student Loan"], "amount": ["lots"]})
     assert q("SELECT amount FROM balances WHERE account='Lembas Student Loan' AND budget_month='2025-04'")[0]["amount"] == 17300
     page = client.get("/upload?balances_month=2025-04").text
-    assert "lots" not in page and "must be a number" in page
+    assert 'value="lots"' in page and 'aria-invalid="true"' in page and "Must be a number" in page   # under its field, the typed value kept (DS-FORM-1)
 
 
 def test_backfill_checks_every_line_before_storing_any(client, loaded):

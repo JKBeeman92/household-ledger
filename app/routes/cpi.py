@@ -15,11 +15,12 @@ def cpi_page(request: Request, user=Depends(auth.require_editor)):
         url = cpi_fetch.series_url(conn)
         rows = conn.execute("SELECT month, cpi, source FROM cpi ORDER BY month DESC").fetchall()
     est = [r for r in rows if cpi_fetch.is_estimate(r["source"])]
-    return render(request, "cpi.html", user, active="settings", url=url, default_url=cpi_fetch.DEFAULT_URL, latest=rows[0] if rows else None, latest_label=cpi_fetch.source_display(rows[0]["source"]) if rows else "", estimated=est)
+    return render(request, "cpi.html", user, active="settings", url=url, default_url=cpi_fetch.DEFAULT_URL, latest=rows[0] if rows else None, latest_label=cpi_fetch.source_display(rows[0]["source"]) if rows else "", estimated=est, cpi_form=request.session.pop("cpi_form", None))
 
 
 @router.post("/cpi/url")
 def cpi_url_save(request: Request, url: str = Form(""), user=Depends(auth.require_editor)):
+    request.session.pop("cpi_form", None)
     with db.pool.connection() as conn:
         try:
             url = url.strip()
@@ -30,6 +31,7 @@ def cpi_url_save(request: Request, url: str = Form(""), user=Depends(auth.requir
             conn.commit(); flash(request, "Saved the CPI series URL.")
         except cpi_fetch.CpiFetchError as e:
             conn.rollback(); flash(request, f"Not saved: {e}", "bad")
+            request.session["cpi_form"] = {"url": url, "error": str(e)}   # under its field too, with what was typed kept (DS-FORM-1)
     return RedirectResponse("/cpi", status_code=303)
 
 

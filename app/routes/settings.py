@@ -14,7 +14,7 @@ router = APIRouter()
 
 EDITORS = {
     "mapping": {"title": "Item mapping", "help": "Each item from your budget tool gets a canonical name and a flow; its category is its canonical item's. Every item must be here, or the build lists it as unmapped.", "help_long": "One row per item in your exports: Item, CanonicalItem, Category, Flow, Note, and optionally DebtType (mortgage, student, auto, card, medical, personal, other; a five-column CSV leaves types as they are). A canonical item has one category, so every row of it gives the same Category (in the row editor, leave Category blank to use the one it has); use Categories and canonical items to rename or move one. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every item name in the exports must appear here or the build reports it UNMAPPED. Fund moves kept as income items (Fund Transfer, End of Year Rebalance) need Flow transfer, or they count as income; money held for someone else and paid out needs exclude. No name is read literally: the parts names play (which items are paychecks, which categories are recurring bills, and so on) are set under Pipeline rules, Roles (README, \"Roles\"); rules name canonical items, not raw ones."},
-    "goals": {"title": "Goals", "help": "One row per goal: key, label, value, unit, note. The Goals tab and the month-close review read these; values are also confirmed each month in the checklist on Close a month. A share is a fraction (0.07) or a percentage (7%)."},
+    "goals": {"title": "Goals", "help": "One row per goal: key, label, value, unit, note. The dashboard's Goals tab and the month's review read these; values are also confirmed each month in the checklist on Close a month. A share is a fraction (0.07) or a percentage (7%)."},
     "accounts": {"title": "Accounts", "help": "What the household owes and owns, for month-end balances (entered on Close a month). Kind is debt or asset. A debt's type is a debt type (empty: its linked item's); an asset's is cash, savings, retirement, brokerage, home, vehicle or other. Linked item is the canonical item a debt's payments go to, so the suggested balance can subtract last month's payment; APR adds a month's interest; escrow is the part of each payment that is not the loan. Person is one of the people, or empty for joint. Emergency marks an asset that counts toward the emergency fund (cash and savings by default). An account with balances is retired (Active no), not deleted: its balances are kept."},
     "events": {"title": "Life events", "help": "One row per event: month (YYYY-MM), label, and optionally its kind (job, move, family, health, purchase, debt, other) and the person it concerns (one of the people in Pipeline rules). Drawn as markers on the timeline charts; the Employer chart shows job events and events with no kind."},
     "cpi": {"title": "CPI index", "help": "CSV: month, cpi, source. A price index (consumer prices, any base) used for the real-amounts toggle. US households: CPI-U, appending the newest month from FRED CPIAUCSL; mark estimates in source."},
@@ -55,7 +55,7 @@ def check_mapping_row(r: dict) -> tuple[dict, dict]:
 
 def parse_goal_value(raw, unit: str) -> tuple[float | None, str | None]:
     """A goal's value from what was typed: blank is "not known yet"; "7%" is 0.07; a "share of …" must lie between 0 and 1,
-    because the Goals tab and the review read it as a fraction (7 would be 700%)."""
+    because the dashboard's Goals tab and the review read it as a fraction (7 would be 700%)."""
     if raw is None or (isinstance(raw, str) and not raw.strip()):
         return None, None
     text = str(raw).strip().replace(",", "")
@@ -371,7 +371,7 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         bills = _yb.for_page(conn)
     from .yearly_bills import slug as _yb_slug
     return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP, bills=bills,
-                  yb_form=request.session.pop("yb_form", None), tax_form=request.session.pop("tax_form", None), yb_slug=_yb_slug, tax_cfg=_tax_cfg(),
+                  yb_form=request.session.pop("yb_form", None), tax_form=request.session.pop("tax_form", None), bal_hist=request.session.pop("bh_form", None), yb_slug=_yb_slug, tax_cfg=_tax_cfg(),
                   categories=categories, rules=rules, hh=household, name_families=name_families, unmapped=unmapped,
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS,
                   event_choices={"kind": [""] + list(EVENT_KINDS)}, people=list(rules.get("people") or []),
@@ -404,7 +404,7 @@ def mapping_draft_save(request: Request, body: str = Form(...), user=Depends(aut
             db.mark_inputs_changed(conn); conn.commit()
             flash(request, f"Added {what}. The dashboard shows them after a rebuild: press Rebuild now.")
         except Exception as e:  # noqa: BLE001
-            conn.rollback(); flash(request, f"Not saved — {e}", "bad")
+            conn.rollback(); flash(request, f"Not saved: {e}", "bad")
             return RedirectResponse("/settings/mapping/draft", status_code=303)
     return RedirectResponse("/settings#mapping", status_code=303)
 
@@ -531,7 +531,7 @@ async def settings_row_delete(request: Request, kind: str, user=Depends(auth.req
 
 PRETAX = "pretax_contribution:"   # goals per person (#152): pre-tax saving that never reaches the budget
 PRETAX_UNITS = {"share": "share of gross", "usd": "usd/month"}
-PRETAX_NOTE = "Ask at each month-close: 401(k), 403(b), HSA and the like, taken from pay before it reaches the budget."
+PRETAX_NOTE = "Asked when you close a month: 401(k), 403(b), HSA and the like, taken from pay before it reaches the budget."
 
 
 def pretax_rows(conn, people: list) -> list[dict]:
@@ -566,7 +566,7 @@ async def pretax_form(request: Request, user=Depends(auth.require_editor)):
                          "SET value=EXCLUDED.value, unit=EXCLUDED.unit, confirmed_at=now(), updated_at=now()", (key, v, u, f"Pre-tax saving, {person}", PRETAX_NOTE))
             done += 1
         if problems:
-            conn.rollback(); flash(request, "Not saved — " + "; ".join(problems), "bad")
+            conn.rollback(); flash(request, "Not saved: " + "; ".join(problems), "bad")
         else:
             db.mark_inputs_changed(conn); conn.commit()
             flash(request, f"Saved pre-tax saving for {done} {'person' if done == 1 else 'people'}. The dashboard shows it after a rebuild: press Rebuild now.")
@@ -576,13 +576,16 @@ async def pretax_form(request: Request, user=Depends(auth.require_editor)):
 @router.post("/settings/accounts/balances")
 def balances_backfill(request: Request, body: str = Form(...), user=Depends(auth.require_editor)):
     """Balances history (#143): past month-ends typed or pasted as CSV (account,YYYY-MM,amount); every line checked first."""
+    request.session.pop("bh_form", None)
     with db.pool.connection() as conn:
         try:
             what = accounts_store.import_balances(conn, body, _who(user))
             db.mark_inputs_changed(conn); conn.commit()
             flash(request, f"Saved {what}. The dashboard shows them after a rebuild: press Rebuild now.")
         except ValueError as e:
-            conn.rollback(); flash(request, f"Not saved — {e}", "bad")
+            conn.rollback(); flash(request, f"Not saved: {e}", "bad")
+            # under its field too, with what was pasted kept (DS-FORM-1); the session is a cookie, so a very long paste is not kept
+            request.session["bh_form"] = {"body": body if len(body) <= 1500 else "", "error": str(e)}
     return RedirectResponse("/settings#accounts/history", status_code=303)
 
 
@@ -605,7 +608,7 @@ def settings_save(request: Request, key: str, body: str = Form(...), user=Depend
             conn.commit()
             flash(request, f"Saved {what}." + (" The dashboard shows it after a rebuild: press Rebuild now." if key in PIPELINE_INPUTS else ""))
         except Exception as e:  # noqa: BLE001
-            conn.rollback(); flash(request, f"Not saved — {e}", "bad")
+            conn.rollback(); flash(request, f"Not saved: {e}", "bad")
     return RedirectResponse(f"/settings#{key}", status_code=303)   # back to the tab that was saved
 
 
@@ -627,14 +630,14 @@ async def household_form(request: Request, user=Depends(auth.require_editor)):
                 data[k] = f[k].upper() if k == "currency" else f[k]
         problems = _save_setting(conn, "household", data)
         if problems:
-            conn.rollback(); flash(request, "Not saved — " + "; ".join(problems[:4]), "bad")
+            conn.rollback(); flash(request, "Not saved: " + "; ".join(problems[:4]), "bad")
         else:
             conn.commit(); flash(request, "Saved the household's name and display settings.")
     return RedirectResponse("/settings#household", status_code=303)
 
 
 ROLE_FIELDS = [   # (rules key, plain label, what it changes) for the Roles form (issue #162); defaults are build_ledger.RULES'
-    ("paycheck_items", "Items that are paychecks", "Canonical items. The Employer chart, the Goals tab's take-home and the review's paycheck count read them."),
+    ("paycheck_items", "Items that are paychecks", "Canonical items. The Employer chart, the dashboard's Goals tab take-home and the review's paycheck count read them."),
     ("recurring_categories", "Categories of recurring bills", "The Recurring tab lists their spending."),
     ("plan_keep_categories", "Categories whose plan is kept", "On the Last month tab, their suggested plan stays the current plan instead of the twelve-month average."),
     ("income_groups", "Budget groups that hold income", "As named in the export. New source profiles and the mapping draft start from these."),
@@ -664,7 +667,7 @@ async def rules_roles_form(request: Request, user=Depends(auth.require_editor)):
                 rules.pop(key, None)
         problems = _save_setting(conn, "rules", rules)
         if problems:
-            conn.rollback(); flash(request, "Not saved — " + "; ".join(problems[:4]), "bad")
+            conn.rollback(); flash(request, "Not saved: " + "; ".join(problems[:4]), "bad")
         else:
             db.mark_inputs_changed(conn); conn.commit()
             flash(request, "Saved the roles. The dashboard shows them after a rebuild: press Rebuild now.")
@@ -682,7 +685,7 @@ async def rules_people_form(request: Request, user=Depends(auth.require_editor))
         rules = {**(db.get_setting(conn, "rules", {}) or {}), "people": people, "employers": employers}
         problems = _save_setting(conn, "rules", rules)
         if problems:
-            conn.rollback(); flash(request, "Not saved — " + "; ".join(problems[:4]), "bad")
+            conn.rollback(); flash(request, "Not saved: " + "; ".join(problems[:4]), "bad")
         else:
             db.mark_inputs_changed(conn); conn.commit()
             flash(request, f"Saved {len(people)} people and {len(employers)} employer rule(s). The dashboard shows them after a rebuild: press Rebuild now.")

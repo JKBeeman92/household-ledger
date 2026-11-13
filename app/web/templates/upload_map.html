@@ -12,30 +12,30 @@
   </select>
 {% endmacro %}
 <p class="eyebrow">Month close</p>
-<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Map your columns</h1>
-<p class="muted" style="max-width:75ch">These files are not in a format the ledger reads as it is (the internal format, or EveryDollar's exports), so tell it once how to read them. The guesses below come from the
+<h1 class="page-title">Map your columns</h1>
+<p class="muted measure">These files are not in a format the ledger reads as it is (the internal format, or EveryDollar's exports), so tell it once how to read them. The guesses below come from the
 column names{% if plan.profile_id %} and the saved profile <strong>{{ spec.name }}</strong>, which recognises these headers{% endif %}. Nothing is stored
 until you confirm. The files are kept exactly as uploaded, so a mapping corrected later is re-applied without uploading again.</p>
 {% if error %}<p class="flash bad" role="alert" id="map-error">{{ error }}</p>{% endif %}
 
 <form method="post" action="/upload/map/{{ batch }}">{{ csrf_field(request) }}
 {% for f in plan.files %}
-<section class="panel" style="margin-top:var(--space-4)">
+<section class="panel mt-4">
   <h2><span class="mono">{{ f.filename }}</span></h2>
   {% if f.error %}<p class="flash bad">{{ f.error }}</p>{% else %}
   <p class="muted">{{ f.rows }} rows. The first {{ f.sample|length }}:</p>
   <div class="tablewrap"><table class="plain"><thead><tr>{% for h in f.header %}<th>{{ h }}</th>{% endfor %}</tr></thead>
     <tbody>{% for r in f.sample %}<tr>{% for h in f.header %}<td>{{ r[h] }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
-  <fieldset style="border:0;padding:0;margin:var(--space-3) 0 0"><legend style="font-weight:600">This file is the</legend>
+  <fieldset class="bare-fieldset"><legend class="strong">This file is the</legend>
     {% set k = form.get('kind_' ~ f.id) if form is defined and form else f.kind %}
-    <label style="display:inline;font-weight:400"><input type="radio" name="kind_{{ f.id }}" value="transactions" {% if k == 'transactions' %}checked{% endif %}> transactions file</label>
-    <label style="display:inline;font-weight:400;margin-left:var(--space-4)"><input type="radio" name="kind_{{ f.id }}" value="budget_items" {% if k == 'budget_items' %}checked{% endif %}> budget file (planned and spent per line)</label>
+    <label class="label-inline"><input type="radio" name="kind_{{ f.id }}" value="transactions" {% if k == 'transactions' %}checked{% endif %}> transactions file</label>
+    <label class="label-inline ml-4"><input type="radio" name="kind_{{ f.id }}" value="budget_items" {% if k == 'budget_items' %}checked{% endif %}> budget file (planned and spent per line)</label>
   </fieldset>
   {% endif %}
 </section>
 {% endfor %}
 
-<section class="panel" style="margin-top:var(--space-4)">
+<section class="panel mt-4">
   <h2>Month and source</h2>
   <div class="row">
     <div><label for="month">Budget month</label><input id="month" name="month" type="month" required value="{{ v('month', plan.month) }}">
@@ -47,7 +47,7 @@ until you confirm. The files are kept exactly as uploaded, so a mapping correcte
 
 {% set t = spec.transactions or {} %}{% set th = (plan.files|selectattr('kind', 'equalto', 'transactions')|map(attribute='header')|first) if plan.files|selectattr('kind', 'equalto', 'transactions')|list else t.get('headers', []) %}
 {% if spec.transactions %}
-<section class="panel" style="margin-top:var(--space-4)">
+<section class="panel mt-4">
   <h2>Transactions columns</h2>
   <p class="muted">Date, group and item are required, and either one signed amount column or separate debit and credit columns. Group and item
   must name the same budget lines as the budget file, because every line's transactions are checked against its spent figure.</p>
@@ -68,7 +68,7 @@ until you confirm. The files are kept exactly as uploaded, so a mapping correcte
 
 {% set b = spec.budget or {} %}{% set bh = (plan.files|selectattr('kind', 'equalto', 'budget_items')|map(attribute='header')|first) if plan.files|selectattr('kind', 'equalto', 'budget_items')|list else b.get('headers', []) %}
 {% if spec.budget %}
-<section class="panel" style="margin-top:var(--space-4)">
+<section class="panel mt-4">
   <h2>Budget columns</h2>
   <p class="muted">All four are required: group, item, planned and spent. Spent is what the ledger reconciles each line's transactions against.</p>
   <div class="row">{% for f, label in budget_labels.items() %}<div>{{ colsel('b_', f, label, bh, b.columns.get(f)) }}</div>{% endfor %}</div>
@@ -83,7 +83,7 @@ until you confirm. The files are kept exactly as uploaded, so a mapping correcte
 </section>
 {% endif %}
 
-<p style="margin-top:var(--space-4)"><button class="btn primary" type="submit" id="map-confirm">Save the mapping, store and rebuild</button></p>
+<p class="mt-4"><button class="btn primary" type="submit" id="map-confirm">Save the mapping, store and rebuild</button></p>
 </form>
 <form method="post" action="/upload/map/{{ batch }}/discard">{{ csrf_field(request) }}<button class="btn" type="submit">Discard these files</button></form>
 {% endblock %}

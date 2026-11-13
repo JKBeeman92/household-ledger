@@ -58,6 +58,10 @@ def checkin_step(month: str, step: str, action: str, request: Request, user=Depe
             raise HTTPException(400, str(e))
     if "application/json" in (request.headers.get("accept") or ""):
         return Response(status_code=204)   # the page marks a read-only step read when it is opened
+    if step == "next" and action == "ack":   # DS-FLASH-1: say what was recorded, and what was undone
+        flash(request, f"Recorded: no changes for {month_text(month)}.")
+    elif step == "next" and action == "undo":
+        flash(request, "Undone: the Next month step is open again.")
     return RedirectResponse(f"/checkin/{month}#step-{step}", status_code=303)
 
 

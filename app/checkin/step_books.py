@@ -11,10 +11,11 @@ def _problems(conn, month):
 
 def _status(conn, month, state):
     rec, un = _problems(conn, month)
-    bits = ([f"{len(rec['problems'])} envelope{'s' * (len(rec['problems']) != 1)} do not reconcile"] if not rec["clean"] else []) + \
+    bits = ([f"{len(rec['problems'])} envelope-month{'s' * (len(rec['problems']) != 1)} do not reconcile"] if not rec["clean"] else []) + \
            ([f"{len(un)} unmapped item{'s' * (len(un) != 1)}"] if un else [])
     if not bits:
-        return "done", f"reconciles ({rec['counts'].get('OK', 0)} envelopes) and every item is mapped" if rec.get("counts") else "reconciles, every item mapped"
+        n = sum(v for k, v in (rec.get("counts") or {}).items() if k.startswith("OK"))   # as Close a month counts them
+        return "done", f"all {n} envelope-months reconcile, and every item is mapped" if n else "reconciles, every item mapped"
     if "books" in (state.get("ack") or {}):
         return "done", "; ".join(bits) + " (acknowledged)"
     return "attention", "; ".join(bits)

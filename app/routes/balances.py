@@ -35,14 +35,18 @@ async def save_balances(month: str, request: Request, background: BackgroundTask
     nxt = str(form.get("next") or "")   # the check-in's Balances step returns to it (#164)
     back = RedirectResponse(auth._safe_next(nxt) if nxt else f"/upload?balances_month={month}#balances", status_code=303)
     values = dict(zip((str(n) for n in form.getlist("account")), (str(v) for v in form.getlist("amount"))))
+    request.session.pop("bal_form", None)
     with db.pool.connection() as conn:
         try:
             changed, errors = accounts_store.save_month(conn, month, values, _who(user))
         except ValueError as e:
-            conn.rollback(); flash(request, f"Not saved — {e}", "bad"); return back
+            conn.rollback(); flash(request, f"Not saved: {e}", "bad")
+            request.session["bal_form"] = {"month": month, "typed": values, "errors": {}, "error": str(e)}; return back
         if errors:
             conn.rollback()
-            flash(request, "Not saved — " + "; ".join(f"{k}: {v}" for k, v in errors.items()), "bad"); return back
+            flash(request, "Not saved: " + "; ".join(f"{k}: {v}" for k, v in errors.items()), "bad")
+            request.session["bal_form"] = {"month": month, "typed": values, "errors": errors, "error": ""}   # under each field too, with what was typed kept (DS-FORM-1)
+            return back
         if changed:
             db.mark_inputs_changed(conn)
         conn.commit()

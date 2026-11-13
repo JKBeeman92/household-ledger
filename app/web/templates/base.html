@@ -37,7 +37,7 @@
   </header>
   {% if user and user.is_editor %}<div class="flash warn" id="rebuild-banner" role="status" {% if not rebuild_needed %}hidden{% endif %}>
     <form method="post" action="/rebuild" class="rebuild-banner">{{ csrf_field(request) }}<input type="hidden" name="next" value="{{ request.url.path }}" data-here><span><strong>Settings changed since the last rebuild.</strong>
-    The dashboard still shows the old figures.</span> <button class="btn primary" type="submit">Rebuild now</button></form></div>{% endif %}
+    The dashboard still shows the old figures.</span> <button class="btn" type="submit">Rebuild now</button></form></div>{% endif %}
   {% with flashes = get_flashes() %}{% for f in flashes %}<div class="flash {{ f.kind }}" role="{{ 'alert' if f.kind == 'bad' else 'status' }}">{{ f.text }}</div>{% endfor %}{% endwith %}
   <main id="main" tabindex="-1">
   {% block content %}{% endblock %}

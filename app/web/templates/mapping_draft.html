@@ -2,24 +2,24 @@
 {% block title %}Draft a mapping · {{ household.title }}{% endblock %}
 {% block content %}
 <p class="eyebrow">Settings · Item mapping</p>
-<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Draft a mapping</h1>
+<h1 class="page-title">Draft a mapping</h1>
 {% if not rows %}
 <section class="panel" id="draft-empty"><p class="muted">Every item in your exports already has a mapping row: there is nothing to draft. <a href="/settings#mapping">Back to Item mapping</a>.</p></section>
 {% else %}
 <section class="panel" id="draft-review">
-  <p class="muted" style="max-width:90ch">A first guess for the {{ rows|length }} item{{ '' if rows|length == 1 else 's' }} with no mapping row. Category is the budget group;
+  <p class="muted measure">A first guess for the {{ rows|length }} item{{ '' if rows|length == 1 else 's' }} with no mapping row. Category is the budget group;
     Canonical item drops a year's suffix (" 2", " Fund", " Goal"), so one envelope keeps one line on the charts; Flow is <code>income</code> for the income group,
     <code>debt</code> for Debt, <code>transfer</code> for names that move money between your own envelopes, and <code>expense</code> otherwise. An item whose name
     matches one you have already mapped copies that row. Every row's note says it was drafted, so you can find them later.</p>
-  <p class="muted" style="max-width:90ch">Check two things before adding: money you hold for someone else and pay out needs Flow <code>exclude</code>, and a fund move the
+  <p class="muted measure">Check two things before adding: money you hold for someone else and pay out needs Flow <code>exclude</code>, and a fund move the
     names did not reveal needs <code>transfer</code> (README, "Roles").</p>
   <div class="tablewrap"><table class="plain"><thead><tr><th scope="col">Item</th><th scope="col">Canonical item</th><th scope="col">Category</th><th scope="col">Flow</th><th scope="col">Note</th></tr></thead><tbody>
   {% for r in rows %}<tr><td>{{ r["item"] }}</td><td>{{ r.canonical_item }}</td><td>{{ r.category }}</td><td><code>{{ r.flow }}</code></td><td class="muted">{{ r.note }}</td></tr>{% endfor %}
   </tbody></table></div>
-  <form method="post" action="/settings/mapping/draft" style="margin-top:var(--space-4)">{{ csrf_field(request) }}
+  <form method="post" action="/settings/mapping/draft" class="mt-4">{{ csrf_field(request) }}
     <p class="muted"><label for="draft-body">Edit the draft here if a guess is wrong (CSV, one row per item), then add it. Rows are checked as in the bulk import; nothing is saved if one is bad.</label></p>
     <textarea class="json" id="draft-body" name="body" spellcheck="false">{{ body }}</textarea>
-    <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Add {{ rows|length }} row{{ '' if rows|length == 1 else 's' }} to the mapping</button> <a class="btn" href="/settings#mapping">Cancel</a></p>
+    <p class="mt-3"><button class="btn primary" type="submit">Add {{ rows|length }} row{{ '' if rows|length == 1 else 's' }} to the mapping</button> <a class="btn" href="/settings#mapping">Cancel</a></p>
   </form>
 </section>
 {% endif %}

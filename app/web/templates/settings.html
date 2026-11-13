@@ -2,10 +2,10 @@
 {% block title %}Settings · {{ household.title }}{% endblock %}
 {% block content %}
 <p class="eyebrow">Configuration</p>
-<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Settings</h1>
-<p class="muted" style="max-width:90ch">Everything the pipeline decides from is here, as data. Edit and save; the dashboard keeps its figures until a rebuild, and a banner with <strong>Rebuild now</strong> appears until one has run. Each editor validates its format before saving.</p>
+<h1 class="page-title">Settings</h1>
+<p class="muted measure">Everything the pipeline decides from is here, as data. Edit and save; the dashboard keeps its figures until a rebuild, and a banner with <strong>Rebuild now</strong> appears until one has run. Each editor validates its format before saving.</p>
 <p class="linkrow muted">Elsewhere: <a href="/reviews/provider">Review provider</a> <a href="/settings/tokens">API tokens</a> <a href="/settings/sources">Other budget tools</a> <a href="/webhooks">Webhooks</a></p>
-{% if brand_problems %}<details class="keyhelp" id="brand-problems" style="border-left:3px solid var(--warning);padding-left:var(--space-3);max-width:90ch"><summary>Your theme fails {{ brand_problems|length }} contrast check{{ '' if brand_problems|length == 1 else 's' }}</summary>
+{% if brand_problems %}<details class="keyhelp edge warn edge-note measure" id="brand-problems"><summary>Your theme fails {{ brand_problems|length }} contrast check{{ '' if brand_problems|length == 1 else 's' }}</summary>
   <p class="muted">The <code>theme.css</code> in <code>BRAND_DIR</code> leaves some text or marks too faint to read, or lacks a token the app draws with. Override those tokens per mode in the kit's own <code>theme.css</code> (docs/BRANDING.md, "Building a kit from an existing design system"). The same lines are in the container log.</p>
   <ul>{% for p in brand_problems %}<li class="mono">{{ p }}</li>{% endfor %}</ul></details>{% endif %}
 <form id="csrf-form" hidden>{{ csrf_field(request) }}</form>
@@ -13,7 +13,8 @@
 {% set by_key = {} %}{% for ed in editors %}{% if by_key.update({ed.key: ed}) %}{% endif %}{% endfor %}
 
 {# A figure in a grid is shown formatted (DS-WORD-6); the value as stored stays in data-v, which the row editor and the sort read. #}
-{% macro grid(kind, ed, cols, heads, rows, choices=none) %}
+{% set numcols = {"goals": ["value"], "accounts": ["apr", "escrow"]} %}
+{% macro grid(kind, ed, cols, heads, rows, choices=none) %}{% set nums = numcols.get(kind, []) %}
 <section class="panel" id="{{ kind }}-editor">
   <h2>{{ ed.title }}</h2>
   <p class="muted">{{ ed.help }}</p>
@@ -23,44 +24,45 @@
   <datalist id="settings-canonicals">{% for c in canonical_category %}<option value="{{ c }}">{% endfor %}</datalist>
   <script type="application/json" id="flow-help" nonce="{{ csp_nonce(request) }}">{{ flow_help|tojson }}</script>{% endif %}
   {{ caller() if caller else "" }}
-  <p class="tools"><button class="btn primary" type="button" data-add="{{ kind }}">Add row</button>
-    {% if kind == "mapping" %}<input type="search" data-filter="mapping" placeholder="Filter {{ rows|length }} rows" aria-label="Filter mapping rows">{% endif %}</p>
-  <div class="tablewrap"><table class="plain edit" data-list="unbounded" data-kind="{{ kind }}" data-fields="{{ cols|join(',') }}"{% if kind == "mapping" %} data-flows="{{ flows|join(',') }}"{% endif %}{% if choices %} data-choices="{{ choices|tojson|forceescape }}"{% endif %}>
-    <thead><tr>{% for c in cols %}<th data-sort="{{ c }}" scope="col"><button type="button" class="sortbtn">{{ heads[loop.index0] }}</button></th>{% endfor %}<th><span class="sr">Actions</span></th></tr></thead>
-    <tbody>{% for r in rows %}<tr>{% for c in cols %}{% set v = r[c] %}{% set has = v is not none and v != "" %}{% set unit = (r.unit or "") if kind == "goals" else "" %}{% set shown = (v|share(2, trim=True)) if has and kind == "goals" and c == "value" and unit.startswith("share") else ((v|money) if has and kind == "goals" and c == "value" and unit.startswith("usd") else ((v|money(2)) if has and kind == "accounts" and c == "escrow" else ((v|month_short) if has and kind == "events" and c == "m" else none))) %}<td data-f="{{ c }}"{% if shown is not none %} data-v="{{ r[c] }}"{% endif %}>{{ shown if shown is not none else (r[c] if r[c] is not none else "") }}</td>{% endfor %}
-      <td class="acts"><button type="button" class="btn" data-act="edit">Edit</button> <button type="button" class="btn" data-act="del">Delete</button></td></tr>{% endfor %}</tbody>
+  <p class="tools"><button class="btn" type="button" data-add="{{ kind }}">Add row</button></p>
+  {% if kind == "mapping" %}<p class="filterbox"><label for="mapping-filter">Filter the {{ rows|length }} mapping rows</label><input type="search" id="mapping-filter" data-filter="mapping" placeholder="Part of an item, category or note"></p>{% endif %}
+  <div class="tablewrap" role="region" tabindex="0" aria-label="{{ ed.title }} table"><table class="plain edit" data-list="unbounded" data-kind="{{ kind }}" data-fields="{{ cols|join(',') }}"{% if kind == "mapping" %} data-flows="{{ flows|join(',') }}"{% endif %}{% if choices %} data-choices="{{ choices|tojson|forceescape }}"{% endif %}>
+    <thead><tr>{% for c in cols %}<th data-sort="{{ c }}" scope="col"{% if c in nums %} class="num"{% endif %}><button type="button" class="sortbtn">{{ heads[loop.index0] }}</button></th>{% endfor %}<th class="acts"><span class="sr">Actions</span></th></tr></thead>
+    <tbody>{% for r in rows %}{% set what = (r[cols[0]] ~ " " ~ r[cols[1]]) if kind == "events" else (r[cols[0]] if r[cols[0]] not in (none, "") else "this row") %}<tr>{% for c in cols %}{% set v = r[c] %}{% set has = v is not none and v != "" %}{% set unit = (r.unit or "") if kind == "goals" else "" %}{% set shown = (v|share(2, trim=True)) if has and kind == "goals" and c == "value" and unit.startswith("share") else ((v|money) if has and kind == "goals" and c == "value" and unit.startswith("usd") else ((v|money(2)) if has and kind == "accounts" and c == "escrow" else ((v|month_short) if has and kind == "events" and c == "m" else none))) %}<td data-f="{{ c }}"{% if c in nums %} class="num"{% endif %}{% if not has %} data-v=""{% elif shown is not none %} data-v="{{ r[c] }}"{% endif %}>{{ "—" if not has else (shown if shown is not none else r[c]) }}</td>{% endfor %}
+      <td class="acts"><button type="button" class="btn" data-act="edit" aria-label="Edit {{ what }}">Edit</button> <button type="button" class="btn" data-act="del" aria-label="Delete {{ what }}">Delete</button></td></tr>{% endfor %}</tbody>
   </table></div>
 </section>
 {% endmacro %}
 
 <div class="subtabs" role="tablist" aria-label="Settings" id="settings-tabs"><button type="button" role="tab" id="st-mapping" aria-controls="sp-mapping" aria-selected="true" tabindex="0">Item mapping</button><button type="button" role="tab" id="st-goals" aria-controls="sp-goals" aria-selected="false" tabindex="-1">Goals</button><button type="button" role="tab" id="st-events" aria-controls="sp-events" aria-selected="false" tabindex="-1">Life events</button><button type="button" role="tab" id="st-yearly-bills" aria-controls="sp-yearly-bills" aria-selected="false" tabindex="-1">Yearly bills</button><button type="button" role="tab" id="st-accounts" aria-controls="sp-accounts" aria-selected="false" tabindex="-1">Accounts</button><button type="button" role="tab" id="st-rules" aria-controls="sp-rules" aria-selected="false" tabindex="-1">Pipeline rules</button><button type="button" role="tab" id="st-cpi" aria-controls="sp-cpi" aria-selected="false" tabindex="-1">CPI</button><button type="button" role="tab" id="st-household" aria-controls="sp-household" aria-selected="false" tabindex="-1">Household</button></div>
-<div class="stack" style="margin-top:var(--space-4)">
+<div class="stack mt-4">
 <div role="tabpanel" id="sp-mapping" aria-labelledby="st-mapping">
 {% set debt_rows = defs.canonical|selectattr('debt_or_typed')|list %}
 <div class="subtabs" role="tablist" aria-label="Item mapping" data-subtabs="mapping"><button type="button" role="tab" id="st-mapping-items" aria-controls="sp-mapping-items" aria-selected="true" tabindex="0">Items <span class="count">{{ rows.mapping|length }}</span></button><button type="button" role="tab" id="st-mapping-categories" aria-controls="sp-mapping-categories" aria-selected="false" tabindex="-1">Categories <span class="count">{{ defs.categories|length }}</span></button><button type="button" role="tab" id="st-mapping-canonical" aria-controls="sp-mapping-canonical" aria-selected="false" tabindex="-1">Canonical items <span class="count">{{ defs.canonical|length }}</span></button><button type="button" role="tab" id="st-mapping-debts" aria-controls="sp-mapping-debts" aria-selected="false" tabindex="-1">Debt types <span class="count">{{ debt_rows|length }}</span></button></div>
 <script type="application/json" id="canonical-category" nonce="{{ csp_nonce(request) }}">{{ canonical_category|tojson }}</script>
 <div role="tabpanel" id="sp-mapping-items" aria-labelledby="st-mapping-items">
-{% if mapping_notes %}<section class="panel" id="mapping-notes" style="border-left:3px solid var(--warning)">
+{% if mapping_notes %}<section class="panel edge warn" id="mapping-notes">
   <h2>What the 0.5.0 upgrade changed in your mapping</h2>
   <p class="muted">A canonical item now has one category. Where yours had more than one, the category most of its rows used was kept; an item whose category was the placeholder UNMAPPED left the mapping. The settings.zip you downloaded before upgrading holds the old mapping.</p>
   <ul>{% for n in mapping_notes %}<li>{{ n.note }}</li>{% endfor %}</ul>
-  <form method="post" action="/settings/mapping/notes/dismiss">{{ csrf_field(request) }}<button class="btn" type="submit">Dismiss</button></form>
+  <form method="post" action="/settings/mapping/notes/dismiss">{{ csrf_field(request) }}<button class="btn" type="submit" aria-label="Dismiss the notes on the 0.5.0 upgrade">Dismiss</button></form>
 </section>{% endif %}
 {% call grid("mapping", by_key.mapping, ["item","canonical_item","category","flow","note"], ["Item","Canonical item","Category","Flow","Note"], rows.mapping) %}
-  {% if unmapped %}<p class="muted" id="draft-offer" style="border-left:3px solid var(--warning);padding-left:var(--space-3)">{{ unmapped }} item{{ '' if unmapped == 1 else 's' }} in your exports {{ 'has' if unmapped == 1 else 'have' }} no mapping row yet.
+  {% if unmapped %}<p class="muted edge warn edge-note" id="draft-offer">{{ unmapped }} item{{ '' if unmapped == 1 else 's' }} in your exports {{ 'has' if unmapped == 1 else 'have' }} no mapping row yet.
     <a class="btn" href="/settings/mapping/draft">Draft a mapping from my budget groups</a> You review the draft before anything is saved, and no existing row changes.</p>{% endif %}
   {% if name_families %}<details class="keyhelp" id="name-families"><summary>{{ name_families|length }} name{{ ' that looks' if name_families|length == 1 else 's that look' }} like one envelope under different canonical names</summary>
     <p class="muted">These items have the same name once a year's suffix (" 2", " Fund", " Goal") is removed, but map to different canonical names, so their charts show separate lines. If they are one envelope, give them one name; if you keep them apart on purpose, leave them. Only the canonical name changes, and with it the category: a canonical item has one, so rows in another category move to it (the message after saving says which).</p>
     {% for fam in name_families %}<form method="post" action="/settings/mapping/family" class="family">{{ csrf_field(request) }}<input type="hidden" name="base" value="{{ fam.base }}">
       <p><strong>{{ fam.base }}</strong>: {% for i in fam["items"] %}{{ i["item"] }} → <code>{{ i["canonical_item"] }}</code>{{ ", " if not loop.last }}{% endfor %}</p>
       <p class="tools"><label>Use one canonical name for all <select name="canonical_item" aria-label="Canonical name for {{ fam.base }}">{% for c in fam.canonicals %}<option {% if c == fam.suggested %}selected{% endif %}>{{ c }}</option>{% endfor %}{% if fam.base not in fam.canonicals %}<option>{{ fam.base }}</option>{% endif %}</select></label>
-        <button class="btn" type="submit">Use it</button></p></form>{% endfor %}
+        <button class="btn" type="submit" aria-label="Use it: one canonical name for {{ fam.base }}">Use it</button></p></form>{% endfor %}
   </details>{% endif %}
   <details class="keyhelp"><summary>Bulk paste or export as CSV</summary>
     <p class="muted">Paste the whole mapping as CSV to replace it. Every row is checked first and errors name the line; if any row is bad, nothing is saved. Items missing from the CSV are removed.</p>
     <form method="post" action="/settings/mapping">{{ csrf_field(request) }}
-      <textarea class="json" name="body" spellcheck="false" aria-label="Mapping CSV">{{ by_key.mapping.body }}</textarea>
-      <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Replace mapping from CSV</button> <a class="btn" href="/settings/mapping.csv" download>Download CSV</a></p>
+      <label for="mapping-csv">Mapping as CSV</label>
+      <textarea class="json" id="mapping-csv" name="body" spellcheck="false">{{ by_key.mapping.body }}</textarea>
+      <p class="mt-3"><button class="btn" type="submit">Replace mapping from CSV</button> <a class="btn" href="/settings/mapping.csv" download>Download CSV</a></p>
     </form>
   </details>
 {% endcall %}
@@ -69,11 +71,11 @@
 <section class="panel defs" id="definitions">
   <h2>Categories</h2>
   <p class="muted">Each canonical item belongs to one category, and each mapping row's category follows from its canonical item. A rename here is one edit: every row, and every rule that names it (Pipeline rules), follows. Renaming to a name that already exists merges the two.</p>
-  <p class="tools"><input type="search" data-filter-table="categories-table" placeholder="Filter {{ defs.categories|length }} categories" aria-label="Filter categories"></p>
-  <div class="tablewrap"><table class="plain" id="categories-table" data-list="unbounded"><thead><tr><th scope="col">Category</th><th scope="col">Canonical items</th><th scope="col">Rows</th><th scope="col">Rename to</th></tr></thead><tbody>
-  {% for g in defs.categories %}<tr><td>{{ g.name }}</td><td>{{ g.canonical }}</td><td>{{ g.rows }}</td>
+  <p class="filterbox"><label for="categories-filter">Filter the {{ defs.categories|length }} categories</label><input type="search" id="categories-filter" data-filter-table="categories-table" placeholder="Part of a name"></p>
+  <div class="tablewrap" role="region" tabindex="0" aria-label="Categories table"><table class="plain" id="categories-table" data-list="unbounded"><thead><tr><th scope="col">Category</th><th scope="col">Canonical items</th><th scope="col" class="num">Rows</th><th scope="col">Rename to</th></tr></thead><tbody>
+  {% for g in defs.categories %}<tr><td>{{ g.name }}</td><td>{{ g.canonical }}</td><td class="num">{{ g.rows }}</td>
     <td><form method="post" action="/settings/mapping/category/rename" class="inline">{{ csrf_field(request) }}<input type="hidden" name="old" value="{{ g.name }}">
-      <input type="text" name="new" required aria-label="New name for the category {{ g.name }}" placeholder="{{ g.name }}"> <button class="btn" type="submit">Rename</button></form></td></tr>{% endfor %}
+      <input type="text" name="new" required aria-label="New name for the category {{ g.name }}" placeholder="{{ g.name }}"> <button class="btn" type="submit" aria-label="Rename the category {{ g.name }}">Rename</button></form></td></tr>{% endfor %}
   </tbody></table></div>
 </section>
 </div>
@@ -81,14 +83,14 @@
 <section class="panel defs">
   <h2>Canonical items</h2>
   <p class="muted">The names charts use. Rename one (renaming to an existing name merges the two), or move it, and so all its rows, to another category.{% set mixed = defs.canonical|selectattr('mixed')|list %}{% if mixed %} <strong>{{ mixed|length }} mix{{ 'es' if mixed|length == 1 else '' }} income with spending</strong>: almost always a mistake (filter for "mixes").{% endif %} Debt types are under <a href="#mapping/debts">Debt types</a>.</p>
-  <p class="tools"><input type="search" data-filter-table="canonical-table" placeholder="Filter {{ defs.canonical|length }} canonical items" aria-label="Filter canonical items"></p>
-  <div class="tablewrap"><table class="plain" id="canonical-table" data-list="unbounded"><thead><tr><th scope="col">Canonical item</th><th scope="col">Category</th><th scope="col">Rows</th><th scope="col">Flows</th><th scope="col">Rename to</th><th scope="col">Move to category</th></tr></thead><tbody>
-  {% for c in defs.canonical %}<tr><td>{{ c.name }}</td><td>{{ c.category }}</td><td>{{ c.rows }}</td>
+  <p class="filterbox"><label for="canonical-filter">Filter the {{ defs.canonical|length }} canonical items</label><input type="search" id="canonical-filter" data-filter-table="canonical-table" placeholder="Part of a name or category"></p>
+  <div class="tablewrap" role="region" tabindex="0" aria-label="Canonical items table"><table class="plain" id="canonical-table" data-list="unbounded"><thead><tr><th scope="col">Canonical item</th><th scope="col">Category</th><th scope="col" class="num">Rows</th><th scope="col">Flows</th><th scope="col">Rename to</th><th scope="col">Move to category</th></tr></thead><tbody>
+  {% for c in defs.canonical %}<tr><td>{{ c.name }}</td><td>{{ c.category }}</td><td class="num">{{ c.rows }}</td>
     <td>{{ c.flows|join(', ') }}{% if c.mixed %} <strong>mixes income with {{ 'expense' if 'expense' in c.flows else 'debt' }}: almost always a mistake</strong>{% endif %}</td>
     <td><form method="post" action="/settings/mapping/canonical/rename" class="inline">{{ csrf_field(request) }}<input type="hidden" name="old" value="{{ c.name }}">
-      <input type="text" name="new" required aria-label="New name for the canonical item {{ c.name }}" placeholder="{{ c.name }}"> <button class="btn" type="submit">Rename</button></form></td>
+      <input type="text" name="new" required aria-label="New name for the canonical item {{ c.name }}" placeholder="{{ c.name }}"> <button class="btn" type="submit" aria-label="Rename the canonical item {{ c.name }}">Rename</button></form></td>
     <td><form method="post" action="/settings/mapping/canonical/move" class="inline">{{ csrf_field(request) }}<input type="hidden" name="name" value="{{ c.name }}">
-      <input type="text" name="category" required list="settings-categories" aria-label="Category to move {{ c.name }} to" placeholder="{{ c.category }}"> <button class="btn" type="submit">Move</button></form></td></tr>{% endfor %}
+      <input type="text" name="category" required list="settings-categories" aria-label="Category to move {{ c.name }} to" placeholder="{{ c.category }}"> <button class="btn" type="submit" aria-label="Move the canonical item {{ c.name }}">Move</button></form></td></tr>{% endfor %}
   </tbody></table></div>
 </section>
 </div>
@@ -96,20 +98,20 @@
 <section class="panel defs" id="debt-types">
   <h2>Debt types</h2>
   <p class="muted">Every canonical item with debt payments (Flow debt), and any other that has a type. The type groups the Debts tab, folds paid-off debts, and is a debt account's type when the account gives none (Accounts). One of {{ debt_types|join(', ') }}.</p>
-  {% if debt_rows %}<div class="tablewrap"><table class="plain" data-list="unbounded"><thead><tr><th scope="col">Canonical item</th><th scope="col">Category</th><th scope="col">Debt type</th></tr></thead><tbody>
+  {% if debt_rows %}<div class="tablewrap" role="region" tabindex="0" aria-label="Debt types table"><table class="plain" data-list="unbounded"><thead><tr><th scope="col">Canonical item</th><th scope="col">Category</th><th scope="col">Debt type</th></tr></thead><tbody>
   {% for c in debt_rows %}<tr><td>{{ c.name }}</td><td>{{ c.category }}</td>
     <td><form method="post" action="/settings/mapping/canonical/debt-type" class="inline">{{ csrf_field(request) }}<input type="hidden" name="name" value="{{ c.name }}">
       <select name="debt_type" aria-label="Debt type of {{ c.name }}"><option value="">(none)</option>{% for t in debt_types %}<option value="{{ t }}"{% if c.debt_type == t %} selected{% endif %}>{{ t }}</option>{% endfor %}</select>
-      <button class="btn" type="submit">Set</button></form></td></tr>{% endfor %}
-  </tbody></table></div>{% else %}<p class="muted">No canonical item has Flow debt yet.</p>{% endif %}
+      <button class="btn" type="submit" aria-label="Set the debt type of {{ c.name }}">Set</button></form></td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<p class="muted">No canonical item has Flow debt yet. A debt's payments appear here once an item has Flow debt.</p><p><a class="btn" href="#mapping/items">Set an item's Flow</a></p>{% endif %}
 </section>
 </div>
 </div>
 <div role="tabpanel" id="sp-goals" aria-labelledby="st-goals">
 <form class="panel" method="post" action="/settings/goals/pretax" id="pretax">{{ csrf_field(request) }}
   <h2>Pre-tax saving</h2>
-  <p class="muted">401(k), 403(b), HSA and the like, taken from pay before it reaches the budget, so the savings rate and net worth's "what you did" can count it. Per person: a share of the household's gross pay (7% or 0.07) or dollars a month. Blank means none. Each is asked at month-close with the other goals.</p>
-  {% if not pretax %}<p class="muted">Add the household's people under <a href="#rules">Pipeline rules</a> first.</p>{% endif %}
+  <p class="muted">401(k), 403(b), HSA and the like, taken from pay before it reaches the budget, so the savings rate and net worth's "what you did" can count it. Per person: a share of the household's gross pay (7% or 0.07) or dollars a month. Blank means none. Each is asked when you close a month, with the other goals.</p>
+  {% if not pretax %}<p class="muted">Each person's pre-tax saving is set here, once the household's people are named.</p><p><a class="btn" href="#rules">Add the household's people</a></p>{% endif %}
   {% for r in pretax %}<p class="tools"><input type="hidden" name="person" value="{{ r.person }}"><label>{{ r.person }} <input name="value" inputmode="decimal" value="{{ r.value }}" size="8" aria-label="Pre-tax saving for {{ r.person }}"></label>
     <select name="unit" aria-label="Unit for {{ r.person }}"><option value="share"{% if r.unit == 'share' %} selected{% endif %}>% of gross</option><option value="usd"{% if r.unit == 'usd' %} selected{% endif %}>$ a month</option></select></p>{% endfor %}
   {% if pretax %}<p><button class="btn primary" type="submit">Save pre-tax saving</button></p>{% endif %}
@@ -119,9 +121,9 @@
 {% macro tax_inv(field) %}{% if tbad == field %} aria-invalid="true" aria-describedby="tax-{{ field }}-err"{% endif %}{% endmacro %}
 <form class="panel" method="post" action="/tax/settings" id="tax-settings" tabindex="-1">{{ csrf_field(request) }}
   <h2>Estimated tax</h2>
-  <p class="muted" style="max-width:75ch">For income with no tax withheld (contract or self-employment work): the share set aside for the quarterly estimated payments, and where. The check-in shows the year's set-aside against what is expected, and on a quarter's last month asks whether that quarter's estimate was paid. Leave the income blank to turn it off.</p>
+  <p class="muted measure">For income with no tax withheld (contract or self-employment work): the share set aside for the quarterly estimated payments, and where. The check-in shows the year's set-aside against what is expected, and on a quarter's last month asks whether that quarter's estimate was paid. Leave the income blank to turn it off.</p>
   <p><label for="tax-items">Income with no tax withheld</label><br><input id="tax-items" name="items" list="settings-canonicals" size="48" value="{{ tf["items"] if tf else tax_cfg.income_items|join(', ') }}" placeholder="Contract Income"{{ tax_inv("items") }}>{{ tax_err("items") }}<br><span class="muted hint">Budget items, separated by commas.</span></p>
-  <p><label for="tax-pct">Share to set aside</label><br><input id="tax-pct" name="pct" inputmode="decimal" size="8" value="{{ tf.pct if tf else ((tax_cfg.pct * 100)|plain ~ '%' if tax_cfg.pct is not none else '') }}" placeholder="25%"{{ tax_inv("pct") }}>{{ tax_err("pct") }}<br><span class="muted hint">Asked again at each month-close: it changes with income and tax law.</span></p>
+  <p><label for="tax-pct">Share to set aside</label><br><input id="tax-pct" name="pct" inputmode="decimal" size="8" value="{{ tf.pct if tf else ((tax_cfg.pct * 100)|plain ~ '%' if tax_cfg.pct is not none else '') }}" placeholder="25%"{{ tax_inv("pct") }}>{{ tax_err("pct") }}<br><span class="muted hint">Asked again each time you close a month: it changes with income and tax law.</span></p>
   <p><label for="tax-aside">Set aside in</label><br><input id="tax-aside" name="aside" size="48" value="{{ tf.aside if tf else tax_cfg.aside_items|join(', ') }}" placeholder="Tax Set-Aside"{{ tax_inv("aside") }}>{{ tax_err("aside") }}<br><span class="muted hint">The envelopes (budget items) or accounts the tax goes into, separated by commas.</span></p>
   <p><label for="tax-deadlines">Deadlines</label><br><textarea id="tax-deadlines" name="deadlines" rows="4" cols="40" placeholder="2026-09 Q3 federal estimate"{{ tax_inv("deadlines") }}>{% if tf %}{{ tf.deadlines }}{% else %}{% for d in tax_cfg.deadlines %}{{ d.m }} {{ d.label }}
 {% endfor %}{% endif %}</textarea>{{ tax_err("deadlines") }}<br><span class="muted hint">One per line, the budget month then a label. Enter each year's dates yourself: they move with weekends and holidays and differ by state.</span></p>
@@ -142,8 +144,9 @@
   <details class="keyhelp"><summary>Bulk paste or export as CSV</summary>
     <p class="muted">Paste every account as CSV to replace them: <code>{{ "name,kind,type,person,debt_item,apr,escrow,emergency,in_net_worth,active" }}</code> (only name and kind are required). Every line is checked first; an account left out is removed, unless it has balances.</p>
     <form method="post" action="/settings/accounts">{{ csrf_field(request) }}
-      <textarea class="json" name="body" spellcheck="false" aria-label="Accounts CSV">{{ by_key.accounts.body }}</textarea>
-      <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Replace accounts from CSV</button></p>
+      <label for="accounts-csv">Accounts as CSV</label>
+      <textarea class="json" id="accounts-csv" name="body" spellcheck="false">{{ by_key.accounts.body }}</textarea>
+      <p class="mt-3"><button class="btn" type="submit">Replace accounts from CSV</button></p>
     </form>
   </details>
 {% endcall %}
@@ -153,11 +156,14 @@
   <h2>Balances history</h2>
   <p class="muted">Month-end balances from statements you already have, so net worth has a past from the start: last December's give a year-over-year change at the first annual check-in. Type or paste one per line as <code>account,YYYY-MM,amount</code> (a debt as what is owed, a positive number). A month already entered is corrected, and the old value kept. The current month's balances are entered on <a href="/upload#balances">Close a month</a>.</p>
   <form method="post" action="/settings/accounts/balances">{{ csrf_field(request) }}
-    <textarea class="json" name="body" spellcheck="false" aria-label="Balances CSV" placeholder="Green Hills Savings,2024-12,4200.00"></textarea>
-    <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save balances</button> <a class="btn" href="/settings/accounts/balances.csv" download>Download all balances</a></p>
+    {% set bh = bal_hist or none %}
+    <label for="balances-csv">Balances as CSV</label>
+    <textarea class="json" id="balances-csv" name="body" spellcheck="false" placeholder="Green Hills Savings,2024-12,4200.00"{% if bh %} aria-invalid="true" aria-describedby="balances-csv-err"{% endif %}>{{ bh.body if bh and bh.body else "" }}</textarea>
+    {% if bh %}<p class="err" id="balances-csv-err" role="alert">{{ bh.error[:1]|upper ~ bh.error[1:] }}{{ "" if bh.error.endswith(".") else "." }}</p>{% endif %}
+    <p class="mt-3"><button class="btn" type="submit">Save balances</button> <a class="btn" href="/settings/accounts/balances.csv" download>Download all balances</a></p>
   </form>
-  {% if balance_counts %}<div class="tablewrap"><table class="plain" data-list="unbounded"><thead><tr><th scope="col">Account</th><th scope="col">Balances</th><th scope="col">From</th><th scope="col">To</th></tr></thead><tbody>
-    {% for name, c in balance_counts.items() %}<tr><td>{{ name }}</td><td class="mono">{{ c.n|number }}</td><td class="mono">{{ c.first|month_short }}</td><td class="mono">{{ c.last|month_short }}</td></tr>{% endfor %}
+  {% if balance_counts %}<div class="tablewrap" role="region" tabindex="0" aria-label="Balances by account table"><table class="plain" data-list="unbounded"><thead><tr><th scope="col">Account</th><th scope="col" class="num">Balances</th><th scope="col">From</th><th scope="col">To</th></tr></thead><tbody>
+    {% for name, c in balance_counts.items() %}<tr><td>{{ name }}</td><td class="mono num">{{ c.n|number }}</td><td class="mono nowrap">{{ c.first|month_short }}</td><td class="mono nowrap">{{ c.last|month_short }}</td></tr>{% endfor %}
   </tbody></table></div>{% else %}<p class="muted">No balances yet.</p>{% endif %}
 </section>
 </div>
@@ -173,7 +179,7 @@
       <label>Currency <input type="text" name="currency" value="{{ hh.currency or 'USD' }}" maxlength="3" pattern="[A-Za-z]{3}" title="Three letters, for example USD or EUR"></label>
       <label>Locale <input type="text" name="locale" value="{{ hh.locale or 'en-US' }}" title="Number and date format, for example en-US or de-DE"></label>
     </div>
-    <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save household</button></p>
+    <p class="mt-3"><button class="btn primary" type="submit">Save household</button></p>
   </form>
   {% endif %}
   {% if key == "rules" %}
@@ -188,7 +194,7 @@
       {% for e in (rules.employers or []) + [{}] %}<tr><td><input type="text" name="emp_match" value="{{ e.match or '' }}" aria-label="Paycheck description contains" placeholder="add: words in the paycheck description"></td>
         <td><input type="text" name="emp_name" value="{{ e.name or '' }}" aria-label="Employer" placeholder="add: employer name"></td></tr>{% endfor %}
     </tbody></table>
-    <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save people and employers</button></p>
+    <p class="mt-3"><button class="btn primary" type="submit">Save people and employers</button></p>
   </form>
   </div>
   <div role="tabpanel" id="sp-rules-roles" aria-labelledby="st-rules-roles">
@@ -198,22 +204,23 @@
     {% for key, label, help in role_fields %}{% set cur = rules.get(key) %}<label>{{ label }}{% if cur == [] %} <span class="muted">(none: set to [] in the JSON)</span>{% endif %} <textarea name="{{ key }}" rows="{{ [((cur or [])|length), (role_defaults[key]|length), 1]|max }}" placeholder="{{ role_defaults[key]|join('\n') }}" aria-describedby="role-{{ key }}">{{ (cur or [])|join('\n') }}</textarea></label>
     <input type="hidden" name="{{ key }}__was" value="{{ (cur or [])|join('\n') }}">
     <p class="muted" id="role-{{ key }}">{{ help }}</p>{% endfor %}
-    <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save roles</button></p>
+    <p class="mt-3"><button class="btn primary" type="submit">Save roles</button></p>
   </form>
   </div>
   <div role="tabpanel" id="sp-rules-json" aria-labelledby="st-rules-json">
   {% endif %}
-  {% if key == "household" %}<details class="panel"><summary>Edit as JSON</summary>{% endif %}
+  {% if key == "household" %}<details class="keyhelp"><summary>Edit as JSON</summary>{% endif %}
   <form class="panel" method="post" action="/settings/{{ ed.key }}">{{ csrf_field(request) }}
-    <h2>{{ ed.title }}</h2>
+    <h2>{{ "Household as JSON" if key == "household" else ed.title }}</h2>
     <p class="muted">{{ ed.help }}</p>
     {% if ed.key == "cpi" %}<p><a href="/cpi">Fetch the latest CPI automatically</a></p>{% endif %}
     {% if ed.fields %}<details class="keyhelp"><summary>Keys and what they do</summary>
       <dl>{% for f in ed.fields %}<dt><code>{{ f.key }}</code> <span class="muted">{{ f.type }}{% if f.required %}, required{% endif %}</span></dt><dd>{{ f.description }}</dd>{% endfor %}</dl>
       <p class="muted">Checked against the published <a href="/schemas/{{ ed.key }}.schema.json">JSON Schema</a> when you save.</p>
     </details>{% endif %}
-    <textarea class="json" name="body" spellcheck="false" aria-label="{{ ed.title }} ({{ 'CSV' if ed.key == 'cpi' else 'JSON' }})">{{ ed.body }}</textarea>
-    <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save {{ ed.title|lower }}</button></p>
+    <label for="{{ ed.key }}-body">{{ ed.title }} as {{ 'CSV' if ed.key == 'cpi' else 'JSON' }}</label>
+    <textarea class="json" id="{{ ed.key }}-body" name="body" spellcheck="false">{{ ed.body }}</textarea>
+    <p class="mt-3"><button class="btn{{ '' if key == 'household' else ' primary' }}" type="submit">Save {{ "household JSON" if key == "household" else ed.title|lower }}</button></p>
   </form>
   {% if key == "household" %}</details>{% endif %}
   {% if key == "rules" %}</div>{% endif %}

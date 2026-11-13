@@ -2,17 +2,17 @@
 {% block title %}Webhooks · {{ household.title }}{% endblock %}
 {% block content %}
 <p class="eyebrow">Configuration</p>
-<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Webhooks</h1>
-<p class="muted" style="max-width:70ch">Send a small JSON event to a URL you choose when something happens: <code>build.completed</code> after a successful rebuild, <code>review.stored</code> when a month-close review is stored, and <code>months.missing</code> when the previous budget month has not been loaded. The event carries the month, headline figures, reconciliation status and a link to <a href="{{ base_url }}/">this dashboard</a>; never transactions. That is enough to drive ntfy, Slack, Discord, Home Assistant or an agent that then reads details over MCP. <a href="/settings">Back to Settings</a></p>
-<div class="row" style="margin-top:var(--space-4)">
+<h1 class="page-title">Webhooks</h1>
+<p class="muted measure">Send a small JSON event to a URL you choose when something happens: <code>build.completed</code> after a successful rebuild, <code>review.stored</code> when a month-close review is stored, and <code>months.missing</code> when the previous budget month has not been loaded. The event carries the month, headline figures, reconciliation status and a link to <a href="{{ base_url }}/">this dashboard</a>; never transactions. That is enough to drive ntfy, Slack, Discord, Home Assistant or an agent that then reads details over MCP. <a href="/settings">Back to Settings</a></p>
+<div class="row mt-4">
   <form class="panel" method="post" action="/webhooks">{{ csrf_field(request) }}
     <h2>Destination</h2>
-    <p><label for="hookurl">Webhook URL</label><br><input type="url" style="width:100%" id="hookurl" name="url" value="{{ cfg.url }}" placeholder="https://ntfy.example.lan/ledger" autocomplete="off" spellcheck="false"></p>
-    <p><label for="hooksecret">Shared secret</label><br><input type="password" style="width:100%" id="hooksecret" name="secret" autocomplete="new-password" spellcheck="false" placeholder="{{ 'set; leave blank to keep it' if cfg.secret_set else 'a long random string' }}" aria-describedby="hooksecret-h"></p>
+    <p><label for="hookurl">Webhook URL</label><br><input type="url" id="hookurl" name="url" value="{{ cfg.url }}" placeholder="https://ntfy.example.lan/ledger" autocomplete="off" spellcheck="false"></p>
+    <p><label for="hooksecret">Shared secret</label><br><input type="password" id="hooksecret" name="secret" autocomplete="new-password" spellcheck="false" placeholder="{{ 'set; leave blank to keep it' if cfg.secret_set else 'a long random string' }}" aria-describedby="hooksecret-h"></p>
     <p class="muted" id="hooksecret-h">{% if cfg.secret_set %}A secret is stored. It is never shown again; type a new one to replace it.{% else %}No secret stored yet.{% endif %} It signs every request.</p>
     <p><label><input type="checkbox" name="enabled" value="1" {% if cfg.enabled %}checked{% endif %}> Send events</label></p>
     <p class="muted">http and https only. Redirects are not followed, and each delivery has a short timeout and is not retried. Clear the URL and save to remove the webhook.</p>
-    <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save</button></p>
+    <p class="mt-3"><button class="btn primary" type="submit">Save</button></p>
   </form>
   <div class="panel">
     <h2>Verify a delivery</h2>
@@ -20,13 +20,13 @@
     <form method="post" action="/webhooks/test">{{ csrf_field(request) }}<button class="btn" type="submit">Send test event</button></form>
   </div>
 </div>
-<section class="panel" style="margin-top:var(--space-4)" aria-labelledby="dl-h">
+<section class="panel mt-4" aria-labelledby="dl-h">
   <h2 id="dl-h">Delivery log</h2>
   {% if log %}<div class="tablewrap"><table class="plain">
     <thead><tr><th>When (UTC)</th><th>Event</th><th>Month</th><th>To</th><th>Result</th><th>Time</th></tr></thead>
     <tbody>{% for d in log %}<tr><td><time datetime="{{ d.created_at.isoformat() }}">{{ d.created_at|datetime }}</time></td><td><code>{{ d.event }}</code></td>
       <td>{{ d.month|month_short if d.month else '' }}</td><td>{{ d.target }}</td>
-      <td>{% if d.ok %}<span>Delivered</span>{% else %}<strong style="color:var(--danger)">Failed</strong>{% endif %}{% if d.http_status %} <span class="mono">{{ d.http_status }}</span>{% endif %}{% if d.error %} <span class="muted">{{ d.error }}</span>{% endif %}</td>
+      <td>{% if d.ok %}<span>Delivered</span>{% else %}<strong class="text-bad">Failed</strong>{% endif %}{% if d.http_status %} <span class="mono">{{ d.http_status }}</span>{% endif %}{% if d.error %} <span class="muted">{{ d.error }}</span>{% endif %}</td>
       <td class="mono">{{ d.duration_ms }} ms</td></tr>{% endfor %}</tbody>
   </table></div>
   <p class="muted">The newest 50 attempts. Only the host is kept, never the path or the body.</p>

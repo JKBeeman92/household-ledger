@@ -3,15 +3,15 @@
 {% block content %}
 {% set chip = {'todo': '', 'done': 'ok', 'skipped': 'info', 'attention': 'bad'} %}
 <p class="eyebrow">{{ {'month': 'Monthly', 'quarter': 'Quarterly', 'year': 'Year-end'}[ov.mode] }} check-in · {{ words.checkin_eyebrow }}{% if ov.short %} · catching up{% endif %}</p>
-<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">{{ month_name(ov.month) }}</h1>
-<p class="muted" style="max-width:75ch">{% if ov.short %}An earlier month, so a short form: its files, clean books and balances. The full sit-down, with the review, is for {{ month_name(latest) }}.{% else %}Where the household stands, what to adjust, and when you are done. Each step opens here; work through them in order, or come back to any later: the page remembers. <a href="https://github.com/JKBeeman92/household-ledger/blob/main/docs/CHECK-IN.md">How to sit down with it</a>.{% endif %}</p>
-{% if ov.missing %}<div class="panel" id="catch-up" style="border-left:3px solid var(--warning)">
-  <p style="margin:0">{% if ov.missing|length <= 3 %}{% for m in ov.missing %}{{ month_name(m).split(' ')[0] }}{{ ', ' if not loop.last and loop.revindex > 2 else (' and ' if loop.revindex == 2 else '') }}{% endfor %} {{ 'has' if ov.missing|length == 1 else 'have' }} no check-in.{% else %}{{ ov.missing|length }} earlier months, {{ month_name(ov.missing[0]) }} to {{ month_name(ov.missing[-1]) }}, have no check-in.{% endif %}
+<h1 class="page-title">{{ month_name(ov.month) }}</h1>
+<p class="muted measure">{% if ov.short %}An earlier month, so a short form: its files, clean books and balances. The full sit-down, with the review, is for {{ month_name(latest) }}.{% else %}Where the household stands, what to adjust, and when you are done. Each step opens here; work through them in order, or come back to any later: the page remembers. <a href="https://github.com/JKBeeman92/household-ledger/blob/main/docs/CHECK-IN.md">How to sit down with it</a>.{% endif %}</p>
+{% if ov.missing %}<div class="panel edge warn" id="catch-up">
+  <p class="m-0">{% if ov.missing|length <= 3 %}{% for m in ov.missing %}{{ month_name(m).split(' ')[0] }}{{ ', ' if not loop.last and loop.revindex > 2 else (' and ' if loop.revindex == 2 else '') }}{% endfor %} {{ 'has' if ov.missing|length == 1 else 'have' }} no check-in.{% else %}{{ ov.missing|length }} earlier months, {{ month_name(ov.missing[0]) }} to {{ month_name(ov.missing[-1]) }}, have no check-in.{% endif %}
     <a class="btn" href="/checkin/{{ ov.missing[0] }}">Catch up on earlier months</a> <span class="muted">a short form for each, oldest first; this month's full check-in after them.</span></p>
 </div>{% endif %}
-{% if ov.done %}<div class="panel" id="checkin-done" style="border-left:3px solid var(--success)">
-  <p style="margin:0"><span class="status-chip ok">Done</span> {{ ov.row.completed_at|date }}{% if ov.row.completed_by %} by {{ ov.row.completed_by }}{% endif %}.</p>
-  <form method="post" action="/checkin/{{ ov.month }}/reopen" style="margin-top:var(--space-2)">{{ csrf_field(request) }}<button class="btn" type="submit">Reopen the check-in</button> <span class="muted">the first completion date is kept</span></form>
+{% if ov.done %}<div class="panel edge ok" id="checkin-done">
+  <p class="m-0"><span class="status-chip ok">Done</span> {{ ov.row.completed_at|date }}{% if ov.row.completed_by %} by {{ ov.row.completed_by }}{% endif %}.</p>
+  <form method="post" action="/checkin/{{ ov.month }}/reopen" class="mt-2">{{ csrf_field(request) }}<button class="btn" type="submit">Reopen the check-in</button> <span class="muted">the first completion date is kept</span></form>
 </div>{% endif %}
 <ol class="checkin-steps">
 {% for s in ov.steps %}<li>
@@ -26,14 +26,15 @@
 </li>{% endfor %}
 </ol>
 {% if not ov.done %}<form method="post" action="/checkin/{{ ov.month }}/complete" class="panel" id="checkin-complete">{{ csrf_field(request) }}
-  <p style="margin:0 0 var(--space-2)" id="checkin-left" data-left="{{ ov.to_do }}" aria-live="polite">{% if ov.can_complete %}Every step is done or skipped.{% else %}{{ ov.to_do }} step{{ '' if ov.to_do == 1 else 's' }} still to do.{% endif %}</p>
+  <p class="mt-0 mb-2" id="checkin-left" data-left="{{ ov.to_do }}" aria-live="polite">{% if ov.can_complete %}Every step is done or skipped.{% else %}{{ ov.to_do }} step{{ '' if ov.to_do == 1 else 's' }} still to do.{% endif %}</p>
   <button class="btn primary" type="submit" id="checkin-finish" {% if not ov.can_complete %}disabled aria-disabled="true"{% endif %}>Finish the check-in</button>
   <span class="muted">records who finished it, and when</span>
 </form>{% endif %}
 <script nonce="{{ csp_nonce(request) }}">
 // A save returns to its step (#step-<key>, DS-FLASH-1): open that step and put focus on it, on load and when the hash changes.
-const openHash = () => { const d = location.hash && document.getElementById(location.hash.slice(1)); if (!d || !d.matches('details.step')) return;
-  d.open = true; const s = d.querySelector('summary'); if (s) { s.setAttribute('tabindex', '-1'); s.focus({ preventScroll: true }); } d.scrollIntoView({ block: 'start' }); };
+const openHash = () => { const t = location.hash && document.getElementById(location.hash.slice(1)), d = t && t.closest('details.step'); if (!d) return;
+  d.open = true; if (t !== d) { t.focus({ preventScroll: true }); t.scrollIntoView({ block: 'center' }); return; }   // a field inside a step (a rejected value) takes the focus itself
+  const s = d.querySelector('summary'); if (s) { s.setAttribute('tabindex', '-1'); s.focus({ preventScroll: true }); } d.scrollIntoView({ block: 'start' }); };
 openHash(); addEventListener('load', openHash); window.addEventListener('hashchange', openHash);   // again on load: the browser's own jump to the fragment comes after this script
 // A read-only step is read once it is opened: say so to the server, then the page shows it done on the next load.
 document.querySelectorAll('details.step[data-view]').forEach((d) => d.addEventListener('toggle', () => {
