@@ -43,6 +43,16 @@ w("yearly_bills", _bills)
 if os.path.exists("dash_data/coming_up.json"):
     _cu = [r for r in json.load(open("dash_data/coming_up.json")) if r["kind"] != "yearly_bill"] + _yb.coming_up_rows(_bills)
     _cu.sort(key=lambda r: (r["m"], r["kind"], r["label"])); w("coming_up", _cu)
+# planned purchases (#158): each dated goal's saving against its target, from the same budget rows (an envelope) or the balances (an
+# account); an open one joins coming_up at its target month
+import purchases as _pp   # noqa: E402
+_glist = json.load(open("dash_data/goals.json")) if os.path.exists("dash_data/goals.json") else []
+_brs = json.load(open("dash_data/balances.json")) if os.path.exists("dash_data/balances.json") else []
+_pps = _pp.progress(_glist, rows, _through, _brs)
+w("planned_purchases", _pps)
+if os.path.exists("dash_data/coming_up.json"):
+    _cu = [r for r in json.load(open("dash_data/coming_up.json")) if r["kind"] != "goal"] + _pp.coming_up_rows(_pps)
+    _cu.sort(key=lambda r: (r["m"], r["kind"], r["label"])); w("coming_up", _cu)
 # estimated tax (#153): the tax year's contract income against what is set aside, and the deadlines into coming_up
 import tax as _tax   # noqa: E402
 _goals = {g["key"]: g.get("value") for g in json.load(open("dash_data/goals.json"))} if os.path.exists("dash_data/goals.json") else {}

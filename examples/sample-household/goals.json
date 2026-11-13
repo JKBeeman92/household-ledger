@@ -82,5 +82,29 @@
   "unit": "usd",
   "label": "Investing per paycheck",
   "note": "Deposited outside the budget app; not in the exports."
+ },
+ {
+  "key": "purchase:a-trip-to-rivendell",
+  "value": null,
+  "unit": "usd",
+  "label": "A trip to Rivendell",
+  "note": "",
+  "target_amount": 1200,
+  "target_month": "2026-12",
+  "funded_by": "Holiday",
+  "funded_kind": "envelope",
+  "since_month": "2026-01"
+ },
+ {
+  "key": "purchase:a-new-cart",
+  "value": null,
+  "unit": "usd",
+  "label": "A new cart",
+  "note": "",
+  "target_amount": 30000,
+  "target_month": "2027-09",
+  "funded_by": "Green Hills Savings",
+  "funded_kind": "account",
+  "since_month": "2026-06"
  }
 ]

@@ -91,6 +91,11 @@ GOALS = [
     {"key": "emergency_months", "value": 6, "unit": "months", "label": "Emergency fund target", "note": "Months of outgo the emergency savings should cover."},
     {"key": "pretax_contribution:Rosie", "value": 0.1, "unit": "share of gross", "label": "Pre-tax saving, Rosie", "note": "Ask at each month-close: 401(k), 403(b), HSA and the like, taken from pay before it reaches the budget."},
     {"key": "investing_per_paycheck", "value": 150, "unit": "usd", "label": "Investing per paycheck", "note": "Deposited outside the budget app; not in the exports."},
+    # planned purchases (#158): one saved for in an envelope, one in an account
+    {"key": "purchase:a-trip-to-rivendell", "value": None, "unit": "usd", "label": "A trip to Rivendell", "note": "",
+     "target_amount": 1200, "target_month": "2026-12", "funded_by": "Holiday", "funded_kind": "envelope", "since_month": "2026-01"},
+    {"key": "purchase:a-new-cart", "value": None, "unit": "usd", "label": "A new cart", "note": "",
+     "target_amount": 30000, "target_month": "2027-09", "funded_by": "Green Hills Savings", "funded_kind": "account", "since_month": "2026-06"},
 ]
 # accounts and month-end balances (#143): a backfilled year before the exports start, then every month-end but the last, which is left
 # for the check-in to confirm. What a month keeps (its net) lands in checking and the brokerage account, so net worth's "what you did"

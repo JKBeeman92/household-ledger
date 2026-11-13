@@ -12,7 +12,9 @@ def _context(conn, month, state):
     pick = lambda name: next((r for r in ds.get(name, []) if r["m"] == month), None)
     t = _x(conn, "SELECT rows FROM datasets WHERE name='tax'").fetchone()   # #153: every check-in shows the year's set-aside
     tx = next((r for r in (t["rows"] if t else []) if r["m"] == month), None)
-    return {"monthly": pick("monthly"), "nw": pick("net_worth"), "dti": pick("debt_to_income"), "ef": pick("emergency_fund"), "tax": tx}
+    from app import purchases   # #158: each open planned purchase's progress, as of the month the last build closed on
+    pp = [p for p in purchases.for_page(conn) if not p["done"] and p["progress"] and p["progress"]["m"] == month]
+    return {"monthly": pick("monthly"), "nw": pick("net_worth"), "dti": pick("debt_to_income"), "ef": pick("emergency_fund"), "tax": tx, "purchases": pp}
 
 
 register(Step("standing", 60, "Where we stand", _status, context=_context, actions=("view",)))

@@ -13,6 +13,10 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
 
 ## 0.8.0
 
+- **Planned purchases** (#158, `0158_dated_goals.sql`): seven nullable columns on `goals`; existing goals are unchanged and read as
+  before. Rebuild once after upgrading to emit `planned_purchases` (in `datasets.zip`, the review and MCP). `goals.json` in
+  `settings.zip` carries a planned purchase's columns only for a goal that has them, so an older file still loads.
+
 - **Restoring a dismissed yearly bill** (#206, `0206_yearly_bills_dismissed_from.sql`): one nullable column on `yearly_bills`. A bill
   you added or confirmed and then dismiss now keeps its values, and Restore brings it back as it was. Bills dismissed before this
   upgrade have no record of what they were, so Restore still hands them back to the detector; re-add a hand-added one if you need it.

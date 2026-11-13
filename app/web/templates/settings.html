@@ -109,6 +109,9 @@
 </div>
 </div>
 <div role="tabpanel" id="sp-goals" aria-labelledby="st-goals">
+<div class="subtabs" role="tablist" aria-label="Goals" data-subtabs="goals"><button type="button" role="tab" id="st-goals-targets" aria-controls="sp-goals-targets" aria-selected="true" tabindex="0">Goals <span class="count">{{ rows.goals|length }}</span></button><button type="button" role="tab" id="st-goals-purchases" aria-controls="sp-goals-purchases" aria-selected="false" tabindex="-1">Planned purchases <span class="count">{{ purchases|length }}</span></button></div>
+<div role="tabpanel" id="sp-goals-purchases" aria-labelledby="st-goals-purchases">{% include "_purchases.html" %}</div>
+<div role="tabpanel" id="sp-goals-targets" aria-labelledby="st-goals-targets">
 <form class="panel" method="post" action="/settings/goals/pretax" id="pretax">{{ csrf_field(request) }}
   <h2>Pre-tax saving</h2>
   <p class="muted">401(k), 403(b), HSA and the like, taken from pay before it reaches the budget, so the savings rate and net worth's "what you did" can count it. Per person: a share of the household's gross pay (7% or 0.07) or dollars a month. Blank means none. Each is asked when you close a month, with the other goals.</p>
@@ -131,6 +134,7 @@
   <p><button class="btn" type="submit">Save estimated tax</button></p>
 </form>
 {% call grid("goals", by_key.goals, ["key","label","value","unit","note"], ["Key","Label","Value","Unit","Note"], rows.goals) %}{% endcall %}
+</div>
 </div>
 <div role="tabpanel" id="sp-events" aria-labelledby="st-events">
 <datalist id="settings-people">{% for p in people %}<option value="{{ p }}">{% endfor %}</datalist>

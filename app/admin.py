@@ -154,6 +154,39 @@ def decisions_cmd(a) -> int:
 MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
 
 
+def purchases_cmd(a) -> int:
+    """`python -m app.admin purchases [list|add|change|bought|reopen|delete]` (#158): what Settings → Goals → Planned purchases
+    and the check-in's "bought it" form can do. list reads the last build and writes nothing."""
+    from app import purchases
+    with _connect() as conn:
+        try:
+            if (a.pcmd or "list") == "list":
+                conn.execute("SET TRANSACTION READ ONLY")
+                rows = purchases.for_page(conn)
+                for p in rows:
+                    g = p["progress"] or {}
+                    state = "bought" + (f" in {p['done_month']}" if p["done_month"] else "") if p["done"] else (g.get("says") or "rebuild to see the progress")
+                    saved = f", {g['saved']:,.2f} saved" if g.get("saved") is not None else ""
+                    print(f"{p['key']}\t{p['label']}: {p['target_amount']:,.2f} by {p['target_month']}, kept in {p['funded_by']} ({p['funded_kind']}){saved}: {state}")
+                if not rows:
+                    print("No planned purchases.", file=sys.stderr)
+                return 0
+            if a.pcmd in ("add", "change"):
+                key = purchases.save(conn, a.label, a.amount, a.by, a.fund, a.since, a.key if a.pcmd == "change" else "")
+                conn.commit(); print(f"{key}: saved. Rebuild to see its progress."); return 0
+            if a.pcmd == "bought":
+                loan = {"item": a.loan_item, "category": a.loan_category or purchases.debt_category(conn), "debt_type": a.loan_type, "account": a.loan_account or a.loan_item,
+                        "balance": a.borrowed, "apr": a.apr} if a.loan_item else None
+                done = purchases.mark_bought(conn, a.key, a.month, a.event, loan, f"{_who()} (cli)")
+                conn.commit(); print(f"{a.key}: bought in {a.month}" + (f"; life event {done['event']}" if done["event"] else "") +
+                                     (f"; debt {done['debt']} with account {done['account']}" if done["debt"] else "") + ". Rebuild to apply it."); return 0
+            n = (purchases.reopen if a.pcmd == "reopen" else purchases.delete)(conn, a.key)
+            conn.commit(); print(f"{a.key}: {'open again' if a.pcmd == 'reopen' else 'deleted'}." if n else f"{a.key}: no such planned purchase.")
+            return 0 if n else 1
+        except purchases.PurchaseError as e:
+            conn.rollback(); print(f"purchases {a.pcmd}: {e}", file=sys.stderr); return 2
+
+
 def yearly_bills_cmd(a) -> int:
     """`python -m app.admin yearly-bills [report|confirm|add|dismiss|restore]` (#151). The report reads the last build in a
     read-only transaction, so it is safe against a live install: it is the check a household runs on its own back catalogue."""
@@ -313,6 +346,20 @@ def main(argv: list[str] | None = None) -> int:
         x.add_argument("--amount", type=float); x.add_argument("--every", type=int, default=1); x.add_argument("--fund", help="the envelope or account that saves for it")
     x = ysub.add_parser("dismiss", help="not a yearly bill: stays dismissed across rebuilds"); x.add_argument("item")
     x = ysub.add_parser("restore", help="undo a dismissal: a bill you added or confirmed comes back with its values; a detected one goes back to the detector"); x.add_argument("item")
+    sp = sub.add_parser("purchases", help="planned purchases (#158): list them with their progress, or add, change, mark bought, reopen or delete one")
+    psub = sp.add_subparsers(dest="pcmd", metavar="action")
+    psub.add_parser("list", help="(the default) each planned purchase and the last build's verdict; read only")
+    for name in ("add", "change"):
+        x = psub.add_parser(name, help="a new planned purchase" if name == "add" else "change planned purchase KEY")
+        if name == "change": x.add_argument("key")
+        x.add_argument("label"); x.add_argument("--amount", required=True); x.add_argument("--by", required=True, help="the budget month to have it by (YYYY-MM)")
+        x.add_argument("--fund", required=True, help="the budget item (envelope) or account it is saved in"); x.add_argument("--since", help="the first month whose envelope saving counts")
+    x = psub.add_parser("bought", help="mark KEY bought in MONTH; --event adds the life event, --loan-item sets up the debt")
+    x.add_argument("key"); x.add_argument("month"); x.add_argument("--event", action="store_true")
+    x.add_argument("--loan-item"); x.add_argument("--loan-category", help="default: the first of the debt_groups rule"); x.add_argument("--loan-type", default="auto")
+    x.add_argument("--loan-account"); x.add_argument("--borrowed"); x.add_argument("--apr")
+    for name, what in (("reopen", "not bought after all"), ("delete", "delete planned purchase KEY")):
+        x = psub.add_parser(name, help=what); x.add_argument("key")
     sp = sub.add_parser("quarter", help="the quarter (#147): a read-only report of a quarter against the one before and a year before, and the next")
     sp.add_argument("which", nargs="?", help="YYYY-Qn (default: the quarter of the latest loaded month)")
     sp = sub.add_parser("tax", help="estimated tax (#153): mark a quarter's estimate paid at its check-in month, or unmark it")
@@ -348,6 +395,8 @@ def main(argv: list[str] | None = None) -> int:
         return decisions_cmd(a)
     if a.cmd == "yearly-bills":
         return yearly_bills_cmd(a)
+    if a.cmd == "purchases":
+        return purchases_cmd(a)
     if a.cmd == "quarter":
         return quarter_cmd(a.which)
     if a.cmd == "tax":

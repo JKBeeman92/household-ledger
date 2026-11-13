@@ -6,6 +6,11 @@
   {% if c.ef and c.ef.months is not none %}<dt>Emergency fund</dt><dd>{{ c.ef.months|number(1) }} months of outgo.</dd>{% endif %}
   {% if c.dti and c.dti.dti is not none %}<dt>Debt-to-income</dt><dd>{{ c.dti.dti|share(1) }} of gross; housing {{ c.dti.housing_dti|share(1) }}.</dd>{% endif %}
 </dl>
+{% if c.purchases %}{% from "_purchase_macros.html" import verdict, figures, bought_form with context %}
+<h3 class="sub">Planned purchases</h3>
+<ul>{% for p in c.purchases %}{% set g = p.progress %}<li id="{{ p.anchor }}" tabindex="-1"><strong>{{ p.label }}</strong>, {{ p.target_amount|money }} by {{ p.target_month|month_short }}: {{ verdict(g) }}<br><span class="muted">{{ figures(g) }}</span>
+  {% if g.verdict in ("reached", "past") %}{{ bought_form(p, month, pp_bought, month) }}{% endif %}</li>{% endfor %}</ul>
+<p class="muted">Change or add one on <a href="/settings#goals/purchases">Settings → Goals → Planned purchases</a>.</p>{% endif %}
 {% if not c.monthly %}<p class="muted">Nothing built for this month yet: finish the Files step first.</p>{% endif %}
 <p><a href="/#lastmonth">The Last month tab</a> has the rest: envelopes over and under plan, the categories against their trailing twelve.</p>
 <noscript><form method="post" action="/checkin/{{ month }}/steps/standing/view">{{ csrf_field(request) }}<button class="btn" type="submit">Mark Where we stand as read</button></form></noscript>

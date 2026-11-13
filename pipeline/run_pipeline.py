@@ -237,8 +237,11 @@ def export_for_pipeline(conn: psycopg.Connection, wd: Path) -> None:
         with open(wd / "cpi_u.csv", "w", newline="") as out:
             w = csv.writer(out); w.writerow(["month", "cpi", "source"])
             for r in cur: w.writerow([r["month"], f"{r['cpi']:.3f}", r["source"]])
-        cur.execute("SELECT key, value, unit, label, note, confirmed_at FROM goals ORDER BY key")
-        goals = [dict(r, value=float(r["value"]) if r["value"] is not None else None, confirmed_at=r["confirmed_at"].isoformat() if r["confirmed_at"] else None) for r in cur]
+        cur.execute("SELECT key, value, unit, label, note, confirmed_at, target_amount, target_month, funded_by, funded_kind, since_month, done_at, done_month "
+                    "FROM goals ORDER BY key")   # the dated columns: planned purchases (#158)
+        goals = [dict(r, value=float(r["value"]) if r["value"] is not None else None, confirmed_at=r["confirmed_at"].isoformat() if r["confirmed_at"] else None,
+                      target_amount=float(r["target_amount"]) if r["target_amount"] is not None else None, done_at=r["done_at"].isoformat() if r["done_at"] else None)
+                 for r in cur]
         cur.execute("SELECT month m, label, kind, person FROM life_events ORDER BY month, label")
         with open(wd / "events.json", "w") as out:   # kind and person only when set (#109), so events without them read as before
             json.dump([{k: v for k, v in r.items() if v is not None} for r in cur], out)
@@ -562,7 +565,10 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
             with open(seed_dir / "goals.json") as f:
                 goals_seed = json.load(f)
             for g in goals_seed:
-                cur.execute("INSERT INTO goals (key,value,unit,label,note) VALUES (%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING", (g["key"], g["value"], g.get("unit", ""), g["label"], g.get("note", "")))
+                cur.execute("INSERT INTO goals (key,value,unit,label,note,target_amount,target_month,funded_by,funded_kind,since_month,done_at,done_month) "
+                            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",   # a planned purchase's columns when set (#158)
+                            (g["key"], g.get("value"), g.get("unit", ""), g["label"], g.get("note", ""), g.get("target_amount"), g.get("target_month"),
+                             g.get("funded_by"), g.get("funded_kind"), g.get("since_month"), g.get("done_at"), g.get("done_month")))
         cur.execute("SELECT count(*) FROM life_events")
         if cur.fetchone()[0] == 0 and (seed_dir / "events.json").exists():
             with open(seed_dir / "events.json") as f:
