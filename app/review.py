@@ -73,7 +73,7 @@ PAYCHECK_ITEMS_DEFAULT = ["Paycheck"]   # role default: build_ledger.RULES["payc
 
 
 def build_context(conn, month: str) -> dict:
-    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals','debt_to_income','net_worth','emergency_fund','coming_up','tax')").fetchall()}
+    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals','debt_to_income','net_worth','emergency_fund','coming_up','tax','planned_purchases')").fetchall()}
     monthly = {r["m"]: r for r in ds.get("monthly", [])}
     months = sorted(monthly)
     if month not in monthly:
@@ -106,6 +106,7 @@ def build_context(conn, month: str) -> dict:
         **({"emergency_fund": ef_context(ds.get("emergency_fund", []), goals, month)} if any(r["m"] == month and r["months"] is not None for r in ds.get("emergency_fund", [])) else {}),
         **({"estimated_tax": {k: (ds.get("tax") or [{}])[0].get(k) for k in ("year", "contract_income", "pct", "expected", "set_aside", "short", "quarter_income", "quarter_expected", "next_deadline", "next_label")}}
            if ds.get("tax") and ds["tax"][0].get("m") == month else {}),   # #153
+        **({"planned_purchases": pp} if (pp := purchases_context(ds.get("planned_purchases", []), month)) else {}),   # #158
         **({"quarter": qc} if (qc := quarter_context(conn, month)) else {}),   # #147: one review a month, extended at a quarter's end
         **({"coming_up": coming_up_context(ds.get("coming_up", []), month)} if coming_up_context(ds.get("coming_up", []), month) else {}),
         "continuity": continuity(conn, month, prev),
@@ -266,6 +267,20 @@ def latest_job(conn) -> dict | None:
 DTI_NOTE = ("Debt-to-income (#145): debt payments, and housing payments (the housing categories plus mortgage-type debt), as a share of gross "
             "pay (the stated salary / 12) and of take-home, for the month and the trailing twelve. null means no gross pay is recorded. "
             "Caps are the household's own (dti_cap, housing_dti_cap in goals); with none set, do not judge the ratio against a lender's rule of thumb.")
+
+
+PURCHASES_NOTE = ("Planned purchases the household is saving for by a date (#158). saved is what the envelope has been given less what it "
+                  "spent since saving began, or the account's balance; needed is a month from here to the target month; pace is the average put "
+                  "aside over the last three months. verdict: ahead, on_pace, short (short_by a month), past (the month has gone; remaining is "
+                  "what is missing), reached, or no_pace. reach_m is when the target is reached at the pace. An account is never named.")
+
+
+def purchases_context(rows: list[dict], month: str) -> dict | None:
+    """Open planned purchases as of `month`: derived figures and the household's own label; an account that holds the money is not named."""
+    keep = ("label", "target_amount", "target_month", "saved", "needed", "pace", "verdict", "short_by", "remaining", "reach_m", "funded_kind")
+    out = [{**{k: r.get(k) for k in keep}, **({"envelope": r["funded_by"]} if r.get("funded_kind") == "envelope" else {})}
+           for r in rows if r.get("m") == month and not r.get("done")]
+    return {"note": PURCHASES_NOTE, "goals": out} if out else None
 
 
 def dti_context(rows: list[dict], goals: dict, month: str) -> dict | None:

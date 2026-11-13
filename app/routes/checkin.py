@@ -12,6 +12,13 @@ from ..web_helpers import flash, render, month_text
 router = APIRouter()
 
 
+def _loan_form() -> dict:   # prefills a planned purchase's loan form (#158): the debt category and the categories to pick from
+    from .. import purchases
+    with db.pool.connection() as conn:
+        return {"debt_category": purchases.debt_category(conn),
+                "loan_categories": [r["name"] for r in conn.execute("SELECT name FROM categories ORDER BY name").fetchall()]}
+
+
 def _who(user) -> str:
     return (user or {}).get("email") or (user or {}).get("name") or ""
 
@@ -55,7 +62,7 @@ def checkin_page(month: str, request: Request, user=Depends(auth.require_editor)
         latest = checkin.latest(conn)
         earlier, later = checkin.neighbours(conn, month)
     first_open = next((s["key"] for s in ov["steps"] if s["status"] in ("todo", "attention")), None)
-    return render(request, "checkin.html", user, active="checkin", ov=ov, month_name=month_name, first_open=first_open, latest=latest, earlier=earlier, later=later,
+    return render(request, "checkin.html", user, active="checkin", pp_bought=request.session.pop("pp_bought", None), **_loan_form(), ov=ov, month_name=month_name, first_open=first_open, latest=latest, earlier=earlier, later=later,
                   next_url=f"/checkin/{month}")
 
 

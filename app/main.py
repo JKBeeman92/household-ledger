@@ -20,7 +20,7 @@ from .security import SecurityHeaders
 from .uploads import UploadLimit
 from .web_helpers import ROOT, flash, render
 from .logging_setup import configure as configure_logging, RequestIdMiddleware
-from .routes import brand, auth, pages, upload, settings as settings_routes, api, build, findings, months, checklist, balances, checkin as checkin_routes, schemas, cpi, reviews, review_audit, review_prompt, ops, export, tokens, webhooks, sources, decisions as decision_routes, yearly_bills as yearly_bill_routes, tax as tax_routes
+from .routes import brand, auth, pages, upload, settings as settings_routes, api, build, findings, months, checklist, balances, checkin as checkin_routes, schemas, cpi, reviews, review_audit, review_prompt, ops, export, tokens, webhooks, sources, decisions as decision_routes, yearly_bills as yearly_bill_routes, tax as tax_routes, purchases as purchase_routes
 from .mcp_endpoint import endpoint as mcp_endpoint, PATH as MCP_PATH
 
 configure_logging(settings.log_format)
@@ -62,7 +62,7 @@ app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=settings.forwarded_allo
 app.add_middleware(RequestIdMiddleware)   # outermost, so every log line and response carries the request id
 app.mount("/static", StaticFiles(directory=ROOT / "web" / "static"), name="static")
 for module in (brand, auth, pages, upload, sources, settings_routes,   # sources before settings: its POST /settings/sources must win over /settings/{key}
-                api, build, findings, months, checklist, balances, checkin_routes, schemas, cpi, reviews, review_audit, review_prompt, ops, export, tokens, webhooks, decision_routes, yearly_bill_routes, tax_routes):
+                api, build, findings, months, checklist, balances, checkin_routes, schemas, cpi, reviews, review_audit, review_prompt, ops, export, tokens, webhooks, decision_routes, yearly_bill_routes, tax_routes, purchase_routes):
     app.include_router(module.router)
 
 

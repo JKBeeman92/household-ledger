@@ -504,6 +504,26 @@ budget years, and never three months or more in one year; each is due in that mo
   only, safe against a live install); `yearly-bills confirm|add|dismiss|restore ITEM` changes the list. It travels in `settings.zip`
   as `yearly_bills.csv`; the `yearly_bills` dataset reaches MCP (without an account's name).
 
+## Planned purchases
+
+"We want $8,000 down on a car by spring 2028. Are we on track, and what would it take each month?" Settings → Goals → **Planned
+purchases** takes what it is, how much, the budget month to have it by, and where the money is kept: a budget item (an envelope, the
+usual way to save for one thing) or an account. Each is a goal with an amount and a month (`purchase:<name>` in `goals.json`).
+
+- **Saved so far** for an envelope is what it was given less what was spent from it, from the month the saving began (Saving since;
+  blank means the latest month loaded when it was added) to the latest month. For an account it is the balance. Two purchases kept
+  in the same place each count all of it; the page marks them Shared, so keep one envelope per purchase where you can.
+- **Needed a month** is what is left ÷ the budget months from the latest month to the target month. **Pace** is what was actually put
+  aside a month over the last three months (the envelope's given less spent, or the account's change). The verdict: *ahead* (pace at
+  least 1.1 × needed), *on pace*, *$N a month short*, *reached*, or, once the month has come, *past its date, $N short*.
+- The check-in's **Where we stand** step shows each open purchase. Once one is reached it asks whether it was bought. A yes marks it
+  bought, offers the life event "Bought …" (a purchase), and, if it was bought with a loan, offers to set up the debt: a budget item for
+  its payments (Flow debt, with a type) and a debt account with what was borrowed, all prefilled. Nothing is set up that is not ticked.
+- An open purchase is a `goal` row in `coming_up` at its target month. The `planned_purchases` dataset reaches the review and MCP,
+  never with an account's name.
+- From the command line: `python -m app.admin purchases` lists them with the last build's verdict;
+  `purchases add|change|bought|reopen|delete` does what the page does.
+
 ## Estimated tax
 
 "Have we set aside enough for this quarter's estimated tax?" For income with no tax withheld (contract or self-employment work),

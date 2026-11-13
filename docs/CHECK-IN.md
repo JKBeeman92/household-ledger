@@ -25,9 +25,11 @@ Set aside half an hour, with last month's statements to hand (or your bank's app
 5. **Goals to confirm.** The standing figures the app asks about each month (gross pay, pre-tax saving, and any goal whose note says
    to ask). Confirm each as it is, or give the new value.
 6. **Where we stand.** The month in a few lines: what was kept, net worth and how it moved (what you did, what happened to you), the
-   emergency fund, debt-to-income. Read it together; opening it marks it read. The Last month tab has the detail.
+   emergency fund, debt-to-income, and each planned purchase: saved so far, what it takes a month from here, and whether the last
+   three months' pace gets there. Once one is reached it asks whether you bought it (and, for a loan, offers to set up the debt).
+   Read it together; opening it marks it read. The Last month tab has the detail.
 7. **Coming up.** What falls in the next three months: estimated payoffs, yearly bills (with what is set aside for each, and
-   what a month would cover the rest), life events already dated, and, as they arrive, tax deadlines. Read it together; opening it marks it read.
+   what a month would cover the rest), life events already dated, tax deadlines, and planned purchases at their target month. Read it together; opening it marks it read.
 8. **Review.** If a review provider is set up, have the month read back to you, and read it. Without one, the step is skipped.
 
 Then **Done**. The Last month tab says "October check-in: done 2 Nov", or how many steps are left.

@@ -79,6 +79,26 @@ def check_goal_row(r: dict) -> tuple[dict, dict]:
     c["value"], problem = parse_goal_value(r.get("value"), c["unit"])
     if problem:
         err["value"] = problem
+    # a planned purchase's columns (#158), present in goals.json only when set; Settings → Goals → Planned purchases edits them
+    txt = lambda f: (r.get(f).strip() or None) if isinstance(r.get(f), str) else None
+    for f in ("target_month", "since_month", "done_month"):
+        c[f] = txt(f)
+        if c[f] and not MONTH_RE.match(c[f]):
+            err[f] = "month must look like YYYY-MM"
+    c["funded_by"], c["funded_kind"], c["done_at"] = txt("funded_by"), txt("funded_kind"), txt("done_at")
+    if c["funded_kind"] and c["funded_kind"] not in ("envelope", "account"):
+        err["funded_kind"] = "envelope or account"
+    t = r.get("target_amount")
+    c["target_amount"] = None
+    if t not in (None, ""):
+        try:
+            c["target_amount"] = float(t)
+            if c["target_amount"] <= 0:
+                err["target_amount"] = "more than zero"
+        except (TypeError, ValueError):
+            err["target_amount"] = "a number"
+    if (c["target_amount"] is None) != (c["target_month"] is None):
+        err["target_month" if c["target_month"] is None else "target_amount"] = "a planned purchase has both an amount and a month"
     return c, err
 
 
@@ -289,8 +309,11 @@ def _editor_body(conn, key: str) -> str:
             w.writerow([r["month"], r["cpi"], r["source"]])
         return out.getvalue()
     if key == "goals":
-        rows = conn.execute("SELECT key, value, unit, label, note FROM goals ORDER BY key").fetchall()
-        return json.dumps([{**r, "value": float(r["value"]) if r["value"] is not None else None} for r in rows], indent=1)
+        rows = conn.execute("SELECT key, value, unit, label, note, target_amount, target_month, funded_by, funded_kind, since_month, done_at, done_month FROM goals ORDER BY key").fetchall()
+        dated = ("target_amount", "target_month", "funded_by", "funded_kind", "since_month", "done_at", "done_month")   # a planned purchase (#158)
+        return json.dumps([{**{k: v for k, v in r.items() if k not in dated}, "value": float(r["value"]) if r["value"] is not None else None,
+                            **({"target_amount": float(r["target_amount"]), **{k: (r[k].isoformat() if k == "done_at" and r[k] else r[k]) for k in dated[1:] if r[k] is not None}}
+                               if r["target_amount"] is not None else {})} for r in rows], indent=1)
     if key == "events":
         return json.dumps([event_out(r) for r in conn.execute("SELECT month AS m, label, kind, person FROM life_events ORDER BY month, label").fetchall()], indent=1)
     return json.dumps(db.get_setting(conn, key, {}), indent=1)
@@ -323,7 +346,10 @@ def _save_editor(conn, key: str, body: str, by: str = "") -> str:
         if key == "goals":
             seen = {r["key"]: r["confirmed_at"] for r in conn.execute("SELECT key, confirmed_at FROM goals").fetchall()}   # editing the list must not forget confirmations
             conn.execute("DELETE FROM goals")
-            conn.cursor().executemany("INSERT INTO goals (key,value,unit,label,note,confirmed_at) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, unit=EXCLUDED.unit, label=EXCLUDED.label, note=EXCLUDED.note", [(c["key"], c["value"], c["unit"], c["label"], c["note"], seen.get(c["key"])) for c, _ in checked])
+            conn.cursor().executemany("INSERT INTO goals (key,value,unit,label,note,confirmed_at,target_amount,target_month,funded_by,funded_kind,since_month,done_at,done_month) "
+                                      "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, unit=EXCLUDED.unit, label=EXCLUDED.label, note=EXCLUDED.note",
+                                      [(c["key"], c["value"], c["unit"], c["label"], c["note"], seen.get(c["key"]), c["target_amount"], c["target_month"], c["funded_by"],
+                                        c["funded_kind"] or ("envelope" if c["funded_by"] else None), c["since_month"], c["done_at"], c["done_month"]) for c, _ in checked])
         else:
             conn.execute("DELETE FROM life_events")
             conn.cursor().executemany("INSERT INTO life_events (month,label,kind,person) VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING",
@@ -355,7 +381,7 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         editors = [{"key": k, "body": _editor_body(conn, k), "fields": schema.help_fields(k) if k in schema.NAMES else [], **v} for k, v in EDITORS.items()]
         rows = {"mapping": mapping_store.rows(conn),
-                "goals": [{**r, "value": (f"{r['value']:f}".rstrip("0").rstrip(".") if r["value"] is not None else None)} for r in conn.execute("SELECT key, value, unit, label, note FROM goals ORDER BY key").fetchall()],
+                "goals": [{**r, "value": (f"{r['value']:f}".rstrip("0").rstrip(".") if r["value"] is not None else None)} for r in conn.execute("SELECT key, value, unit, label, note FROM goals WHERE target_amount IS NULL ORDER BY key").fetchall()],   # planned purchases have their own sub-tab (#158)
                 "events": conn.execute("SELECT month AS m, label, kind, person FROM life_events ORDER BY month, label").fetchall(),
                 "accounts": [accounts_store.out(a) for a in accounts_store.list_accounts(conn)]}
         balance_counts = {r["account"]: r for r in conn.execute("SELECT account, count(*) n, min(budget_month) first, max(budget_month) last FROM balances GROUP BY account").fetchall()}
@@ -370,7 +396,11 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         bills = _yb.for_page(conn)
     from .yearly_bills import slug as _yb_slug
-    return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP, bills=bills,
+    from .. import purchases as _pp
+    with db.pool.connection() as conn:
+        purchases, debt_cat = _pp.for_page(conn), _pp.debt_category(conn)
+        fund_choices = sorted({r["name"] for r in conn.execute("SELECT name FROM accounts WHERE active ORDER BY name").fetchall()})
+    return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP, bills=bills, purchases=purchases, pp_form=request.session.pop("pp_form", None), pp_bought=request.session.pop("pp_bought", None), debt_category=debt_cat, loan_categories=categories, fund_accounts=fund_choices,
                   yb_form=request.session.pop("yb_form", None), tax_form=request.session.pop("tax_form", None), bal_hist=request.session.pop("bh_form", None), yb_slug=_yb_slug, tax_cfg=_tax_cfg(),
                   categories=categories, rules={**rules, **(request.session.pop("people_typed", None) or {})}, hh=household, name_families=name_families, unmapped=unmapped,
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS,
