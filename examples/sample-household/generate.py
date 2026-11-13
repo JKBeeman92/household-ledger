@@ -97,6 +97,8 @@ GOALS = [
     {"key": "purchase:a-new-cart", "value": None, "unit": "usd", "label": "A new cart", "note": "",
      "target_amount": 30000, "target_month": "2027-09", "funded_by": "Green Hills Savings", "funded_kind": "account", "since_month": "2026-06"},
 ]
+# the yearly withholding check (#153): a refund over the note's threshold two tax years running, so the year in review shows the note
+TAX_OUTCOMES = [{"year": "2023", "amount": 420.0, "note": ""}, {"year": "2024", "amount": 1310.0, "note": ""}, {"year": "2025", "amount": 1585.0, "note": ""}]
 # accounts and month-end balances (#143): a backfilled year before the exports start, then every month-end but the last, which is left
 # for the check-in to confirm. What a month keeps (its net) lands in checking and the brokerage account, so net worth's "what you did"
 # (#146) shows up in the balances. The cart is valued quarterly, so the months between are carried. Their own random stream, so the exports
@@ -265,7 +267,7 @@ def main(out: Path):
         for g, item, canon, cat, flow, *_ in ITEMS: w.writerow([item, canon, cat, flow, MAPPING_NOTES.get(canon, ""), DEBT_TYPES.get(canon, "")])
     write_balances(out, [f"{y}-{m:02d}" for y, m in months], kept)
     write_decisions(out, months_rows)
-    for name, obj in [("goals.json", GOALS), ("events.json", [{"m": m, "label": l, "kind": k, **({"person": p} if p else {})} for m, l, k, p in EVENTS]), ("rules.json", RULES), ("household.json", HOUSEHOLD)]:
+    for name, obj in [("tax_outcomes.json", TAX_OUTCOMES), ("goals.json", GOALS), ("events.json", [{"m": m, "label": l, "kind": k, **({"person": p} if p else {})} for m, l, k, p in EVENTS]), ("rules.json", RULES), ("household.json", HOUSEHOLD)]:
         (out / name).write_text(json.dumps(obj, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 
 

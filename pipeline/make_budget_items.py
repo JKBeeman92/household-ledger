@@ -85,5 +85,7 @@ w("look_ahead", _la.look_ahead(_j("monthly"), _j("payoff"), _j("net_worth"), _j(
 # the year in review (#157): the budget year of the latest month against the year before, quoting the look ahead's twelve months
 import years as _yr   # noqa: E402
 _yrev = _yr.review(_j("monthly"), _j("cat_month"), _j("net_worth"), _j("balances"), _rows, _j("events"), _j("look_ahead"), _through,
-                   int(_rl("year_start_month", 1)), set(_rl("debt_groups", ["Debt"])) | set(_rl("goal_savings_groups", [])))   # role default
+                   int(_rl("year_start_month", 1)), set(_rl("debt_groups", ["Debt"])) | set(_rl("goal_savings_groups", [])),   # role default
+                   tax_outcomes=json.load(open("tax_outcomes.json")) if os.path.exists("tax_outcomes.json") else [],   # #153
+                   withholding_note_at=float(_rl("withholding_note_at", 1000)))
 w("year_review", [_yrev] if _yrev else [])

@@ -297,6 +297,9 @@ def _editor_body(conn, key: str) -> str:
     if key == "tax_payments":   # not a Settings editor: the quarters' estimated tax ticked paid (#153), for settings.zip and the seed loader
         from .. import tax
         return tax.export_json(conn)
+    if key == "tax_outcomes":   # not a Settings editor: the yearly withholding check (#153), for settings.zip and the seed loader
+        from .. import tax
+        return tax.outcomes_json(conn)
     if key == "yearly_checklist":   # not a Settings editor: the yearly checklist and its ticks (#157), for settings.zip and the seed loader
         from .. import yearly_checklist
         return yearly_checklist.export_json(conn)

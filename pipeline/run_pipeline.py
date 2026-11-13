@@ -265,6 +265,10 @@ def export_for_pipeline(conn: psycopg.Connection, wd: Path) -> None:
         cur.execute("SELECT month, amount FROM tax_payments ORDER BY month")
         with open(wd / "tax_payments.json", "w") as out:
             json.dump([{"month": r["month"], "amount": float(r["amount"]) if r["amount"] is not None else None} for r in cur], out)
+        # the yearly withholding check (#153): each tax year's outcome, read by make_budget_items.py through pipeline/years.py
+        cur.execute("SELECT year, amount FROM tax_outcomes ORDER BY year")
+        with open(wd / "tax_outcomes.json", "w") as out:
+            json.dump([{"year": r["year"], "amount": float(r["amount"])} for r in cur], out)
         # yearly bills (#151): the household's own list, read by make_budget_items.py through pipeline/yearly_bills.py
         cur.execute("SELECT item, month, amount, every_years, funded_by, source FROM yearly_bills ORDER BY item")
         with open(wd / "yearly_bills.csv", "w", newline="") as out:
@@ -599,6 +603,10 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
             for p in json.loads(_read(seed_dir / "tax_payments.json")):
                 cur.execute("INSERT INTO tax_payments (month, deadline_m, label, expected, amount, note) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
                             (p["month"], p.get("deadline_m"), p.get("label") or "", p.get("expected"), p.get("amount"), p.get("note") or ""))
+        cur.execute("SELECT count(*) FROM tax_outcomes")
+        if cur.fetchone()[0] == 0 and (seed_dir / "tax_outcomes.json").exists():   # the yearly withholding check (#153)
+            for o in json.loads(_read(seed_dir / "tax_outcomes.json")):
+                cur.execute("INSERT INTO tax_outcomes (year, amount, note) VALUES (%s,%s,%s) ON CONFLICT DO NOTHING", (str(o["year"]), o["amount"], o.get("note") or ""))
         cur.execute("SELECT count(*) FROM yearly_bills")
         if cur.fetchone()[0] == 0 and (seed_dir / "yearly_bills.csv").exists():   # the household's yearly bills (#151), from settings.zip
             for r in csv.DictReader(io.StringIO(_read(seed_dir / "yearly_bills.csv"))):

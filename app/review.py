@@ -143,7 +143,8 @@ def quarter_context(conn, month: str) -> dict | None:
 YEAR_NOTE = ("This month ends the household's budget year (#157). this and previous are the years' totals, the sums of their months; change "
              "is a month at a time, so a partial year compares fairly. previous is absent when the year before is not loaded: do not call it "
              "zero. debt.paid_off names debts by type. decisions counts the year's confirmed checks. ahead is the look ahead's twelve months at "
-             "the current pace: an estimate, not a forecast.")
+             "the current pace: an estimate, not a forecast. withholding lists each tax year's outcome (a refund positive, a bill negative); "
+             "when adjust is true, say once that the household may want to adjust its withholding, never how.")
 
 
 def year_context(conn, month: str) -> dict | None:
@@ -156,7 +157,7 @@ def year_context(conn, month: str) -> dict | None:
     if not y or y.get("last") != month:
         return None
     return {"note": YEAR_NOTE, **{k: y[k] for k in ("year", "first", "last", "months", "partial", "this", "previous", "change", "net_worth",
-                                                    "net_worth_previous", "debt", "decisions", "events", "movers", "ahead")}}
+                                                    "net_worth_previous", "debt", "decisions", "events", "movers", "ahead", "withholding")}}
 
 
 COMING_UP_NOTE = ("What falls due in the three budget months after this one: estimated payoffs at last month's payment and life events "

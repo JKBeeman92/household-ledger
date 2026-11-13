@@ -68,7 +68,8 @@ mode, with two more steps (the quarter's steps run too, since the year's last mo
   the same year beside the quarter, all year round.
 - **Yearly checklist**: the household's once-a-year housekeeping, ticked one by one with a note for next year. Seven items ship
   (insurance renewals, beneficiaries, credit reports, subscriptions, next year's goals, last year's tax outcome, the yearly bills
-  list); change the list on Settings → Yearly checklist. It is done when every item is ticked, or skip it.
+  list); change the list on Settings → Yearly checklist. It is done when every item is ticked, or skip it. The tax outcome item
+  asks for last tax year's refund or bill, and the year in review shows the trend, with a note after two large ones running.
 
 Set next year's targets in the goals item (Settings → Goals); the look ahead reads them. Make sure each account has a balance for the
 year's last month, so next year's net worth has its year-over-year change.

@@ -62,7 +62,7 @@ def checkin_page(month: str, request: Request, user=Depends(auth.require_editor)
         latest = checkin.latest(conn)
         earlier, later = checkin.neighbours(conn, month)
     first_open = next((s["key"] for s in ov["steps"] if s["status"] in ("todo", "attention")), None)
-    return render(request, "checkin.html", user, active="checkin", pp_bought=request.session.pop("pp_bought", None), **_loan_form(), ov=ov, month_name=month_name, first_open=first_open, latest=latest, earlier=earlier, later=later,
+    return render(request, "checkin.html", user, active="checkin", pp_bought=request.session.pop("pp_bought", None), yc_tick=request.session.pop("yc_tick", None), **_loan_form(), ov=ov, month_name=month_name, first_open=first_open, latest=latest, earlier=earlier, later=later,
                   next_url=f"/checkin/{month}")
 
 

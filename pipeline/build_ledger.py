@@ -40,7 +40,8 @@ RULES = {
   "year_start_month": 1,               # the household's year starts in this month: the check-in's quarter and year modes (#164); not read by the scripts
   "contract_income_items": [],        # CanonicalItems of income with no tax withheld: estimated tax is set aside from them (#153)
   "tax_set_aside_items": [],          # the envelopes (CanonicalItems) or accounts that tax is set aside in (#153)
-  "tax_deadlines": [],                # [{"m": "YYYY-MM", "label": "Q3 federal estimate"}]: the household keeps them current (#153)
+  "tax_deadlines": [],
+  "withholding_note_at": 1000,         # a refund or a bill this large two tax years running: "consider adjusting withholding" (#153)                # [{"m": "YYYY-MM", "label": "Q3 federal estimate"}]: the household keeps them current (#153)
   "yearly_bill_tolerance": 1,         # a yearly bill is paid within this many months of the same month each year (#151)
   "yearly_bill_min_years": 2,         # ... in at least this many of the last three budget years (#151)
   "decision_partly_over": 0.10,        # a spend cap missed by up to this share counts as "partly" kept (#155)
