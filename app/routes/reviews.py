@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Request, Depends, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from .. import db, auth, review_providers as rp
+from .. import db, auth, review, review_providers as rp
 from ..web_helpers import flash, render
 
 router = APIRouter()
@@ -17,7 +17,10 @@ def reviews_list(request: Request, user=Depends(auth.require_editor)):
         log = conn.execute("SELECT at, old, new FROM renames ORDER BY at").fetchall()
     # a stored review keeps its text (the record of what was said); renames since it was written are noted beside it (#133)
     later = {r["month"]: [x for x in log if x["at"] > r["generated_at"]] for r in rows}   # a hand edit keeps the generated names
-    return render(request, "reviews_list.html", user, active="reviews", reviews=rows, prov=prov, problem=prov.problem(), later=later)
+    with db.pool.connection() as conn:
+        job = review.latest_job(conn)   # a review being written, or one that failed, shows here too, not only on Close a month
+    job = job if job and job["state"] != "stored" else None
+    return render(request, "reviews_list.html", user, active="reviews", reviews=rows, prov=prov, problem=prov.problem(), later=later, job=job)
 
 
 @router.get("/reviews/provider", response_class=HTMLResponse)

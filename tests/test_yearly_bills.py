@@ -115,7 +115,7 @@ def test_settings_confirm_dismiss_restore_and_rebuild(client, sample):
     assert {b["item"]: b for b in client.get("/api/datasets").json()["yearly_bills"]}["Cart Registration"]["source"] == "dismissed"
     client.post("/yearly-bills/Cart Registration/restore"); client.post("/rebuild")
     assert {b["item"]: b for b in client.get("/api/datasets").json()["yearly_bills"]}["Cart Registration"]["source"] == "detected"
-    r = client.post("/yearly-bills", data={"item": "Second Breakfast", "month": "5", "amount": "€45", "source": "added"})
+    r = client.post("/yearly-bills", data={"item": "Second Breakfast", "month": "5", "amount": "€45", "source": "added", "form": "add"})
     assert r.headers["location"] == "/settings?focus=yb-add#yearly-bills"
     page = client.get(r.headers["location"]).text   # the add form comes back open, with what was typed and the field marked
     assert "Second Breakfast is not one of your budget items. Pick one from the list" in page and 'value="Second Breakfast" aria-invalid="true"' in page
@@ -197,3 +197,21 @@ def test_a_bill_whose_month_passed_unpaid_is_flagged_not_dropped():
     assert ok["missed"] is None
     (wait,) = yb.bills(rows, [], "2026-07", set(months("2023-10", "2026-07")), ["Streaming Annual"])
     assert wait["missed"] is None   # July 2026 is the closing month: still inside its month's tolerance, not yet missed
+
+
+def test_a_failed_change_comes_back_in_its_own_row(client, sample):
+    """DS-FORM-1: a row's Change (or Confirm) that fails reopens that row's Change with what was typed and the error under the field,
+    never the Add form."""
+    r = client.post("/yearly-bills", data={"item": "Smial Insurance", "month": "2", "amount": "1000", "every_years": "eleven", "source": "confirmed"})
+    assert r.headers["location"] == "/settings?focus=yb-smial-insurance-change#yearly-bills"
+    page = client.get("/settings").text
+    assert '<details id="yb-smial-insurance-change" open>' in page and '<details class="how" id="yb-add" >' in page
+    assert 'id="yb-smial-insurance-e" name="every_years" inputmode="numeric" size="2" value="eleven" aria-invalid="true" aria-describedby="yb-smial-insurance-err"' in page
+    assert 'id="yb-smial-insurance-err" role="alert" tabindex="-1">Every is a whole number of years' in page
+
+
+def test_an_amount_with_no_figure_in_it_is_refused_not_saved_blank():
+    from app.yearly_bills import parse_amount
+    assert parse_amount("") is None and parse_amount("  ") is None and parse_amount("USD 45") == 45
+    with pytest.raises(ValueError):
+        parse_amount("lots")

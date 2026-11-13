@@ -1,13 +1,13 @@
 {# Step 4: each decision in force this month, the app's verdict where it can check, and the household's (#155). Context: c.rows #}
 <p class="muted">What you decided at an earlier check-in. The app checks what it can against this month's budget; how it went is yours to say.</p>
 <ul class="decision-list" data-list="unbounded">{% for d in c.rows %}{% set ch = d.check %}
-<li id="decision-{{ d.id }}" class="decision">
+<li id="decision-{{ d.id }}" class="decision" tabindex="-1">
   <p class="decision-text"><strong>{{ d.text }}</strong>{% if d.person %} <span class="muted">· {{ d.person }}</span>{% endif %}
     <span class="muted">· decided at the {{ d.made_in|month }} check-in{% if d.until %}, until {{ d.until|month }}{% endif %}{% if (d.target or {}).until_payoff %}, until it is paid off{% endif %}</span></p>
   <p class="muted">The app's reading: {{ auto_text(d) }}</p>
   {% if ch and ch.verdict %}<p><span class="status-chip {{ {'kept': 'ok', 'partly': 'warn', 'dropped': 'bad'}[ch.verdict] }}">{{ c.words[ch.verdict]|capitalize }}</span> <span class="muted">confirmed</span></p>{% endif %}
   <form method="post" action="/checkin/{{ month }}/decisions/{{ d.id }}/verdict" class="inline-actions">{{ csrf_field(request) }}
-    {% for v in ('kept', 'partly', 'dropped') %}<button class="btn" type="submit" name="verdict" value="{{ v }}" aria-label="Mark as {{ c.words[v] }}: {{ d.text }}">Mark as {{ c.words[v] }}</button> {% endfor %}
+    {% for v in ('kept', 'partly', 'dropped') %}<button class="btn" type="submit" name="verdict" value="{{ v }}" id="verdict-{{ d.id }}-{{ v }}" aria-label="Mark as {{ c.words[v] }}: {{ d.text }}">Mark as {{ c.words[v] }}</button> {% endfor %}
   </form>
   {% if d.last_month %}<form method="post" action="/checkin/{{ month }}/decisions/{{ d.id }}/carry" class="inline-actions">{{ csrf_field(request) }}<button class="btn" type="submit" aria-label="Carry it on next month: {{ d.text }}">Carry it on next month</button></form>
   {% else %}<p class="muted">In force until {{ (d.until or d.made_in)|month }}{% if (d.target or {}).until_payoff %} or the debt is paid off{% endif %}: it is checked again next month.</p>{% endif %}

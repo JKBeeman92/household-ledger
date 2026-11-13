@@ -3,7 +3,7 @@
 {% block content %}
 <p class="eyebrow">Month-close review</p>
 <h1 class="page-title">Review provider</h1>
-<p><a href="/reviews">← All reviews</a></p>
+<p class="linkrow"><a href="/reviews">← All reviews</a></p>
 <p class="muted measure">Which model writes the month-close review. Only derived figures are sent (never transactions, merchants or notes). API keys are read from the server's environment and never shown here; blank fields below fall back to <code>REVIEW_PROVIDER</code>, <code>REVIEW_MODEL</code> and <code>REVIEW_BASE_URL</code>.</p>
 <div class="row mt-4">
   <form class="panel" method="post" action="/reviews">{{ csrf_field(request) }}
@@ -18,14 +18,15 @@
   </form>
   <div class="panel">
     <h2>Status</h2>
-    {% if problem %}<p>Not configured: {{ problem }}. Write review stays unavailable until it is.</p>
-    {% else %}<p>Ready: <strong>{{ prov.display }}</strong>{% if prov.base_url %} at {{ prov.base_url }}{% endif %}.</p>{% endif %}
+    {% if problem %}<p class="measure">Not configured: {{ problem }}. Set it in the server's environment (<code>.env</code>) and restart the container; until then, Write review stays unavailable.</p>
+    {% else %}<p>Ready: <strong>{{ prov.display }}</strong>{% if prov.base_url %} at {{ prov.base_url }}{% endif %}. Test the connection below, then write a review.</p>
+    <p><a class="btn" href="/upload#review">Write review</a></p>{% endif %}
     <form method="post" action="/reviews/test">{{ csrf_field(request) }}
       <p class="mt-3"><button class="btn" type="submit" {% if problem %}disabled{% endif %}>Test connection</button></p>
     </form>
     {% if recent %}<h3>Recent reviews</h3><ul>{% for r in recent %}<li>{{ r.month|month }} · {{ r.model }}</li>{% endfor %}</ul>{% endif %}
-    <p><a href="/reviews/prompt">Review instructions and context preview</a></p>
-    <p><a href="/reviews/history">Past reviews, prompts and edits</a></p>
+    <p class="linkrow"><a href="/reviews/prompt">Review instructions and context preview</a></p>
+    <p class="linkrow"><a href="/reviews/history">Past reviews, prompts and edits</a></p>
   </div>
 </div>
 {% endblock %}

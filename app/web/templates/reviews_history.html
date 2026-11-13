@@ -9,7 +9,7 @@
   <h2>{{ r.month|month }}{% if r.hand_edited_at %} <span class="muted">· hand-edited {{ r.hand_edited_at|date }}</span>{% endif %}</h2>
   <p class="muted">{{ r.model }} · generated {{ r.generated_at|datetime }} · {{ r.sections|length }} sections · prompt {{ r.prompt|length|number }} characters</p>
   <p><a class="btn" href="/reviews/edit/{{ r.month }}?back=/reviews/history" aria-label="Edit sections of the {{ r.month|month }} review">Edit sections</a></p>
-  <details><summary class="muted">Show sections</summary>{% for s in r.sections %}<h3>{{ s.heading }}</h3><p>{{ s.text }}</p>{% endfor %}</details>
+  <details><summary class="muted">Show sections</summary>{% for s in r.sections %}<h3>{{ s.heading }}</h3><p class="measure">{{ s.text }}</p>{% endfor %}</details>
   <details><summary class="muted">Show prompt</summary><pre class="mono pre-wrap">{{ r.prompt }}</pre></details>
 </div>
 {% else %}<div class="panel mt-4"><p>No reviews yet. A month's review is written once its files are loaded.</p><p><a class="btn" href="/upload#review">Write review</a></p></div>{% endfor %}

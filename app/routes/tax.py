@@ -6,7 +6,7 @@ from fastapi.responses import RedirectResponse
 
 from .. import auth, db, tax
 from ..web_helpers import flash, month_text
-from .checkin import _month, _who
+from .checkin import _month, _who, back_to
 
 router = APIRouter()
 
@@ -43,7 +43,8 @@ async def tax_paid(month: str, request: Request, user=Depends(auth.require_edito
         except tax.TaxError as e:   # under the field at the step, with the typed amount kept (DS-FORM-1)
             conn.rollback(); flash(request, f"Not saved: {e}.", "bad")
             request.session["tax_paid_form"] = {"month": month, "amount": str(f.get("amount") or ""), "error": str(e)}
-    return RedirectResponse(f"/checkin/{month}#step-tax", status_code=303)
+            return back_to(month, "tax", "tax-amount")
+    return back_to(month, "tax", "tax-unpaid")
 
 
 @router.post("/tax/{month}/unpaid")
@@ -52,4 +53,4 @@ def tax_unpaid(month: str, request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         tax.unmark(conn, month); conn.commit()
     flash(request, f"The {month_text(month)} quarter's estimated tax is no longer marked paid.")
-    return RedirectResponse(f"/checkin/{month}#step-tax", status_code=303)
+    return back_to(month, "tax", "tax-amount")

@@ -86,3 +86,13 @@ def test_close_a_month_and_check_in_speak_euros_and_german_months(client, euro_h
     assert "April 2025" in ci
     standing = ci[ci.find('id="step-standing"'):]
     assert "€" in standing and "$" not in standing[:4000]
+
+
+@pytest.mark.parametrize("call,want", [
+    (lambda: f.money(1234.5), "$1,235"), (lambda: f.money(2.5), "$3"), (lambda: f.money(0.5), "$1"),
+    (lambda: f.money(-0.4), "$0"), (lambda: f.money(-0.4, signed=True), "$0"), (lambda: f.number(-0.4), "0"),
+    (lambda: f.share(0.125), "13%"), (lambda: f.share(-0.004), "0%"), (lambda: f.money(-2.5), "−$3"),
+])
+def test_half_way_rounds_away_from_zero_like_intl_and_zero_has_no_sign(call, want):
+    """DS-WORD-6: the server reads a figure as the dashboard's Intl does (half away from zero), and a figure shown as zero has no sign."""
+    assert call() == want

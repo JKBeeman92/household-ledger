@@ -185,3 +185,34 @@ def test_chart_findings_are_read_into_the_text_alternative():
     for n in ("goal", "ef", "dti", "debts", "nw", "net", "lm-var", "lm-avg"):
         assert f'data-draw="fd-{n}"' in page and f"finding('{n}'" in page, n
     assert "querySelector('.finding')" in (WEB / "static" / "a11y.js").read_text(encoding="utf-8")
+
+
+def test_every_figures_table_tells_its_own_chart_the_span():
+    """DS-CHART-5: a table named apart from its chart (nw, ef, dti) passes the chart's name, so the chart's text alternative reads the
+    data's range and not the axis ticks."""
+    import re
+    page = (ROOT / "app" / "web" / "templates" / "dashboard.html").read_text()
+    charts = set(re.findall(r'class="chart[^"]*" data-draw="([^"]+)"', page))
+    for m in re.finditer(r"^table\('([^']+)',.*$", page, re.M):
+        named = re.search(r", '([a-z-]+)'\);", m.group(0))
+        target = named.group(1) if named else m.group(1)
+        assert target in charts or m.group(1) == "radar", (m.group(1), target)
+
+
+def test_every_table_scroller_is_a_named_focusable_region():
+    """DS-FOCUS-1, DS-A11Y-1: a .tablewrap scrolls sideways on a phone, so a keyboard has to reach it and a screen reader has to name it."""
+    import re
+    bad = []
+    for path in sorted((WEB / "templates").rglob("*.html")):
+        for tag in re.findall(r'<div class="tablewrap"[^>]*>', path.read_text(encoding="utf-8")):
+            if 'role="region"' not in tag or 'tabindex="0"' not in tag or not re.search(r'aria-label(ledby)?="', tag):
+                bad.append(f"{path.name}: {tag}")
+    assert not bad, bad
+
+
+def test_no_line_comment_swallows_code_on_the_dashboard():
+    """A `//` comment runs to the end of the line, so it must not sit in front of more code on the same line (it hid the gauges once)."""
+    import re
+    page = (ROOT / "app" / "web" / "templates" / "dashboard.html").read_text()
+    bad = [ln for ln in page.splitlines() if re.search(r";\s+//[^\n]*;\s*(const|let|var|el\.|track\.)\s", ln)]
+    assert not bad, bad[:3]

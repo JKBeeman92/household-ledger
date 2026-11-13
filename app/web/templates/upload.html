@@ -89,7 +89,7 @@ addEventListener('DOMContentLoaded', () => {
 {% include "_findings.html" %}
 {% include "_balances.html" %}
 {% include "_checklist.html" %}
-<div class="panel mt-4">
+<div class="panel mt-4" id="loaded-months" tabindex="-1">
   <h2>Loaded months</h2>
   <p class="muted">{{ files|length|number }} files · {{ months|length|number }} budget months{% if months %} · {{ months[-1]|month_short }} → {{ months[0]|month_short }}{% endif %}.</p>
   <form method="post" action="/rebuild" class="mb-3">{{ csrf_field(request) }}<button class="btn" type="submit" id="rebuild-btn" {% if build.state == 'running' %}disabled{% endif %}>Rebuild without uploading</button> <span class="muted">after editing the mapping, CPI, goals, events or rules</span></form>

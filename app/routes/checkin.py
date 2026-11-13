@@ -1,6 +1,7 @@
 """The monthly check-in page (#164): /checkin/YYYY-MM, its step actions, Done and Reopen. The steps live in app/checkin/."""
 from __future__ import annotations
 import datetime as dt
+import re
 
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -19,6 +20,16 @@ def _month(m: str) -> str:
     if not checkin.MONTH_RE.match(m or ""):
         raise HTTPException(404)
     return m
+
+
+_FOCUS_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
+
+
+def back_to(month: str, step: str, focus: str | None = None) -> RedirectResponse:
+    """Back to a step after an action on it (DS-FLASH-1). `focus` names the control that took the place of the one used, so focus
+    stays where the household was working (DS-A11Y-5): the page opens the step and focuses it, or the step's summary if it is gone."""
+    frag = f"step-{step}" + (f"/{focus}" if focus and _FOCUS_RE.match(focus) else "")
+    return RedirectResponse(f"/checkin/{month}#{frag}", status_code=303)
 
 
 def month_name(m: str) -> str:
@@ -63,7 +74,7 @@ def checkin_step(month: str, step: str, action: str, request: Request, user=Depe
         flash(request, f"Recorded: no changes for {month_text(month)}.")
     elif step == "next" and action == "undo":
         flash(request, "Undone: the Next month step is open again.")
-    return RedirectResponse(f"/checkin/{month}#step-{step}", status_code=303)
+    return back_to(month, step, {"ack": f"{step}-undo", "undo": f"{step}-ack"}.get(action))   # an ack is replaced by its undo, and back
 
 
 @router.post("/checkin/{month}/complete")

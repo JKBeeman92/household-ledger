@@ -24,5 +24,5 @@
   </div>
 </div>
 {% if error %}<div class="panel mt-4"><p>{{ error }}</p></div>{% endif %}
-{% if context %}<div class="panel mt-4"><h2>Context for {{ month|month }}</h2><p class="muted">About {{ tokens|number }} input tokens with the instructions. Includes last month's review, life events and confirmed goals.</p><textarea class="json" id="ctx" readonly rows="16">{{ context }}</textarea></div>{% endif %}
+{% if context %}<div class="panel mt-4"><h2 id="ctx-h">Context for {{ month|month }}</h2><p class="muted">About {{ tokens|number }} input tokens with the instructions. Includes last month's review, life events and confirmed goals.</p><textarea class="json" id="ctx" readonly rows="16" aria-labelledby="ctx-h">{{ context }}</textarea></div>{% endif %}
 {% endblock %}

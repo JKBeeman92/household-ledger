@@ -87,7 +87,7 @@ def _db():
 def test_add_check_carry_and_close(client, loaded):
     from app import checkin, decisions
     r = client.post("/checkin/2025-03/decisions", data={"text": "Groceries under $50", "kind": "spend_cap", "what": "item:Groceries", "amount": "50"})
-    assert r.status_code == 303 and r.headers["location"] == "/checkin/2025-03#step-next"
+    assert r.status_code == 303 and r.headers["location"].startswith("/checkin/2025-03#step-next/dec-remove-")   # the new row (DS-A11Y-5)
     with _db() as conn:
         (d,) = decisions.in_force(conn, "2025-04")
         assert d["auto_verdict"] in ("kept", "partly", "dropped") and d["auto_figure"] is not None and d["last_month"]
@@ -239,3 +239,41 @@ def test_no_template_reads_a_context_dict_key_named_like_a_dict_method():
     root = Path(__file__).resolve().parent.parent / "app" / "web" / "templates"
     bad = [f"{p.name}: {m.group(0)}" for p in root.rglob("*.html") for m in re.finditer(r"\b\w+\.(items|keys|values)\s*\|", p.read_text())]
     assert not bad, bad
+
+
+def test_focus_stays_where_the_household_was_working(client, loaded):
+    """DS-A11Y-5: an action at the check-in returns to the control that took the place of the one used, never only to the step."""
+    import re
+    m = "2025-04"
+    loc = lambda r: r.headers["location"]
+    assert loc(client.post(f"/checkin/{m}/steps/next/ack")) == f"/checkin/{m}#step-next/next-undo"
+    assert 'id="next-undo"' in client.get(f"/checkin/{m}").text
+    assert loc(client.post(f"/checkin/{m}/steps/next/undo")) == f"/checkin/{m}#step-next/next-ack"
+    assert 'id="next-ack"' in client.get(f"/checkin/{m}").text
+    # the form returns to its first field, to add another
+    r = client.post(f"/checkin/{m}/decisions", data={"from": "form", "text": "Eating out under 400", "kind": "other"})
+    assert loc(r) == f"/checkin/{m}#step-next/dec-text"
+    client.post(f"/checkin/{m}/decisions", data={"from": "form", "text": "Second breakfast once a week", "kind": "other"})
+    page = client.get(f"/checkin/{m}").text
+    ids = re.findall(r'id="dec-remove-(\d+)"', page)
+    focus = re.findall(r'name="focus" value="([^"]+)"', page)
+    assert len(ids) == 2 and focus == [f"dec-remove-{ids[1]}", f"dec-remove-{ids[0]}"]   # each removal names its neighbour
+    r = client.post(f"/checkin/{m}/decisions/{ids[0]}/delete", data={"step": "next", "focus": focus[0]})
+    assert loc(r) == f"/checkin/{m}#step-next/dec-remove-{ids[1]}"
+    assert 'name="focus" value="dec-text"' in client.get(f"/checkin/{m}").text   # the last one falls back to the form
+    # a focus that is not an id is dropped, and the step's summary takes it
+    r = client.post(f"/checkin/{m}/decisions/{ids[1]}/delete", data={"step": "next", "focus": "x\"><script>"})
+    assert loc(r) == f"/checkin/{m}#step-next"
+
+
+def test_a_failed_add_keeps_what_was_typed_and_says_why_at_the_field(client, loaded):
+    """DS-FORM-1: the error sits under the field it is about, marked aria-invalid, with the typed values kept; a verdict says so (DS-FLASH-1)."""
+    m = "2025-04"
+    r = client.post(f"/checkin/{m}/decisions", data={"from": "form", "text": "Elevenses under twenty", "kind": "spend_cap", "what": "item:No Such Item", "amount": "20"})
+    assert r.headers["location"] == f"/checkin/{m}#step-next/dec-what"
+    page = client.get(f"/checkin/{m}").text
+    nxt = page[page.find('id="step-next"'):]
+    assert 'value="Elevenses under twenty"' in nxt and 'value="20"' in nxt
+    assert 'id="dec-what" name="what" aria-invalid="true" aria-describedby="dec-err"' in nxt and 'id="dec-err" role="alert">There is no budget item No Such Item.' in nxt
+    assert 'Not added' not in page   # under the field, not a flash
+    assert 'aria-invalid' not in client.get(f"/checkin/{m}").text[page.find('id="step-next"'):]   # shown once

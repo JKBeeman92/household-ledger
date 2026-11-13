@@ -10,9 +10,9 @@
     <p><label for="hookurl">Webhook URL</label><br><input type="url" id="hookurl" name="url" value="{{ cfg.url }}" placeholder="https://ntfy.example.lan/ledger" autocomplete="off" spellcheck="false"></p>
     <p><label for="hooksecret">Shared secret</label><br><input type="password" id="hooksecret" name="secret" autocomplete="new-password" spellcheck="false" placeholder="{{ 'set; leave blank to keep it' if cfg.secret_set else 'a long random string' }}" aria-describedby="hooksecret-h"></p>
     <p class="muted" id="hooksecret-h">{% if cfg.secret_set %}A secret is stored. It is never shown again; type a new one to replace it.{% else %}No secret stored yet.{% endif %} It signs every request.</p>
-    <p><label><input type="checkbox" name="enabled" value="1" {% if cfg.enabled %}checked{% endif %}> Send events</label></p>
+    <p><label class="check"><input type="checkbox" name="enabled" value="1" {% if cfg.enabled %}checked{% endif %}> Send events</label></p>
     <p class="muted">http and https only. Redirects are not followed, and each delivery has a short timeout and is not retried. Clear the URL and save to remove the webhook.</p>
-    <p class="mt-3"><button class="btn primary" type="submit">Save</button></p>
+    <p class="mt-3"><button class="btn primary" type="submit">Save webhook</button></p>
   </form>
   <div class="panel">
     <h2>Verify a delivery</h2>
@@ -22,7 +22,7 @@
 </div>
 <section class="panel mt-4" aria-labelledby="dl-h">
   <h2 id="dl-h">Delivery log</h2>
-  {% if log %}<div class="tablewrap"><table class="plain">
+  {% if log %}<div class="tablewrap" role="region" tabindex="0" aria-label="Delivery log table"><table class="plain">
     <thead><tr><th>When (UTC)</th><th>Event</th><th>Month</th><th>To</th><th>Result</th><th>Time</th></tr></thead>
     <tbody>{% for d in log %}<tr><td><time datetime="{{ d.created_at.isoformat() }}">{{ d.created_at|datetime }}</time></td><td><code>{{ d.event }}</code></td>
       <td>{{ d.month|month_short if d.month else '' }}</td><td>{{ d.target }}</td>

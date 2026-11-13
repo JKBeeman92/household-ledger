@@ -24,12 +24,12 @@ until you confirm. The files are kept exactly as uploaded, so a mapping correcte
   <h2><span class="mono">{{ f.filename }}</span></h2>
   {% if f.error %}<p class="flash bad">{{ f.error }}</p>{% else %}
   <p class="muted">{{ f.rows }} rows. The first {{ f.sample|length }}:</p>
-  <div class="tablewrap"><table class="plain"><thead><tr>{% for h in f.header %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+  <div class="tablewrap" role="region" tabindex="0" aria-label="First rows of {{ f.filename }}"><table class="plain"><thead><tr>{% for h in f.header %}<th scope="col">{{ h }}</th>{% endfor %}</tr></thead>
     <tbody>{% for r in f.sample %}<tr>{% for h in f.header %}<td>{{ r[h] }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
   <fieldset class="bare-fieldset"><legend class="strong">This file is the</legend>
     {% set k = form.get('kind_' ~ f.id) if form is defined and form else f.kind %}
-    <label class="label-inline"><input type="radio" name="kind_{{ f.id }}" value="transactions" {% if k == 'transactions' %}checked{% endif %}> transactions file</label>
-    <label class="label-inline ml-4"><input type="radio" name="kind_{{ f.id }}" value="budget_items" {% if k == 'budget_items' %}checked{% endif %}> budget file (planned and spent per line)</label>
+    <label class="check"><input type="radio" name="kind_{{ f.id }}" value="transactions" {% if k == 'transactions' %}checked{% endif %}> transactions file</label>
+    <label class="check ml-4"><input type="radio" name="kind_{{ f.id }}" value="budget_items" {% if k == 'budget_items' %}checked{% endif %}> budget file (planned and spent per line)</label>
   </fieldset>
   {% endif %}
 </section>

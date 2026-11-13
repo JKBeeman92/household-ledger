@@ -116,7 +116,8 @@ def test_draft_page_lists_the_unmapped_items_and_saves_only_on_add(client, two_u
 def test_draft_refuses_an_item_already_mapped_and_saves_nothing(client, two_unmapped):
     body = "Item,CanonicalItem,Category,Flow,Note\nHoliday,Holiday,Savings,expense,\nRent,Rent,Housing,debt,\n"
     page = client.get(client.post("/settings/mapping/draft", data={"body": body}).headers["location"]).text
-    assert "Not saved" in page and "line 3: item already in the mapping on: Rent" in page
+    assert 'id="draft-err" role="alert">Nothing saved:' in page and "line 3: item already in the mapping on: Rent" in page
+    assert 'aria-invalid="true" aria-describedby="draft-err">Item,CanonicalItem' in page   # what was typed comes back (DS-FORM-1)
     with db.pool.connection() as conn:
         assert mapping(conn) == two_unmapped
 

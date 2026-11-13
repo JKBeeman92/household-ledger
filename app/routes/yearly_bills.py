@@ -45,11 +45,12 @@ async def save_bill(request: Request, user=Depends(auth.require_editor)):
             return _back(slug(item))
         except yearly_bills.BillError as e:
             conn.rollback()
-            flash(request, f"Not saved: {e}", "bad")
-            if source == "added":   # the add form comes back open, with what was typed and the field to fix
-                request.session["yb_form"] = {k: str(f.get(k) or "") for k in ("item", "month", "amount", "every_years", "funded_by")} | {"field": e.field, "error": str(e)}
-                return _back("yb-add")
-            return _back(slug(item))
+            # the form comes back open where it was sent from (the add form, or the row's Change), with what was typed and the error
+            # under the field to fix (DS-FORM-1); a Confirm opens its row's Change with the values the app found
+            row = None if f.get("form") == "add" else slug(item)
+            request.session["yb_form"] = {k: str(f.get(k) or "") for k in ("item", "month", "amount", "every_years", "funded_by")} | {
+                "field": e.field, "error": str(e), "row": row}
+            return _back(f"{row}-change" if row else "yb-add")
 
 
 @router.post("/yearly-bills/{item}/dismiss")

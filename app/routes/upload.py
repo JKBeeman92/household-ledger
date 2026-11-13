@@ -117,7 +117,7 @@ def review_generate(request: Request, background: BackgroundTasks, month: str = 
         if (why := review.providers.resolve(conn).problem()):
             flash(request, f"Review not started: no review provider is configured: {why}", "bad")
         elif (job := review.start_job(conn, month, user.get("email", ""))) is None:
-            flash(request, f"A review of {month_text(month)} is already being written; its progress is below.")
+            flash(request, f"A review of {month_text(month)} is already being written." + ("" if back and not back.startswith("/upload") else " Its progress is below."))
         else:
             background.add_task(review.run_job, job)
             if back:

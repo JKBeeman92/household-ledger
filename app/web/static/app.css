@@ -92,7 +92,7 @@ table.edit td.acts { white-space: nowrap; width: 1%; }
 table.edit tr.editing td { vertical-align: top; background: var(--surface-300); }
 table.edit td .err { color: var(--danger); font-size: var(--text-caption); min-height: 0; }
 table.edit [aria-invalid=true] { border-color: var(--danger); }
-.tools { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; } .tools input[type=search] { max-width: 18rem; }
+.tools { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; } .tools > .err { flex-basis: 100%; margin: 0; order: 0; }   /* an error in a row of fields gets its own line, right under them (DS-FORM-1) */ .tools input[type=search] { max-width: 18rem; }
 .rowstatus { min-height: 1.4em; margin: var(--space-3) 0 0; } .rowstatus.ok { color: var(--success); } .rowstatus.bad { color: var(--danger); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
@@ -110,7 +110,7 @@ table.edit [aria-invalid=true] { border-color: var(--danger); }
   input[type=file]::file-selector-button { min-height: 32px; }
   .panel { padding: var(--space-4); }
   .panel summary, details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
-  .shell table.plain { display: block; overflow-x: auto; max-width: 100%; }
+  .shell :not(.tablewrap) > table.plain { display: block; overflow-x: auto; max-width: 100%; }   /* in a .tablewrap the wrapper scrolls: it holds the focus, so arrow keys scroll it (DS-A11Y-1) */
   textarea.json { min-height: 16rem; }
   .shell form p > button.btn, .shell form button.btn { margin-top: var(--space-1); }
 
@@ -304,7 +304,7 @@ details[open]:not(#dash-root details) > summary::before { transform: translateY(
 /* on a phone a row's Edit and Delete stay in reach while the columns scroll under them */
 @media (max-width: 820px) {
   table.edit th.acts, table.edit td.acts { position: sticky; right: 0; background: var(--surface-200); border-left: 1px solid var(--line); }
-  table.edit tr.editing td.acts { background: var(--surface-300); }
+  table.edit tr.editing td.acts { position: static; background: var(--surface-300); }   /* while a row is edited its Save and Cancel scroll with it, so no focused field sits under them (DS-FOCUS-1) */
 }
 .downloads { margin: var(--space-2) 0 var(--space-3); padding-left: var(--space-6); display: grid; gap: var(--space-1); max-width: 75ch; }
 
