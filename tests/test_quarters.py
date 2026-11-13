@@ -106,6 +106,8 @@ def test_check_in_tab_review_and_cli(client, sample, capsys):
     assert "The quarter" in review.SYSTEM
     html = client.get("/").text
     assert 'id="tab-quarter"' in html and 'data-draw="q-compare"' in html
+    assert 'role="region" tabindex="0" aria-labelledby="q-compare"' in html and 'aria-labelledby="q-movers q-movers-ago-h"' in html   # UX review: named scrollers
+    assert '<ul class="plain-list"><li>' in step and '<span class="nowrap">' in step   # movers as a list; a sign stays with its figure
     assert {"quarterly", "cat_quarter", "quarter_review"} <= set(mcp_endpoint.DATASETS)
     assert admin.main(["quarter"]) == 0
     out = capsys.readouterr()

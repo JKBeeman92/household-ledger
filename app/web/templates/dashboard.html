@@ -56,12 +56,13 @@
 .hl .eyebrow { font-size: var(--text-caption); font-weight: var(--weight-strong); letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2-text, var(--ink-muted)); margin: 0 0 var(--space-1); }
 .hl .masthead { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1); }
 .hl .mark { width: 56px; height: 56px; flex: none; }   /* the full seal: 48 px and up (DS-MARK-1) */
-.hl .intro { color: var(--ink-muted); margin: 0 0 var(--space-4); max-width: 90ch; }
+.hl .intro { color: var(--ink-muted); margin: 0 0 var(--space-4); max-width: 75ch; }
 .hl .intro dfn, .hl .lede dfn, .hl .prose dfn { font-style: normal; border-bottom: 1px dotted var(--accent-2, var(--ink-muted)); cursor: help; }
 .hl details.how { margin: var(--space-2) 0 0; font-size: var(--text-caption); color: var(--ink-muted); }
 .hl details.how summary { cursor: pointer; color: var(--accent-2-text, var(--ink-muted)); font-weight: var(--weight-strong); letter-spacing: .04em; }
 .hl details.how summary:focus-visible { outline: 2px solid var(--accent, var(--ink)); outline-offset: 2px; }
-.hl details.how p { margin: var(--space-1) 0 0; max-width: 90ch; line-height: 1.5; }
+.hl details.how p { margin: var(--space-1) 0 0; max-width: 75ch; line-height: 1.5; }
+.hl .card h3.sub { font-size: var(--text-body); margin: var(--space-3) 0 var(--space-2); }
 .hl .card h2 { border-left: 3px solid var(--accent-2, var(--line)); padding-left: var(--space-2); }
 .hl tbody tr:hover td { background: color-mix(in srgb, var(--ink) 6%, transparent); }
 .hl .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
@@ -536,17 +537,17 @@
     <p class="intro" data-draw="q-intro" data-source="quarter_review">The latest quarter against the one before and the same quarter a year before.</p>
     <div class="card">
       <h2 id="q-compare">The quarter, a month at a time</h2>
-      <ul class="key row"><li>each figure is a month's average, so a partial quarter compares fairly</li><li>a year before takes out the seasons: holidays, renewals, tax time</li></ul>
+      <ul class="key row"><li>each figure is a month's average, so a partial quarter compares fairly</li></ul>
       <details class="how"><summary>How to read this</summary><p>A quarter is three budget months, counted from the year's first month (the year_start_month rule; January unless changed). Each figure is the quarter's total divided by its months, so a quarter with only two months loaded is compared fairly; it says so. "A year before" is the same quarter of the year before, which takes out the seasons; when that quarter is not loaded the column says so rather than showing zero. Real figures (the toggle) are in one month's prices.</p></details>
-      <div class="tbl"><table><thead><tr><th scope="col">Figure</th><th scope="col" class="num" data-draw="q-head-this" data-source="quarter_review">This quarter</th><th scope="col" class="num" data-draw="q-head-prev" data-source="quarter_review">Previous</th><th scope="col" class="num">Change</th><th scope="col" class="num" data-draw="q-head-ago" data-source="quarter_review">A year before</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="q-compare" data-source="quarter_review"></tbody></table></div>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="q-compare"><table><thead><tr><th scope="col">Figure</th><th scope="col" class="num" data-draw="q-head-this" data-source="quarter_review">This quarter</th><th scope="col" class="num" data-draw="q-head-prev" data-source="quarter_review">Previous</th><th scope="col" class="num">Change</th><th scope="col" class="num" data-draw="q-head-ago" data-source="quarter_review">A year before</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="q-compare" data-source="quarter_review"></tbody></table></div>
       <p class="note" data-draw="q-balances" data-source="quarter_review"></p>
     </div>
     <div class="card">
       <h2 id="q-movers">What moved</h2>
       <ul class="key row"><li>the five categories that moved most, a month at a time</li><li>by dollars, against the previous quarter and a year before</li></ul>
       <details class="how"><summary>How to read this</summary><p>The categories whose monthly spending changed most, in dollars, against the previous quarter and against the same quarter a year before. A change of a few dollars on a small line is left out of the percentage list, so a $3 line doubling does not crowd out the ones that matter.</p></details>
-      <div class="grid"><div><h3 class="sub">Against the previous quarter</h3><div class="tbl short"><table><thead><tr><th scope="col">Category</th><th scope="col" class="num">A month now</th><th scope="col" class="num">Then</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="q-movers-prev" data-source="quarter_review" data-list="unbounded"></tbody></table></div></div>
-        <div><h3 class="sub">Against a year before</h3><div class="tbl short"><table><thead><tr><th scope="col">Category</th><th scope="col" class="num">A month now</th><th scope="col" class="num">Then</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="q-movers-ago" data-source="quarter_review" data-list="unbounded"></tbody></table></div></div></div>
+      <div class="grid"><div><h3 class="sub" id="q-movers-prev-h">Against the previous quarter</h3><div class="tbl short" role="region" tabindex="0" aria-labelledby="q-movers q-movers-prev-h"><table><thead><tr><th scope="col">Category</th><th scope="col" class="num">A month now</th><th scope="col" class="num">Then</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="q-movers-prev" data-source="quarter_review" data-list="unbounded"></tbody></table></div></div>
+        <div><h3 class="sub" id="q-movers-ago-h">Against a year before</h3><div class="tbl short" role="region" tabindex="0" aria-labelledby="q-movers q-movers-ago-h"><table><thead><tr><th scope="col">Category</th><th scope="col" class="num">A month now</th><th scope="col" class="num">Then</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="q-movers-ago" data-source="quarter_review" data-list="unbounded"></tbody></table></div></div></div>
     </div>
     <div class="card">
       <h2 id="q-next">The next quarter</h2>
@@ -1253,8 +1254,10 @@ dash.draw('q-balances', (el) => { const r = qr(); el.textContent = ''; if (!r) r
   el.textContent = bits.length ? bits.join('; ') + '.' : 'Net worth and debt balances need month-end balances (Settings → Accounts).'; });
 const qMovers = (key) => (tb) => { tb.replaceChildren(); const r = qr(), m = r && r[key]; if (!m) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = r ? 'That quarter is not loaded.' : '—'; tr.append(td); tb.append(tr); return; }
   const sg = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + HL.usd0(Math.abs(v));
-  const row = (x, apart) => { const tr = document.createElement('tr'); const note = x.new ? ' (new)' : x.also_last_year ? ' (also last year)' : '';
-    [x.category + (apart ? ' (debt or savings)' : ''), HL.usd0(x.per_month), HL.usd0(x.was), sg(x.change) + note].forEach((c, i) => { const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); }); tb.append(tr); };
+  const row = (x, apart) => { const tr = document.createElement('tr'); const note = x.new ? 'new this quarter' : x.also_last_year ? 'the same move a year before' : '';
+    [x.category + (apart ? ' (debt or savings)' : ''), HL.usd0(x.per_month), HL.usd0(x.was), sg(x.change)].forEach((c, i) => { const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c;
+      if (i === 3 && note) { td.append(document.createElement('br'), Object.assign(document.createElement('span'), { className: 'muted', textContent: note })); }   /* a second line: the figure keeps its column */
+      tr.append(td); }); tb.append(tr); };
   for (const x of m.by_dollars) row(x, false);
   for (const x of (m.set_apart || []).slice(0, 3)) row(x, true); };
 dash.draw('q-movers-prev', qMovers('movers_previous')); dash.draw('q-movers-ago', qMovers('movers_year_ago'));

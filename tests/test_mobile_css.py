@@ -24,7 +24,7 @@ def test_year_tables_keep_first_column():
 
 
 def test_radars_stack_on_phones():
-    assert re.search(r"max-width: 600px\) \{[^}]*\.radars[^}]*grid-template-columns: 1fr", CSS, re.S)
+    assert re.search(r"max-width: 600px\) \{[^}]*\.radars[^}]*grid-template-columns: (?:minmax\(0, )?1fr", CSS, re.S)
 
 
 def test_no_hex_colours_in_app_css():
@@ -41,3 +41,8 @@ def test_settings_editor_tables_scroll_inside_their_panel():
     assert re.search(r"\.stack > \* \{ min-width: 0; \}", CSS)
     assert re.search(r"table\.plain \{ position: relative; \}", CSS)
     assert re.search(r"\.tablewrap \{[^}]*overflow-x: auto", CSS)
+
+
+def test_stacked_grids_let_a_wide_table_scroll_in_its_box():
+    """The #147 UX review: a 1fr track grows to a table's min-content and scrolls the whole page at 390px; minmax(0, 1fr) does not."""
+    assert re.search(r"max-width: 600px\) \{[^}]*\.grid[^}]*grid-template-columns: minmax\(0, 1fr\)", CSS, re.S)
