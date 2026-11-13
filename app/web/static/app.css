@@ -231,6 +231,7 @@ dl.dti dt { font-weight: 600; } dl.dti dd { margin: 0; } dl.dti .v { font-weight
 @media (max-width: 600px) { dl.dti { grid-template-columns: minmax(0, 1fr); gap: var(--space-1); } dl.dti dd { margin-bottom: var(--space-2); } }
 /* The monthly check-in (issue 164): numbered steps that open in place */
 .checkin-steps { list-style: none; margin: var(--space-4) 0; padding: 0; display: grid; gap: var(--space-3); }
+.checkin-steps details.step h3.sub { font-size: var(--text-body); margin: var(--space-4) 0 var(--space-2); }   /* a section inside a step: the look ahead, planned purchases */
 .checkin-steps details.step > summary { cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .checkin-steps .n { display: inline-grid; place-items: center; width: 1.8em; height: 1.8em; border-radius: 50%; border: 1px solid var(--line); font-variant-numeric: tabular-nums; }
 .checkin-steps .step-summary { flex-basis: 100%; font-size: var(--text-small); }

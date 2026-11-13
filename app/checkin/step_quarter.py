@@ -20,7 +20,9 @@ def _status(conn, month, state):
 
 
 def _context(conn, month, state):
-    return {"q": _review(conn, month)}
+    r = _x(conn, "SELECT rows FROM datasets WHERE name='look_ahead'").fetchone()   # #148: where the pace leads, read here at the quarter
+    ahead = [x for x in (r["rows"] if r else []) if x.get("m") == month]
+    return {"q": _review(conn, month), "ahead": ahead}
 
 
 register(Step("quarter", 62, "The quarter", _status, applies=_applies, context=_context, actions=("view",), issue="#147"))

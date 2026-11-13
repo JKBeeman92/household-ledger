@@ -150,6 +150,14 @@
       <details class="listcount" id="lm-payoff-list" open><summary data-draw="lm-payoff-count" data-source="payoff">Debts</summary>
         <dl class="dti" data-draw="lm-payoff" data-source="payoff" data-list="unbounded"></dl></details>
     </div>
+    <div class="card" id="lm-ahead-card">
+      <h2 id="lm-ahead">Where the current pace leads</h2>
+      <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the 12-month pace, with the 3-month pace beside it</li></ul>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="lm-ahead"><table><thead><tr><th scope="col">In</th><th scope="col" class="num">Kept, 12-month pace</th><th scope="col" class="num">Kept, 3-month pace</th><th scope="col" class="num">Net worth</th></tr></thead><tbody data-draw="ahead-rows" data-source="look_ahead"></tbody></table></div>
+      <h3 class="sub" id="lm-ahead-dates">Dates at this pace, 12 months on</h3>
+      <dl class="dti" data-draw="ahead-facts" data-source="look_ahead" aria-labelledby="lm-ahead-dates"></dl>
+      <details class="how"><summary>How it is worked out</summary><p>The pace is the monthly net (income less living spend and debt payments) averaged over the last twelve budget months. Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. No investment return is assumed unless a yearly growth is set (Settings → Pipeline rules → All rules as JSON: assumed_growth_pct), and no change in income or spending.</p><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
+    </div>
     <div class="card" id="lm-ef-card">
       <h2 id="lm-ef">{{ glyph('emergency-fund') }} Emergency fund</h2>
       <ul class="key row"><li>if income stopped: months of outgo the emergency savings would cover</li></ul>
@@ -362,6 +370,14 @@
       <ul class="key row"><li>estimates: the same months a year before, so a season keeps its shape</li><li>what falls due in it</li></ul>
       <dl class="dti" data-draw="q-next" data-source="quarter_review"></dl>
       <ul class="plain-list" data-draw="q-next-items" data-source="quarter_review" data-list="unbounded"></ul>
+    </div>
+    <div class="card" id="q-ahead-card">
+      <h2 id="q-ahead">Where the current pace leads</h2>
+      <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the 12-month pace, with the 3-month pace beside it</li></ul>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="q-ahead"><table><thead><tr><th scope="col">In</th><th scope="col" class="num">Kept, 12-month pace</th><th scope="col" class="num">Kept, 3-month pace</th><th scope="col" class="num">Net worth</th></tr></thead><tbody data-draw="ahead-rows" data-source="look_ahead"></tbody></table></div>
+      <h3 class="sub" id="q-ahead-dates">Dates at this pace, 12 months on</h3>
+      <dl class="dti" data-draw="ahead-facts" data-source="look_ahead" aria-labelledby="q-ahead-dates"></dl>
+      <details class="how"><summary>How it is worked out</summary><p>The pace is the monthly net (income less living spend and debt payments) averaged over the last twelve budget months. Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. No investment return is assumed unless a yearly growth is set (Settings → Pipeline rules → All rules as JSON: assumed_growth_pct), and no change in income or spending.</p><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
     </div>
   </section>
   <section id="position" class="page" role="tabpanel" aria-labelledby="tab-position" tabindex="0" hidden>
@@ -1084,6 +1100,30 @@ dash.draw('q-next', (el) => { el.replaceChildren(); const r = qr(); if (!r) retu
 dash.draw('q-next-items', (ul) => { ul.replaceChildren(); const r = qr(); if (!r) return; const kinds = { payoff: 'Payoff', event: 'Life event', yearly_bill: 'Yearly bill', tax_deadline: 'Tax deadline', goal: 'Goal' };
   if (!r.next.coming_up.length) { ul.append(Object.assign(document.createElement('li'), { className: 'muted', textContent: 'Nothing dated in it yet.' })); return; }
   for (const c of r.next.coming_up) ul.append(Object.assign(document.createElement('li'), { textContent: `${HL.fmtM(HL.parseM(c.m))} · ${kinds[c.kind] || c.kind}: ${c.public_label || c.label}${c.amount != null ? ', ' + HL.usd0(c.amount) : ''}` })); });
+// the look ahead (#148): three horizons at the current pace; every figure's inputs are listed under "How it is calculated"
+const ahead = () => { const g = dash.data('look_ahead'); return g.status === 'ok' ? g.data : []; };
+const aheadSigned = (v) => (v == null ? '—' : (v < 0 ? '−' : '') + HL.usd0(Math.abs(v)));
+const aheadMonth = (m) => HL.fmtM(HL.parseM(m));
+dash.draw('ahead-rows', (tb) => { tb.replaceChildren(); const rows = ahead();
+  if (!rows.length) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = dash.data('look_ahead').status === 'missing' ? 'Rebuild the ledger to see where the pace leads (Close a month).' : 'Load a month to see where the pace leads.'; tr.append(td); tb.append(tr); return; }
+  for (const r of rows) { const tr = document.createElement('tr');
+    [`${r.h} months, to ${aheadMonth(r.until)}`, aheadSigned(r.cash), aheadSigned(r.cash_3), r.net_worth == null ? 'add balances (Settings → Accounts)' : HL.usd0(r.net_worth) + (r.growth_pct ? ' *' : '')].forEach((c, i) => {
+      const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); });
+    tb.append(tr); } });
+dash.draw('ahead-facts', (el) => { el.replaceChildren(); const rows = ahead(); if (!rows.length) return; const r = rows.find((x) => x.h === 12) || rows[0];
+  const add = (dt, dd) => { el.append(Object.assign(document.createElement('dt'), { textContent: dt }), Object.assign(document.createElement('dd'), { textContent: dd })); };
+  add('Debt-free (mortgage excluded)', r.debt_free === r.m ? 'already' : r.debt_free ? aheadMonth(r.debt_free) : `no date yet: ${r.debt_free_open} ${r.debt_free_open === 1 ? 'debt has' : 'debts have'} no payoff date at the current payment`);
+  for (const g of r.goals) add(g.label, g.reach_m ? `${aheadMonth(g.reach_m)} at its pace (wanted by ${aheadMonth(g.target_month)})` : (g.within ? 'reached' : 'not at this pace'));
+  if (r.growth_pct) add('*', `includes an assumed ${r.growth_pct}% a year growth on assets`); });
+dash.draw('ahead-inputs', (el) => { el.replaceChildren(); const rows = ahead(); if (!rows.length) return; const r0 = rows[0];
+  const add = (dt, dd) => { el.append(Object.assign(document.createElement('dt'), { textContent: dt }), Object.assign(document.createElement('dd'), { textContent: dd })); };
+  add('12-month pace', `${aheadSigned(r0.pace)} a month, the average net of ${r0.pace_months} budget month${r0.pace_months === 1 ? '' : 's'} from ${aheadMonth(r0.pace_from)}`);
+  add('3-month pace', `${aheadSigned(r0.pace_3)} a month`);
+  add('Net worth now', r0.net_worth_now == null ? 'needs month-end balances (Settings → Accounts)' : HL.usd0(r0.net_worth_now));
+  for (const r of rows) {
+    const freed = r.freed_by.filter((f) => f.months > 0).map((f) => `${HL.usd0(f.payment)} × ${f.months} from ${aheadMonth(f.payoff)}`).join(' + ');
+    add(`In ${r.h} months`, `kept ${aheadSigned(r.pace)} × ${r.h}${r.freed ? ' + freed ' + HL.usd0(r.freed) + (freed ? ' (' + freed + ')' : '') : ''} = ${aheadSigned(r.cash)}; debts paid down ${HL.usd0(r.paid_down)}${r.growth_pct ? '; growth ' + HL.usd0(r.growth) : ''}`
+      + (r.net_worth == null ? '' : `; net worth ${HL.usd0(r.net_worth_now)} + ${aheadSigned(r.cash)} + ${HL.usd0(r.paid_down)}${r.growth_pct ? ' + ' + HL.usd0(r.growth) : ''} = ${HL.usd0(r.net_worth)}`)); } });
 // payoff (#144): no rows yet (say what will appear and offer the first step), or a dataset not built yet (say to rebuild)
 dash.draw('lm-payoff-empty', (el) => {
   const g = dash.data('payoff'); el.replaceChildren(); const list = document.getElementById('lm-payoff-list');

@@ -77,3 +77,8 @@ if _mon:
 else:
     w("quarter_review", [])
 w("decision_summary", [{**_dec.keep_rate(_rows, _through), "in_force": len({r["id"] for r in _rows if r["m"] == _through})}] if _through else [])
+# a look ahead (#148): where the current pace leads in 3, 12 and 36 months. Last, so that coming_up and planned_purchases are final.
+import look_ahead as _la   # noqa: E402
+_g = _rl("assumed_growth_pct", None)
+w("look_ahead", _la.look_ahead(_j("monthly"), _j("payoff"), _j("net_worth"), _j("balances"), _j("planned_purchases"), _j("coming_up"),
+                                _through, float(_g) if _g is not None else None))
