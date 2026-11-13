@@ -222,12 +222,10 @@ and the critique reports them only on the surfaces a change touches. Each row na
 
 | Where | Rule | What is wrong | Issue |
 |---|---|---|---|
-| Dashboard charts (`dashboard.html`) | DS-CHART-1, 2, 3 | Lines and areas, not fixes, courses and waypoints | #191 |
 | Dashboard page | DS-TOKEN-1 | A 200-line `<style>` block of its own, with raw `em` sizes | #191 |
 | Templates | DS-SPACE-1 | About 135 inline `style` attributes, most of them margins | #193 |
 | Check-in, dashboard | DS-SHEET-4 | No page turn between months | #191 |
 | Dashboard tiles | DS-GLYPH-1 | The figure glyphs (`savings-rate`, `net-worth`, `emergency-fund`) are drawn but not yet placed | #191 |
-| Dashboard (catch-all envelopes, radar charts) | DS-CHART-5 | No table of their figures | #191 |
 | Dashboard | DS-COLOR-2 | `--accent-2` marks card headings, summaries and definitions, which are not destinations | #191 |
 | Dashboard gauges | DS-STATUS-1 | Verdicts are round pills with a dot, not stamps | #191 |
 | Dashboard, Settings | DS-SHEET-1, 2 | Cards and lists lie straight on the paper; one sheet is nested in another | #191 |
