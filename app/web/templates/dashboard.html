@@ -240,6 +240,7 @@
     <div class="tabs" role="tablist" aria-label="Dashboard sections" aria-orientation="horizontal">
       <button type="button" class="tab" id="tab-overview" data-tab="overview" role="tab" aria-controls="overview" aria-selected="true" tabindex="0">Overview</button>
       <button type="button" class="tab" id="tab-lastmonth" data-tab="lastmonth" role="tab" aria-controls="lastmonth" aria-selected="false" tabindex="-1">Last month</button>
+      <button type="button" class="tab" id="tab-quarter" data-tab="quarter" role="tab" aria-controls="quarter" aria-selected="false" tabindex="-1">Quarter</button>
       <button type="button" class="tab" id="tab-goals" data-tab="goals" role="tab" aria-controls="goals" aria-selected="false" tabindex="-1">Goals</button>
       <button type="button" class="tab" id="tab-where" data-tab="where" role="tab" aria-controls="where" aria-selected="false" tabindex="-1">Where it went</button>
       <button type="button" class="tab" id="tab-leaks" data-tab="leaks" role="tab" aria-controls="leaks" aria-selected="false" tabindex="-1">Leaks</button>
@@ -531,6 +532,29 @@
   </section>
 
   <!-- ===================== POSITION ===================== -->
+  <section id="quarter" class="page" role="tabpanel" aria-labelledby="tab-quarter" tabindex="0" hidden>
+    <p class="intro" data-draw="q-intro" data-source="quarter_review">The latest quarter against the one before and the same quarter a year before.</p>
+    <div class="card">
+      <h2 id="q-compare">The quarter, a month at a time</h2>
+      <ul class="key row"><li>each figure is a month's average, so a partial quarter compares fairly</li><li>a year before takes out the seasons: holidays, renewals, tax time</li></ul>
+      <details class="how"><summary>How to read this</summary><p>A quarter is three budget months, counted from the year's first month (the year_start_month rule; January unless changed). Each figure is the quarter's total divided by its months, so a quarter with only two months loaded is compared fairly; it says so. "A year before" is the same quarter of the year before, which takes out the seasons; when that quarter is not loaded the column says so rather than showing zero. Real figures (the toggle) are in one month's prices.</p></details>
+      <div class="tbl"><table><thead><tr><th scope="col">Figure</th><th scope="col" class="num" data-draw="q-head-this" data-source="quarter_review">This quarter</th><th scope="col" class="num" data-draw="q-head-prev" data-source="quarter_review">Previous</th><th scope="col" class="num">Change</th><th scope="col" class="num" data-draw="q-head-ago" data-source="quarter_review">A year before</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="q-compare" data-source="quarter_review"></tbody></table></div>
+      <p class="note" data-draw="q-balances" data-source="quarter_review"></p>
+    </div>
+    <div class="card">
+      <h2 id="q-movers">What moved</h2>
+      <ul class="key row"><li>the five categories that moved most, a month at a time</li><li>by dollars, against the previous quarter and a year before</li></ul>
+      <details class="how"><summary>How to read this</summary><p>The categories whose monthly spending changed most, in dollars, against the previous quarter and against the same quarter a year before. A change of a few dollars on a small line is left out of the percentage list, so a $3 line doubling does not crowd out the ones that matter.</p></details>
+      <div class="grid"><div><h3 class="sub">Against the previous quarter</h3><div class="tbl short"><table><thead><tr><th scope="col">Category</th><th scope="col" class="num">A month now</th><th scope="col" class="num">Then</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="q-movers-prev" data-source="quarter_review" data-list="unbounded"></tbody></table></div></div>
+        <div><h3 class="sub">Against a year before</h3><div class="tbl short"><table><thead><tr><th scope="col">Category</th><th scope="col" class="num">A month now</th><th scope="col" class="num">Then</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="q-movers-ago" data-source="quarter_review" data-list="unbounded"></tbody></table></div></div></div>
+    </div>
+    <div class="card">
+      <h2 id="q-next">The next quarter</h2>
+      <ul class="key row"><li>estimates: the same months a year before, so a season keeps its shape</li><li>what falls due in it</li></ul>
+      <dl class="dti" data-draw="q-next" data-source="quarter_review"></dl>
+      <ul class="plain-list" data-draw="q-next-items" data-source="quarter_review" data-list="unbounded"></ul>
+    </div>
+  </section>
   <section id="position" class="page" role="tabpanel" aria-labelledby="tab-position" tabindex="0" hidden>
     <p class="intro">The year-end view: what came in, what went out, what was kept, and the debts that were paid down and taken on.</p>
     <div class="card">
@@ -903,7 +927,7 @@ tabs.forEach((b, i) => b.addEventListener('keydown', (e) => {
   e.preventDefault(); tabs[to].focus(); showTab(tabs[to].dataset.tab);
 }));
 const start = location.hash.slice(1);
-if (['overview','lastmonth','goals','where','leaks','position','people','method'].includes(start)) showTab(start);
+if (['overview','lastmonth','quarter','goals','where','leaks','position','people','method'].includes(start)) showTab(start);
 window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (document.getElementById(h) && document.getElementById(h).classList.contains('page')) showTab(h); });
 
 dash.onData(() => {
@@ -1209,6 +1233,38 @@ dash.draw('lm-bills', (el) => { el.replaceChildren(); const soon = billsSoon(); 
     dd.append(v, d); el.append(dt, dd);
   }
 });
+// the quarter (#147): quarter_review, a month at a time; real figures follow the basis toggle
+const qr = () => { const g = dash.data('quarter_review'); return g.status === 'ok' && g.data[0] ? g.data[0] : null; };
+const qName = (lbl) => lbl ? lbl.replace('-Q', ' Q') : '';
+dash.draw('q-intro', (el) => { const r = qr(); if (!r) { el.textContent = 'No quarter built yet: rebuild the ledger (Close a month).'; return; }
+  el.textContent = `${qName(r.quarter)}: ${HL.fmtM(HL.parseM(r.first))} to ${HL.fmtM(HL.parseM(r.last))}` + (r.partial ? `, ${r.months} of 3 months so far, compared a month at a time.` : ', against the one before and the same quarter a year before.'); });
+dash.draw('q-head-this', (el) => { const r = qr(); el.textContent = r ? qName(r.quarter) + (r.partial ? ` (${r.months} of 3)` : '') : 'This quarter'; });
+dash.draw('q-head-prev', (el) => { const r = qr(); el.textContent = r && r.previous ? qName(r.previous.quarter) : 'Previous'; });
+dash.draw('q-head-ago', (el) => { const r = qr(); el.textContent = r && r.year_ago ? qName(r.year_ago.quarter) : 'A year before'; });
+dash.draw('q-compare', (tb) => { tb.replaceChildren(); const r = qr(); if (!r) return; const f = HL.fld, sg = (v) => v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + HL.usd0(Math.abs(v));
+  const pc = (v) => v == null ? '' : ` (${v > 0 ? '+' : v < 0 ? '−' : ''}${dash.fmt.pct(0)(Math.abs(v))})`;
+  const col = (o, k) => o ? [HL.usd0(o[f(k)]), sg(o[f(k) + '_change']) + (o[f(k) + '_turned'] ? ` (turned ${o[f(k) + '_turned']})` : pc(o[f(k) + '_pct']))] : ['not loaded', ''];
+  const rows = [['Money in', 'income'], ['Living spend', 'spend'], ['Debt paid', 'debt'], ['Kept', 'net']].map(([lab, k]) => [lab, HL.usd0(r.this[f(k)]), ...col(r.previous, k), ...col(r.year_ago, k)]);
+  const sr = (v) => v == null ? '—' : dash.fmt.pct(1)(v);
+  rows.push(['Savings rate', sr(r.this.savings_rate), r.previous ? sr(r.previous.savings_rate) : 'not loaded', '', r.year_ago ? sr(r.year_ago.savings_rate) : 'not loaded', '']);
+  for (const cells of rows) { const tr = document.createElement('tr'); cells.forEach((c, i) => { const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); }); tb.append(tr); } });
+dash.draw('q-balances', (el) => { const r = qr(); el.textContent = ''; if (!r) return; const sg = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + HL.usd0(Math.abs(v)), bits = [];
+  if (r.net_worth_change != null) bits.push(`Net worth ${sg(r.net_worth_change)} over the quarter`); if (r.debt_change != null) bits.push(`debt balances ${sg(r.debt_change)}`);
+  el.textContent = bits.length ? bits.join('; ') + '.' : 'Net worth and debt balances need month-end balances (Settings → Accounts).'; });
+const qMovers = (key) => (tb) => { tb.replaceChildren(); const r = qr(), m = r && r[key]; if (!m) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = r ? 'That quarter is not loaded.' : '—'; tr.append(td); tb.append(tr); return; }
+  const sg = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + HL.usd0(Math.abs(v));
+  const row = (x, apart) => { const tr = document.createElement('tr'); const note = x.new ? ' (new)' : x.also_last_year ? ' (also last year)' : '';
+    [x.category + (apart ? ' (debt or savings)' : ''), HL.usd0(x.per_month), HL.usd0(x.was), sg(x.change) + note].forEach((c, i) => { const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); }); tb.append(tr); };
+  for (const x of m.by_dollars) row(x, false);
+  for (const x of (m.set_apart || []).slice(0, 3)) row(x, true); };
+dash.draw('q-movers-prev', qMovers('movers_previous')); dash.draw('q-movers-ago', qMovers('movers_year_ago'));
+dash.draw('q-next', (el) => { el.replaceChildren(); const r = qr(); if (!r) return; const n = r.next, add = (dt, dd) => { const a = document.createElement('dt'), b = document.createElement('dd'); a.textContent = dt; b.textContent = dd; el.append(a, b); };
+  add(qName(n.quarter), `${HL.fmtM(HL.parseM(n.months[0]))} to ${HL.fmtM(HL.parseM(n.months[2]))}`);
+  if (n.expected.income == null) add('Expected', 'no same months a year before to go on yet');
+  else { add('Income, about', HL.usd0(n.expected.income) + ' a month'); add('Living spend, about', HL.usd0(n.expected.spend) + ' a month'); add('Debt paid, about', HL.usd0(n.expected.debt) + ' a month'); } });
+dash.draw('q-next-items', (ul) => { ul.replaceChildren(); const r = qr(); if (!r) return; const kinds = { payoff: 'Payoff', event: 'Life event', yearly_bill: 'Yearly bill', tax_deadline: 'Tax deadline', goal: 'Goal' };
+  if (!r.next.coming_up.length) { ul.append(Object.assign(document.createElement('li'), { className: 'muted', textContent: 'Nothing dated in it yet.' })); return; }
+  for (const c of r.next.coming_up) ul.append(Object.assign(document.createElement('li'), { textContent: `${HL.fmtM(HL.parseM(c.m))} · ${kinds[c.kind] || c.kind}: ${c.public_label || c.label}${c.amount != null ? ', ' + HL.usd0(c.amount) : ''}` })); });
 // payoff (#144): no rows yet (say what will appear and offer the first step), or a dataset not built yet (say to rebuild)
 dash.draw('lm-payoff-empty', (el) => {
   const g = dash.data('payoff'); el.replaceChildren(); const list = document.getElementById('lm-payoff-list');

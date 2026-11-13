@@ -522,6 +522,26 @@ check-in says when none is entered for the coming year.
   payments travel in `settings.zip` as `tax_payments.json`; the `tax` dataset reaches the review and MCP. Tax calculation, preparation
   and reading tax forms are out of scope.
 
+## The quarter
+
+"How did this quarter go, against the last one and the same one a year ago?" A quarter is three budget months counted from the
+`year_start_month` rule (default 1, calendar quarters; with 7, July to September is Q1 and the label carries the year the budget year
+starts in). A quarter's figures are the sums of its months, and every comparison is **a month at a time**, so a quarter with only one
+or two months loaded (labelled "2 of 3 months") still compares fairly. A quarter that is not loaded is shown as not loaded, never as zero.
+
+- **The check-in** at a quarter's last month adds **The quarter** step: money in, living spend, debt paid and kept against the quarter
+  before and a year before, the categories that moved most, net worth and debt balances over the quarter, and the next quarter.
+- **The Quarter tab** on the dashboard has the rest: the change in percent and the five categories that moved most against each.
+  Movers are living spend: the debt groups and the savings goal groups are set apart (the Debt paid line already has them). A mover
+  that moved the same way the same quarter a year before is marked *also last year*: a yearly bill or a season, not a change in habit.
+  A figure that changed sign (kept turning negative) gives the dollar change and says so, never a percent.
+- **The next quarter**: a month's income, spend and debt from the same months a year before, so a season keeps its shape, and what is
+  dated in it in Coming up (payoffs, yearly bills, tax deadlines, life events).
+- **The review** of a quarter's last month carries one more section, "The quarter".
+- From the command line, read-only and safe against a live install: `python -m app.admin quarter [YYYY-Qn]` (the latest quarter by
+  default). On an install built before quarters it works them out from the last build's monthly figures and saves nothing. The
+  datasets `quarterly`, `cat_quarter` and `quarter_review` reach `datasets.zip` and MCP.
+
 ## Decisions
 
 "Last month we said we'd cut eating out to $400 and put $200 extra on the car loan. Did we?" The check-in's **Next month** step writes

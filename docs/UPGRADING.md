@@ -13,6 +13,11 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
 
 ## 0.7.0
 
+- **The quarter** (#147): no migration. Rebuild once after upgrading to emit `quarterly`, `cat_quarter` and `quarter_review` (in
+  `datasets.zip` and MCP); until then `python -m app.admin quarter` works them out from the last build without saving. Quarters follow
+  the existing `year_start_month` rule. The check-in at a quarter's end gains The quarter step, the dashboard a Quarter tab, and that
+  month's review one more section.
+
 - **Estimated tax** (#153, `0153_tax_payments.sql`): a new table only. Nothing shows until contract income items are set on Settings →
   Goals → Estimated tax. Three new rules (`contract_income_items`, `tax_set_aside_items`, `tax_deadlines`) default to empty;
   `settings.zip` gains `tax_payments.json`; `datasets.zip` and MCP gain `tax`; `coming_up` gains `tax_deadline` rows.
