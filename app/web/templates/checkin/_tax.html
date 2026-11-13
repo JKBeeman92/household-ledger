@@ -11,11 +11,11 @@
 <p><a class="btn" href="/settings#goals">Enter the deadlines</a></p>{% endif %}
 {% endif %}
 {% if c.paid %}<p><span class="status-chip ok">Paid</span>{% if c.paid.amount is not none %} {{ c.paid.amount|money }}{% endif %}{% if c.paid.label %} for {{ c.paid.label }}{% endif %}, {{ c.paid.paid_at|date }}.</p>
-<form method="post" action="/tax/{{ month }}/unpaid" class="inline-actions">{{ csrf_field(request) }}<button class="btn" type="submit">Undo marking this quarter paid</button></form>
-{% elif c.acked %}<form method="post" action="/checkin/{{ month }}/steps/tax/undo" class="inline-actions">{{ csrf_field(request) }}Nothing due this quarter. <button class="btn" type="submit">Undo: nothing due this quarter</button></form>
+<form method="post" action="/tax/{{ month }}/unpaid" class="inline-actions">{{ csrf_field(request) }}<button class="btn" type="submit" id="tax-unpaid">Undo marking this quarter paid</button></form>
+{% elif c.acked %}<form method="post" action="/checkin/{{ month }}/steps/tax/undo" class="inline-actions">{{ csrf_field(request) }}Nothing due this quarter. <button class="btn" type="submit" id="tax-undo">Undo: nothing due this quarter</button></form>
 {% else %}{% set tp = request.session.pop("tax_paid_form", None) %}{% set tp = tp if tp and tp.month == month else none %}
 <form method="post" action="/tax/{{ month }}/paid" class="tools">{{ csrf_field(request) }}
   <label for="tax-amount">Amount paid</label> <input id="tax-amount" name="amount" inputmode="decimal" size="9" value="{{ tp.amount if tp else (s.quarter_expected|plain if s and s.quarter_expected is not none else '') }}"{% if tp %} aria-invalid="true" aria-describedby="tax-amount-err"{% endif %}>
   <button class="btn" type="submit">Mark this quarter's estimate paid</button></form>
 {% if tp %}<p class="err" id="tax-amount-err" role="alert">{{ tp.error[:1]|upper ~ tp.error[1:] }}.</p>{% endif %}
-<form method="post" action="/checkin/{{ month }}/steps/tax/ack" class="inline-actions">{{ csrf_field(request) }}<button class="btn" type="submit">Say nothing is due this quarter</button></form>{% endif %}
+<form method="post" action="/checkin/{{ month }}/steps/tax/ack" class="inline-actions">{{ csrf_field(request) }}<button class="btn" type="submit" id="tax-ack">Say nothing is due this quarter</button></form>{% endif %}

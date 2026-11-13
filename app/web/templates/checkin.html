@@ -36,8 +36,10 @@
 </nav>{% endif %}
 <script nonce="{{ csp_nonce(request) }}">
 // A save returns to its step (#step-<key>, DS-FLASH-1): open that step and put focus on it, on load and when the hash changes.
-const openHash = () => { const t = location.hash && document.getElementById(location.hash.slice(1)), d = t && t.closest('details.step'); if (!d) return;
-  d.open = true; if (t !== d) { t.focus({ preventScroll: true }); t.scrollIntoView({ block: 'center' }); return; }   // a field inside a step (a rejected value) takes the focus itself
+// #step-<key>/<id> also names the control that took the place of the one used (DS-A11Y-5): focus goes there, or to the summary if it is gone.
+const openHash = () => { const [a, b] = decodeURIComponent(location.hash.slice(1)).split('/'), h = a && document.getElementById(a), d = h && h.closest('details.step'); if (!d) return;
+  const f = b && document.getElementById(b), t = f && d.contains(f) ? f : h;
+  d.open = true; if (t !== d) { t.focus({ preventScroll: true }); t.scrollIntoView({ block: 'center' }); return; }   // a field inside a step (a rejected value, a replacing control) takes the focus itself
   const s = d.querySelector('summary'); if (s) { s.setAttribute('tabindex', '-1'); s.focus({ preventScroll: true }); } d.scrollIntoView({ block: 'start' }); };
 openHash(); addEventListener('load', openHash); window.addEventListener('hashchange', openHash);   // again on load: the browser's own jump to the fragment comes after this script
 // A read-only step is read once it is opened: say so to the server, then the page shows it done on the next load.

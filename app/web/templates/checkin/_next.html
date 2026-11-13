@@ -1,7 +1,7 @@
 {# Step 9: decisions for next month (#155). Context: c.made, c.suggestions (plan_suggestions rows), c.categories, c.item_names, c.debts,
 c.people, c.kinds, c.cap, c.next, c.acked #}
 <p class="muted">Write down up to {{ c.cap }} things to do differently in {{ c.next|month }}; the next check-in asks how each went. A target the app can check (a category, an amount) lets it say so itself.</p>
-<form method="post" action="/checkin/{{ month }}/decisions" class="decision-form">{{ csrf_field(request) }}
+<form method="post" action="/checkin/{{ month }}/decisions" class="decision-form">{{ csrf_field(request) }}<input type="hidden" name="from" value="form">
   <p><label for="dec-text">What you decided</label><br><input id="dec-text" name="text" required maxlength="300" size="48" placeholder="Eating out under 400 a month"></p>
   <p class="tools"><label for="dec-kind">Kind</label> <select id="dec-kind" name="kind">{% for k, w in c.kinds.items() %}<option value="{{ k }}">{{ w }}</option>{% endfor %}</select>
     <label for="dec-what">About</label> <select id="dec-what" name="what"><option value="">(nothing the app can check)</option>
@@ -14,8 +14,8 @@ c.people, c.kinds, c.cap, c.next, c.acked #}
     {% if c.people %}<label for="dec-person">Whose</label> <select id="dec-person" name="person"><option value="">(both of us)</option>{% for p in c.people %}<option>{{ p }}</option>{% endfor %}</select>{% endif %}</p>
   <p><button class="btn" type="submit">Add the decision</button></p>
 </form>
-{% if not c.made and not c.acked %}<form method="post" action="/checkin/{{ month }}/steps/next/ack" class="inline-actions">{{ csrf_field(request) }}<button class="btn" type="submit">Say there are no changes this month</button></form>
-{% elif not c.made %}<form method="post" action="/checkin/{{ month }}/steps/next/undo" class="inline-actions">{{ csrf_field(request) }}No changes this month. <button class="btn" type="submit">Undo: no changes this month</button></form>{% endif %}
+{% if not c.made and not c.acked %}<form method="post" action="/checkin/{{ month }}/steps/next/ack" class="inline-actions">{{ csrf_field(request) }}<button class="btn" type="submit" id="next-ack">Say there are no changes this month</button></form>
+{% elif not c.made %}<form method="post" action="/checkin/{{ month }}/steps/next/undo" class="inline-actions">{{ csrf_field(request) }}No changes this month. <button class="btn" type="submit" id="next-undo">Undo: no changes this month</button></form>{% endif %}
 {% if c.suggestions %}<details class="listcount" {% if not c.made %}open{% endif %}><summary>{{ c.suggestions|length }} from the Suggested plan</summary>
 <p class="muted">The twelve-month average, rounded up to the next ten, where it differs from this month's plan. Adding one makes it a decision: next month's check-in compares the plan you set with it.</p>
 <ul class="suggest-list" data-list="unbounded">{% for s in c.suggestions %}<li><form method="post" action="/checkin/{{ month }}/decisions" class="inline">{{ csrf_field(request) }}
@@ -24,4 +24,4 @@ c.people, c.kinds, c.cap, c.next, c.acked #}
   {{ s.category }}: {{ s.planned|money }} to {{ s.suggest|money }}, {{ "down" if s.suggest < s.planned else "up" }} {{ (s.suggest - s.planned)|abs|money }} <button class="btn" type="submit">Add “Plan {{ s.category }} at {{ s.suggest|money }}”</button></form></li>{% endfor %}</ul></details>{% endif %}
 {% if c.made %}<p class="step-sub">For {{ c.next|month }}</p>
 <ul class="decision-list" data-list="unbounded">{% for d in c.made %}<li>{{ d.text }}{% if d.until %} <span class="muted">until {{ d.until|month }}</span>{% endif %}
-  <form method="post" action="/checkin/{{ month }}/decisions/{{ d.id }}/delete" class="inline">{{ csrf_field(request) }}<input type="hidden" name="step" value="next"><button class="btn" type="submit" aria-label="Remove this decision: {{ d.text }}">Remove this decision</button></form></li>{% endfor %}</ul>{% endif %}
+  <form method="post" action="/checkin/{{ month }}/decisions/{{ d.id }}/delete" class="inline">{{ csrf_field(request) }}<input type="hidden" name="step" value="next">{% set nb = loop.nextitem or loop.previtem %}<input type="hidden" name="focus" value="{{ ('dec-remove-' ~ nb.id) if nb else 'dec-text' }}"><button class="btn" type="submit" id="dec-remove-{{ d.id }}" aria-label="Remove this decision: {{ d.text }}">Remove this decision</button></form></li>{% endfor %}</ul>{% endif %}

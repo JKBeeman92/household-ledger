@@ -84,7 +84,7 @@ def test_sample_household_quarter_step_tick_and_coming_up(client, sample):
     assert "Estimated tax" in page and "Q3 federal estimate" in step and "Mark this quarter's estimate paid" in step
     assert "Estimated tax</dt>" in page   # the Where we stand line, on every check-in
     r = client.post("/tax/2026-06/paid", data={"amount": "1,250"})
-    assert r.headers["location"] == "/checkin/2026-06#step-tax"
+    assert r.headers["location"] == "/checkin/2026-06#step-tax/tax-unpaid"   # the undo that replaced the form (DS-A11Y-5)
     with _db() as conn:
         p = conn.execute("SELECT amount, deadline_m, label FROM tax_payments WHERE month='2026-06'").fetchone()
         assert float(p["amount"]) == 1250 and p["deadline_m"] == "2026-09" and p["label"] == "Q3 federal estimate"
