@@ -17,7 +17,7 @@ INSERT INTO yearly_checklist_items (key, label, position, takes_amount) VALUES
   ('credit_reports', 'Pull credit reports', 30, false),
   ('subscriptions', 'Audit subscriptions (the Recurring tab)', 40, false),
   ('goals', 'Review goals and set next year''s targets', 50, false),
-  ('tax_outcome', 'Record last year''s tax outcome', 60, false),
+  ('tax_outcome', 'Record last year''s tax outcome', 60, true),
   ('yearly_bills', 'Confirm the yearly bills list', 70, false)
 ON CONFLICT (key) DO NOTHING;
 CREATE TABLE IF NOT EXISTS yearly_checklist (

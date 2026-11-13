@@ -79,7 +79,7 @@ def reset_db(client):
             conn.execute(f"TRUNCATE {TABLES} RESTART IDENTITY CASCADE")
             from pipeline.run_pipeline import YEARLY_CHECKLIST_DEFAULTS   # the list as migration 0157 ships it (#157)
             for i, (k, label) in enumerate(YEARLY_CHECKLIST_DEFAULTS):
-                conn.execute("INSERT INTO yearly_checklist_items (key, label, position) VALUES (%s, %s, %s)", (k, label, (i + 1) * 10))
+                conn.execute("INSERT INTO yearly_checklist_items (key, label, position, takes_amount) VALUES (%s, %s, %s, %s)", (k, label, (i + 1) * 10, k == "tax_outcome"))
             seed_reference_tables(conn, refs)
             db.put_setting(conn, "household", {"name": "Household", "title": "Household Ledger", "theme": "homestead", "currency": "USD"})
     reset()
