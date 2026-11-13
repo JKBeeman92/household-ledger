@@ -97,7 +97,7 @@ pages use tokens only.
 ### Type
 
 Three roles: `--font-display` (headings, large figures), `--font-sans` (text and controls), `--font-mono` (dates, amounts in
-tables, code). One scale: `--text-caption` 13, `--text-small` 14, `--text-body` 16, `--text-heading` 19, `--text-title` 28.
+tables, code). One scale: `--text-caption` 13, `--text-small` 14, `--text-body` 16, `--text-heading` 19, `--text-title` 28, and one display step for the page's headline figure, `--text-display` 48 (a kit sets its own).
 Weights: `--weight-heading`, `--weight-strong`. Capitals: `--tracking-caps`.
 
 - **DS-TYPE-1** Sizes come from the scale. Nothing is set below `--text-caption`.
@@ -125,7 +125,8 @@ out falls back. Ids: `dashboard check-in close-month reviews settings day night 
 
 - **DS-GLYPH-1** A glyph is drawn on a 24 px grid in one line weight (`--glyph-weight`), in the colour of the text beside it.
 - **DS-GLYPH-2** A glyph always sits beside its label and is hidden from assistive technology. It is never the only name a
-  control has.
+  control has. The little marks in a chart's key (a ring, a dot, a dash, a symbol) are not glyphs: they are `.key-mark`, hidden
+  from assistive technology, and the words beside them say the same.
 - **DS-GLYPH-3** A kit replaces glyphs; it does not add destinations. A new glyph id is added here first.
 
 ## 4. Components
