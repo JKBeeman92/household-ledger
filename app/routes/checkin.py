@@ -42,8 +42,9 @@ def checkin_page(month: str, request: Request, user=Depends(auth.require_editor)
     with db.pool.connection() as conn:
         ov = checkin.overview(conn, month)
         latest = checkin.latest(conn)
+        earlier, later = checkin.neighbours(conn, month)
     first_open = next((s["key"] for s in ov["steps"] if s["status"] in ("todo", "attention")), None)
-    return render(request, "checkin.html", user, active="checkin", ov=ov, month_name=month_name, first_open=first_open, latest=latest,
+    return render(request, "checkin.html", user, active="checkin", ov=ov, month_name=month_name, first_open=first_open, latest=latest, earlier=earlier, later=later,
                   next_url=f"/checkin/{month}")
 
 

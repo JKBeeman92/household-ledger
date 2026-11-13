@@ -84,6 +84,12 @@ def latest(conn) -> str | None:
     return ms[-1] if ms else None
 
 
+def neighbours(conn, month: str) -> tuple[str | None, str | None]:
+    """The loaded months either side of `month`: the page turn at the foot of a month's sheet (DS-SHEET-4). None at an end."""
+    ms = loaded_months(conn)
+    return (max((m for m in ms if m < month), default=None), min((m for m in ms if m > month), default=None))
+
+
 def missing(conn, before: str | None = None) -> list[str]:
     """Loaded months before `before` (default: the latest loaded) with no completed check-in, oldest first."""
     ms = loaded_months(conn)
@@ -176,7 +182,7 @@ def line(conn) -> dict | None:
     if not m:
         return None
     ov = overview(conn, m)
-    return {"month": m, "done": ov["done"], "completed_at": ov["row"]["completed_at"] if ov["row"] else None, "to_do": ov["to_do"],
+    return {"month": m, "prev": neighbours(conn, m)[0], "done": ov["done"], "completed_at": ov["row"]["completed_at"] if ov["row"] else None, "to_do": ov["to_do"],
             "missing": len(ov["missing"])}
 
 

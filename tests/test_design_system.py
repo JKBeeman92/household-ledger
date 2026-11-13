@@ -114,15 +114,29 @@ def test_dashboard_charts_draw_fixes_courses_and_waypoints():
 
 
 def test_templates_set_no_inline_style_except_a_custom_property_that_carries_data():
-    """DS-SPACE-1: a page spaces itself with the classes in app.css. The dashboard's own block is #191's."""
+    """DS-SPACE-1: a page spaces itself with the classes in app.css; the dashboard's styles live there too (#191), and it has no <style> block."""
     bad = {}
+    assert "<style" not in (WEB / "templates" / "dashboard.html").read_text(encoding="utf-8")
     for path in sorted((WEB / "templates").rglob("*.html")):
-        if path.name == "dashboard.html":
-            continue
         found = [m for m in re.findall(r'style="([^"]*)"', path.read_text(encoding="utf-8")) if not m.startswith("--")]
         if found:
             bad[path.name] = found
     assert not bad, f"inline style: use a class from app.css (DS-SPACE-1): {bad}"
+
+
+def test_dashboard_sheets_stamps_glyphs_and_accent_2():
+    """#191: chart cards are sheets and tiles stay flat (DS-SHEET-1, 2), verdicts are stamps (DS-STATUS-1), the figure glyphs are placed
+    and hidden from assistive technology (DS-GLYPH-1, 2), and --accent-2 marks only destinations (DS-COLOR-2)."""
+    css = (WEB / "static" / "app.css").read_text(encoding="utf-8")
+    page = (WEB / "templates" / "dashboard.html").read_text(encoding="utf-8")
+    assert re.search(r"\.hl \.card:not\(\.tile\) \{ border: 2px solid var\(--ink\); box-shadow: inset", css)
+    assert not re.search(r"\.hl \.chip[ .:{,]", css) and "border-radius: 999px" not in css   # no round pill left
+    assert "HL.stamp" in page and "'status-chip'" in page and "className = 'chip" not in page
+    for g in ("savings-rate", "net-worth", "emergency-fund"):
+        assert f"glyph('{g}')" in page, g
+    dash_css = css[css.index("The dashboard page (#dash-root.hl)"):]
+    lines = [ln for ln in dash_css.splitlines() if "--accent-2" in ln and not ln.lstrip().startswith("/*")]
+    assert all(".glyph.wp" in ln or ".eyebrow" in ln for ln in lines), lines   # destinations (the waypoint key) and eyebrows only
 
 
 def test_the_spacing_classes_the_pages_use_are_built_from_tokens():

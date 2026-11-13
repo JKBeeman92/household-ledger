@@ -138,7 +138,9 @@ out falls back. Ids: `dashboard check-in close-month reviews settings day night 
 - **DS-SHEET-3** A set piece may lie on a stack of earlier sheets (`.sheet-stack`): the sign-in card, and the one sheet a
   page is about. Working pages (Settings, the editors, long tables) stay flat.
 - **DS-SHEET-4** A month is a page. Where a page shows one month, the way to its neighbours is at the foot of the sheet,
-  earlier at the left and later at the right.
+  earlier at the left and later at the right. They are links that name the month (*← May 2026*, *July 2026 →*), and an end of
+  the loaded months has no link. The check-in is that page; on the dashboard the Last month tab is the one month it shows, so it
+  turns back to the month before (an editor's link to that month's check-in) and has no later month to turn to.
 
 ### Header and navigation
 
@@ -168,7 +170,8 @@ out falls back. Ids: `dashboard check-in close-month reviews settings day night 
 - **DS-TILE-1** A headline figure is a label, the figure in the display face, and one line saying what it is compared with.
 - **DS-TABLE-1** A table has a strong rule under its head and light rules between rows; numbers right, words left.
 - **DS-STATUS-1** A status is a stamp (`.status-chip`): a word in spaced capitals inside a double rule, in the verdict's colour.
-  The word is fixed (DS-WORD-1).
+  The word is fixed (DS-WORD-1): on the dashboard a gauge or a month against its plan says *On track*, *Needs a look* or
+  *No goal set*, and the amount beside it (*$630 short*, *over the cap*) is plain text, not a second pill.
 - **DS-FLASH-1** After a save, a flash at the top of the page says what was saved, in the past tense, and the page returns to
   where the person was.
 
@@ -220,11 +223,5 @@ symbols or wording. `docs/BRANDING.md` has the steps; `examples/brand-kits/` has
 The system was written after the app. These parts of the app break a rule today; a change that touches one of them mends it,
 and the critique reports them only on the surfaces a change touches. Each row names the issue that will mend it.
 
-| Where | Rule | What is wrong | Issue |
-|---|---|---|---|
-| Dashboard page | DS-TOKEN-1 | A 200-line `<style>` block of its own, with raw `em` sizes | #191 |
-| Check-in, dashboard | DS-SHEET-4 | No page turn between months | #191 |
-| Dashboard tiles | DS-GLYPH-1 | The figure glyphs (`savings-rate`, `net-worth`, `emergency-fund`) are drawn but not yet placed | #191 |
-| Dashboard | DS-COLOR-2 | `--accent-2` marks card headings, summaries and definitions, which are not destinations | #191 |
-| Dashboard gauges | DS-STATUS-1 | Verdicts are round pills with a dot, not stamps | #191 |
-| Dashboard | DS-SHEET-1, 2 | Cards and lists lie straight on the paper | #191 |
+Nothing is listed now: the dashboard was brought into keeping in #191. A part found out of keeping is added here as a row of
+*Where, Rule, What is wrong, Issue*.
