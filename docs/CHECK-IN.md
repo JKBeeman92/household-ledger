@@ -53,7 +53,8 @@ Estimated tax), an **Estimated tax** step asks whether the quarter's estimated p
 share to set aside, the next deadline, and a tick, with the amount paid. **The quarter** step is read in place: this quarter against the last
 and the same quarter a year ago, a month at a time; the living-spend categories that moved most (marked *also last year* when last
 year moved the same way, which is a yearly bill or a season rather than a habit); net worth and debt balances over the quarter; and the
-next quarter's expected month with what is dated in it. Talk over what moved; a decision for next month (step 9) is where a change in
+next quarter's expected month with what is dated in it; and where the current pace leads in 3, 12 and 36 months (what is kept, net
+worth, and when the debts other than a mortgage are gone). Talk over what moved; a decision for next month (step 9) is where a change in
 habit goes. The Quarter tab on the dashboard has the percentages and the full lists.
 
 ## A year

@@ -152,6 +152,10 @@
       "type": ["array", "null"], "items": {"type": "string", "minLength": 1},
       "description": "Budget groups that hold debt payments, as they appear in the export: the debt_plug_until rule looks at these groups, the off-budget outflow count leaves them out, and the mapping draft gives their items Flow debt. Empty (null) means [\"Debt\"]."
     },
+    "assumed_growth_pct": {
+      "type": ["number", "null"], "minimum": -50, "maximum": 50,
+      "description": "The look ahead's yearly growth for asset balances, in percent (5 means 5% a year). It applies to assets only, never to cash flow, and every figure that uses it says so. Empty (null) means none: the look ahead assumes no investment return."
+    },
     "year_start_month": {
       "type": ["integer", "null"], "minimum": 1, "maximum": 12,
       "description": "The month the household's year starts (1 = January). The check-in runs in year mode on the year's last budget month and in quarter mode on each quarter's last. Empty (null) means 1."

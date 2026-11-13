@@ -36,6 +36,7 @@ RULES = {
   "plan_keep_categories": ["Housing", "Debt", "Insurance"],              # categories whose suggested plan stays the current plan (Last month tab)
   "income_groups": ["Income"],         # budget groups that hold income: no carry-forward-into-a-fund there; source profiles and the draft default to them
   "debt_groups": ["Debt"],             # budget groups that hold debt payments: the debt-plug rule and the off-budget outflow count
+  "assumed_growth_pct": None,          # the look ahead (#148): a yearly % applied to asset balances only, labelled wherever used; none by default
   "year_start_month": 1,               # the household's year starts in this month: the check-in's quarter and year modes (#164); not read by the scripts
   "contract_income_items": [],        # CanonicalItems of income with no tax withheld: estimated tax is set aside from them (#153)
   "tax_set_aside_items": [],          # the envelopes (CanonicalItems) or accounts that tax is set aside in (#153)

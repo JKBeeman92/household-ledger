@@ -13,6 +13,9 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
 
 ## 0.8.0
 
+- **A look ahead** (#148): no migration. Rebuild once after upgrading to emit `look_ahead` (in `datasets.zip`, the review and MCP);
+  `payoff` rows gain the debt's `apr`. A new rule, `assumed_growth_pct`, defaults to none: no investment return is assumed.
+
 - **Planned purchases** (#158, `0158_dated_goals.sql`): seven nullable columns on `goals`; existing goals are unchanged and read as
   before. Rebuild once after upgrading to emit `planned_purchases` (in `datasets.zip`, the review and MCP). `goals.json` in
   `settings.zip` carries a planned purchase's columns only for a goal that has them, so an older file still loads.

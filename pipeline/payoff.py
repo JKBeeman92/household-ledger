@@ -75,6 +75,7 @@ def estimate(account: dict, balances: dict[str, dict], paid: dict, closing: str,
     B, apr, escrow, item, typ = float(row["amount"]), account.get("apr"), account.get("escrow"), account.get("debt_item"), account.get("type")
     prev = balances.get(_add(closing, -1))
     out = {"m": closing, "account": account["name"], "type": typ or None, "person": account.get("person") or None, "balance": round(B, 2),
+           "apr": float(apr) if apr is not None else None,   # the look ahead (#148) pays each debt down at it
            "change": round(B - float(prev["amount"]), 2) if prev else None, "balance_source": row.get("source"), "payment": None, "basis": None,
            "months": None, "payoff": None, "at_least": False, "status": None, "notes": [], "moved": None, "paid_more": None}
 
