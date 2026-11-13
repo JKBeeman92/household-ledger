@@ -185,3 +185,15 @@ def test_cli_report_works_on_an_install_built_before_yearly_bills(client, sample
     assert "worked out now" in out.err and "Smial Insurance\tdetected\tFebruary" in out.out and "Cart Registration" in out.out
     with db.pool.connection() as conn:
         assert conn.execute("SELECT 1 FROM datasets WHERE name='yearly_bills'").fetchone() is None
+
+
+def test_a_bill_whose_month_passed_unpaid_is_flagged_not_dropped():
+    """From the homelab check (#200): a bill seen in 2023 and 2024 and not in 2025 stays listed (paid late, or a year skipped), but
+    says it was not paid, so a cancelled subscription is dismissed rather than lingering."""
+    rows = [row("2024-07", "Streaming Annual", 60), row("2025-07", "Streaming Annual", 60)]
+    (b,) = yb.bills(rows, [], "2026-09", set(months("2023-10", "2026-09")), ["Streaming Annual"])
+    assert b["missed"] == "2026-07" and b["next_due"] == "2027-07"
+    (ok,) = yb.bills(rows + [row("2026-07", "Streaming Annual", 60)], [], "2026-09", set(months("2023-10", "2026-09")), ["Streaming Annual"])
+    assert ok["missed"] is None
+    (wait,) = yb.bills(rows, [], "2026-07", set(months("2023-10", "2026-07")), ["Streaming Annual"])
+    assert wait["missed"] is None   # July 2026 is the closing month: still inside its month's tolerance, not yet missed

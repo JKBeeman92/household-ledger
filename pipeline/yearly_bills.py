@@ -117,7 +117,7 @@ def bills(rows: list[dict], stored: list[dict], closing: str | None, loaded: set
              "amount": float((s or {}).get("amount") or 0) or (d or {}).get("amount") or 0.0, "every_years": int((s or {}).get("every_years") or 1),
              "years_seen": (d or {}).get("years_seen", 0), "evidence": (d or {}).get("evidence", []), "detected": d is not None}
         if src == "dismissed":
-            out.append({**b, "funded_by": None, "funded_kind": None, "last_paid": None, "next_due": None, "set_aside": None, "per_month": None, "short": None})
+            out.append({**b, "funded_by": None, "funded_kind": None, "last_paid": None, "next_due": None, "set_aside": None, "per_month": None, "short": None, "missed": None})
             continue
         by = paid.get(item, {})
         last = max(by) if by else None   # the bill last fell due when it was last paid, whatever month the household now says it falls in
@@ -132,9 +132,17 @@ def bills(rows: list[dict], stored: list[dict], closing: str | None, loaded: set
             aside = None
         due = next_due(b["month"], b["every_years"], last if last and _near(int(last[5:]), b["month"], tol) else None, closing)
         left = max(1, _idx(due) - _idx(closing))
+        # missed: its month came round in the loaded months (and its tolerance has passed) with no payment near it. Still listed,
+        # since a bill can be paid late or skipped a year, but a cancelled subscription should be dismissed, so the page says so.
+        i = _idx(closing) - tol
+        while i % 12 + 1 != b["month"]:
+            i -= 1
+        missed = None
+        if b["every_years"] == 1 and _mon(i) in loaded and not any(abs(_idx(m) - i) <= tol for m in by):
+            missed = _mon(i)
         short = round(max(0.0, b["amount"] - (aside or 0.0)), 2)
         out.append({**b, "funded_by": fund, "funded_kind": kind, "funded_guess": not (s or {}).get("funded_by") and bool(fund), "last_paid": last,
-                    "next_due": due, "months_left": left, "set_aside": aside, "short": short, "per_month": round(short / left, 2) if short else 0.0})
+                    "next_due": due, "months_left": left, "missed": missed, "set_aside": aside, "short": short, "per_month": round(short / left, 2) if short else 0.0})
     return out
 
 

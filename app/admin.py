@@ -177,11 +177,11 @@ def yearly_bills_cmd(a) -> int:
                 rows, how = detect.bills(budget, stored, max(months_loaded), months_loaded, sorted({r["canonical"] for r in budget}), last), "worked out now from the last build's budget rows; nothing saved"
             conn.rollback()
             print(f"# yearly bills, {how}", file=sys.stderr)
-            print("item\tsource\tmonth\tabout\tyears seen\tpaid in\tsaved for in\tset aside\tnext due")
+            print("item\tsource\tmonth\tabout\tyears seen\tpaid in\tsaved for in\tset aside\tnext due\tnot paid in")
             for b in rows:
                 print("\t".join(str(x) for x in (b["item"], b["source"], MONTHS[int(b["month"]) - 1] + (f" (every {b['every_years']} years)" if (b.get("every_years") or 1) > 1 else ""),
                       "" if b.get("amount") is None else f"{b['amount']:.2f}", b.get("years_seen", 0), ",".join(b.get("evidence") or []),
-                      (b.get("funded_by") or "") + (" (guess)" if b.get("funded_guess") else ""), "" if b.get("set_aside") is None else f"{b['set_aside']:.2f}", b.get("next_due") or "")))
+                      (b.get("funded_by") or "") + (" (guess)" if b.get("funded_guess") else ""), "" if b.get("set_aside") is None else f"{b['set_aside']:.2f}", b.get("next_due") or "", b.get("missed") or "")))
             found = [b for b in rows if b["source"] == "detected"]
             print(f"\n{len(found)} found and not yet confirmed, {sum(1 for b in rows if b['source'] in ('confirmed', 'added'))} confirmed or added, "
                   f"{sum(1 for b in rows if b['source'] == 'dismissed')} dismissed.", file=sys.stderr)

@@ -19,7 +19,7 @@
     <form method="post" action="/yearly-bills/{{ b.item|urlencode }}/restore" class="inline">{{ csrf_field(request) }}<button class="btn" type="submit">Restore {{ b.item }}</button></form></li>{% endfor %}</ul></details>{% endif %}
   {% if live %}<div class="tablewrap"><table class="plain" data-list="unbounded"><thead><tr><th scope="col">Bill</th><th scope="col">Due</th><th scope="col" class="num">About</th><th scope="col">Saved for in</th><th scope="col">Paid in</th><th scope="col"><span class="sr">Actions</span></th></tr></thead><tbody>
   {% for b in live %}{% set id = yb_slug(b.item) %}<tr id="{{ id }}" tabindex="-1"><td><strong>{{ b.item }}</strong><br><span class="status-chip {{ chip[b.source][1] }}">{{ chip[b.source][0] }}</span></td>
-    <td>{{ months[b.month - 1] }}{% if b.every_years > 1 %}, every {{ b.every_years }} years{% endif %}{% if b.next_due %}<br><span class="muted">next {{ b.next_due|month_short }}</span>{% endif %}</td>
+    <td>{{ months[b.month - 1] }}{% if b.every_years > 1 %}, every {{ b.every_years }} years{% endif %}{% if b.next_due %}<br><span class="muted">next {{ b.next_due|month_short }}</span>{% endif %}{% if b.missed %}<br><span class="status-chip warn">Not paid</span> <span class="muted">in {{ b.missed|month_short }}: dismiss it if it has ended</span>{% endif %}</td>
     <td class="num">{{ b.amount|money }}</td>
     <td>{{ b.funded_by or "—" }}{% if b.funded_guess %} <span class="muted">(a guess)</span>{% endif %}{% if b.set_aside is not none %}<br><span class="muted">{{ b.set_aside|money }} set aside</span>{% endif %}</td>
     <td class="muted">{% if b.evidence %}{{ b.evidence|map("month_short")|join(", ") }}{% else %}—{% endif %}</td>
