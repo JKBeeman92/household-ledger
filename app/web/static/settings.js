@@ -137,7 +137,7 @@ var FMT = (function () {   // the household's locale and currency, as the server
       tr.querySelectorAll(".err").forEach(function (e) { e.textContent = ""; });
       tr.querySelectorAll("[aria-invalid]").forEach(function (i) { i.removeAttribute("aria-invalid"); });
       post("/settings/" + kind + "/row", body).then(function (res) {
-        if (res.ok) { delete tr.dataset.new; setOrig(tr, res.row); show(tr, res.row); back(tr); flash(tr, "Saved"); if (kind === "mapping" && res.row && res.row.category) cats[String(res.row.category).toLowerCase()] = 1; status("Saved" + (res.warning ? " (" + res.warning + ")" : "") + ". The dashboard shows it after a rebuild: press Rebuild now above.", false); needRebuild(res); return; }
+        if (res.ok) { delete tr.dataset.new; setOrig(tr, res.row); show(tr, res.row); back(tr); flash(tr, "Saved"); if (kind === "mapping" && res.row && res.row.category) cats[String(res.row.category).toLowerCase()] = 1; status("Saved" + (res.warning ? " (" + res.warning + ")" : "") + ". The dashboard shows it after a rebuild: Rebuild now is at the top of the page.", false); needRebuild(res); return; }
         var errs = res.errors || {}, first = true, fieldErr = false;
         Object.keys(errs).forEach(function (f) {
           var td = tr.querySelector('td[data-f="' + f + '"]');
@@ -151,7 +151,9 @@ var FMT = (function () {   // the household's locale and currency, as the server
     function del(tr) {
       if (!confirm("Delete this row?")) return;
       post("/settings/" + kind + "/row/delete", origOf(tr)).then(function (res) {
-        if (res.ok) { var nx = tr.nextElementSibling || tr.previousElementSibling; tr.remove(); if (nx) back(nx); status("Row deleted. The dashboard shows it after a rebuild.", false); needRebuild(res); } else status((res.errors && res.errors._) || "Row not deleted (already gone? reload the page).", true);
+        if (res.ok) { var nx = tr.nextElementSibling || tr.previousElementSibling, add = tr.closest("section, .panel, body").querySelector("[data-act=add]"); tr.remove();
+          /* focus stays with the list (DS-A11Y-5): the neighbour's Edit, else its first field when it is being edited, else Add */
+          var to = nx && (nx.querySelector("[data-act=edit]") || nx.querySelector("input,select,button")); if (to) to.focus(); else if (add) add.focus(); status("Row deleted. The dashboard shows it after a rebuild.", false); needRebuild(res); } else status((res.errors && res.errors._) || "Row not deleted (already gone? reload the page).", true);
       }).catch(function () { status("Row not deleted: could not reach the server.", true); });
     }
     Array.prototype.forEach.call(tbody.rows, function (tr) {

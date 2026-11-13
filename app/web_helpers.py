@@ -41,6 +41,7 @@ def _register_formatters(env) -> None:
     env.filters["clock"] = loc(formatting.time)
     env.filters["month"] = loc(formatting.month)
     env.filters["month_short"] = loc(formatting.month_short)
+    env.filters["month_name"] = loc(formatting.month_name)
 
 
 _register_formatters(templates.env)

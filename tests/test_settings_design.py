@@ -89,7 +89,7 @@ def test_next_month_step_says_a_verb_and_can_be_undone(client, sample):
 def test_balances_error_sits_under_its_field_and_keeps_what_was_typed(client, loaded):
     client.post("/balances/2025-04", data={"account": ["Lembas Student Loan"], "amount": ["lots"]})
     page = client.get("/upload?balances_month=2025-04").text
-    assert re.search(r'<input id="bal-\d+" name="amount"[^>]*aria-describedby="bal-how-(\d+) bal-err-\1"[^>]*aria-invalid="true"[^>]*value="lots"', page)
+    assert re.search(r'<input id="bal-\d+" class="num" name="amount"[^>]*aria-describedby="bal-how-(\d+) bal-err-\1"[^>]*aria-invalid="true"[^>]*value="lots"', page)
     assert re.search(r'<div class="err" id="bal-err-\d+" role="alert">Must be a number', page)
     assert 'value="lots"' not in client.get("/upload?balances_month=2025-04").text   # shown once, as a flash is
 

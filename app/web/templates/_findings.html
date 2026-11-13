@@ -17,8 +17,8 @@
   {% if findings.build_id is none %}<p class="muted">Nothing to report until the first build finishes.</p>
   {% elif not un %}<p class="muted" id="unmapped-none">Every item in the last build has a mapping.</p>
   {% else %}
-  <p class="muted mt-0 mb-2">Pre-filled from each item's budget group: check the guesses, change what is wrong, then add them.</p>
   <p class="muted edge bad edge-note" id="unmapped-intro">{{ un|length }} item{{ '' if un|length == 1 else 's' }} in the exports {{ 'has' if un|length == 1 else 'have' }} no mapping, so the ledger could not be built. Give each a category and flow (reuse existing names) and the mapping is extended and rebuilt. Items left blank stay unmapped.</p>
+  <p class="muted mt-0 mb-2">Pre-filled from each item's budget group: check the guesses, change what is wrong, then add them.</p>
   {% set mf = request.session.pop("map_form", None) %}{% set typed = mf.rows if mf else {} %}
   <form method="post" action="/upload/map" id="unmapped-form"{% if mf %} aria-describedby="map-err"{% endif %}>{{ csrf_field(request) }}
     {% if mf %}<p class="err" id="map-err" role="alert">Not saved: {{ mf.error }} Nothing else changed.</p>{% endif %}
@@ -26,12 +26,12 @@
     <details {% if un|length <= 8 or mf %}open{% endif %}><summary>Show the {{ un|length }} item{{ '' if un|length == 1 else 's' }}</summary>
     <table class="plain" data-list="unbounded"><thead><tr><th>Item</th><th>Months</th><th class="num">Rows</th><th>Canonical item</th><th>Category</th><th>Flow</th></tr></thead><tbody>
     {% for u in un %}{% set t = typed.get(u['item']) %}{% set inv = mf and u['item'] in mf.bad %}<tr>
-      <td>{{ u.item }}<input type="hidden" name="item" value="{{ u['item'] }}"><div class="muted">{{ u.group }}</div></td>
+      <td>{{ u.item }}<input type="hidden" name="item" value="{{ u['item'] }}"><div class="muted">{{ u.group }}</div>{% if inv %}<div class="err" id="map-err-{{ loop.index }}">This row: check its category and flow.</div>{% endif %}</td>
       <td class="mono">{{ u.months[0]|month_short }}{% if u.months|length > 1 %} … {{ u.months[-1]|month_short }}{% endif %}</td>
       <td class="mono num">{{ u.rows|number }}</td>
       <td><input name="canonical" value="{{ t.canonical if t else u['canonical_guess'] }}" aria-label="Canonical item for {{ u['item'] }}"></td>
-      <td><input name="category" list="map-categories" value="{{ t.category if t else (u.category_guess or u.group or '') }}" aria-label="Category for {{ u['item'] }}"{% if inv %} aria-invalid="true" aria-describedby="map-err"{% endif %}></td>
-      <td><select name="flow" aria-label="Flow for {{ u['item'] }}"{% if inv %} aria-invalid="true" aria-describedby="map-err"{% endif %}>{% for f in findings.flows %}<option {% if f == (t.flow if t else u.flow_guess) %}selected{% endif %}>{{ f }}</option>{% endfor %}</select></td>
+      <td><input name="category" list="map-categories" value="{{ t.category if t else (u.category_guess or u.group or '') }}" aria-label="Category for {{ u['item'] }}"{% if inv %} aria-invalid="true" aria-describedby="map-err-{{ loop.index }} map-err"{% endif %}></td>
+      <td><select name="flow" aria-label="Flow for {{ u['item'] }}"{% if inv %} aria-invalid="true" aria-describedby="map-err-{{ loop.index }} map-err"{% endif %}>{% for f in findings.flows %}<option {% if f == (t.flow if t else u.flow_guess) %}selected{% endif %}>{{ f }}</option>{% endfor %}</select></td>
     </tr>{% endfor %}</tbody></table></details>
     <p class="mt-3"><button class="btn" type="submit" {% if build.state == 'running' %}disabled title="A rebuild is running"{% endif %}>Add to mapping and rebuild</button></p>
   </form>

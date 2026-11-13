@@ -118,7 +118,7 @@
   {% if not pretax %}<p class="muted">Each person's pre-tax saving is set here, once the household's people are named.</p><p><a class="btn" href="#rules">Add the household's people</a></p>{% endif %}
   {% for r in pretax %}<p class="tools"><input type="hidden" name="person" value="{{ r.person }}"><label>{{ r.person }} <input name="value" inputmode="decimal" value="{{ r.value }}" size="8" aria-label="Pre-tax saving for {{ r.person }}"></label>
     <select name="unit" aria-label="Unit for {{ r.person }}"><option value="share"{% if r.unit == 'share' %} selected{% endif %}>% of gross</option><option value="usd"{% if r.unit == 'usd' %} selected{% endif %}>$ a month</option></select></p>{% endfor %}
-  {% if pretax %}<p><button class="btn primary" type="submit">Save pre-tax saving</button></p>{% endif %}
+  {% if pretax %}<p><button class="btn" type="submit">Save pre-tax saving</button></p>{% endif %}
 </form>
 {% set tf = tax_form or {} %}{% set tbad = tf.get("field") %}
 {% macro tax_err(field) %}{% if tbad == field %}<br><span class="err" id="tax-{{ field }}-err" role="alert">{{ tf.error[:1]|upper ~ tf.error[1:] }}.</span>{% endif %}{% endmacro %}
@@ -179,11 +179,10 @@
   {% if key == "household" %}
   <form class="panel" method="post" action="/settings/household/form">{{ csrf_field(request) }}
     <h2>Household</h2>
+    {% set hf = hh_form or {} %}
     <div class="formgrid">
-      <label>Household name <input type="text" name="name" value="{{ hh.name }}" required></label>
-      <label>Dashboard title <input type="text" name="title" value="{{ hh.title }}" required></label>
-      <label>Currency <input type="text" name="currency" value="{{ hh.currency or 'USD' }}" maxlength="3" pattern="[A-Za-z]{3}" title="Three letters, for example USD or EUR"></label>
-      <label>Locale <input type="text" name="locale" value="{{ hh.locale or 'en-US' }}" title="Number and date format, for example en-US or de-DE"></label>
+      {% for k, lab, extra in [("name", "Household name", ' required'), ("title", "Dashboard title", ' required'), ("currency", "Currency", ' maxlength="3" pattern="[A-Za-z]{3}" title="Three letters, for example USD or EUR"'), ("locale", "Locale", ' title="Number and date format, for example en-US or de-DE"')] %}
+      <label>{{ lab }} <input type="text" name="{{ k }}" value="{{ hf[k] if hf else (hh[k] or ('USD' if k == 'currency' else ('en-US' if k == 'locale' else ''))) }}"{{ extra|safe }}{% if hf.get('field') == k %} aria-invalid="true" aria-describedby="hh-{{ k }}-err"{% endif %}>{% if hf.get('field') == k %}<span class="err" id="hh-{{ k }}-err" role="alert">{{ hf.error[:1]|upper ~ hf.error[1:] }}</span>{% endif %}</label>{% endfor %}
     </div>
     <p class="mt-3"><button class="btn primary" type="submit">Save household</button></p>
   </form>
@@ -197,8 +196,8 @@
     <label>People <input type="text" name="people" value="{{ (rules.people or [])|join(', ') }}" placeholder="Rosie, Sam"></label>
     <p class="muted">Matching ignores capitals. Clear both fields of a row to remove it; the blank row adds one.</p>
     <table class="plain" data-list="unbounded"><thead><tr><th scope="col">Paycheck description contains</th><th scope="col">Employer</th></tr></thead><tbody>
-      {% for e in (rules.employers or []) + [{}] %}<tr><td><input type="text" name="emp_match" value="{{ e.match or '' }}" aria-label="Paycheck description contains" placeholder="add: words in the paycheck description"></td>
-        <td><input type="text" name="emp_name" value="{{ e.name or '' }}" aria-label="Employer" placeholder="add: employer name"></td></tr>{% endfor %}
+      {% for e in (rules.employers or []) + [{}] %}{% set rn = ("new employer" if loop.last else "employer " ~ loop.index) %}<tr><td><input type="text" name="emp_match" value="{{ e.match or '' }}" aria-label="Paycheck description contains, {{ rn }}" placeholder="add: words in the paycheck description"></td>
+        <td><input type="text" name="emp_name" value="{{ e.name or '' }}" aria-label="Employer name, {{ rn }}" placeholder="add: employer name"></td></tr>{% endfor %}
     </tbody></table>
     <p class="mt-3"><button class="btn primary" type="submit">Save people and employers</button></p>
   </form>
@@ -206,8 +205,8 @@
   <div role="tabpanel" id="sp-rules-roles" aria-labelledby="st-rules-roles">
   <form class="panel" method="post" action="/settings/rules/roles">{{ csrf_field(request) }}
     <h2>Roles</h2>
-    <p class="muted">Which of your names play a part the charts rely on. Call your categories and items what you like, then say here which ones these are. One name per line; a blank field uses the default shown. To say "none", set the rule to <code>[]</code> in the JSON below.</p>
-    {% for key, label, help in role_fields %}{% set cur = rules.get(key) %}<label>{{ label }}{% if cur == [] %} <span class="muted">(none: set to [] in the JSON)</span>{% endif %} <textarea name="{{ key }}" rows="{{ [((cur or [])|length), (role_defaults[key]|length), 1]|max }}" placeholder="{{ role_defaults[key]|join('\n') }}" aria-describedby="role-{{ key }}">{{ (cur or [])|join('\n') }}</textarea></label>
+    <p class="muted">Which of your names play a part the charts rely on. Call your categories and items what you like, then say here which ones these are. One name per line; a blank field uses the default shown. To say "none", set the rule to <code>[]</code> on <a href="#rules/json">All rules as JSON</a>.</p>
+    {% for key, label, help in role_fields %}{% set cur = rules.get(key) %}<label>{{ label }}{% if cur == [] %} <span class="muted">(none: set to [] in All rules as JSON)</span>{% endif %} <textarea name="{{ key }}" rows="{{ [((cur or [])|length), (role_defaults[key]|length), 1]|max }}" placeholder="{{ role_defaults[key]|join('\n') }}" aria-describedby="role-{{ key }}">{{ (cur or [])|join('\n') }}</textarea></label>
     <input type="hidden" name="{{ key }}__was" value="{{ (cur or [])|join('\n') }}">
     <p class="muted" id="role-{{ key }}">{{ help }}</p>{% endfor %}
     <p class="mt-3"><button class="btn primary" type="submit">Save roles</button></p>
@@ -226,7 +225,7 @@
     </details>{% endif %}
     <label for="{{ ed.key }}-body">{{ ed.title }} as {{ 'CSV' if ed.key == 'cpi' else 'JSON' }}</label>
     <textarea class="json" id="{{ ed.key }}-body" name="body" spellcheck="false">{{ ed.body }}</textarea>
-    <p class="mt-3"><button class="btn{{ '' if key == 'household' else ' primary' }}" type="submit">Save {{ "household JSON" if key == "household" else ed.title|lower }}</button></p>
+    <p class="mt-3"><button class="btn{{ '' if key == 'household' else ' primary' }}" type="submit">Save {{ "household JSON" if key == "household" else (ed.save or ed.title|lower) }}</button></p>
   </form>
   {% if key == "household" %}</details>{% endif %}
   {% if key == "rules" %}</div>{% endif %}

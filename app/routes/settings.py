@@ -17,7 +17,7 @@ EDITORS = {
     "goals": {"title": "Goals", "help": "One row per goal: key, label, value, unit, note. The dashboard's Goals tab and the month's review read these; values are also confirmed each month in the checklist on Close a month. A share is a fraction (0.07) or a percentage (7%)."},
     "accounts": {"title": "Accounts", "help": "What the household owes and owns, for month-end balances (entered on Close a month). Kind is debt or asset. A debt's type is a debt type (empty: its linked item's); an asset's is cash, savings, retirement, brokerage, home, vehicle or other. Linked item is the canonical item a debt's payments go to, so the suggested balance can subtract last month's payment; APR adds a month's interest; escrow is the part of each payment that is not the loan. Person is one of the people, or empty for joint. Emergency marks an asset that counts toward the emergency fund (cash and savings by default). An account with balances is retired (Active no), not deleted: its balances are kept."},
     "events": {"title": "Life events", "help": "One row per event: month (YYYY-MM), label, and optionally its kind (job, move, family, health, purchase, debt, other) and the person it concerns (one of the people in Pipeline rules). Drawn as markers on the timeline charts; the Employer chart shows job events and events with no kind."},
-    "cpi": {"title": "CPI index", "help": "CSV: month, cpi, source. A price index (consumer prices, any base) used for the real-amounts toggle. US households: CPI-U, appending the newest month from FRED CPIAUCSL; mark estimates in source."},
+    "cpi": {"title": "CPI", "save": "CPI", "help": "CSV: month, cpi, source. The consumer price index (any base) behind the real-dollars toggle. US households: CPI-U, appending the newest month from FRED CPIAUCSL; mark estimates in source."},
     "rules": {"title": "Pipeline rules", "help": "JSON object of household-specific classification rules. Unknown keys and invalid regular expressions are rejected on save."},
     "household": {"title": "Household", "help": "JSON object: name, title, currency, theme. Shown in the header and page titles."},
 }
@@ -408,7 +408,7 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         from .. import yearly_checklist as _yc
         yc_items = _yc.items(conn)   # Settings → Yearly checklist (#157)
         fund_choices = sorted({r["name"] for r in conn.execute("SELECT name FROM accounts WHERE active ORDER BY name").fetchall()})
-    return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP, bills=bills, purchases=purchases, pp_form=request.session.pop("pp_form", None), pp_bought=request.session.pop("pp_bought", None), debt_category=debt_cat, yc_items=yc_items, yc_form=request.session.pop("yc_form", None), loan_categories=categories, fund_accounts=fund_choices,
+    return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP, bills=bills, purchases=purchases, pp_form=request.session.pop("pp_form", None), pp_bought=request.session.pop("pp_bought", None), debt_category=debt_cat, hh_form=request.session.pop("hh_form", None), yc_items=yc_items, yc_form=request.session.pop("yc_form", None), loan_categories=categories, fund_accounts=fund_choices,
                   yb_form=request.session.pop("yb_form", None), tax_form=request.session.pop("tax_form", None), bal_hist=request.session.pop("bh_form", None), yb_slug=_yb_slug, tax_cfg=_tax_cfg(),
                   categories=categories, rules={**rules, **(request.session.pop("people_typed", None) or {})}, hh=household, name_families=name_families, unmapped=unmapped,
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS,
@@ -670,8 +670,10 @@ async def household_form(request: Request, user=Depends(auth.require_editor)):
             if f.get(k):
                 data[k] = f[k].upper() if k == "currency" else f[k]
         problems = _save_setting(conn, "household", data)
-        if problems:
+        if problems:   # DS-FORM-1: keep what was typed, and say which field
             conn.rollback(); flash(request, "Not saved: " + "; ".join(problems[:4]), "bad")
+            field = next((k for k in ("name", "title", "currency", "locale") if problems[0].lstrip("/").startswith(k)), "name")
+            request.session["hh_form"] = {k: str(f.get(k) or "") for k in ("name", "title", "currency", "locale")} | {"field": field, "error": problems[0]}
         else:
             conn.commit(); flash(request, "Saved the household's name and display settings.")
     return RedirectResponse("/settings#household", status_code=303)

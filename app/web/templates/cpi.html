@@ -7,7 +7,7 @@
 <div class="row">
   <div class="panel">
     <h2>Fetch latest</h2>
-    <p>Newest month: <span class="mono">{% if latest %}{{ latest.month|month_short }}</span> ({{ latest_label }}){% else %}none</span>{% endif %}{% if estimated %} · {{ estimated|length }} estimated month{{ '' if estimated|length == 1 else 's' }}: {{ estimated[:6]|map(attribute='month')|map('month_short')|join(', ') }}{{ ' …' if estimated|length > 6 }}{% endif %}</p>
+    <p>Newest month: <span class="mono">{% if latest %}{{ latest.month|month_short }}</span> ({{ latest_label }}){% else %}none</span>{% endif %}{% if estimated %}. Estimated, until the series publishes them: {% if estimated|length == 1 %}{{ estimated[0].month|month_short }}{% else %}{{ estimated|length }} months, {{ estimated[0].month|month_short }} to {{ estimated[-1].month|month_short }}{% endif %}{% endif %}.</p>
     <form method="post" action="/cpi/fetch">{{ csrf_field(request) }}<button class="btn primary" type="submit">Fetch latest CPI</button></form>
     <p class="muted mt-3">Adds the months the table is missing and replaces estimated ones once the series publishes them; published values are never changed. It needs outbound network access, and the ledger is rebuilt afterwards.</p>
   </div>

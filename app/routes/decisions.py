@@ -38,7 +38,7 @@ def _target(form) -> dict | None:
         try:
             t[key] = float(amount.replace(",", "").replace("$", ""))
         except ValueError:
-            raise ValueError("the amount is a number of dollars") from None
+            raise decisions.DecisionError("the amount is a number of dollars", "amount") from None
     if form.get("until_payoff") and kind == "extra_payment":
         t["until_payoff"] = True
     return t
@@ -54,7 +54,7 @@ async def add_decision(month: str, request: Request, user=Depends(auth.require_e
                                  str(form.get("until") or "") or None, str(form.get("person") or "") or None, str(form.get("note") or ""), _who(user))
             conn.commit()
         except ValueError as e:
-            conn.rollback(); field = _field_of(str(e))
+            conn.rollback(); field = getattr(e, "field", None) or _field_of(str(e))   # the error says its field; the words are a fallback
             if form.get("from") == "form":   # the typed values come back, with the error under its field (DS-FORM-1)
                 request.session["dec_form"] = {k: str(form.get(k) or "") for k in ("text", "kind", "what", "amount", "until", "until_payoff", "person")} | {
                     "month": month, "field": field, "error": str(e)}

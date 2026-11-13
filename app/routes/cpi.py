@@ -45,7 +45,7 @@ def cpi_fetch_now(request: Request, user=Depends(auth.require_editor)):
             return RedirectResponse("/cpi", status_code=303)
         n = len(res["added"]) + len(res["replaced"])
         if not n:
-            flash(request, "CPI is already current: nothing to add or replace.")
+            flash(request, "Nothing new: the series has no month the table lacks, and no estimated month is published yet.")
             return RedirectResponse("/cpi", status_code=303)
         db.mark_inputs_changed(conn); conn.commit()   # cleared by the rebuild below; stays if that rebuild cannot run
         msg = f"Added {len(res['added'])} month(s), replaced {len(res['replaced'])} estimated month(s)."

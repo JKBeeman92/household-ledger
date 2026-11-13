@@ -135,6 +135,15 @@ def month(v, locale: str = "en-US") -> str:
     return format_skeleton("yMMMM", d, locale=_locale(locale)) if d else (str(v) if v else DASH)
 
 
+def month_name(n, locale: str = "en-US") -> str:
+    """A calendar month by its number, in the household's language: 2 → "February" (a yearly bill's month, #151)."""
+    import datetime as _dt
+    try:
+        return format_skeleton("MMMM", _dt.date(2000, int(n), 1), locale=_locale(locale))
+    except (TypeError, ValueError):
+        return DASH
+
+
 def month_short(v, locale: str = "en-US") -> str:
     """A budget month in a table or on a chart: "2026-11" → "Nov 2026"."""
     d = _as_date(v)
