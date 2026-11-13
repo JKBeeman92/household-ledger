@@ -100,3 +100,14 @@ def test_every_page_has_a_main_landmark_and_a_skip_link_first(client):
     page = client.get("/").text   # DS-A11Y-4
     assert page.count("<main") == 1 and page.index('class="skip"') < page.index('class="topbar"')
     assert "Switch to day mode" in page and "Switch between day and night" not in page   # DS-NAV-3
+
+
+def test_dashboard_charts_draw_fixes_courses_and_waypoints():
+    """DS-CHART-1, 2, 3 (#191): line charts are fixes on a track (HL.fixes), goals are waypoints in --accent-2 (HL.waypoint); no chart
+    draws a filled area or a dashed reference line of its own any more."""
+    page = (ROOT / "app" / "web" / "templates" / "dashboard.html").read_text()
+    assert "const fixes = (svg, pts, col" in page and "const waypoint = (svg, x1, x2, yv, label" in page and "const waypoints = (svg, x1, x2, items)" in page and "var(--accent-2)" in page
+    assert "d3.area()" not in page and "stroke-dasharray', '5 4'" not in page and "url(#hl-inc)" not in page
+    for chart in ("monthly", "goal-lines", "ef-lines", "dti-lines", "nw-chart"):
+        start = page.index(f"dash.draw('{chart}'"); body = page[start:page.index("\ndash.draw(", start + 10)]
+        assert "HL.fixes(" in body, chart

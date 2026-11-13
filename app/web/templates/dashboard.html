@@ -42,6 +42,7 @@
 .hl table { border-collapse: collapse; width: 100%; font-size: var(--text-caption); }
 .hl th, .hl td { text-align: right; padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--line); white-space: nowrap; }
 .hl th:first-child, .hl td:first-child { text-align: left; }
+.hl table.words2 th:nth-child(2), .hl table.words2 td:nth-child(2) { text-align: left; }   /* a name in the second column (DS-TABLE-1) */
 .hl th { position: sticky; top: 0; background: var(--surface-200); font-weight: var(--weight-strong); color: var(--ink-muted); }
 .hl tr.filled td { color: var(--warning); }
 .hl td.neg { color: var(--danger); }
@@ -76,11 +77,14 @@
 .hl .key { list-style: none; margin: var(--space-2) 0; padding: 0; display: grid; gap: var(--space-1); font-size: var(--text-caption); color: var(--ink-muted); }
 .hl .key.row { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
 .hl .key li { display: flex; align-items: center; gap: var(--space-1); }
-.hl .key li:not(:has(.glyph))::before { content: ""; flex: none; width: 1.6rem; height: 6px; background: radial-gradient(circle, var(--accent-2-text, var(--ink-muted)) 3px, transparent 3.5px); }
-.hl .key .glyph { flex: none; min-width: 1.6rem; text-align: center; font-weight: var(--weight-strong); color: var(--accent-2-text, var(--ink)); }
+.hl .key li:not(:has(.glyph))::before { content: ""; flex: none; width: 1.6rem; height: 6px; background: radial-gradient(circle, var(--ink-muted) 2.5px, transparent 3px); }
+.hl .key .glyph { flex: none; min-width: 1.6rem; text-align: center; font-weight: var(--weight-strong); color: var(--ink); }   /* DS-COLOR-2: --accent-2 is for the goal mark (.glyph.wp) only */
 /* Line-style swatches: the chip shows the stroke it describes instead of a character standing in for it. */
 .hl .key .glyph.ln { min-width: 1.4rem; height: 0; border-top: 2px solid currentColor; align-self: center; }
 .hl .key .glyph.ln.dash { border-top-style: dashed; } .hl .key .glyph.ln.dot { border-top-style: dotted; border-top-width: 3px; }
+/* DS-CHART-1, 3: a fix (a ring with a dot: a month that happened) and a waypoint (a filled --accent-2 dot: a goal) in a chart's key */
+.hl .key .glyph.fix { min-width: 0; width: .7rem; height: .7rem; align-self: center; border-radius: 50%; border: 1.5px solid currentColor; background: radial-gradient(currentColor 0 22%, transparent 26%); }
+.hl .key .glyph.wp { min-width: 0; width: .7rem; height: .7rem; align-self: center; border-radius: 50%; background: var(--accent-2); }
 .hl .key .glyph.fade { min-width: 1.4rem; height: .7rem; align-self: center; border-radius: 2px; background: linear-gradient(90deg, currentColor 50%, color-mix(in srgb, currentColor 30%, transparent) 50%); }
 .hl .key .bar { flex: none; width: 1.6rem; height: .6rem; border-radius: 2px; background: var(--k); }
 .hl .key .bar.r { clip-path: polygon(0 0, 80% 0, 100% 50%, 80% 100%, 0 100%); }
@@ -266,7 +270,7 @@
     <div class="card">
       <h2 id="monthly-chart">Income against outgo, by budget month</h2>
         <ul class="key row"><li><span class="glyph">=</span>outgo is living spend plus debt payments</li><li><span class="glyph">−</span>transfers and exclusions left out (Method tab)</li><li><span class="glyph ln dot" aria-hidden="true"></span>dotted markers are life events: hover one, or open the list below the chart</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Outgo is living spend plus debt payments. Income and outgo leave out transfers between envelopes and the other exclusions listed on the Method tab. Dotted markers are life events; hover for the label. The gap between the income line and the dotted spend-plus-debt line is the month’s net. Months where the dotted line sits above income were funded from savings or a one-off inflow. Spikes in income are bonuses, tax refunds, stimulus or severance; spikes in spend are usually a tax bill, a trip or a project. Hover a dot along the top for the event behind a step change.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Spend + debt</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-monthly" data-source="monthly events"></tbody></table></div></details>
+      <details class="how"><summary>How to read this</summary><p>Outgo is living spend plus debt payments. Income and outgo leave out transfers between envelopes and the other exclusions listed on the Method tab. Dotted markers are life events; hover for the label. Each ring is a month. The gap between the income track and the thinner spend-plus-debt track is the month’s net. Months where spend-plus-debt sits above income were funded from savings or a one-off inflow. Spikes in income are bonuses, tax refunds, stimulus or severance; spikes in spend are usually a tax bill, a trip or a project. Hover a dot along the top for the event behind a step change.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Spend + debt</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-monthly" data-source="monthly events"></tbody></table></div></details>
       <div class="chart" data-draw="monthly" data-source="monthly events"></div>
       <details class="how evlist"><summary>Life events in this period</summary><ul class="key row events" data-draw="event-list" data-source="events" aria-label="Life events"></ul></details>
       <div class="legend"><span data-c="0">Income</span><span data-c="1">Living spend</span><span data-c="2">Spend + debt</span></div>
@@ -283,6 +287,7 @@
         <div><h3 class="sub">Categories</h3><div class="chart radar" data-draw="radar-b" data-source="cat_year"></div></div>
         <div><h3 class="sub">Categories</h3><div class="chart radar" data-draw="radar-c" data-source="cat_year"></div></div>
       </div>
+      <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table class="words2"><thead><tr><th scope="col">Year</th><th scope="col">Category</th><th scope="col" class="num">Spent</th></tr></thead><tbody data-draw="dt-radar" data-source="cat_year"></tbody></table></div></details>
     </div>
     <div class="grid">
       <div class="card">
@@ -421,26 +426,26 @@
     </div>
     <div class="card">
       <h2 id="goal-chart">The three ratios, month by month</h2>
-        <ul class="key row"><li><span class="glyph ln" aria-hidden="true"></span>solid: twelve-month trailing share</li><li><span class="glyph ln dash" aria-hidden="true"></span>dashed: target, floor or cap</li><li><span class="glyph">↑</span>above target is good for giving and savings, bad for housing</li></ul>
+        <ul class="key row"><li><span class="glyph fix" aria-hidden="true"></span>each month: the twelve-month trailing share</li><li><span class="glyph wp" aria-hidden="true"></span>a target, floor or cap, with its figure</li><li><span class="glyph">↑</span>above target is good for giving and savings, bad for housing</li></ul>
       <div class="chart" data-draw="goal-lines" data-source="goal_month goals"></div>
-        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Giving / gross</th><th scope="col">Savings / gross</th><th scope="col">Housing / take-home</th></tr></thead><tbody data-draw="dt-goal-lines" data-source="goal_month"></tbody></table></div></details>
-      <div class="legend"><span data-c="0">Giving / gross</span><span data-c="1">Savings funding / gross</span><span data-c="2">Housing + utilities / take-home</span></div>
-      <details class="how"><summary>How to read this</summary><p>Giving as a share of gross (floor and target lines), savings-group funding as a share of gross (target line), and housing plus utilities as a share of take-home (cap line). Twelve-month trailing averages, so a three-paycheck month or a lump payment does not whip the line around. A solid line above its dashed target is good for giving and savings, and bad for housing. The lines are twelve-month trailing averages, so a change in behaviour takes a few months to show. Gross is the stated annual salary spread evenly across months; take-home is the net paychecks that actually landed, so the housing ratio is honest about months with two versus three paychecks only in the trailing view.</p></details>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Giving / gross</th><th scope="col">Savings groups / gross</th><th scope="col">Housing / take-home</th></tr></thead><tbody data-draw="dt-goal-lines" data-source="goal_month"></tbody></table></div></details>
+      <div class="legend"><span data-c="0">Giving / gross</span><span data-c="1">Savings groups / gross</span><span data-c="2">Housing + utilities / take-home</span></div>
+      <details class="how"><summary>How to read this</summary><p>Each line is a share over the last twelve months, one ring a month; the filled dot at the right, with its dotted level, is your target, floor or cap. Above it is good for giving and savings, and bad for housing. Twelve months smooth out a three-paycheck month or a lump payment, so a change in habit takes a few months to show.</p><p>Giving and savings groups are shares of gross: the stated annual salary spread evenly across months. Housing and utilities are a share of take-home: the paychecks that actually landed.</p></details>
     </div>
     <div class="card">
       <h2 id="ef-chart">Emergency fund coverage, month by month</h2>
-        <ul class="key row"><li><span class="glyph ln" aria-hidden="true"></span>months of outgo the emergency savings cover</li><li><span class="glyph ln dash" aria-hidden="true"></span>dashed: your target, when set</li><li><span class="glyph">↑</span>higher is safer</li></ul>
+        <ul class="key row"><li><span class="glyph fix" aria-hidden="true"></span>months of outgo the emergency savings cover</li><li><span class="glyph wp" aria-hidden="true"></span>your target, when set</li><li><span class="glyph">↑</span>higher is safer</li></ul>
       <div class="chart" data-draw="ef-lines" data-source="emergency_fund goals"></div>
         <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Emergency money</th><th scope="col">Outgo a month</th><th scope="col">Months covered</th></tr></thead><tbody data-draw="dt-ef" data-source="emergency_fund"></tbody></table></div></details>
-      <details class="how"><summary>How to read this</summary><p>Each month-end's emergency money (accounts marked Emergency on Settings → Accounts) divided by the average monthly living spend plus debt payments over the twelve budget months to then. The dashed line is emergency_months from Settings → Goals.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Each month-end's emergency money (accounts marked Emergency on Settings → Accounts) divided by the average monthly living spend plus debt payments over the twelve budget months to then. The waypoint, with its dotted level, is emergency_months from Settings → Goals.</p></details>
     </div>
     <div class="card">
       <h2 id="dti-chart">Debt-to-income, month by month</h2>
-        <ul class="key row"><li><span class="glyph ln" aria-hidden="true"></span>solid: twelve-month trailing share of gross</li><li><span class="glyph ln dash" aria-hidden="true"></span>dashed: your cap, when set</li><li><span class="glyph">↓</span>lower is better</li></ul>
+        <ul class="key row"><li><span class="glyph fix" aria-hidden="true"></span>each month: the twelve-month trailing share of gross</li><li><span class="glyph wp" aria-hidden="true"></span>your cap, when set</li><li><span class="glyph">↓</span>lower is better</li></ul>
       <div class="chart" data-draw="dti-lines" data-source="debt_to_income goals"></div>
         <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">All debt / gross</th><th scope="col">Housing / gross</th><th scope="col">All debt / take-home</th><th scope="col">Housing / take-home</th></tr></thead><tbody data-draw="dt-dti" data-source="debt_to_income"></tbody></table></div></details>
       <div class="legend"><span data-c="0">All debt / gross</span><span data-c="2">Housing / gross</span></div>
-      <details class="how"><summary>How to read this</summary><p>Debt payments, and housing payments, as a share of gross pay, each over the trailing twelve months so a month with an extra payment does not whip the line around. Housing is the housing categories plus any mortgage-type debt (Last month tab, "Debt against income"). The dashed lines are the caps you set on Settings → Goals (dti_cap, housing_dti_cap); without one there is no line, because lenders' rules of thumb are theirs, not a household's. With no gross pay recorded there is nothing to draw.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Debt payments, and housing payments, as a share of gross pay, each over the trailing twelve months so a month with an extra payment does not whip the line around. Housing is the housing categories plus any mortgage-type debt (Last month tab, "Debt against income"). The waypoints are the caps you set on Settings → Goals (dti_cap, housing_dti_cap); without one there is no waypoint, because lenders' rules of thumb are theirs, not a household's. With no gross pay recorded there is nothing to draw.</p></details>
     </div>
     <div class="grid">
       <div class="card">
@@ -514,6 +519,7 @@
       <details class="how"><summary>How to read this</summary><p>Spending booked to the envelopes your rules name as catch-alls; name them as <code>catchall_items</code> in the rules on the Settings page. Envelopes named like savings can end up holding everyday spending. When a bar here is tall, real spending was hidden under a saving label that year. An empty chart means nothing was booked to these envelopes.</p></details>
         <div class="chart" data-draw="slush" data-source="slush"></div>
         <div class="legend" data-draw="slush-legend" data-source="slush"></div>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table class="words2"><thead><tr><th scope="col">Year</th><th scope="col">Envelope</th><th scope="col" class="num">Net spent</th></tr></thead><tbody data-draw="dt-slush" data-source="slush"></tbody></table></div><p class="note">A negative figure is money returned to the envelope over the year.</p></details>
       </div>
       <div class="card">
         <h2 id="excl-table">What was removed from the totals</h2>
@@ -546,11 +552,11 @@
       </div>
       <div class="card">
         <h2 id="nw-chart">Net worth, month by month</h2>
-        <ul class="key row"><li><span class="glyph ln" aria-hidden="true"></span>net worth</li><li><span class="glyph ln dash" aria-hidden="true"></span>dashed: a debt in it is estimated</li><li><span class="glyph">▼</span>accounts added</li></ul>
+        <ul class="key row"><li><span class="glyph fix" aria-hidden="true"></span>net worth at each month-end</li><li><span class="glyph ln dot" aria-hidden="true"></span>dotted: a debt in it is estimated</li><li><span class="glyph">▼</span>accounts added</li></ul>
         <div class="chart" data-draw="nw-chart" data-source="balances net_worth"></div>
         <div class="legend" data-draw="nw-legend" data-source="balances"></div>
         <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Assets</th><th scope="col">Debts</th><th scope="col">Net worth</th><th scope="col">Change</th><th scope="col">You did</th><th scope="col">Happened</th></tr></thead><tbody data-draw="dt-nw" data-source="net_worth"></tbody></table></div></details>
-        <details class="how"><summary>How to read this</summary><p>Assets stack above zero and debts below, by account type; the line is net worth, assets less debts. Where a debt had no balance entered for a month its figure is estimated (from the one before, a month's interest and the payments since) and the line is dashed there; enter it at Close a month to make it solid. A triangle marks a month in which accounts were added, so a step up there is new accounts, not progress. Colours follow the order of the types until each type gets a colour of its own.</p></details>
+        <details class="how"><summary>How to read this</summary><p>Assets stack above zero and debts below, by account type; the track of rings is net worth, assets less debts. Where a debt had no balance entered for a month its figure is estimated (from the one before, a month's interest and the payments since): that month's ring and track are dotted; enter it at Close a month to make them solid. A triangle marks a month in which accounts were added, so a step up there is new accounts, not progress. Colours follow the order of the types until each type gets a colour of its own.</p></details>
       </div>
       <div class="card">
         <h2 id="balances-table">Balances at the latest month-end</h2>
@@ -718,8 +724,37 @@ window.HL = (() => {
   const fillTable = (tbody, rows, cells) => {
     tbody.replaceChildren(...rows.map((r) => { const tr = document.createElement('tr'); for (const c of cells) { const td = document.createElement('td'); tr.appendChild(td); const v = c(r, td); td.textContent = v == null ? '—' : v; } return tr; }));
   };
-  const mo = (m) => (m ? fmtM(parseM(m)) : '—');   // a YYYY-MM month as a table shows it (DS-WORD-6)
-  return { money, pct, basis, fld, parseM, fmtM, mo, colors, tip, esc, margins, stackChart, legend, fillTable, usd0, edgeTicks };
+  const mo = (m) => (m ? fmtM(parseM(m)) : '—');
+  // DS-EMPTY-1: an empty chart says what will appear and offers the first step as a button
+  const empty = (el, text, href, label) => { el.replaceChildren(); const p = Object.assign(document.createElement('p'), { textContent: text });
+    el.append(p, Object.assign(document.createElement('a'), { className: 'btn', href, textContent: label })); };   // a YYYY-MM month as a table shows it (DS-WORD-6)
+  // DS-CHART-1, 2: months that happened are fixes (a ring with a dot) on a solid track; an estimated or future stretch is a dotted
+  // course. pts: [{x, y, est}] in screen units, y null for a gap. The rings shrink on a dense chart so they never touch.
+  const fixes = (svg, pts, col, { width = 2, est = (p) => p.est } = {}) => {
+    const g = svg.append('g').attr('class', 'fixes'), ok = pts.filter((p) => p.y != null && Number.isFinite(p.y));
+    for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i]; if (a.y == null || b.y == null || !Number.isFinite(a.y) || !Number.isFinite(b.y)) continue;
+      g.append('line').attr('x1', a.x).attr('x2', b.x).attr('y1', a.y).attr('y2', b.y).attr('stroke', col).attr('stroke-width', width).attr('stroke-linecap', 'round')
+        .attr('stroke-dasharray', est(a) || est(b) ? '1 5' : null); }
+    const gap = ok.length > 1 ? Math.abs(ok[ok.length - 1].x - ok[0].x) / (ok.length - 1) : 20, r = Math.max(1.6, Math.min(4, gap / 3));
+    g.selectAll('circle.fix-ring').data(ok).join('circle').attr('class', 'fix-ring').attr('cx', (p) => p.x).attr('cy', (p) => p.y).attr('r', r)
+      .attr('fill', 'var(--surface-200)').attr('stroke', col).attr('stroke-width', 1.5).attr('stroke-dasharray', (p) => est(p) ? '1 2' : null);
+    if (r >= 2.5) g.selectAll('circle.fix-dot').data(ok.filter((p) => !est(p))).join('circle').attr('class', 'fix-dot').attr('cx', (p) => p.x).attr('cy', (p) => p.y).attr('r', 1.2).attr('fill', col);
+    return g; };
+  // DS-CHART-3: a goal is a filled waypoint in --accent-2 at the chart's right edge, with its name and amount beside it; the level it
+  // stands for runs across as a dotted course (it has not happened)
+  // several goals on one chart: labels are spaced so they never overprint (ty: where the label sits)
+  const WP_ROOM = 18;   // a chart with waypoints keeps this much room at the right, past its last month, for them
+  const waypoint = (svg, x1, x2, yv, label, ty = yv - 7) => { const g = svg.append('g').attr('class', 'waypoint');
+    g.append('line').attr('x1', x1).attr('x2', x2).attr('y1', yv).attr('y2', yv).attr('stroke', 'var(--accent-2)').attr('stroke-width', 1.5).attr('stroke-dasharray', '1 5').attr('stroke-linecap', 'round');
+    g.append('circle').attr('cx', x2 - 5).attr('cy', yv).attr('r', 5).attr('fill', 'var(--accent-2)');
+    g.append('text').attr('x', x2 - 14).attr('y', ty).attr('text-anchor', 'end').attr('fill', 'var(--accent-2-text, var(--ink))')
+      .attr('paint-order', 'stroke').attr('stroke', 'var(--surface-200)').attr('stroke-width', 5).attr('stroke-linejoin', 'round').text(label);   // a halo: the tracks never show through
+    g.raise();
+    return g; };
+  const waypoints = (svg, x1, x2, items) => {   // items: [{y (screen), label}]; labels at least 14px apart, highest first
+    const list = items.filter((w) => w && Number.isFinite(w.y)).sort((a, b) => a.y - b.y); let last = -Infinity;
+    for (const w of list) { const ty = Math.max(w.y - 7, last + 15); last = ty; waypoint(svg, x1, x2, w.y, w.label, ty); } };
+  return { money, pct, basis, fld, parseM, fmtM, mo, empty, fixes, waypoint, waypoints, WP_ROOM, colors, tip, esc, margins, stackChart, legend, fillTable, usd0, edgeTicks };
 })();
 // ---- period filter (issue #116): one range for every timeline, resolved against the LOADED months, not today's date ----
 (() => {
@@ -894,9 +929,7 @@ ledeDraw('lede-income', 'income', HL.money); ledeDraw('lede-spend', 'spend', HL.
 // a quiet twelve-month line under each Overview figure: the shape behind the number
 HL.spark = (el, values) => { el.replaceChildren(); if (values.length < 2) return; const W = el.clientWidth || 160, H = 28, x = d3.scaleLinear([0, values.length - 1], [1, W - 1]), y = d3.scaleLinear(d3.extent(values).map((v, i) => v + (i ? 1e-9 : 0)), [H - 3, 3]);
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%').attr('height', H);
-  svg.append('path').attr('d', d3.area().x((_, i) => x(i)).y0(H).y1((v) => y(v))(values)).attr('fill', 'color-mix(in srgb, var(--accent, var(--ink)) 10%, transparent)');
-  svg.append('path').attr('d', d3.line().x((_, i) => x(i)).y((v) => y(v))(values)).attr('fill', 'none').attr('stroke', 'var(--accent, var(--ink))').attr('stroke-width', 1.5);
-  svg.append('circle').attr('cx', x(values.length - 1)).attr('cy', y(values[values.length - 1])).attr('r', 2.5).attr('fill', 'var(--accent, var(--ink))'); };
+  HL.fixes(svg, values.map((v, i) => ({ x: x(i), y: y(v) })), 'var(--accent, var(--ink))', { width: 1.5 }); };   // DS-CHART-1, at a glance
 for (const [k, f] of [['inc', 'income'], ['sp', 'spend'], ['db', 'debt'], ['net', 'net']]) for (const [b, sfx] of [['n', ''], ['r', '_real']])
   dash.draw(`sp-${k}-${b}`, (el) => { const g = dash.data('monthly'); if (g.status !== 'ok') { el.replaceChildren(); return; }
     const ms = [...g.data].sort((a, c) => a.m < c.m ? -1 : 1).slice(-12); HL.spark(el, ms.map((r) => Number(r[f + sfx]))); });
@@ -935,13 +968,7 @@ dash.draw('monthly', (el) => {
   svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
   svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
-  const line = (k) => d3.line().x((r) => x(r.d)).y((r) => y(r[k]));
-  const defs = svg.append('defs'); const grad = defs.append('linearGradient').attr('id', 'hl-inc').attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 1);
-  [[0, .26], [.25, .16], [.5, .08], [.75, .03], [1, 0]].forEach(([o, a]) => grad.append('stop').attr('offset', o).attr('style', `stop-color:${c[0]};stop-opacity:${a}`));
-  svg.append('path').datum(rows).attr('fill', 'url(#hl-inc)').attr('d', d3.area().x((r) => x(r.d)).y0(y(0)).y1((r) => y(r.income)));
-  svg.append('path').datum(rows).attr('fill', 'none').attr('stroke', c[0]).attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round').attr('d', line('income'));
-  svg.append('path').datum(rows).attr('fill', 'none').attr('stroke', c[1]).attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round').attr('d', line('spend'));
-  svg.append('path').datum(rows).attr('fill', 'none').attr('stroke', c[2]).attr('stroke-width', 1.5).attr('stroke-dasharray', '4 3').attr('d', line('outgo'));
+  ['income', 'spend', 'outgo'].forEach((k, i) => HL.fixes(svg, rows.map((r) => ({ x: x(r.d), y: y(r[k]) })), c[i], { width: i === 2 ? 1.5 : 2 }));   // DS-CHART-1
   const t = HL.tip(el);
   if (ev.status === 'ok') {
     svg.append('g').selectAll('line').data(ev.data).join('line').attr('x1', (e) => x(HL.parseM(e.m))).attr('x2', (e) => x(HL.parseM(e.m))).attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--chart-reference)').attr('stroke-dasharray', '2 3');
@@ -1220,7 +1247,7 @@ dash.draw('nw-legend', (el) => { el.replaceChildren(); const s = nwSeries(); if 
   s.keys.forEach((k, i) => { const sp = document.createElement('span'); sp.dataset.c = String(i % c.length); sp.style.setProperty('--sw', c[i % c.length]); sp.textContent = (k.startsWith('debt') ? 'owed: ' : '') + k.split(':')[1]; el.append(sp); }); });
 dash.draw('nw-chart', (el) => {
   el.replaceChildren(); const s = nwSeries(), N = HL.rd('net_worth');
-  if (!s || !s.rows.length || N.status !== 'ok' || !N.data.length) { el.textContent = 'No balances yet: add accounts on Settings → Accounts.'; return; }
+  if (!s || !s.rows.length || N.status !== 'ok' || !N.data.length) { HL.empty(el, 'Net worth by month shows here once accounts have month-end balances.', '/settings#accounts', 'Add accounts'); return; }
   const months = N.data.map((r) => r.m), inR = new Set(months);
   const data = months.map((m) => { const o = { m, d: HL.parseM(m) }; for (const k of s.keys) o[k] = 0;
     for (const r of s.rows) if (r.m === m) o[r.kind + ':' + (r.type || 'other')] += r.kind === 'debt' ? -Number(r.amount) : Number(r.amount); return o; });
@@ -1231,7 +1258,7 @@ dash.draw('nw-chart', (el) => {
   const ml = HL.margins(svg, y.ticks(5), HL.money);
   const x = d3.scaleBand(months, [ml, W - 8]).padding(0.15);
   svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
-  const every = Math.max(1, Math.ceil(months.length / Math.max(2, Math.floor((W - ml) / 70))));
+  const every = Math.max(1, Math.ceil(months.length / Math.max(2, Math.floor((W - ml) / 90))));   // room for "Mar 2025" at a phone's width
   svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).tickValues(months.filter((_, i) => i % every === 0)).tickFormat((m) => dash.fmt.month(HL.parseM(m))).tickSize(0)).call((a) => { a.select('.domain').remove(); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--chart-axis)');
   const c = HL.colors();
@@ -1239,8 +1266,7 @@ dash.draw('nw-chart', (el) => {
     .attr('x', (d) => x(d.data.m)).attr('width', x.bandwidth()).attr('y', (d) => y(Math.max(d[0], d[1]))).attr('height', (d) => Math.abs(y(d[0]) - y(d[1]))));
   const pts = N.data.map((r) => ({ m: r.m, v: nwField(r, 'net_worth'), est: r.estimated > 0, added: r.added_accounts }));
   const cx = (p) => x(p.m) + x.bandwidth() / 2;
-  for (let i = 1; i < pts.length; i++) svg.append('line').attr('x1', cx(pts[i - 1])).attr('x2', cx(pts[i])).attr('y1', y(pts[i - 1].v)).attr('y2', y(pts[i].v))
-    .attr('stroke', 'var(--ink)').attr('stroke-width', 2).attr('stroke-dasharray', pts[i].est || pts[i - 1].est ? '4 3' : null);
+  HL.fixes(svg, pts.map((p) => ({ x: cx(p), y: y(p.v), est: p.est })), 'var(--ink)');   // DS-CHART-1, 2: an estimated debt makes its month a dotted course
   pts.filter((p) => p.added).forEach((p) => svg.append('path').attr('d', d3.symbol(d3.symbolTriangle, 40)()).attr('transform', `translate(${cx(p)},${mt + 4}) rotate(180)`).attr('fill', 'var(--ink-muted)'));
   const t = HL.tip(el);
   svg.append('g').selectAll('rect').data(N.data).join('rect').attr('x', (r) => x(r.m)).attr('width', x.bandwidth()).attr('y', mt).attr('height', H - mt - mb).attr('fill', 'transparent')
@@ -1576,26 +1602,25 @@ dash.draw('goal-lines', (el) => {
   if (g.status !== 'ok' || G.status !== 'ok') { el.textContent = '—'; return; }
   const gv = (k) => { const r = G.data.find((x) => x.key === k); return r && r.value != null && Number.isFinite(Number(r.value)) ? Number(r.value) : null; };
   const first = g.data.findIndex((r) => r.giving_share_12 != null || r.joy_share_12 != null || r.housing_share_12 != null);   // start where there is something to draw
-  if (first < 0) { el.textContent = 'Nothing to draw yet: record gross pay on the Settings page, and paychecks need to land in the exports.'; return; }
+  if (first < 0) { HL.empty(el, 'The shares show here once gross pay is recorded (Gross salary, annual) and paychecks are in the exports.', '/settings#goals', 'Record gross pay'); return; }
   const rows = g.data.slice(first).map((r) => ({ d: HL.parseM(r.m), m: r.m, a: r.giving_share_12, b: r.joy_share_12, c: r.housing_share_12 }));
   const W = el.clientWidth || 600, H = 300, mt = 10, mb = 28;
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
   const yMax = Math.max(0.35, d3.max(rows, (r) => Math.max(r.a || 0, r.b || 0, r.c || 0)));
   const y = d3.scaleLinear([0, yMax], [H - mb, mt]).nice();
   const ml = HL.margins(svg, y.ticks(5), dash.fmt.pct(0));
-  const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
+  const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8 - HL.WP_ROOM]);   // room at the right for the waypoints
   svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(dash.fmt.pct(0)).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
   svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
-  const ref = (v, col, label) => { if (v == null) return; svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', col).attr('stroke-dasharray', '5 4').attr('stroke-opacity', .7); svg.append('text').attr('x', W - 8).attr('y', y(v) - 4).attr('text-anchor', 'end').attr('fill', col).text(label); };
-  ref(gv('giving_floor'), c[0], 'giving floor'); ref(gv('giving_target'), c[0], 'giving target'); ref(gv('joy_target'), c[1], 'savings target'); ref(gv('housing_cap'), c[2], 'housing cap');
-  const line = (k) => d3.line().defined((r) => r[k] != null).x((r) => x(r.d)).y((r) => y(r[k]));
-  ['a', 'b', 'c'].forEach((k, i) => svg.append('path').datum(rows).attr('fill', 'none').attr('stroke', c[i]).attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round').attr('d', line(k)));
+  ['a', 'b', 'c'].forEach((k, i) => HL.fixes(svg, rows.map((r) => ({ x: x(r.d), y: r[k] == null ? null : y(r[k]) })), c[i]));   // DS-CHART-1
+  HL.waypoints(svg, ml, W - 8, [['giving_floor', 'giving floor'], ['giving_target', 'giving target'], ['joy_target', 'savings groups target'], ['housing_cap', 'housing cap']]   // DS-CHART-3
+    .filter(([k]) => gv(k) != null).map(([k, label]) => ({ y: y(gv(k)), label: `${label} ${dash.fmt.pct(0)(gv(k))}` })));
   const t = HL.tip(el); const bis = d3.bisector((r) => r.d).center;
   const hover = svg.append('g').attr('display', 'none'); hover.append('line').attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--chart-axis)');
   svg.append('rect').attr('x', ml).attr('y', mt).attr('width', Math.max(0, W - ml - 8)).attr('height', H - mt - mb).attr('fill', 'transparent')
     .on('pointermove', (pe) => { const [px, py] = d3.pointer(pe, el); const r = rows[bis(rows, x.invert(px))]; if (!r) return; hover.attr('display', null).select('line').attr('x1', x(r.d)).attr('x2', x(r.d));
-      t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}, trailing 12 months</div><div><span class="sw" style="background:${c[0]}"></span>Giving ${r.a == null ? '—' : pct1(r.a)}</div><div><span class="sw" style="background:${c[1]}"></span>Savings funding ${r.b == null ? '—' : pct1(r.b)}</div><div><span class="sw" style="background:${c[2]}"></span>Housing + utilities ${r.c == null ? '—' : pct1(r.c)}</div>`); })
+      t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}, trailing 12 months</div><div><span class="sw" style="background:${c[0]}"></span>Giving ${r.a == null ? '—' : pct1(r.a)}</div><div><span class="sw" style="background:${c[1]}"></span>Savings groups ${r.b == null ? '—' : pct1(r.b)}</div><div><span class="sw" style="background:${c[2]}"></span>Housing + utilities ${r.c == null ? '—' : pct1(r.c)}</div>`); })
     .on('pointerleave', () => { hover.attr('display', 'none'); t.hide(); });
 });
 // Debt-to-income (#145): the debt_to_income dataset, against the household's own caps when it has set them
@@ -1634,19 +1659,18 @@ dash.draw('lm-ef', (el) => {
 dash.draw('ef-lines', (el) => {
   const g = HL.rd('emergency_fund'), G = dash.data('goals'); el.replaceChildren();
   const rows = g.status === 'ok' ? g.data.filter((r) => r.months != null).map((r) => ({ d: HL.parseM(r.m), v: r.months })) : [];
-  if (!rows.length) { el.textContent = 'Nothing to draw yet: mark an account as Emergency on Settings → Accounts, and enter its balances.'; return; }
+  if (!rows.length) { HL.empty(el, 'Months of cover show here once an account is marked Emergency and has month-end balances.', '/settings#accounts', 'Mark an emergency account'); return; }
   const target = goalValue(G, 'emergency_months');
   const W = el.clientWidth || 600, H = 240, mt = 10, mb = 28;
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
   const y = d3.scaleLinear([0, Math.max(1, d3.max(rows, (r) => r.v), target || 0)], [H - mb, mt]).nice();
   const ml = HL.margins(svg, y.ticks(5), (v) => `${v}`);
-  const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
+  const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8 - HL.WP_ROOM]);   // room at the right for the waypoints
   svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
   svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
-  if (target != null) { svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(target)).attr('y2', y(target)).attr('stroke', c[1]).attr('stroke-dasharray', '5 4').attr('stroke-opacity', .7);
-    svg.append('text').attr('x', W - 8).attr('y', y(target) - 4).attr('text-anchor', 'end').attr('fill', c[1]).text('target'); }
-  svg.append('path').datum(rows).attr('fill', 'none').attr('stroke', c[1]).attr('stroke-width', 2).attr('d', d3.line().x((r) => x(r.d)).y((r) => y(r.v)));
+  HL.fixes(svg, rows.map((r) => ({ x: x(r.d), y: y(r.v) })), c[1]);   // DS-CHART-1
+  if (target != null) HL.waypoint(svg, ml, W - 8, y(target), `target ${months1(target)}`);   // DS-CHART-3
   const t = HL.tip(el), bis = d3.bisector((r) => r.d).center;
   svg.append('rect').attr('x', ml).attr('y', mt).attr('width', Math.max(0, W - ml - 8)).attr('height', H - mt - mb).attr('fill', 'transparent')
     .on('pointermove', (pe) => { const [px, py] = d3.pointer(pe, el); const r = rows[bis(rows, x.invert(px))]; if (r) t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}</div><div>${months1(r.v)} of outgo</div>`); })
@@ -1656,20 +1680,18 @@ dash.draw('dti-lines', (el) => {
   const g = HL.rd('debt_to_income'), G = dash.data('goals'); el.replaceChildren();
   if (g.status !== 'ok') { el.textContent = '—'; return; }
   const rows = g.data.filter((r) => r.dti_12 != null || r.housing_dti_12 != null).map((r) => ({ d: HL.parseM(r.m), a: r.dti_12, b: r.housing_dti_12 }));
-  if (!rows.length) { el.textContent = 'Nothing to draw yet: record gross pay (gross_annual) on the Settings page.'; return; }
+  if (!rows.length) { HL.empty(el, 'Debt against income shows here once gross pay is recorded (Gross salary, annual).', '/settings#goals', 'Record gross pay'); return; }
   const W = el.clientWidth || 600, H = 260, mt = 10, mb = 28;
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
   const caps = [goalValue(G, 'dti_cap'), goalValue(G, 'housing_dti_cap')];
   const y = d3.scaleLinear([0, Math.max(0.1, d3.max(rows, (r) => Math.max(r.a || 0, r.b || 0)), ...caps.filter((v) => v != null))], [H - mb, mt]).nice();
   const ml = HL.margins(svg, y.ticks(5), dash.fmt.pct(0));
-  const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
+  const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8 - HL.WP_ROOM]);   // room at the right for the waypoints
   svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(dash.fmt.pct(0)).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
   svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors(), col = [c[0], c[2]];
-  caps.forEach((v, i) => { if (v == null) return; svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', col[i]).attr('stroke-dasharray', '5 4').attr('stroke-opacity', .7);
-    svg.append('text').attr('x', W - 8).attr('y', y(v) - 4).attr('text-anchor', 'end').attr('fill', col[i]).text(i ? 'housing cap' : 'debt cap'); });
-  ['a', 'b'].forEach((k, i) => svg.append('path').datum(rows).attr('fill', 'none').attr('stroke', col[i]).attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round')
-    .attr('d', d3.line().defined((r) => r[k] != null).x((r) => x(r.d)).y((r) => y(r[k]))));
+  ['a', 'b'].forEach((k, i) => HL.fixes(svg, rows.map((r) => ({ x: x(r.d), y: r[k] == null ? null : y(r[k]) })), col[i]));   // DS-CHART-1
+  HL.waypoints(svg, ml, W - 8, caps.map((v, i) => v == null ? null : { y: y(v), label: `${i ? 'housing cap' : 'debt cap'} ${dash.fmt.pct(0)(v)}` }));   // DS-CHART-3
   const t = HL.tip(el), bis = d3.bisector((r) => r.d).center;
   const hover = svg.append('g').attr('display', 'none'); hover.append('line').attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--chart-axis)');
   svg.append('rect').attr('x', ml).attr('y', mt).attr('width', Math.max(0, W - ml - 8)).attr('height', H - mt - mb).attr('fill', 'transparent')
@@ -1753,6 +1775,10 @@ table('debts', 'debts', (rows) => [...rows].sort((a, b) => a.first < b.first ? -
 table('nw', 'net_worth', byM, [(r) => M(r.m), (r) => $(r.assets), (r) => $(r.debts), (r) => $(r.net_worth) + (r.estimated ? ' (est.)' : ''), (r) => r.change == null ? '—' : $(r.change), (r) => r.you_did == null ? '—' : $(r.you_did), (r) => r.happened == null ? '—' : $(r.happened)], mSpan);
 table('ef', 'emergency_fund', byM, [(r) => M(r.m), (r) => r.emergency == null ? '—' : $(r.emergency), (r) => $(r.outgo), (r) => r.months == null ? '—' : Number(r.months).toFixed(1)], mSpan);
 table('dti', 'debt_to_income', byM, [(r) => M(r.m), (r) => P1(r.dti_12), (r) => P1(r.housing_dti_12), (r) => P1(r.dti_takehome_12), (r) => P1(r.housing_takehome_12)], mSpan);
+// DS-CHART-5: the catch-all envelopes and the radar stars, as figures too
+const byYThen = (k) => (rows) => [...rows].sort((a, b) => Number(b.y) - Number(a.y) || Number(b[HL.fld('amount')] ?? b.amount) - Number(a[HL.fld('amount')] ?? a.amount) || String(a[k]).localeCompare(String(b[k])));
+table('slush', 'slush', byYThen('item'), [(r) => HL.yearLabel(r.y), (r) => r.item, (r) => $(r.amount)], ySpan);
+table('radar', 'cat_year', byYThen('category'), [(r) => HL.yearLabel(r.y), (r) => r.category, (r) => $(r[HL.fld('amount')] ?? r.amount)], ySpan);
 table('net', 'yearly', byY, [(r) => HL.yearLabel(r.y), (r) => $(r[HL.fld('net')]), (r) => P1(r.savings_rate)], ySpan);
 })();</script>
 {% endblock %}
