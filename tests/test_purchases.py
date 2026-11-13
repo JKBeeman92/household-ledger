@@ -110,6 +110,7 @@ def test_settings_add_change_delete_and_a_failed_add_keeps_what_was_typed(client
     assert (g["label"], float(g["target_amount"]), g["funded_kind"]) == ("Pony and trap", 1800.0, "account")
     page = client.get("/settings").text
     assert 'id="st-goals-purchases"' in page and 'id="pp-pony"' in page
+    assert "with A new cart: each counts all of it" in page   # both kept in Green Hills Savings
     assert 'data-key="purchase:pony"' not in page   # not in the plain goals grid
     from app.routes.checklist import checklist_goals
     with _db() as conn:

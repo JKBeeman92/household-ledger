@@ -511,7 +511,8 @@ purchases** takes what it is, how much, the budget month to have it by, and wher
 usual way to save for one thing) or an account. Each is a goal with an amount and a month (`purchase:<name>` in `goals.json`).
 
 - **Saved so far** for an envelope is what it was given less what was spent from it, from the month the saving began (Saving since;
-  blank means the latest month loaded when it was added) to the latest month. For an account it is the balance.
+  blank means the latest month loaded when it was added) to the latest month. For an account it is the balance. Two purchases kept
+  in the same place each count all of it; the page marks them Shared, so keep one envelope per purchase where you can.
 - **Needed a month** is what is left ÷ the budget months from the latest month to the target month. **Pace** is what was actually put
   aside a month over the last three months (the envelope's given less spent, or the account's change). The verdict: *ahead* (pace at
   least 1.1 × needed), *on pace*, *$N a month short*, *reached*, or, once the month has come, *past its date, $N short*.

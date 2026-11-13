@@ -51,11 +51,14 @@ def built(conn) -> list[dict]:
 def for_page(conn) -> list[dict]:
     """Each stored purchase with the last build's progress laid over it (none until a build has seen it)."""
     prog = {p["key"]: p for p in built(conn)}
+    rows = stored(conn)
     out = []
-    for s in stored(conn):
+    for s in rows:
+        shared = [o["label"] for o in rows if o["key"] != s["key"] and o["funded_by"] == s["funded_by"] and not o["done_at"]]
         p = prog.get(s["key"]) or {}
         same = p and p.get("target_amount") == s["target_amount"] and p.get("target_month") == s["target_month"] and p.get("funded_by") == s["funded_by"]
-        out.append({**s, "anchor": anchor(s["key"]), "done": bool(s["done_at"]), "progress": p if same else None})
+        out.append({**s, "anchor": anchor(s["key"]), "done": bool(s["done_at"]), "progress": p if same else None,
+                    "shared_with": shared if not s["done_at"] else []})   # each counts all of what is kept there: say so
     return out
 
 
