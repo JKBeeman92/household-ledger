@@ -61,7 +61,7 @@ async def add_decision(month: str, request: Request, user=Depends(auth.require_e
             else:
                 flash(request, f"Not added: {e}.", "bad")
             return _back(month, "next", f"dec-{field}" if field and form.get("from") == "form" else "dec-text")
-    msg = f"Added for {month_text(decisions.rules.add_months(month, 1))}."
+    msg = f"Added “{str(form.get('text') or '').strip()}” for {month_text(decisions.rules.add_months(month, 1))}."
     if n > decisions.rules.SOFT_CAP:
         msg += f" That is {n} this month: three is usually enough to act on."
     flash(request, msg)
@@ -101,6 +101,7 @@ async def delete_decision(month: str, decision_id: int, request: Request, user=D
     month = _month(month)
     form = await request.form()
     with db.pool.connection() as conn:
+        row = conn.execute("SELECT text FROM decisions WHERE id = %s", (decision_id,)).fetchone()
         decisions.delete(conn, decision_id); conn.commit()
-    flash(request, "Removed.")
+    flash(request, f"Removed “{row['text']}”." if row else "Removed.")
     return _back(month, str(form.get("step") or "next"), str(form.get("focus") or "") or None)   # the neighbouring row, named by the page

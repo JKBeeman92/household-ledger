@@ -92,7 +92,7 @@ table.edit td.acts { white-space: nowrap; width: 1%; }
 table.edit tr.editing td { vertical-align: top; background: var(--surface-300); }
 table.edit td .err { color: var(--danger); font-size: var(--text-caption); min-height: 0; }
 table.edit [aria-invalid=true] { border-color: var(--danger); }
-.tools { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; } .tools input[type=search] { max-width: 18rem; }
+.tools { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; } .tools > .err { flex-basis: 100%; margin: 0; order: 0; }   /* an error in a row of fields gets its own line, right under them (DS-FORM-1) */ .tools input[type=search] { max-width: 18rem; }
 .rowstatus { min-height: 1.4em; margin: var(--space-3) 0 0; } .rowstatus.ok { color: var(--success); } .rowstatus.bad { color: var(--danger); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 

@@ -19,7 +19,7 @@
   {% if gone %}<details class="listcount" id="yb-dismissed" {% if not live %}open{% endif %}><summary>{{ gone|length }} dismissed</summary><ul data-list="unbounded">{% for b in gone %}<li>{{ b.item }}
     <form method="post" action="/yearly-bills/{{ b.item|urlencode }}/restore" class="inline">{{ csrf_field(request) }}<button class="btn" type="submit">Restore {{ b.item }}</button></form></li>{% endfor %}</ul></details>{% endif %}
   {% if live %}<div class="tablewrap" role="region" tabindex="0" aria-label="Yearly bills table"><table class="plain" data-list="unbounded"><thead><tr><th scope="col">Bill</th><th scope="col">Due</th><th scope="col" class="num">About</th><th scope="col">Saved for in</th><th scope="col">Paid in</th><th scope="col"><span class="sr">Actions</span></th></tr></thead><tbody>
-  {% for b in live %}{% set id = yb_slug(b.item) %}{% set r = rf if rf.get("row") == id else {} %}{% set rb = r.get("field") or ("month" if r else none) %}<tr id="{{ id }}" tabindex="-1"><td><strong>{{ b.item }}</strong><br><span class="status-chip {{ chip[b.source][1] }}">{{ chip[b.source][0] }}</span></td>
+  {% for b in live %}{% set id = yb_slug(b.item) %}{% set r = rf if rf.get("row") == id else {} %}{% set rb = r.get("field") %}<tr id="{{ id }}" tabindex="-1"><td><strong>{{ b.item }}</strong><br><span class="status-chip {{ chip[b.source][1] }}">{{ chip[b.source][0] }}</span></td>
     <td>{{ months[b.month - 1] }}{% if b.every_years > 1 %}, every {{ b.every_years }} years{% endif %}{% if b.next_due %}<br><span class="muted">next {{ b.next_due|month_short }}</span>{% endif %}{% if b.missed %}<br><span class="status-chip warn">Not paid</span> <span class="muted">in {{ b.missed|month_short }}: dismiss it if it has ended</span>{% endif %}</td>
     <td class="num">{{ b.amount|money }}</td>
     <td>{{ b.funded_by or "—" }}{% if b.funded_guess %} <span class="muted">(a guess)</span>{% endif %}{% if b.set_aside is not none %}<br><span class="muted">{{ b.set_aside|money }} set aside</span>{% endif %}</td>
@@ -34,7 +34,7 @@
         <span><label for="{{ id }}-a">About</label> <input id="{{ id }}-a" name="amount" inputmode="decimal" size="8" value="{{ r.amount if r else (b.amount|plain if b.amount is not none else '') }}"{{ inv(rb == 'amount', id ~ '-err') }}></span>
         <span><label for="{{ id }}-e">Every (years)</label> <input id="{{ id }}-e" name="every_years" inputmode="numeric" size="2" value="{{ r.every_years if r else b.every_years }}"{{ inv(rb == 'every_years', id ~ '-err') }}></span>
         <span><label for="{{ id }}-f">Saved for in</label> <input id="{{ id }}-f" name="funded_by" list="settings-canonicals" size="18" value="{{ r.funded_by if r else (b.funded_by or '') }}"{{ inv(rb == 'funded_by', id ~ '-err') }}></span>
-        <button class="btn" type="submit">Save {{ b.item }}</button></form>{% if r %}<p class="err" id="{{ id }}-err" role="alert">{{ r.error[:1]|upper ~ r.error[1:] }}</p>{% endif %}</details></td></tr>{% endfor %}
+        <button class="btn" type="submit">Save {{ b.item }}</button></form>{% if r %}<p class="err" id="{{ id }}-err" role="alert" tabindex="-1">{{ r.error[:1]|upper ~ r.error[1:] }}</p>{% endif %}</details></td></tr>{% endfor %}
   </tbody></table></div>
   {% elif gone %}<p>Every bill the app found is dismissed. Restore one above, or add one it missed.</p>
   {% else %}<p>No yearly bill found yet: the app needs an item paid in about the same month in two of the last three years. Add one it missed above.</p>{% endif %}
@@ -42,7 +42,7 @@
 <script nonce="{{ csp_nonce(request) }}">
 // After a save, dismiss or restore the page returns here with ?focus=<row>: put focus on that row (or its neighbour), not the page top (DS-A11Y-5)
 addEventListener('load', () => { const id = new URLSearchParams(location.search).get('focus'); const el = id && document.getElementById(id); if (!el) return;
-  if (el.tagName === 'DETAILS') el.open = true; const t = el.matches('details') ? el.querySelector('[aria-invalid="true"]') || el.querySelector('summary') : el;   // a rejected value takes the focus itself
+  if (el.tagName === 'DETAILS') el.open = true; const t = el.matches('details') ? el.querySelector('[aria-invalid="true"]') || el.querySelector('.err') || el.querySelector('summary') : el;   // a rejected value takes the focus itself
   if (!t.matches('input, select, textarea')) t.setAttribute('tabindex', '-1');
   setTimeout(() => { t.focus({ preventScroll: true }); el.scrollIntoView({ block: 'center' }); }, 0); });
 </script>

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import datetime as dt
 import re
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from babel import Locale, UnknownLocaleError
 from babel.dates import format_date, format_skeleton
@@ -36,11 +36,19 @@ def _number(v) -> Decimal | None:
     return d if d.is_finite() else None
 
 
+def _round(d: Decimal, places: int) -> Decimal:
+    """Half away from zero, as Intl does on the dashboard (DS-WORD-6: a figure reads alike on either side); Babel alone rounds half
+    to even ($1,234.50 would be $1,234 here and $1,235 there). A result of zero carries no sign."""
+    r = d.quantize(Decimal(1).scaleb(-places), rounding=ROUND_HALF_UP)
+    return r.copy_abs() if r == 0 else r
+
+
 def money(v, currency: str = "USD", locale: str = "en-US", places: int = 0, signed: bool = False) -> str:
     """1234.5 → "$1,235" (en-US, USD) or "1.235 €" (de-DE, EUR); places=2 keeps cents; signed=True writes +/− on a change."""
     d = _number(v)
     if d is None:
         return DASH
+    d = _round(d, places)
     loc = _locale(locale)
     frac = "." + "0" * places if places else ""
     # the locale's own pattern (symbol placement, spacing, grouping such as #,##,##0), with our number of decimals
@@ -59,6 +67,7 @@ def number(v, locale: str = "en-US", places: int = 0) -> str:
     d = _number(v)
     if d is None:
         return DASH
+    d = _round(d, places)
     return format_decimal(d, format="#,##0" + ("." + "0" * places if places else ""), locale=_locale(locale)).replace("-", "−")
 
 
@@ -75,6 +84,7 @@ def share(v, locale: str = "en-US", places: int = 0, signed: bool = False, trim:
     d = _number(v)
     if d is None:
         return DASH
+    d = _round(d * 100, places) / 100   # rounded as the percentage it is shown as, half away from zero
     loc = _locale(locale)
     frac = "." + ("#" if trim else "0") * places if places else ""
     pat = re.sub(r"0(\.[0#]+)?(?![0#])", "0" + frac, loc.percent_formats[None].pattern.split(";")[0], count=1)   # the locale's spacing ("10 %")

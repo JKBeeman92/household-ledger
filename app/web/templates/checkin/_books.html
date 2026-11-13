@@ -5,4 +5,4 @@
 {% if not c.rec.problems and not c.unmapped %}<p class="muted">Every envelope's transactions sum to its Spent, and every item is mapped.</p>
 {% elif not c.acked %}<p class="muted">Fix them, or acknowledge them to carry on (for example a budget-tool rounding you have decided to live with).</p>
 <form method="post" action="/checkin/{{ month }}/steps/books/ack">{{ csrf_field(request) }}<button class="btn" type="submit" id="books-ack">Acknowledge and carry on</button></form>
-{% else %}<form method="post" action="/checkin/{{ month }}/steps/books/undo">{{ csrf_field(request) }}<span class="muted">Acknowledged.</span> <button class="btn" type="submit" id="books-undo">Undo</button></form>{% endif %}
+{% else %}<form method="post" action="/checkin/{{ month }}/steps/books/undo">{{ csrf_field(request) }}<span class="muted">Acknowledged.</span> <button class="btn" type="submit" id="books-undo">Undo: acknowledged</button></form>{% endif %}

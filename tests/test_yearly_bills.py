@@ -207,7 +207,7 @@ def test_a_failed_change_comes_back_in_its_own_row(client, sample):
     page = client.get("/settings").text
     assert '<details id="yb-smial-insurance-change" open>' in page and '<details class="how" id="yb-add" >' in page
     assert 'id="yb-smial-insurance-e" name="every_years" inputmode="numeric" size="2" value="eleven" aria-invalid="true" aria-describedby="yb-smial-insurance-err"' in page
-    assert 'id="yb-smial-insurance-err" role="alert">Every is a whole number of years' in page
+    assert 'id="yb-smial-insurance-err" role="alert" tabindex="-1">Every is a whole number of years' in page
 
 
 def test_an_amount_with_no_figure_in_it_is_refused_not_saved_blank():
