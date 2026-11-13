@@ -264,3 +264,16 @@ def test_focus_stays_where_the_household_was_working(client, loaded):
     # a focus that is not an id is dropped, and the step's summary takes it
     r = client.post(f"/checkin/{m}/decisions/{ids[1]}/delete", data={"step": "next", "focus": "x\"><script>"})
     assert loc(r) == f"/checkin/{m}#step-next"
+
+
+def test_a_failed_add_keeps_what_was_typed_and_says_why_at_the_field(client, loaded):
+    """DS-FORM-1: the error sits under the field it is about, marked aria-invalid, with the typed values kept; a verdict says so (DS-FLASH-1)."""
+    m = "2025-04"
+    r = client.post(f"/checkin/{m}/decisions", data={"from": "form", "text": "Elevenses under twenty", "kind": "spend_cap", "what": "item:No Such Item", "amount": "20"})
+    assert r.headers["location"] == f"/checkin/{m}#step-next/dec-what"
+    page = client.get(f"/checkin/{m}").text
+    nxt = page[page.find('id="step-next"'):]
+    assert 'value="Elevenses under twenty"' in nxt and 'value="20"' in nxt
+    assert 'id="dec-what" name="what" aria-invalid="true" aria-describedby="dec-err"' in nxt and 'id="dec-err" role="alert">There is no budget item No Such Item.' in nxt
+    assert 'Not added' not in page   # under the field, not a flash
+    assert 'aria-invalid' not in client.get(f"/checkin/{m}").text[page.find('id="step-next"'):]   # shown once

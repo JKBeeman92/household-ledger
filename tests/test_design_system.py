@@ -185,3 +185,15 @@ def test_chart_findings_are_read_into_the_text_alternative():
     for n in ("goal", "ef", "dti", "debts", "nw", "net", "lm-var", "lm-avg"):
         assert f'data-draw="fd-{n}"' in page and f"finding('{n}'" in page, n
     assert "querySelector('.finding')" in (WEB / "static" / "a11y.js").read_text(encoding="utf-8")
+
+
+def test_every_figures_table_tells_its_own_chart_the_span():
+    """DS-CHART-5: a table named apart from its chart (nw, ef, dti) passes the chart's name, so the chart's text alternative reads the
+    data's range and not the axis ticks."""
+    import re
+    page = (ROOT / "app" / "web" / "templates" / "dashboard.html").read_text()
+    charts = set(re.findall(r'class="chart[^"]*" data-draw="([^"]+)"', page))
+    for m in re.finditer(r"^table\('([^']+)',.*$", page, re.M):
+        named = re.search(r", '([a-z-]+)'\);", m.group(0))
+        target = named.group(1) if named else m.group(1)
+        assert target in charts or m.group(1) == "radar", (m.group(1), target)

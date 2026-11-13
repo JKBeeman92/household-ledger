@@ -1,17 +1,20 @@
 {# Step 9: decisions for next month (#155). Context: c.made, c.suggestions (plan_suggestions rows), c.categories, c.item_names, c.debts,
 c.people, c.kinds, c.cap, c.next, c.acked #}
 <p class="muted">Write down up to {{ c.cap }} things to do differently in {{ c.next|month }}; the next check-in asks how each went. A target the app can check (a category, an amount) lets it say so itself.</p>
+{% set df = request.session.pop("dec_form", None) %}{% set df = df if df and df.month == month else none %}
+{% macro bad(f) %}{% if df and df.field == f %} aria-invalid="true" aria-describedby="dec-err"{% endif %}{% endmacro %}
+{% macro err(fs) %}{% if df and ((df.field and df.field in fs) or (not df.field and 'text' in fs)) %}<p class="err" id="dec-err" role="alert">{{ df.error[:1]|upper ~ df.error[1:] }}.</p>{% endif %}{% endmacro %}
 <form method="post" action="/checkin/{{ month }}/decisions" class="decision-form">{{ csrf_field(request) }}<input type="hidden" name="from" value="form">
-  <p><label for="dec-text">What you decided</label><br><input id="dec-text" name="text" required maxlength="300" size="48" placeholder="Eating out under 400 a month"></p>
-  <p class="tools"><label for="dec-kind">Kind</label> <select id="dec-kind" name="kind">{% for k, w in c.kinds.items() %}<option value="{{ k }}">{{ w }}</option>{% endfor %}</select>
-    <label for="dec-what">About</label> <select id="dec-what" name="what"><option value="">(nothing the app can check)</option>
-      <optgroup label="Categories">{% for x in c.categories %}<option value="category:{{ x }}">{{ x }}</option>{% endfor %}</optgroup>
-      <optgroup label="Budget items">{% for x in c.item_names %}<option value="item:{{ x }}">{{ x }}</option>{% endfor %}</optgroup>
-      {% if c.debts %}<optgroup label="Debts">{% for x in c.debts %}<option value="debt:{{ x }}">{{ x }}</option>{% endfor %}</optgroup>{% endif %}</select>
-    <label for="dec-amount">Amount</label> <input id="dec-amount" name="amount" inputmode="decimal" size="8"></p>
-  <p class="tools"><label for="dec-until">In force until</label> <input id="dec-until" name="until" type="month" min="{{ c.next }}" value="{{ c.next }}">
-    {% if c.debts %}<label class="check"><input type="checkbox" name="until_payoff" value="1"> an extra payment: until the debt is paid off</label>{% endif %}
-    {% if c.people %}<label for="dec-person">Whose</label> <select id="dec-person" name="person"><option value="">(both of us)</option>{% for p in c.people %}<option>{{ p }}</option>{% endfor %}</select>{% endif %}</p>
+  <p><label for="dec-text">What you decided</label><br><input id="dec-text" name="text" required maxlength="300" size="48" placeholder="Eating out under 400 a month" value="{{ df.text if df else '' }}"{{ bad('text') }}></p>{{ err(['text']) }}
+  <p class="tools"><label for="dec-kind">Kind</label> <select id="dec-kind" name="kind"{{ bad('kind') }}>{% for k, w in c.kinds.items() %}<option value="{{ k }}"{% if df and df.kind == k %} selected{% endif %}>{{ w }}</option>{% endfor %}</select>
+    <label for="dec-what">About</label> <select id="dec-what" name="what"{{ bad('what') }}><option value="">(nothing the app can check)</option>
+      <optgroup label="Categories">{% for x in c.categories %}<option value="category:{{ x }}"{% if df and df.what == 'category:' ~ x %} selected{% endif %}>{{ x }}</option>{% endfor %}</optgroup>
+      <optgroup label="Budget items">{% for x in c.item_names %}<option value="item:{{ x }}"{% if df and df.what == 'item:' ~ x %} selected{% endif %}>{{ x }}</option>{% endfor %}</optgroup>
+      {% if c.debts %}<optgroup label="Debts">{% for x in c.debts %}<option value="debt:{{ x }}"{% if df and df.what == 'debt:' ~ x %} selected{% endif %}>{{ x }}</option>{% endfor %}</optgroup>{% endif %}</select>
+    <label for="dec-amount">Amount</label> <input id="dec-amount" name="amount" inputmode="decimal" size="8" value="{{ df.amount if df else '' }}"{{ bad('amount') }}></p>{{ err(['kind', 'what', 'amount']) }}
+  <p class="tools"><label for="dec-until">In force until</label> <input id="dec-until" name="until" type="month" min="{{ c.next }}" value="{{ df.until if df and df.until else c.next }}"{{ bad('until') }}>
+    {% if c.debts %}<label class="check"><input type="checkbox" name="until_payoff" value="1"{% if df and df.until_payoff %} checked{% endif %}> an extra payment: until the debt is paid off</label>{% endif %}
+    {% if c.people %}<label for="dec-person">Whose</label> <select id="dec-person" name="person"><option value="">(both of us)</option>{% for p in c.people %}<option{% if df and df.person == p %} selected{% endif %}>{{ p }}</option>{% endfor %}</select>{% endif %}</p>{{ err(['until']) }}
   <p><button class="btn" type="submit">Add the decision</button></p>
 </form>
 {% if not c.made and not c.acked %}<form method="post" action="/checkin/{{ month }}/steps/next/ack" class="inline-actions">{{ csrf_field(request) }}<button class="btn" type="submit" id="next-ack">Say there are no changes this month</button></form>

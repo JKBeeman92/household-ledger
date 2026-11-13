@@ -49,6 +49,8 @@ def parse_amount(v) -> float | None:
     decimal ("1.234,50" and "1,234.50" are 1234.5); a lone comma with one or two digits after it is a decimal ("45,5"), else grouping."""
     a = re.sub(r"[^\d.,-]", "", str(v or "")).strip()
     if not a:
+        if str(v or "").strip():   # typed, but no figure in it ("lots"): say so, never save it as no amount
+            raise ValueError(f"no figure in {v!r}")
         return None
     if "," in a and "." in a:
         dec = "," if a.rfind(",") > a.rfind(".") else "."

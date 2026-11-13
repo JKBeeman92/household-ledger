@@ -17,6 +17,15 @@ def _back(month: str, step: str, focus: str | None = None) -> RedirectResponse:
     return back_to(month, step, focus)
 
 
+def _field_of(msg: str) -> str | None:
+    """Which field of the Next month form an error from decisions.add or _target is about, so it shows under that field (DS-FORM-1)."""
+    for field, words in (("amount", ("give the", "number of dollars")), ("what", ("account", "category", "budget item")),
+                         ("text", ("say what you decided", "300 characters")), ("until", ("until",)), ("kind", ("kind is",))):
+        if any(w in msg for w in words):
+            return field
+    return None
+
+
 def _target(form) -> dict | None:
     """The form's target: one of 'category:<name>', 'item:<name>' or 'debt:<account>', and an amount for the kind."""
     what, amount, kind = str(form.get("what") or ""), str(form.get("amount") or "").strip(), str(form.get("kind") or "other")
@@ -45,7 +54,13 @@ async def add_decision(month: str, request: Request, user=Depends(auth.require_e
                                  str(form.get("until") or "") or None, str(form.get("person") or "") or None, str(form.get("note") or ""), _who(user))
             conn.commit()
         except ValueError as e:
-            conn.rollback(); flash(request, f"Not added: {e}.", "bad"); return _back(month, "next", "dec-text")
+            conn.rollback(); field = _field_of(str(e))
+            if form.get("from") == "form":   # the typed values come back, with the error under its field (DS-FORM-1)
+                request.session["dec_form"] = {k: str(form.get(k) or "") for k in ("text", "kind", "what", "amount", "until", "until_payoff", "person")} | {
+                    "month": month, "field": field, "error": str(e)}
+            else:
+                flash(request, f"Not added: {e}.", "bad")
+            return _back(month, "next", f"dec-{field}" if field and form.get("from") == "form" else "dec-text")
     msg = f"Added for {month_text(decisions.rules.add_months(month, 1))}."
     if n > decisions.rules.SOFT_CAP:
         msg += f" That is {n} this month: three is usually enough to act on."
@@ -61,6 +76,8 @@ async def confirm_decision(month: str, decision_id: int, request: Request, user=
     with db.pool.connection() as conn:
         try:
             decisions.confirm(conn, decision_id, month, str(form.get("verdict") or ""), _who(user)); conn.commit()
+            row = conn.execute("SELECT text FROM decisions WHERE id = %s", (decision_id,)).fetchone()
+            flash(request, f"Marked “{row['text'] if row else 'the decision'}” as {decisions.VERDICT_WORDS.get(str(form.get('verdict')), 'confirmed')}.")   # DS-FLASH-1
         except ValueError as e:
             conn.rollback(); flash(request, f"Not saved: {e}.", "bad")
     v = str(form.get("verdict") or "")

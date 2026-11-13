@@ -226,9 +226,9 @@
     <p class="intro">Where the household stands against its standing targets: a giving floor, a savings share and a housing cap.
       <span class="aside-note">Targets are shares of gross or take-home pay, so they move with income, not with the plan. Which categories and groups count is set in the rules on the Settings page.</span></p>
     <div class="tiles">
-      <div class="card tile"><div class="k">Giving, last 12 months</div><div class="v" data-draw="g-giving" data-source="goal_summary" data-field="giving_share" data-where="row=last12">—</div><div class="d" data-draw="g-giving-d" data-source="goal_summary" data-field="giving_vs_floor" data-where="row=last12">—</div><div class="gauge" data-draw="gg-giving" data-source="goal_summary goals" aria-hidden="true"></div></div>
-      <div class="card tile"><div class="k">Planned savings, last 12 months</div><div class="v" data-draw="g-joy" data-source="goal_summary" data-field="joy_share" data-where="row=last12">—</div><div class="d" data-draw="g-joy-d" data-source="goal_summary" data-field="joy_vs_target" data-where="row=last12">—</div><div class="gauge" data-draw="gg-joy" data-source="goal_summary goals" aria-hidden="true"></div></div>
-      <div class="card tile"><div class="k">Housing and utilities, last 12 months</div><div class="v" data-draw="g-house" data-source="goal_summary" data-field="housing_share" data-where="row=last12">—</div><div class="d" data-draw="g-house-d" data-source="goal_summary" data-field="housing_vs_cap" data-where="row=last12">—</div><div class="gauge" data-draw="gg-house" data-source="goal_summary goals" aria-hidden="true"></div></div>
+      <div class="card tile"><div class="k">Giving, last 12 months</div><div class="v" data-draw="g-giving" data-source="goal_summary" data-field="giving_share" data-where="row=last12">—</div><div class="d" data-draw="g-giving-d" data-source="goal_summary" data-field="giving_vs_floor" data-where="row=last12">—</div><div class="gauge" data-draw="gg-giving" data-source="goal_summary goals"></div></div>
+      <div class="card tile"><div class="k">Planned savings, last 12 months</div><div class="v" data-draw="g-joy" data-source="goal_summary" data-field="joy_share" data-where="row=last12">—</div><div class="d" data-draw="g-joy-d" data-source="goal_summary" data-field="joy_vs_target" data-where="row=last12">—</div><div class="gauge" data-draw="gg-joy" data-source="goal_summary goals"></div></div>
+      <div class="card tile"><div class="k">Housing and utilities, last 12 months</div><div class="v" data-draw="g-house" data-source="goal_summary" data-field="housing_share" data-where="row=last12">—</div><div class="d" data-draw="g-house-d" data-source="goal_summary" data-field="housing_vs_cap" data-where="row=last12">—</div><div class="gauge" data-draw="gg-house" data-source="goal_summary goals"></div></div>
       <div class="card tile"><div class="k">Take-home as share of gross</div><div class="v" data-draw="g-th" data-source="goal_summary" data-field="takehome_share" data-where="row=last12">—</div><div class="d" data-draw="g-th-d" data-source="goal_summary" data-field="takehome_note" data-where="row=last12">—</div></div>
     </div>
     <div class="card">
@@ -1460,7 +1460,7 @@ const gGauge = (name, field, goalKey, goodBelow) => dash.draw(name, (el) => { el
   const v = g.status === 'ok' && g.data[0] ? num(g.data[0][field]) : NaN; const goal = G.status === 'ok' ? num((G.data.find((x) => x.key === goalKey) || {}).value) : NaN;
   if (!Number.isFinite(v)) return;   // no figure: the line under it says why and where to record it
   const max = Math.max(v, Number.isFinite(goal) ? goal : 0) * 1.25 || 1;
-  const track = document.createElement('span'); track.className = 'track'; const fill = document.createElement('i'); fill.style.width = Math.min(100, 100 * v / max) + '%';
+  const track = document.createElement('span'); track.className = 'track'; track.setAttribute('aria-hidden', 'true');   // the bar is drawing; the stamp and link stay exposed (DS-A11Y-1) const fill = document.createElement('i'); fill.style.width = Math.min(100, 100 * v / max) + '%';
   const ok = !Number.isFinite(goal) ? null : goodBelow ? v <= goal : v >= goal; fill.className = ok == null ? '' : ok ? 'good' : 'off'; track.append(fill);
   if (Number.isFinite(goal)) { const t = document.createElement('b'); t.style.left = Math.min(100, 100 * goal / max) + '%'; track.append(t); }
   const chip = document.createElement('span'); chip.className = 'verdict'; chip.append(HL.stamp(ok == null ? 'none' : ok ? 'good' : 'off'));
@@ -1654,8 +1654,8 @@ dash.draw('range-pick', (box) => {
 // ---- the figures behind each chart, as a table (follows the period filter); each also tells its chart the span it covers ----
 const span = (chart, a, b) => { const el = document.querySelector(`.chart[data-draw="${chart}"]`); if (el) el.dataset.span = a && b ? (a === b ? a : `${a} – ${b}`) : ''; };
 const M = (m) => HL.fmtM(HL.parseM(m)), $ = (v) => HL.usd0(Number(v)), P1 = (v) => v == null || !Number.isFinite(Number(v)) ? '—' : dash.fmt.pct(1)(Number(v));
-const table = (name, ds, prep, cells, sp) => dash.draw('dt-' + name, (tb) => { const g = HL.rd(ds); if (g.status !== 'ok') { tb.replaceChildren(); return; }
-  const rows = prep(g.data); HL.fillTable(tb, rows, cells); const s = sp(rows); span(name, s[0], s[1]); });
+const table = (name, ds, prep, cells, sp, chart = name) => dash.draw('dt-' + name, (tb) => { const g = HL.rd(ds); if (g.status !== 'ok') { tb.replaceChildren(); return; }
+  const rows = prep(g.data); HL.fillTable(tb, rows, cells); const s = sp(rows); span(chart, s[0], s[1]); });
 const byM = (rows) => [...rows].sort((a, b) => a.m < b.m ? 1 : -1), byY = (rows) => [...rows].sort((a, b) => Number(b.y) - Number(a.y));
 const mSpan = (rows) => rows.length ? [M(rows[rows.length - 1].m), M(rows[0].m)] : [], ySpan = (rows) => rows.length ? [HL.yearLabel(rows[rows.length - 1].y), HL.yearLabel(rows[0].y)] : [];
 table('monthly', 'monthly', byM, [(r) => M(r.m), (r) => $(r[HL.fld('income')]), (r) => $(r[HL.fld('spend')]), (r) => $(Number(r[HL.fld('spend')]) + Number(r[HL.fld('debt')])), (r) => $(r[HL.fld('net')])], mSpan);
@@ -1664,9 +1664,9 @@ table('employer', 'employer', byM, [(r) => M(r.m), (r) => r.employer || 'Unknown
 table('goal-lines', 'goal_month', byM, [(r) => M(r.m), (r) => P1(r.giving_share_12), (r) => P1(r.joy_share_12), (r) => P1(r.housing_share_12)], mSpan);
 table('debts', 'debts', (rows) => [...rows].sort((a, b) => a.first < b.first ? -1 : 1), [(r) => r.item + (r.paid_off && HL.debtsTyped() ? ' (paid off)' : ''), (r) => r.debt_type || '—', (r) => M(r.first), (r) => M(r.last), (r) => String(r.months), (r) => $(r.total)],
   (rows) => rows.length ? [M(rows.map((r) => r.first).sort()[0]), M(rows.map((r) => r.last).sort().pop())] : []);
-table('nw', 'net_worth', byM, [(r) => M(r.m), (r) => $(r.assets), (r) => $(r.debts), (r) => $(r.net_worth) + (r.estimated ? ' (est.)' : ''), (r) => r.change == null ? '—' : $(r.change), (r) => r.you_did == null ? '—' : $(r.you_did), (r) => r.happened == null ? '—' : $(r.happened)], mSpan);
-table('ef', 'emergency_fund', byM, [(r) => M(r.m), (r) => r.emergency == null ? '—' : $(r.emergency), (r) => $(r.outgo), (r) => r.months == null ? '—' : Number(r.months).toFixed(1)], mSpan);
-table('dti', 'debt_to_income', byM, [(r) => M(r.m), (r) => P1(r.dti_12), (r) => P1(r.housing_dti_12), (r) => P1(r.dti_takehome_12), (r) => P1(r.housing_takehome_12)], mSpan);
+table('nw', 'net_worth', byM, [(r) => M(r.m), (r) => $(r.assets), (r) => $(r.debts), (r) => $(r.net_worth) + (r.estimated ? ' (est.)' : ''), (r) => r.change == null ? '—' : $(r.change), (r) => r.you_did == null ? '—' : $(r.you_did), (r) => r.happened == null ? '—' : $(r.happened)], mSpan, 'nw-chart');   // its chart is nw-chart
+table('ef', 'emergency_fund', byM, [(r) => M(r.m), (r) => r.emergency == null ? '—' : $(r.emergency), (r) => $(r.outgo), (r) => r.months == null ? '—' : Number(r.months).toFixed(1)], mSpan, 'ef-lines');
+table('dti', 'debt_to_income', byM, [(r) => M(r.m), (r) => P1(r.dti_12), (r) => P1(r.housing_dti_12), (r) => P1(r.dti_takehome_12), (r) => P1(r.housing_takehome_12)], mSpan, 'dti-lines');
 // DS-CHART-5: the catch-all envelopes and the radar stars, as figures too
 const byYThen = (k) => (rows) => [...rows].sort((a, b) => Number(b.y) - Number(a.y) || Number(b[HL.fld('amount')] ?? b.amount) - Number(a[HL.fld('amount')] ?? a.amount) || String(a[k]).localeCompare(String(b[k])));
 table('slush', 'slush', byYThen('item'), [(r) => HL.yearLabel(r.y), (r) => r.item, (r) => $(r.amount)], ySpan);
