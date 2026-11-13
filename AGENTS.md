@@ -30,9 +30,12 @@ Sub-tabs keep their place in the URL (`/settings#mapping/debts`), so a flash aft
 ## UX review
 Any change to what a household sees (a template, `app.css`, `settings.js`, `dash-shim.js`, the dashboard page, or the copy and
 flashes in a route) gets a UX critique before its PR is merged: run the saved workflow `ux-critique` (`.claude/workflows/ux-critique.js`)
-with the app running on the sample household (step 2 of "Checking a change"). It finds the surfaces the diff touches, reviews each
-through five lenses (flow, copy and hierarchy, WCAG 2.1 AA, phone width and both modes, and conformance to `docs/DESIGN.md`), has three
-skeptics try to refute every finding, and returns a fix plan. `docs/DESIGN.md` is the law it judges by: a finding names the rule it breaks
+with the app running on the sample household (step 2 of "Checking a change"). It finds the surfaces the diff touches (and stops
+to ask above eight), takes every screenshot and the mechanical checks (console errors, sideways scroll, phone targets, contrast) in
+code with `.claude/workflows/ux-shots.js`, has one critic per surface look through five lenses (flow, copy and hierarchy, WCAG 2.1 AA,
+phone width and both modes, and conformance to `docs/DESIGN.md`), has one skeptic per surface try to refute the high and medium
+findings, and returns a fix plan; lows pass through unverified. Keep it to the PR's own change (the default base, `origin/main`):
+a release adds `release: true` for one cross-page pass, not a re-critique of every PR. `docs/DESIGN.md` is the law it judges by: a finding names the rule it breaks
 (`DS-SHEET-1`), or is marked a judgement. A change that needs a new rule adds it to `docs/DESIGN.md` in the same PR. Fix what survives in the same PR, or say in the PR why not; items it marks as the owner's
 decision go to the owner. The PR's "How I checked it" names the run and what it found.
 
