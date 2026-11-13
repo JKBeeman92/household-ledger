@@ -31,11 +31,15 @@ async def tick(month: str, key: str, request: Request, user=Depends(auth.require
             said = ""
             if it and it["takes_amount"]:   # the tax outcome (#153): the amount is recorded with the tick
                 signed = tax.set_outcome(conn, f.get("tax_year"), f.get("amount"), str(f.get("kind") or "refund"), str(f.get("note") or ""), _who(user))
-                said = f" Recorded the {f.get('tax_year')} tax year: {'a refund' if signed >= 0 else 'a bill'} of ${abs(signed):,.0f}."
+                said = f" Recorded tax year {str(f.get('tax_year')).strip()} as {'a refund' if signed >= 0 else 'a bill'}."   # the amount shows below, in the household's format (DS-WORD-6)
             yc.tick(conn, year_label(conn, month), key, str(f.get("note") or ""), _who(user)); conn.commit()
             flash(request, "Ticked off." + said)
         except (yc.ChecklistError, tax.OutcomeError) as e:
-            conn.rollback(); flash(request, f"Not ticked: {e}", "bad")
+            conn.rollback()
+            if isinstance(e, tax.OutcomeError):   # the error sits under its field; the flash only points there (DS-FORM-1)
+                flash(request, "Not ticked: see the field marked below.", "bad")
+            else:
+                flash(request, f"Not ticked: {e}", "bad")
             request.session["yc_tick"] = {"key": key, "field": getattr(e, "field", ""), "error": str(e),
                                           **{k: str(f.get(k) or "") for k in ("tax_year", "amount", "kind", "note")}}
     return RedirectResponse(f"/checkin/{month}#yc-{quote(key)}", status_code=303)

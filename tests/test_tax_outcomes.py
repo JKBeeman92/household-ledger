@@ -55,7 +55,7 @@ def test_sample_household_shows_the_trend_and_the_note(client, sample):
     y = client.get("/api/datasets").json()["year_review"][0]
     assert [o["year"] for o in y["withholding"]["outcomes"]] == ["2023", "2024", "2025"] and y["withholding"]["adjust_kind"] == "refund"
     page = client.get("/checkin/2026-06").text
-    assert "consider adjusting withholding" in page and "2025: refund $1,585" in page
+    assert "consider adjusting withholding" in page and "Tax year 2025: a refund of $1,585" in page
     from app import db, review
     with db.pool.connection() as conn:
         assert review.build_context(conn, "2026-06")["year"]["withholding"]["adjust"] is True
@@ -68,6 +68,7 @@ def test_the_checklist_item_records_a_signed_outcome_and_a_bad_amount_writes_not
     r = client.post("/checkin/2026-06/yearly/tax_outcome/tick", data={"tax_year": "2025", "kind": "refund", "amount": "lots"})
     page = client.get(r.headers["location"]).text
     assert 'aria-invalid="true" aria-describedby="yc-tax_outcome-err"' in page and "The amount is a number" in page
+    assert page.count("The amount is a number") + page.count("the amount is a number") == 1   # said once, under its field
     with _db() as conn:
         assert conn.execute("SELECT 1 FROM yearly_checklist WHERE item='tax_outcome'").fetchone() is None
     client.post("/checkin/2026-06/yearly/tax_outcome/tick", data={"tax_year": "2025", "kind": "owed", "amount": "$1,240", "note": "the side work"})

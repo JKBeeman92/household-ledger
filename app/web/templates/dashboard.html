@@ -1130,8 +1130,8 @@ dash.draw('y-facts', (el) => { el.replaceChildren(); const r = yr(); if (!r) ret
   if (r.debt && r.debt.change != null) add('Debt balances', `${r.debt.change < 0 ? 'down' : r.debt.change > 0 ? 'up' : 'unchanged'}${r.debt.change ? ' ' + HL.usd0(Math.abs(r.debt.change)) : ''}` + (r.debt.paid_off.length ? `; paid off: ${r.debt.paid_off.join(', ')}` : ''));
   if (r.decisions.checked) add('Decisions', `kept ${r.decisions.kept} of ${r.decisions.checked} checks` + (r.decisions.biggest.length ? '; the largest aims: ' + r.decisions.biggest.map((d) => `${d.text} (kept ${d.kept} of ${d.checked})`).join('; ') : ''));
   if (r.events.length) add('Life events', r.events.map((e) => `${m(e.m)}: ${e.label}`).join('; '));
-  if (r.withholding) { const w = r.withholding; add('Tax outcome', w.outcomes.slice(-4).map((o) => `${o.year}: ${o.amount >= 0 ? 'refund' : 'owed'} ${HL.usd0(Math.abs(o.amount))}`).join('; ')
-    + (w.adjust ? `. ${w.adjust_kind === 'refund' ? 'A refund' : w.adjust_kind === 'owed' ? 'A bill' : 'A refund or a bill'} of ${HL.usd0(w.note_at)} or more two years running: consider adjusting withholding` : '')); }
+  if (r.withholding) { const w = r.withholding; for (const o of w.outcomes.slice(-4)) add(`Tax year ${o.year}`, `${o.amount >= 0 ? 'a refund of' : 'a bill of'} ${HL.usd0(Math.abs(o.amount))}`);
+    if (w.adjust) add('Withholding', `${w.adjust_kind === 'refund' ? 'A refund' : w.adjust_kind === 'owed' ? 'A bill' : 'A refund or a bill'} of ${HL.usd0(w.note_at)} or more two years running: consider adjusting withholding, the tax taken out of each paycheck`); }
   if (r.ahead) add('Where next year leads', `at the last twelve months' pace, about ${ySigned(r.ahead.cash)} kept by ${m(r.ahead.until)}` + (r.ahead.net_worth != null ? `, net worth about ${HL.usd0(r.ahead.net_worth)}` : '') + ' (an estimate, not a plan)'); });
 dash.draw('y-movers', (tb) => { tb.replaceChildren(); const r = yr(), mv = r && r.movers;
   if (!mv) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = r ? 'The year before is not loaded.' : '—'; tr.append(td); tb.append(tr); return; }
