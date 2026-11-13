@@ -129,7 +129,7 @@
       <h2 id="lm-decisions">Decisions in force</h2>
       <ul class="key row"><li>the decisions in force in the latest month, and how each went</li><li>the share kept, over the last six months of checks</li></ul>
       <details class="how"><summary>How to read this</summary><p>Decisions are written down at the check-in's Next month step and asked about at the next one. Where a decision names a category, a budget item or a debt and an amount, the app checks it against the month's budget: a spend cap against what was spent, a save against what was put in, an extra payment against the usual payment, a plan change against next month's planned figure. The household's own verdict is the one that counts; "partly" is half. A month whose files are not in yet is waiting, never "not kept".</p></details>
-      <p class="tools" data-draw="lm-decisions-rate" data-source="decision_summary"></p>
+      <p data-draw="lm-decisions-rate" data-source="decision_summary"></p>
       <div data-draw="lm-decisions-empty" data-source="decisions"></div>
       <details class="listcount" id="lm-decisions-list" open><summary data-draw="lm-decisions-count" data-source="decisions">Decisions</summary>
         <dl class="dti long-labels" data-draw="lm-decisions" data-source="decisions" data-list="unbounded"></dl></details>
@@ -311,7 +311,7 @@
         <ul class="key row"><li>pick a category</li><li>merged names from the mapping</li></ul>
       
       <details class="how"><summary>How to read this</summary><p>Pick a category to see its canonical items by year. Item names are the merged names from the mapping, not the budget tool's originals. Items are the budget tool's envelopes after merging renamed copies (Grocery 2 and Grocery are one item). Pick a category above to change the list.</p></details>
-      <div class="controls"><select class="cat-pick" aria-label="Category" data-draw="cat-pick" data-source="cat_year"></select></div>
+      <div class="controls"><select class="cat-pick" aria-label="Category" data-draw="cat-pick" data-source="cat_year item_year"></select></div>
       <div class="tbl"><table data-source="item_pivot" data-row-key="item"><thead><tr>
         <th data-field="item">Item</th><th data-field="total">Total</th>
       </tr></thead><tbody data-draw="item-pivot"></tbody></table></div>
@@ -360,7 +360,7 @@
     </div>
     <div class="card">
       <h2 id="q-movers">What moved</h2>
-      <ul class="key row"><li>the five categories that moved most, a month at a time</li><li>by dollars, against the previous quarter and a year before</li></ul>
+      <ul class="key row"><li>the five categories that moved most, a month at a time</li><li>by dollars, against the previous quarter and a year before</li><li><i>also last year</i>: the same move happened a year before, so it is a season or a yearly bill, not a new habit</li></ul>
       <details class="how"><summary>How to read this</summary><p>The categories whose monthly spending changed most, in dollars, against the previous quarter and against the same quarter a year before. A change of a few dollars on a small line is left out of the percentage list, so a $3 line doubling does not crowd out the ones that matter.</p></details>
       <div class="grid"><div><h3 class="sub" id="q-movers-prev-h">Against the previous quarter</h3><div class="tbl short" role="region" tabindex="0" aria-labelledby="q-movers q-movers-prev-h"><table><thead><tr><th scope="col">Category</th><th scope="col" class="num">A month now</th><th scope="col" class="num">Then</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="q-movers-prev" data-source="quarter_review" data-list="unbounded"></tbody></table></div></div>
         <div><h3 class="sub" id="q-movers-ago-h">Against a year before</h3><div class="tbl short" role="region" tabindex="0" aria-labelledby="q-movers q-movers-ago-h"><table><thead><tr><th scope="col">Category</th><th scope="col" class="num">A month now</th><th scope="col" class="num">Then</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="q-movers-ago" data-source="quarter_review" data-list="unbounded"></tbody></table></div></div></div>
@@ -396,7 +396,7 @@
         <ul class="key row"><li><span class="key-mark" aria-hidden="true">%</span>savings rate is net ÷ income</li><li><span class="key-mark" aria-hidden="true">$</span>real columns in {{ span.cpi_base_long }} prices (Method)</li></ul>
       <details class="how"><summary>How to read this</summary><p>Savings rate is net ÷ income, both as they reach the budget (take-home): positive means the year added to savings, negative means it drew them down. Savings rate incl. pre-tax saving adds the 401(k), 403(b), HSA and similar saving taken from pay before it reaches the budget, as stated per person on Settings → Goals, to both sides; it shows "—" until one is stated. Real columns restate each month in {{ span.cpi_base_long }} prices using the price index (Method tab).</p></details>
       <div class="tbl"><table data-source="yearly" data-row-key="y"><thead><tr>
-        <th data-field="y">Year</th><th data-field="months">Months</th><th data-field="income">Income</th><th data-field="spend">Living spend</th><th data-field="debt">Debt paid</th><th data-field="net">Net</th><th data-field="savings_rate">Savings rate</th><th data-field="savings_rate_pretax">Savings rate incl. pre-tax saving</th><th data-field="income_real">Income (real)</th><th data-field="spend_real">Spend (real)</th><th data-field="net_real">Net (real)</th>
+        <th data-field="y">Year</th><th data-field="months">Months</th><th data-field="income">Income</th><th data-field="spend">Living spend</th><th data-field="debt">Debt payments</th><th data-field="net">Net</th><th data-field="savings_rate">Savings rate</th><th data-field="savings_rate_pretax">Savings rate incl. pre-tax saving</th><th data-field="income_real">Income (real)</th><th data-field="spend_real">Spend (real)</th><th data-field="net_real">Net (real)</th>
       </tr></thead><tbody data-draw="yearly"></tbody></table></div>
     </div>
     <div class="grid">
@@ -427,7 +427,7 @@
       <div class="card">
         <h2 id="net-chart">Net kept, by year</h2>
         <p class="finding" data-draw="fd-net" data-source="yearly"></p>
-        <ul class="key row"><li><span class="bar " style="--k: var(--success)"></span>added to savings</li><li><span class="bar " style="--k: var(--danger)"></span>drawn from savings</li></ul>
+        <ul class="key row"><li><span class="key-mark bar" aria-hidden="true" style="--k: var(--success)"></span>added to savings</li><li><span class="key-mark bar" aria-hidden="true" style="--k: var(--danger)"></span>drawn from savings</li></ul>
       <details class="how"><summary>How to read this</summary><p>Income minus living spend minus debt payments. Below zero means the year was funded from savings or one-off inflows. Green years added to savings; red years drew on them. A deep red bar usually means taxes, giving or savings-envelope spending landed in a year with lower income.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Year</th><th scope="col">Net kept</th><th scope="col">Savings rate</th></tr></thead><tbody data-draw="dt-net" data-source="yearly"></tbody></table></div></details>
         <div class="chart" data-draw="net" data-source="yearly"></div>
       </div>
@@ -610,6 +610,8 @@ window.HL = (() => {
   const waypoint = (svg, x1, x2, yv, label, ty = yv - 7) => { const g = svg.append('g').attr('class', 'waypoint');
     g.append('line').attr('x1', x1).attr('x2', x2).attr('y1', yv).attr('y2', yv).attr('stroke', 'var(--accent-2)').attr('stroke-width', 1.5).attr('stroke-dasharray', '1 5').attr('stroke-linecap', 'round');
     g.append('circle').attr('cx', x2 - 5).attr('cy', yv).attr('r', 5).attr('fill', 'var(--accent-2)');
+    g.append('title').text(label);
+    if (x2 - x1 < 340) { g.raise(); return g; }   // a phone-width chart: no label to crowd the series; the key and the table name the goal (DS-CHART-3)
     g.append('text').attr('x', x2 - 14).attr('y', ty).attr('text-anchor', 'end').attr('fill', 'var(--accent-2-text, var(--ink))')
       .attr('paint-order', 'stroke').attr('stroke', 'var(--surface-200)').attr('stroke-width', 5).attr('stroke-linejoin', 'round').text(label);   // a halo: the tracks never show through
     g.raise();
@@ -793,7 +795,7 @@ const ledeDraw = (name, field, fmt) => dash.draw(name, (el) => {
 ledeDraw('lede-income', 'income', HL.money); ledeDraw('lede-spend', 'spend', HL.money); ledeDraw('lede-debt', 'debt', HL.money); ledeDraw('lede-net', 'net', HL.money);
 
 // a quiet twelve-month line under each Overview figure: the shape behind the number
-HL.spark = (el, values) => { el.replaceChildren(); if (values.length < 2) return; const W = el.clientWidth || 160, H = 28, x = d3.scaleLinear([0, values.length - 1], [1, W - 1]), y = d3.scaleLinear(d3.extent(values).map((v, i) => v + (i ? 1e-9 : 0)), [H - 3, 3]);
+HL.spark = (el, values) => { el.replaceChildren(); if (values.length < 2) return; const W = el.clientWidth || 160, H = 28, P = 5, x = d3.scaleLinear([0, values.length - 1], [P, W - P]), y = d3.scaleLinear(d3.extent(values).map((v, i) => v + (i ? 1e-9 : 0)), [H - P, P]);   // P: room for a whole ring at each end (DS-CHART-1)
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%').attr('height', H);
   HL.fixes(svg, values.map((v, i) => ({ x: x(i), y: y(v) })), 'var(--accent, var(--ink))', { width: 1.5 }); };   // DS-CHART-1, at a glance
 for (const [k, f] of [['inc', 'income'], ['sp', 'spend'], ['db', 'debt'], ['net', 'net']]) for (const [b, sfx] of [['n', ''], ['r', '_real']])
@@ -939,7 +941,11 @@ dash.draw('cat-pivot', (tb) => {
 });
 dash.draw('cat-pick', (sel) => {
   const g = dash.data('cat_year'); const cats = g.status === 'ok' ? Array.from(new Set(g.data.map((r) => r.category))).sort() : [];
-  const cur = dash.params().cat || (cats.includes('Groceries') ? 'Groceries' : cats[0]) || '';
+  // start on the category with the most items (ties: the most spent), so the table opens on a useful one, not a one-row category
+  const it = dash.data('item_year'), n = new Map(), spent = new Map();
+  if (it.status === 'ok') for (const r of it.data) { (n.get(r.category) || n.set(r.category, new Set()).get(r.category)).add(r.item); spent.set(r.category, (spent.get(r.category) || 0) + Math.abs(Number(r.amount) || 0)); }
+  const best = cats.slice().sort((a, b) => ((n.get(b) || new Set()).size - (n.get(a) || new Set()).size) || ((spent.get(b) || 0) - (spent.get(a) || 0)))[0];
+  const cur = dash.params().cat || best || '';
   sel.replaceChildren(...cats.map((c) => new Option(c, c))); sel.value = cur;
   sel.onchange = () => dash.setParams({ cat: sel.value || null });
 });
@@ -1029,7 +1035,7 @@ dash.draw('lm-decisions-empty', (el) => {
     el.append(p, Object.assign(document.createElement('a'), { className: 'btn', href: '/checkin', textContent: 'Open the check-in' })); }
   else { p.className = 'muted'; p.textContent = g.status === 'missing' ? 'Rebuild the ledger to see decisions (Close a month).' : '—'; el.append(p); }
 });
-dash.draw('lm-decisions-count', (el) => { const rows = decLatest(); if (!rows) return; el.textContent = rows.length + ' in force in ' + HL.fmtM(HL.parseM(rows[0].m)); const d = el.closest('details'); if (d) d.open = rows.length <= 3; });
+dash.draw('lm-decisions-count', (el) => { const rows = decLatest(); if (!rows) return; el.textContent = rows.length + ' in force in ' + HL.fmtM(HL.parseM(rows[0].m)); HL.sizeOnce(el.closest('details'), rows.length <= 3); });
 dash.draw('lm-decisions-rate', (el) => { const g = dash.data('decision_summary'); el.replaceChildren();
   if (g.status !== 'ok' || !g.data[0] || !g.data[0].checked) return; const s = g.data[0], b = document.createElement('strong');
   b.className = 'v'; b.textContent = `Kept ${dash.fmt.num(s.kept)} of ${s.checked}`;
@@ -1059,7 +1065,7 @@ const billsSoon = () => { const g = dash.data('yearly_bills'), m = dash.data('mo
   const last = m.data.map((r) => r.m).sort().pop(), [y, mo] = last.split('-').map(Number), i = y * 12 + mo - 1 + 3, until = `${Math.floor(i / 12)}-${String(i % 12 + 1).padStart(2, '0')}`;
   return g.data.filter((b) => b.source !== 'dismissed' && b.next_due && b.next_due > last && b.next_due <= until).sort((a, b) => a.next_due < b.next_due ? -1 : 1); };
 dash.draw('lm-bills-count', (el) => { const soon = billsSoon(); if (!soon) return; el.textContent = soon.length + ' yearly bill' + (soon.length === 1 ? '' : 's') + ' in the next three months';
-  const d = el.closest('details'); if (d) d.open = soon.length <= 3; });
+  HL.sizeOnce(el.closest('details'), soon.length <= 3); });
 dash.draw('lm-bills-empty', (el) => { el.replaceChildren(); const g = dash.data('yearly_bills'), soon = billsSoon(), p = document.createElement('p'), list = document.getElementById('lm-bills-list');
   if (list) list.hidden = !(soon && soon.length);
   if (soon && soon.length) return;
@@ -1078,25 +1084,29 @@ dash.draw('lm-bills', (el) => { el.replaceChildren(); const soon = billsSoon(); 
 // the quarter (#147): quarter_review, a month at a time; real figures follow the basis toggle
 const qr = () => { const g = dash.data('quarter_review'); return g.status === 'ok' && g.data[0] ? g.data[0] : null; };
 const qName = (lbl) => lbl ? lbl.replace('-Q', ' Q') : '';
-dash.draw('q-intro', (el) => { const r = qr(); if (!r) { el.textContent = 'No quarter built yet: rebuild the ledger (Close a month).'; return; }
+dash.draw('q-intro', (el) => { const r = qr(); if (!r) { el.replaceChildren('No quarter is built yet. It appears once a month is loaded and the ledger rebuilt. ', Object.assign(document.createElement('a'), { className: 'btn', href: '/upload', textContent: 'Go to Close a month' })); return; }
   el.textContent = `${qName(r.quarter)}: ${HL.fmtM(HL.parseM(r.first))} to ${HL.fmtM(HL.parseM(r.last))}` + (r.partial ? `, ${r.months} of 3 months so far, compared a month at a time.` : ', against the one before and the same quarter a year before.'); });
 dash.draw('q-head-this', (el) => { const r = qr(); el.textContent = r ? qName(r.quarter) + (r.partial ? ` (${r.months} of 3)` : '') : 'This quarter'; });
 dash.draw('q-head-prev', (el) => { const r = qr(); el.textContent = r && r.previous ? qName(r.previous.quarter) : 'Previous'; });
 dash.draw('q-head-ago', (el) => { const r = qr(); el.textContent = r && r.year_ago ? qName(r.year_ago.quarter) : 'A year before'; });
 dash.draw('q-compare', (tb) => { tb.replaceChildren(); const r = qr(); if (!r) return; const f = HL.fld, sg = (v) => v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + HL.usd0(Math.abs(v));
   const pc = (v) => v == null ? '' : ` (${v > 0 ? '+' : v < 0 ? '−' : ''}${dash.fmt.pct(0)(Math.abs(v))})`;
-  const col = (o, k) => o ? [HL.usd0(o[f(k)]), sg(o[f(k) + '_change']) + (o[f(k) + '_turned'] ? ` (turned ${o[f(k) + '_turned']})` : pc(o[f(k) + '_pct']))] : ['not loaded', ''];
-  const rows = [['Money in', 'income'], ['Living spend', 'spend'], ['Debt paid', 'debt'], ['Kept', 'net']].map(([lab, k]) => [lab, HL.usd0(r.this[f(k)]), ...col(r.previous, k), ...col(r.year_ago, k)]);
+  const col = (o, k) => o ? [HL.usd0(o[f(k)]), sg(o[f(k) + '_change']) + (o[f(k) + '_turned'] ? ` (turned ${o[f(k) + '_turned']})` : pc(o[f(k) + '_pct']))] : ['not loaded', '—'];
+  const rows = [['Income', 'income'], ['Living spend', 'spend'], ['Debt payments', 'debt'], ['Net kept', 'net']].map(   /* label, not a role */
+([lab, k]) => [lab, HL.usd0(r.this[f(k)]), ...col(r.previous, k), ...col(r.year_ago, k)]);
   const sr = (v) => v == null ? '—' : dash.fmt.pct(1)(v);
-  rows.push(['Savings rate', sr(r.this.savings_rate), r.previous ? sr(r.previous.savings_rate) : 'not loaded', '', r.year_ago ? sr(r.year_ago.savings_rate) : 'not loaded', '']);
+  const pts = (o) => o && o.savings_rate != null && r.this.savings_rate != null ? ((d) => (d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(d * 100).toFixed(1) + ' points')(r.this.savings_rate - o.savings_rate) : '—';
+  rows.push(['Savings rate', sr(r.this.savings_rate), r.previous ? sr(r.previous.savings_rate) : 'not loaded', pts(r.previous), r.year_ago ? sr(r.year_ago.savings_rate) : 'not loaded', pts(r.year_ago)]);
   for (const cells of rows) { const tr = document.createElement('tr'); cells.forEach((c, i) => { const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); }); tb.append(tr); } });
 dash.draw('q-balances', (el) => { const r = qr(); el.textContent = ''; if (!r) return; const sg = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + HL.usd0(Math.abs(v)), bits = [];
   if (r.net_worth_change != null) bits.push(`Net worth ${sg(r.net_worth_change)} over the quarter`); if (r.debt_change != null) bits.push(`debt balances ${sg(r.debt_change)}`);
   el.textContent = bits.length ? bits.join('; ') + '.' : 'Net worth and debt balances need month-end balances (Settings → Accounts).'; });
+const x0real = (m) => [...(m.by_dollars || []), ...(m.set_apart || [])].every((x) => x.per_month_real != null);
 const qMovers = (key) => (tb) => { tb.replaceChildren(); const r = qr(), m = r && r[key]; if (!m) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = r ? 'That quarter is not loaded.' : '—'; tr.append(td); tb.append(tr); return; }
   const sg = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + HL.usd0(Math.abs(v));
-  const row = (x, apart) => { const tr = document.createElement('tr'); const note = x.new ? 'new this quarter' : x.also_last_year ? 'the same move a year before' : '';
-    [x.category + (apart ? ' (debt or savings)' : ''), HL.usd0(x.per_month), HL.usd0(x.was), sg(x.change)].forEach((c, i) => { const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c;
+  const rl = HL.basis() === 'real' && x0real(m);   // the Real/Nominal toggle, like the table above (a build before 0.8.0 has nominal only)
+  const row = (x, apart) => { const tr = document.createElement('tr'); const note = x.new ? 'new this quarter' : x.also_last_year ? 'also last year' : '';
+    [x.category + (apart ? ' (debt or savings)' : ''), HL.usd0(rl ? x.per_month_real : x.per_month), HL.usd0(rl ? x.was_real : x.was), sg(rl ? x.change_real : x.change)].forEach((c, i) => { const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c;
       if (i === 3 && note) { td.append(document.createElement('br'), Object.assign(document.createElement('span'), { className: 'muted', textContent: note })); }   /* a second line: the figure keeps its column */
       tr.append(td); }); tb.append(tr); };
   for (const x of m.by_dollars) row(x, false);
@@ -1105,7 +1115,7 @@ dash.draw('q-movers-prev', qMovers('movers_previous')); dash.draw('q-movers-ago'
 dash.draw('q-next', (el) => { el.replaceChildren(); const r = qr(); if (!r) return; const n = r.next, add = (dt, dd) => { const a = document.createElement('dt'), b = document.createElement('dd'); a.textContent = dt; b.textContent = dd; el.append(a, b); };
   add(qName(n.quarter), `${HL.fmtM(HL.parseM(n.months[0]))} to ${HL.fmtM(HL.parseM(n.months[2]))}`);
   if (n.expected.income == null) add('Expected', 'no same months a year before to go on yet');
-  else { add('Income, about', HL.usd0(n.expected.income) + ' a month'); add('Living spend, about', HL.usd0(n.expected.spend) + ' a month'); add('Debt paid, about', HL.usd0(n.expected.debt) + ' a month'); } });
+  else { add('Income, about', HL.usd0(n.expected.income) + ' a month'); add('Living spend, about', HL.usd0(n.expected.spend) + ' a month'); add('Debt payments, about', HL.usd0(n.expected.debt) + ' a month'); } });
 dash.draw('q-next-items', (ul) => { ul.replaceChildren(); const r = qr(); if (!r) return; const kinds = { payoff: 'Payoff', event: 'Life event', yearly_bill: 'Yearly bill', tax_deadline: 'Tax deadline', goal: 'Goal' };
   if (!r.next.coming_up.length) { ul.append(Object.assign(document.createElement('li'), { className: 'muted', textContent: 'Nothing dated in it yet.' })); return; }
   for (const c of r.next.coming_up) ul.append(Object.assign(document.createElement('li'), { textContent: `${HL.fmtM(HL.parseM(c.m))} · ${kinds[c.kind] || c.kind}: ${c.public_label || c.label}${c.amount != null ? ', ' + HL.usd0(c.amount) : ''}` })); });
@@ -1117,7 +1127,7 @@ dash.draw('y-head-prev', (el) => { const r = yr(), p = r && r.previous; el.textC
 dash.draw('y-compare', (tb) => { tb.replaceChildren(); const r = yr();
   if (!r) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = dash.data('year_review').status === 'missing' ? 'Rebuild the ledger to see the year (Close a month).' : 'Load a month to see the year.'; tr.append(td); tb.append(tr); return; }
   const p = r.previous, ch = r.change || {};
-  for (const [f, name] of [['income', 'Money in'], ['spend', 'Living spend'], ['debt', 'Debt paid'], ['net', 'Kept']]) {
+  for (const [f, name] of [['income', 'Income'], ['spend', 'Living spend'], ['debt', 'Debt payments'], ['net', 'Net kept']]) {   // label, not a role
     const tr = document.createElement('tr'); [name, HL.usd0(r.this[f]), p ? HL.usd0(p[f]) : 'not loaded', ch[f] ? ySigned(ch[f].per_month) : '—'].forEach((c, i) => {
       const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); }); tb.append(tr); }
   const sr = (x) => (x == null ? '—' : (x * 100).toFixed(1) + '%');
@@ -1137,6 +1147,8 @@ dash.draw('y-movers', (tb) => { tb.replaceChildren(); const r = yr(), mv = r && 
   if (!mv) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = r ? 'The year before is not loaded.' : '—'; tr.append(td); tb.append(tr); return; }
   for (const x of (HL.basis() === 'real' ? mv.real : mv.nominal)) { const tr = document.createElement('tr');
     [x.category, HL.usd0(x.per_month), HL.usd0(x.was), ySigned(x.change)].forEach((c, i) => { const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); }); tb.append(tr); } });
+// a count-summary list (<details class="listcount">) is opened or closed once, by its length; a redraw (the Real/Nominal toggle) leaves what the person chose
+HL.sizeOnce = (d, open) => { if (!d || d.dataset.sized) return; d.open = open; d.dataset.sized = '1'; };
 // the look ahead (#148): three horizons at the current pace; every figure's inputs are listed under "How it is calculated"
 const ahead = () => { const g = dash.data('look_ahead'); return g.status === 'ok' ? g.data : []; };
 const aheadSigned = (v) => (v == null ? '—' : (v < 0 ? '−' : '') + HL.usd0(Math.abs(v)));
@@ -1172,7 +1184,7 @@ dash.draw('lm-payoff-empty', (el) => {
   else { p.className = 'muted'; p.textContent = g.status === 'missing' ? 'Rebuild the ledger to see payoff dates (Close a month).' : '—'; el.append(p); }
 });
 dash.draw('lm-payoff-count', (el) => { const g = dash.data('payoff'); if (g.status !== 'ok') return; const n = g.data.length;
-  el.textContent = n + ' debt' + (n === 1 ? '' : 's'); const d = el.closest('details'); if (d) d.open = n <= 3; });
+  el.textContent = n + ' debt' + (n === 1 ? '' : 's'); HL.sizeOnce(el.closest('details'), n <= 3); });
 // payoff (#144): each debt's balance, the estimated payoff month and how it moved; the words come from the pipeline (pipeline/payoff.py)
 dash.draw('lm-payoff', (el) => {
   const g = dash.data('payoff'); el.replaceChildren();
@@ -1624,7 +1636,7 @@ dash.draw('lm-ef', (el) => {
     target != null && r.months != null && r.months < target);
   add('From', HL.usd0(r.emergency), `in ${r.accounts} account${r.accounts === 1 ? '' : 's'}, over ${HL.usd0(r.outgo)} a month of outgo (the ${r.outgo_months}-month average)` + (r.unconfirmed ? `; ${r.unconfirmed} balance${r.unconfirmed === 1 ? '' : 's'} not yet confirmed` : ''));
 });
-dash.draw('ef-lines', (el) => {
+dash.draw('ef-lines', (el) => {   /* series 4: series 2 is Planned savings in the chart above (DS-CHART-4) */
   const g = HL.rd('emergency_fund'), G = dash.data('goals'); el.replaceChildren();
   const rows = g.status === 'ok' ? g.data.filter((r) => r.months != null).map((r) => ({ d: HL.parseM(r.m), v: r.months })) : [];
   if (!rows.length) { HL.empty(el, 'Months of cover show here once an account is marked Emergency and has month-end balances.', '/settings#accounts', 'Mark an emergency account'); return; }
@@ -1637,7 +1649,7 @@ dash.draw('ef-lines', (el) => {
   svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
   svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
-  HL.fixes(svg, rows.map((r) => ({ x: x(r.d), y: y(r.v) })), c[1]);   // DS-CHART-1
+  HL.fixes(svg, rows.map((r) => ({ x: x(r.d), y: y(r.v) })), c[3]);   // DS-CHART-1
   if (target != null) HL.waypoint(svg, ml, W - 8, y(target), `target ${months1(target)}`);   // DS-CHART-3
   const t = HL.tip(el), bis = d3.bisector((r) => r.d).center;
   svg.append('rect').attr('x', ml).attr('y', mt).attr('width', Math.max(0, W - ml - 8)).attr('height', H - mt - mb).attr('fill', 'transparent')

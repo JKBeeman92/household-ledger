@@ -3,5 +3,5 @@
 <form method="post" action="/upload" enctype="multipart/form-data">{{ csrf_field(request) }}<input type="hidden" name="next" value="{{ next_url }}#step-files">
   <label for="checkin-files">Upload {{ 'or replace ' if c.files }}the month's transactions and budget files</label>
   <input id="checkin-files" name="files" type="file" accept=".csv,.zip" multiple required>
-  <p class="mt-2"><button class="btn primary" type="submit">Upload and rebuild</button> <a href="/upload">Close a month</a> has the build log and other budget tools.</p>
+  <p class="mt-2"><button class="btn" type="submit">Upload and rebuild</button> <a href="/upload">Close a month</a> has the build log and other budget tools.</p>
 </form>

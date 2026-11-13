@@ -65,7 +65,8 @@ def test_movers_net_worth_and_the_look_ahead():
     rows[-12] = mrow("2025-07", 9000, 3000)   # a July with a bonus: next July's expectation keeps it
     c = q.compare("2026-Q2", q.quarterly(rows), cats, nw, None, cu, rows)
     m = c["movers_previous"]
-    assert m["by_dollars"][0] == {"category": "Food", "per_month": 900.0, "was": 800.0, "change": 100.0, "pct": 0.125, "new": False, "also_last_year": False}
+    assert m["by_dollars"][0] == {"category": "Food", "per_month": 900.0, "was": 800.0, "change": 100.0, "pct": 0.125, "new": False, "also_last_year": False,
+                                   "per_month_real": 900.0, "was_real": 800.0, "change_real": 100.0}   # the Real toggle (#207)
     assert all(r["category"] != "Fun" for r in m["by_pct"])   # a $1-a-month line doubling is not a mover by %
     assert c["net_worth_change"] == 4500
     assert c["next"]["quarter"] == "2026-Q3" and c["next"]["expected"]["income"] == (6000 * 2 + 9000) / 3   # a month

@@ -112,9 +112,9 @@ def compare(q: str, rows: list[dict], cats: list[dict], net_worth: list[dict] | 
     cq = {(c["quarter"], c["category"]): c for c in cats}
     apart = set(set_apart or ())
 
-    def pm(quarter, n):
+    def pm(quarter, n, field="amount"):
         r = by_q.get(quarter)
-        return (cq.get((quarter, n)) or {}).get("amount", 0.0) / r["months"] if r and r["months"] else None
+        return (cq.get((quarter, n)) or {}).get(field, 0.0) / r["months"] if r and r["months"] else None
 
     def movers(other, seasonal=False):
         if not other:
@@ -124,7 +124,9 @@ def compare(q: str, rows: list[dict], cats: list[dict], net_worth: list[dict] | 
         for n in names:
             a, b = pm(q, n), pm(other["quarter"], n)
             pct = _pct(a, b)[0]
-            x = {"category": n, "per_month": round(a, 2), "was": round(b, 2), "change": round(a - b, 2), "pct": pct, "new": not b}
+            ar, br = pm(q, n, "amount_real"), pm(other["quarter"], n, "amount_real")   # the same in one month's prices: the Real toggle
+            x = {"category": n, "per_month": round(a, 2), "was": round(b, 2), "change": round(a - b, 2), "pct": pct, "new": not b,
+                 "per_month_real": round(ar, 2), "was_real": round(br, 2), "change_real": round(ar - br, 2)}
             if seasonal:   # last year's same step: the same quarter a year before against the one before it
                 la, lb = pm(shift(q, -4), n), pm(shift(other["quarter"], -4), n)
                 x["also_last_year"] = la is not None and lb is not None and (la - lb) * (a - b) > 0 and abs(la - lb) >= abs(a - b) / 2
