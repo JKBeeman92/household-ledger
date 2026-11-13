@@ -82,3 +82,8 @@ import look_ahead as _la   # noqa: E402
 _g = _rl("assumed_growth_pct", None)
 w("look_ahead", _la.look_ahead(_j("monthly"), _j("payoff"), _j("net_worth"), _j("balances"), _j("planned_purchases"), _j("coming_up"),
                                 _through, float(_g) if _g is not None else None))
+# the year in review (#157): the budget year of the latest month against the year before, quoting the look ahead's twelve months
+import years as _yr   # noqa: E402
+_yrev = _yr.review(_j("monthly"), _j("cat_month"), _j("net_worth"), _j("balances"), _rows, _j("events"), _j("look_ahead"), _through,
+                   int(_rl("year_start_month", 1)), set(_rl("debt_groups", ["Debt"])) | set(_rl("goal_savings_groups", [])))   # role default
+w("year_review", [_yrev] if _yrev else [])

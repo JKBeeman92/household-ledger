@@ -13,6 +13,10 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
 
 ## 0.8.0
 
+- **The annual check-in** (#157, `0157_yearly_checklist.sql`): two new tables, the yearly checklist (seeded with seven items) and its
+  ticks; nothing existing changes. Rebuild once to emit `year_review` (in `datasets.zip`, the review and MCP). `settings.zip` gains
+  `yearly_checklist.json`. The year's last budget month (December unless `year_start_month` says otherwise) adds two check-in steps.
+
 - **A look ahead** (#148): no migration. Rebuild once after upgrading to emit `look_ahead` (in `datasets.zip`, the review and MCP);
   `payoff` rows gain the debt's `apr`. A new rule, `assumed_growth_pct`, defaults to none: no investment return is assumed.
 

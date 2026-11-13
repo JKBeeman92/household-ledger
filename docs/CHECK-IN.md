@@ -60,8 +60,18 @@ habit goes. The Quarter tab on the dashboard has the percentages and the full li
 ## A year
 
 On the year's last budget month (December, unless the `year_start_month` rule says your year starts elsewhere) it runs in **year**
-mode. The yearly checklist and the year in review arrive with #157. Meanwhile: set the coming year's goals on Settings → Goals, and
-make sure each account has a December balance, so next year's net worth has its year-over-year change.
+mode, with two more steps (the quarter's steps run too, since the year's last month ends a quarter):
+
+- **Year in review**, read in place: the year against the year before (totals, and a month at a time when either year is partial),
+  the savings rate, net worth and debt balances over the year with the debts paid off, the decisions kept and the ones with the largest
+  aims, the year's life events, the categories that moved most, and where next year leads at the current pace. The Quarter tab shows
+  the same year beside the quarter, all year round.
+- **Yearly checklist**: the household's once-a-year housekeeping, ticked one by one with a note for next year. Seven items ship
+  (insurance renewals, beneficiaries, credit reports, subscriptions, next year's goals, last year's tax outcome, the yearly bills
+  list); change the list on Settings → Yearly checklist. It is done when every item is ticked, or skip it.
+
+Set next year's targets in the goals item (Settings → Goals); the look ahead reads them. Make sure each account has a balance for the
+year's last month, so next year's net worth has its year-over-year change.
 
 ## Reopening
 

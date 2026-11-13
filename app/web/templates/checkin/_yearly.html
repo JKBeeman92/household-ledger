@@ -1,0 +1,10 @@
+{# Step: the yearly checklist (#157). Context: c.year (the budget year's label), c.list (the items), c.ticks ({key: tick}) #}
+{% if not c.list %}<p>The list is empty. Add what the household does once a year on Settings → Yearly checklist.</p><p><a class="btn" href="/settings#yearly-checklist">Add to the list</a></p>
+{% else %}<p class="muted measure">Once a year, for {{ c.year }}. Tick each as it is done, with a note if it helps next year (who, what changed). Change the list on <a href="/settings#yearly-checklist">Settings → Yearly checklist</a>.</p>
+<ul class="checklist" data-list="unbounded">{% for it in c.list %}{% set t = c.ticks.get(it.key) %}<li id="yc-{{ it.key }}" tabindex="-1">
+  {% if t %}<span class="status-chip ok">Done</span> {{ it.label }}{% if t.note %}<br><span class="muted">{{ t.note }}</span>{% endif %}
+    <form method="post" action="/checkin/{{ month }}/yearly/{{ it.key }}/untick" class="inline">{{ csrf_field(request) }}<button class="btn" type="submit" aria-label="Undo: {{ it.label }}">Undo</button></form>
+  {% else %}<form method="post" action="/checkin/{{ month }}/yearly/{{ it.key }}/tick" class="tools">{{ csrf_field(request) }}
+    <span><strong>{{ it.label }}</strong></span>
+    <span class="field"><label for="yc-{{ it.key }}-note">Note for next year (optional)</label><br><input id="yc-{{ it.key }}-note" name="note" size="24" maxlength="1000"></span>
+    <button class="btn" type="submit" aria-label="Tick it off: {{ it.label }}">Tick it off</button></form>{% endif %}</li>{% endfor %}</ul>{% endif %}

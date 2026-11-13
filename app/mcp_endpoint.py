@@ -35,6 +35,7 @@ DATASETS = ("monthly", "yearly", "cat_month", "cat_year", "item_year", "budget_i
             "decisions", "decision_summary", "plan_suggestions",
             "yearly_bills",   # #151
             "tax",   # #153
+            "year_review",   # #157: derived figures; a debt paid off is named by its type
             "look_ahead",   # #148: a debt's freed payment is named by its type, never its account (PUBLIC)
             "planned_purchases",   # #158: served without an account name where a purchase is saved for in an account (PUBLIC)
             "quarterly", "cat_quarter", "quarter_review")   # #147: derived figures only; the look ahead names no account (PUBLIC): the year's contract income, expected and set-aside figures; an account in it is not named: served without an account name where a bill is saved for in an account (PUBLIC)   # #155: read only; a decision's private note is never in the dataset

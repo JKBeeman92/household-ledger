@@ -1,0 +1,16 @@
+{# Step: the year in review (#157), read in place. Context: c.y (the year_review dataset row) #}
+{% set y = c.y %}
+{% if not y %}<p>The year appears after the next rebuild, once this month's files are in.</p><p><a class="btn" href="/upload">Go to Close a month</a></p>
+{% else %}{% set p = y.previous %}
+<p class="muted">Budget year {{ y.year }}, {{ y.first|month_short }} to {{ y.last|month_short }}{% if y.partial %} ({{ y.months }} of 12 months){% endif %}{% if p %}, against {{ p.year }}{% if p.months < 12 %} (only {{ p.months }} months loaded, so changes are per month){% endif %}{% else %}; no year before it is loaded{% endif %}.</p>
+<dl class="dti">
+  <dt>Kept</dt><dd><strong>{{ y.this.net|money }}</strong> of {{ y.this.income|money }} in{% if y.this.savings_rate is not none %}: {{ y.this.savings_rate|share(1) }}{% if y.this.savings_rate_pretax is not none %}, {{ y.this.savings_rate_pretax|share(1) }} with pre-tax saving{% endif %}{% endif %}{% if y.change and y.change.savings_rate is not none %}{% set d = y.change.savings_rate * 100 %} ({{ "+" if d > 0 else ("−" if d < 0 else "") }}{{ (d|abs)|number(1) }} points against {{ p.year }}){% endif %}.</dd>
+  <dt>Living spend</dt><dd>{{ y.this.spend|money }}{% if y.change %}; {{ y.change.spend.per_month|money(signed=True) }} a month against {{ p.year }}{% endif %}.</dd>
+  <dt>Debt paid</dt><dd>{{ y.this.debt|money }}{% if y.debt and y.debt.change is not none %}; debt balances {{ y.debt.change|money(signed=True) }}{% if y.debt.paid_off %}, and paid off: {{ y.debt.paid_off|join(', ') }}{% endif %}{% endif %}.</dd>
+  {% if y.net_worth and y.net_worth.change is not none %}<dt>Net worth</dt><dd>{{ y.net_worth.end|money }}, {{ y.net_worth.change|money(signed=True) }} over the year{% if y.net_worth_previous and y.net_worth_previous.change is not none %} ({{ y.net_worth_previous.change|money(signed=True) }} in {{ p.year }}){% endif %}.</dd>{% endif %}
+  {% if y.decisions.checked %}<dt>Decisions</dt><dd>kept {{ y.decisions.kept|plain }} of {{ y.decisions.checked }} checks{% if y.decisions.biggest %}; the largest aims: {% for d in y.decisions.biggest %}{{ d.text }} (kept {{ d.kept|plain }} of {{ d.checked }}){{ "; " if not loop.last }}{% endfor %}{% endif %}.</dd>{% endif %}
+  {% if y.events %}<dt>Life events</dt><dd>{% for e in y.events %}{{ e.m|month_short }}: {{ e.label }}{{ "; " if not loop.last }}{% endfor %}.</dd>{% endif %}
+  {% if y.movers %}<dt>Moved most</dt><dd>{% for r in y.movers.nominal %}{{ r.category }} {{ r.change|money(signed=True) }} a month{{ ", " if not loop.last }}{% endfor %}, against {{ p.year }}.</dd>{% endif %}
+  {% if y.ahead %}<dt>Where next year leads</dt><dd>at the pace of the last twelve months, about {{ y.ahead.cash|money(signed=True) }} kept by {{ y.ahead.until|month_short }}{% if y.ahead.net_worth is not none %} and net worth about {{ y.ahead.net_worth|money }}{% endif %} (an estimate, not a plan).</dd>{% endif %}
+</dl><p><a href="/#quarter">The Quarter tab</a> has the year beside the quarter: the figures in full and the categories in real dollars.</p>{% endif %}
+<noscript><form method="post" action="/checkin/{{ month }}/steps/year_review/view">{{ csrf_field(request) }}<button class="btn" type="submit">Mark Year in review as read</button></form></noscript>

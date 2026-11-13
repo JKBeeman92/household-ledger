@@ -371,6 +371,15 @@
       <dl class="dti" data-draw="q-next" data-source="quarter_review"></dl>
       <ul class="plain-list" data-draw="q-next-items" data-source="quarter_review" data-list="unbounded"></ul>
     </div>
+    <div class="card" id="q-year-card">
+      <h2 id="q-year">The year</h2>
+      <ul class="key row"><li>the budget year so far against the year before</li><li>each figure is the sum of its months; a partial year compares a month at a time</li></ul>
+      <details class="how"><summary>How to read this</summary><p>A budget year is twelve budget months from the first month of the household's year (January unless changed in Settings). Each figure is the year's total, the sum of its months. When either year has fewer than twelve months loaded, the change is a month at a time, so a partial year compares fairly; it says so. A year before that is not loaded is left out, never shown as zero. Net worth is at the end of the month before the year and at the end of its latest month. A debt paid off is named by its type. Where next year leads is the look ahead's twelve months, an estimate at the current pace.</p></details>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="q-year"><table><thead><tr><th scope="col">Figure</th><th scope="col" class="num" data-draw="y-head-this" data-source="year_review">This year</th><th scope="col" class="num" data-draw="y-head-prev" data-source="year_review">Year before</th><th scope="col" class="num">Change, a month</th></tr></thead><tbody data-draw="y-compare" data-source="year_review"></tbody></table></div>
+      <dl class="dti" data-draw="y-facts" data-source="year_review"></dl>
+      <h3 class="sub" id="y-movers-h">The categories that moved most</h3>
+      <div class="tbl short" role="region" tabindex="0" aria-labelledby="y-movers-h"><table><thead><tr><th scope="col">Category</th><th scope="col" class="num">A month now</th><th scope="col" class="num">The year before</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="y-movers" data-source="year_review" data-list="unbounded"></tbody></table></div>
+    </div>
     <div class="card" id="q-ahead-card">
       <h2 id="q-ahead">Where the current pace leads</h2>
       <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the 12-month pace, with the 3-month pace beside it</li></ul>
@@ -1100,6 +1109,32 @@ dash.draw('q-next', (el) => { el.replaceChildren(); const r = qr(); if (!r) retu
 dash.draw('q-next-items', (ul) => { ul.replaceChildren(); const r = qr(); if (!r) return; const kinds = { payoff: 'Payoff', event: 'Life event', yearly_bill: 'Yearly bill', tax_deadline: 'Tax deadline', goal: 'Goal' };
   if (!r.next.coming_up.length) { ul.append(Object.assign(document.createElement('li'), { className: 'muted', textContent: 'Nothing dated in it yet.' })); return; }
   for (const c of r.next.coming_up) ul.append(Object.assign(document.createElement('li'), { textContent: `${HL.fmtM(HL.parseM(c.m))} · ${kinds[c.kind] || c.kind}: ${c.public_label || c.label}${c.amount != null ? ', ' + HL.usd0(c.amount) : ''}` })); });
+// the year in review (#157): the budget year so far against the year before; totals are sums of months, changes a month at a time
+const yr = () => { const g = dash.data('year_review'); return g.status === 'ok' && g.data.length ? g.data[0] : null; };
+const ySigned = (v) => (v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + HL.usd0(Math.abs(v)));
+dash.draw('y-head-this', (el) => { const r = yr(); el.textContent = r ? r.year + (r.partial ? ` (${r.months} of 12)` : '') : 'This year'; });
+dash.draw('y-head-prev', (el) => { const r = yr(), p = r && r.previous; el.textContent = p ? p.year + (p.months < 12 ? ` (${p.months} of 12)` : '') : 'Year before'; });
+dash.draw('y-compare', (tb) => { tb.replaceChildren(); const r = yr();
+  if (!r) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = dash.data('year_review').status === 'missing' ? 'Rebuild the ledger to see the year (Close a month).' : 'Load a month to see the year.'; tr.append(td); tb.append(tr); return; }
+  const p = r.previous, ch = r.change || {};
+  for (const [f, name] of [['income', 'Money in'], ['spend', 'Living spend'], ['debt', 'Debt paid'], ['net', 'Kept']]) {
+    const tr = document.createElement('tr'); [name, HL.usd0(r.this[f]), p ? HL.usd0(p[f]) : 'not loaded', ch[f] ? ySigned(ch[f].per_month) : '—'].forEach((c, i) => {
+      const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); }); tb.append(tr); }
+  const sr = (x) => (x == null ? '—' : (x * 100).toFixed(1) + '%');
+  const tr = document.createElement('tr'); ['Savings rate', sr(r.this.savings_rate), p ? sr(p.savings_rate) : 'not loaded', ch.savings_rate == null ? '—' : (ch.savings_rate > 0 ? '+' : ch.savings_rate < 0 ? '−' : '') + Math.abs(ch.savings_rate * 100).toFixed(1) + ' points'].forEach((c, i) => {
+    const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); }); tb.append(tr); });
+dash.draw('y-facts', (el) => { el.replaceChildren(); const r = yr(); if (!r) return;
+  const add = (dt, dd) => el.append(Object.assign(document.createElement('dt'), { textContent: dt }), Object.assign(document.createElement('dd'), { textContent: dd }));
+  const m = (x) => HL.fmtM(HL.parseM(x));
+  if (r.net_worth && r.net_worth.change != null) add('Net worth', `${HL.usd0(r.net_worth.end)}, ${ySigned(r.net_worth.change)} from ${m(r.net_worth.from)} to ${m(r.net_worth.to)}` + (r.net_worth_previous && r.net_worth_previous.change != null ? ` (${ySigned(r.net_worth_previous.change)} the year before)` : ''));
+  if (r.debt && r.debt.change != null) add('Debt balances', `${r.debt.change < 0 ? 'down' : r.debt.change > 0 ? 'up' : 'unchanged'}${r.debt.change ? ' ' + HL.usd0(Math.abs(r.debt.change)) : ''}` + (r.debt.paid_off.length ? `; paid off: ${r.debt.paid_off.join(', ')}` : ''));
+  if (r.decisions.checked) add('Decisions', `kept ${r.decisions.kept} of ${r.decisions.checked} checks` + (r.decisions.biggest.length ? '; the largest aims: ' + r.decisions.biggest.map((d) => `${d.text} (kept ${d.kept} of ${d.checked})`).join('; ') : ''));
+  if (r.events.length) add('Life events', r.events.map((e) => `${m(e.m)}: ${e.label}`).join('; '));
+  if (r.ahead) add('Where next year leads', `at the last twelve months' pace, about ${ySigned(r.ahead.cash)} kept by ${m(r.ahead.until)}` + (r.ahead.net_worth != null ? `, net worth about ${HL.usd0(r.ahead.net_worth)}` : '') + ' (an estimate, not a plan)'); });
+dash.draw('y-movers', (tb) => { tb.replaceChildren(); const r = yr(), mv = r && r.movers;
+  if (!mv) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = r ? 'The year before is not loaded.' : '—'; tr.append(td); tb.append(tr); return; }
+  for (const x of (HL.basis() === 'real' ? mv.real : mv.nominal)) { const tr = document.createElement('tr');
+    [x.category, HL.usd0(x.per_month), HL.usd0(x.was), ySigned(x.change)].forEach((c, i) => { const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); }); tb.append(tr); } });
 // the look ahead (#148): three horizons at the current pace; every figure's inputs are listed under "How it is calculated"
 const ahead = () => { const g = dash.data('look_ahead'); return g.status === 'ok' ? g.data : []; };
 const aheadSigned = (v) => (v == null ? '—' : (v < 0 ? '−' : '') + HL.usd0(Math.abs(v)));

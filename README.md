@@ -562,6 +562,21 @@ or two months loaded (labelled "2 of 3 months") still compares fairly. A quarter
   default). On an install built before quarters it works them out from the last build's monthly figures and saves nothing. The
   datasets `quarterly`, `cat_quarter` and `quarter_review` reach `datasets.zip` and MCP.
 
+## The year
+
+"Once a year, what should we look at that a month or a quarter doesn't show, and what housekeeping are we due?" A budget year is twelve
+budget months from the `year_start_month` rule (default 1); its label is the year it starts in. On the year's last month the check-in
+runs in year mode with two more steps, and that month's review gets one more section, "The year".
+
+- **Year in review** (the check-in step, and **The year** on the Quarter tab): the budget year so far against the year before. Every
+  figure is the sum of its months; when either year is partial the change is a month at a time, and a year before that is not loaded
+  is left out, never shown as zero. With it: net worth and debt balances over the year, the debts paid off (by type), the decisions
+  kept and those with the largest aims, the year's life events, the categories that moved most (nominal and real), and where next year
+  leads (the look ahead's twelve months). The `year_review` dataset reaches the review and MCP.
+- **Yearly checklist**: seven items ship, each editable or removable on Settings → Yearly checklist; each is ticked per budget year
+  with a note. The list and its ticks travel in `settings.zip` as `yearly_checklist.json` (a new install takes it while its own list
+  is still as shipped). From the command line: `python -m app.admin yearly-checklist [list|add|rename|remove|tick|untick]`.
+
 ## A look ahead
 
 "If we keep doing what we did this year, where are we in a year? In three?" The **Where the current pace leads** panel, on the Last

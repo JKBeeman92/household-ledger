@@ -529,3 +529,8 @@ details[open]:not(#dash-root details) > summary::before { transform: translateY(
 .hl .tile .d:has(.btn) { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
 .hl .gauge { flex-wrap: wrap; }
 .hl .gauge .verdict { gap: var(--space-1) var(--space-2); }
+/* Settings → Yearly checklist: the wording fills its row; the actions share one wrapping row, Remove set apart from Up and Down */
+.yc-list li { margin: 0 0 var(--space-4); }
+.yc-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-2); }
+.yc-row input[name="label"] { flex: 1 1 16em; min-width: 0; }
+.yc-row .yc-remove { margin-left: var(--space-4); }

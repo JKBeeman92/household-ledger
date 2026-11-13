@@ -530,6 +530,14 @@ def _seed_event_fields(e: dict, path) -> tuple[str | None, str | None]:
     return kind, (e.get("person") or "").strip() or None
 
 
+# the yearly checklist's seven defaults as db/migrations/0157_yearly_checklist.sql ships them (#157): a seed file replaces the list only
+# while it is still exactly these and nothing is ticked (tests/test_yearly_checklist.py keeps the two equal)
+YEARLY_CHECKLIST_DEFAULTS = [("insurance", "Review insurance renewals and coverage"), ("beneficiaries", "Check beneficiaries on retirement and insurance accounts"),
+                             ("credit_reports", "Pull credit reports"), ("subscriptions", "Audit subscriptions (the Recurring tab)"),
+                             ("goals", "Review goals and set next year's targets"), ("tax_outcome", "Record last year's tax outcome"),
+                             ("yearly_bills", "Confirm the yearly bills list")]
+
+
 def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> None:
     """First boot: load the mapping, CPI, goals, rules, events, accounts, balances and past reviews, only into empty tables.
     Each file is taken from seed_dir when present there, else from the generic files shipped next to this module."""
@@ -598,6 +606,19 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
                             "WHERE EXISTS (SELECT 1 FROM canonical_items WHERE name=%s) ON CONFLICT DO NOTHING",
                             (r["item"], int(r["month"]), r.get("amount") or None, int(r.get("every_years") or 1), r.get("funded_by") or None, r["source"],
                              r.get("dismissed_from") if r["source"] == "dismissed" and r.get("dismissed_from") in ("added", "confirmed") else None, r["item"]))
+        if (seed_dir / "yearly_checklist.json").exists():   # the yearly checklist and its ticks (#157), only into a list still as shipped
+            cur.execute("SELECT count(*) FROM yearly_checklist")
+            ticked = cur.fetchone()[0]
+            cur.execute("SELECT key, label FROM yearly_checklist_items ORDER BY position, key")
+            if not ticked and [tuple(r) for r in cur.fetchall()] == YEARLY_CHECKLIST_DEFAULTS:
+                yc = json.loads(_read(seed_dir / "yearly_checklist.json"))
+                cur.execute("DELETE FROM yearly_checklist_items")
+                for r in yc.get("items", []):
+                    cur.execute("INSERT INTO yearly_checklist_items (key, label, position, takes_amount) VALUES (%s,%s,%s,%s) ON CONFLICT (key) DO NOTHING",
+                                (r["key"], r["label"], int(r.get("position") or 0), bool(r.get("takes_amount"))))
+                for t in yc.get("ticks", []):
+                    cur.execute("INSERT INTO yearly_checklist (year, item, label, note, done_at, done_by) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+                                (t["year"], t["item"], t.get("label") or "", t.get("note") or "", t.get("done_at"), t.get("done_by") or ""))
         cur.execute("SELECT count(*) FROM decisions")
         if cur.fetchone()[0] == 0 and (seed_dir / "decisions.json").exists():   # the decisions log and its checks (#155), from settings.zip
             for d in json.loads(_read(seed_dir / "decisions.json")):
