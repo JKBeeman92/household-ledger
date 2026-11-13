@@ -18,6 +18,11 @@ def guess(item: str, group: str, rules: dict | None = None) -> dict:
     return mapping_hints.guess(item, group, rules)
 
 
+def _checked(rec: dict) -> dict:
+    """The count the build status states too (run_pipeline.rebuild): every (month, envelope) pair that reconciles, idle ones included."""
+    return {**rec, "checked": sum(v for k, v in (rec.get("counts") or {}).items() if k.startswith("OK"))}
+
+
 def latest_findings(conn) -> dict:
     """Findings of the newest finished build, plus the known categories for the form's suggestions."""
     row = conn.execute("SELECT id, finished_at, findings FROM build_log WHERE finished_at IS NOT NULL AND findings IS NOT NULL ORDER BY id DESC LIMIT 1").fetchone()
@@ -28,7 +33,7 @@ def latest_findings(conn) -> dict:
     unmapped = [{**u, **({"canonical_guess": d["canonical_item"], "flow_guess": d["flow"], "category_guess": d["category"]} if (d := drafted.get(norm(u.get("item", "")))) else
                          guess(u.get("item", ""), u.get("group") or ""))} for u in f.get("unmapped", [])]
     return {"build_id": row and row["id"], "finished_at": row and row["finished_at"], "unmapped": unmapped,
-            "reconciliation": f.get("reconciliation") or {"counts": {}, "problems": [], "clean": True}, "categories": cats, "flows": FLOWS}
+            "reconciliation": _checked(f.get("reconciliation") or {"counts": {}, "problems": [], "clean": True}), "categories": cats, "flows": FLOWS}
 
 
 @router.post("/upload/map")

@@ -1,16 +1,19 @@
 {% if checklist %}
 <div class="panel mt-4" id="checklist">
-  {% if not next_url %}<h2>Month-close checklist</h2>{% endif %}
-  <p class="muted">Standing figures to check before closing. Confirm each as it is, or enter the new value; the date is kept for the dashboard's Goals tab.
+  {% if not next_url %}<h2>Check these before you close a month</h2>{% endif %}
+  <p class="muted">Standing figures to check when you close a month. Confirm each as it is, or enter the new value; the date is kept for the dashboard's Goals tab.
     These are the same goals as <a href="/settings#goals">Settings → Goals</a>, where they are added, renamed or removed.</p>
+  {% set gf = request.session.pop("goal_form", None) %}
   <ul class="bare-list" data-list="unbounded">
-  {% for g in checklist %}<li class="rule-row">
+  {% for g in checklist %}{% set bad = gf and gf.key == g.key %}<li class="rule-row">
     <form method="post" action="/goals/{{ g.key }}/confirm" class="fields-row">{{ csrf_field(request) }}{% if next_url %}<input type="hidden" name="next" value="{{ next_url }}#step-goals">{% endif %}
       <div><label for="goal-{{ g.key }}"><strong>{{ g.label }}</strong>{% if g.unit %} <span class="muted">({{ g.unit }})</span>{% endif %}</label>
-      <input id="goal-{{ g.key }}" name="value" inputmode="decimal" value="{{ g.value|plain if g.value is not none else '' }}" {% if g.value is none %}required placeholder="not yet given"{% endif %}>
+      <input id="goal-{{ g.key }}" name="value" inputmode="decimal" value="{{ gf.value if bad else (g.value|plain if g.value is not none else '') }}" {% if g.value is none %}required placeholder="not yet given"{% endif %}{% if bad %} aria-invalid="true" aria-describedby="goal-{{ g.key }}-err"{% endif %}>
+      {% if bad %}<div class="err" id="goal-{{ g.key }}-err" role="alert">{{ gf.error[:1]|upper ~ gf.error[1:] }}{{ "" if gf.error.endswith(".") else "." }}</div>{% endif %}
       <span class="muted">{% if g.confirmed_at %}last confirmed {{ g.confirmed_at|date }}{% else %}never confirmed{% endif %}{% if g.note %} · {{ g.note }}{% endif %}</span></div>
-      <button class="btn" type="submit">{{ 'Save' if g.value is none else 'Confirm' }}</button>
+      {% set verb = 'Save' if g.value is none else 'Confirm' %}<button class="btn" type="submit" aria-label="{{ verb }} {{ g.label }}">{{ verb }}</button>
     </form></li>{% endfor %}
   </ul>
+  {% if gf %}<script nonce="{{ csp_nonce(request) }}">addEventListener('load', () => { const i = document.querySelector('#checklist [aria-invalid="true"]'); if (i) setTimeout(() => i.focus({ preventScroll: true }), 0); });</script>{% endif %}
 </div>
 {% endif %}

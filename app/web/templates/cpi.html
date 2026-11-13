@@ -2,13 +2,14 @@
 {% block title %}CPI · {{ household.title }}{% endblock %}
 {% block content %}
 <p class="eyebrow">Real dollars</p>
-<h1 class="page-title loose">CPI index</h1>
+<h1 class="page-title">Consumer price index (CPI)</h1>
+<p class="muted measure">Used to show figures in real dollars, with the effect of rising prices taken out.</p>
 <div class="row">
   <div class="panel">
     <h2>Fetch latest</h2>
-    <p class="muted">Adds months the table is missing and replaces months marked as carried forward, interpolated or estimated once the series publishes them. Published values are never changed. Needs outbound network access; if the fetch fails or the file is not a CPI series, nothing changes. The ledger is rebuilt afterwards.</p>
-    <p class="muted">Newest month: <span class="mono">{% if latest %}{{ latest.month|month_short }} ({{ latest_label }}){% else %}none{% endif %}</span> · estimated months: {{ estimated|length }}</p>
+    <p>Newest month: <span class="mono">{% if latest %}{{ latest.month|month_short }}</span> ({{ latest_label }}){% else %}none</span>{% endif %}{% if estimated %} · {{ estimated|length }} estimated month{{ '' if estimated|length == 1 else 's' }}: {{ estimated[:6]|map(attribute='month')|map('month_short')|join(', ') }}{{ ' …' if estimated|length > 6 }}{% endif %}</p>
     <form method="post" action="/cpi/fetch">{{ csrf_field(request) }}<button class="btn primary" type="submit">Fetch latest CPI</button></form>
+    <p class="muted mt-3">Adds the months the table is missing and replaces estimated ones once the series publishes them; published values are never changed. It needs outbound network access, and the ledger is rebuilt afterwards.</p>
   </div>
   <form class="panel" method="post" action="/cpi/url">{{ csrf_field(request) }}
     <h2>Series URL</h2>

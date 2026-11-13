@@ -68,7 +68,7 @@ addEventListener('DOMContentLoaded', () => {
     <p class="mt-4"><button class="btn primary" type="submit" id="upload-btn" {% if build.state == 'running' %}disabled title="A rebuild is running"{% endif %}>Upload and rebuild</button></p>
   </form>
   <div class="panel" id="review">
-    <h2>2 · The month-close review</h2>
+    <h2>2 · Write the month's review</h2>
     <p class="muted">Sends the closed month's figures (planned vs spent, category gaps against plan and against the trailing twelve months, the ledger's clean totals, and the standing targets) to the model and stores the result. Nothing else leaves the server. The review appears on the dashboard's Last month tab.</p>
     {% if review_enabled %}<form method="get" action="/reviews/confirm"><input type="hidden" name="back" value="/upload#review">
       <label for="month">Budget month</label>
@@ -93,7 +93,7 @@ addEventListener('DOMContentLoaded', () => {
   <h2>Loaded months</h2>
   <p class="muted">{{ files|length|number }} files · {{ months|length|number }} budget months{% if months %} · {{ months[-1]|month_short }} → {{ months[0]|month_short }}{% endif %}.</p>
   <form method="post" action="/rebuild" class="mb-3">{{ csrf_field(request) }}<button class="btn" type="submit" id="rebuild-btn" {% if build.state == 'running' %}disabled{% endif %}>Rebuild without uploading</button> <span class="muted">after editing the mapping, CPI, goals, events or rules</span></form>
-  <details {% if files|selectattr('replaced_at')|list %}open{% endif %}><summary class="muted">Show the {{ files|length }} files</summary>
+  {% set replaced = files|selectattr('replaced_at')|list %}<details {% if files|length <= 8 %}open{% endif %}><summary class="muted">Show the {{ files|length }} file{{ '' if files|length == 1 else 's' }}{% if replaced %} ({{ replaced|length }} replaced){% endif %}</summary>
   <table class="plain" data-list="unbounded"><thead><tr><th>Month</th><th>Kind</th><th>File</th><th>Rows</th><th>Uploaded</th><th>Actions</th></tr></thead><tbody>
   {% for f in files %}<tr><td class="mono">{{ f.budget_month|month_short }}</td><td>{{ f.kind }}</td><td>{{ f.filename }}</td><td class="mono num">{{ f.row_count|number }}</td><td class="mono">{{ f.uploaded_at|date }}
     {%- if f.replaced_at %}<br><span class="muted replaced-note">replaced on {{ f.replaced_at|date }}, {% if f.previous_sha256 == f.sha256 %}identical to the previous file{% else %}different from the previous file ({{ f.previous_sha256[:8] }} → {{ f.sha256[:8] }}){% endif %}</span>{% endif %}</td>
@@ -103,7 +103,12 @@ addEventListener('DOMContentLoaded', () => {
 </div>
 <div class="panel mt-4">
   <h2>Take your data out, or scan for new files</h2>
-  <p class="muted">Downloads: <a href="/export/ledger.csv">ledger.csv</a> · <a href="/export/datasets.zip">datasets.zip</a> · <a href="/export/sources.zip">sources.zip</a> (the raw exports and the month-end balances you typed: the internal format and EveryDollar's files in their shape and original filenames, other sources exactly as uploaded) · <a href="/export/settings.zip">settings.zip</a> (mapping, CPI, goals, events, accounts, rules and household as seed files: unzip into <code>SEED_DIR</code> to start a new install with them; no secrets).</p>
+  <ul class="downloads">
+    <li><a href="/export/ledger.csv">ledger.csv</a>: every transaction, mapped.</li>
+    <li><a href="/export/datasets.zip">datasets.zip</a>: the figures the dashboard draws.</li>
+    <li><a href="/export/sources.zip">sources.zip</a>: the raw exports and the month-end balances you typed, in their original filenames.</li>
+    <li><a href="/export/settings.zip">settings.zip</a>: mapping, CPI, goals, events, accounts, rules and household as seed files; unzip into <code>SEED_DIR</code> to start a new install with them. No secrets.</li>
+  </ul>
   {% if import_dir_set %}  <form method="post" action="/import/scan">{{ csrf_field(request) }}<button class="btn" type="submit">Scan import directory now</button> <span class="muted">loads new or changed exports from IMPORT_DIR without a restart</span></form>{% endif %}
 </div>
 {% endblock %}

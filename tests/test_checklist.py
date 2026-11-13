@@ -36,7 +36,7 @@ def test_only_null_or_ask_goals_get_a_prompt(goals):
 def test_no_checklist_when_nothing_to_ask(client, reset_db):
     with db.pool.connection() as conn:
         conn.execute("DELETE FROM goals"); conn.execute("INSERT INTO goals (key,value,unit,label,note) VALUES ('a',1,'','A','')")
-    assert "Month-close checklist" not in client.get("/upload").text
+    assert "Check these before you close a month" not in client.get("/upload").text
 
 
 def test_confirm_unchanged_records_date_only(goals):

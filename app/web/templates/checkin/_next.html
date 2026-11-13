@@ -15,7 +15,7 @@ c.people, c.kinds, c.cap, c.next, c.acked #}
   <p><button class="btn" type="submit">Add the decision</button></p>
 </form>
 {% if not c.made and not c.acked %}<form method="post" action="/checkin/{{ month }}/steps/next/ack" class="inline-actions">{{ csrf_field(request) }}<button class="btn" type="submit">Say there are no changes this month</button></form>
-{% elif not c.made %}<form method="post" action="/checkin/{{ month }}/steps/next/undo" class="inline-actions">{{ csrf_field(request) }}<span class="status-chip ok">Done</span> No changes this month. <button class="btn" type="submit">Undo</button></form>{% endif %}
+{% elif not c.made %}<form method="post" action="/checkin/{{ month }}/steps/next/undo" class="inline-actions">{{ csrf_field(request) }}No changes this month. <button class="btn" type="submit">Undo: no changes this month</button></form>{% endif %}
 {% if c.suggestions %}<details class="listcount" {% if not c.made %}open{% endif %}><summary>{{ c.suggestions|length }} from the Suggested plan</summary>
 <p class="muted">The twelve-month average, rounded up to the next ten, where it differs from this month's plan. Adding one makes it a decision: next month's check-in compares the plan you set with it.</p>
 <ul class="suggest-list" data-list="unbounded">{% for s in c.suggestions %}<li><form method="post" action="/checkin/{{ month }}/decisions" class="inline">{{ csrf_field(request) }}

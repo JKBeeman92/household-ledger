@@ -27,7 +27,13 @@ def checklist_goals(conn) -> list[dict]:
 @router.post("/goals/{key}/confirm")
 def confirm_goal(key: str, request: Request, background: BackgroundTasks, value: str = Form(""), next: str = Form(""), user=Depends(auth.require_editor)):
     back = RedirectResponse(auth._safe_next(next) if next else "/upload#checklist", status_code=303)   # the check-in's Goals step returns to it (#164)
-    value = value.strip()
+    typed, value = value, value.strip()
+    request.session.pop("goal_form", None)
+
+    def refuse(msg: str, field_msg: str):   # the flash says it, and so does the field, which keeps what was typed and gets the page (DS-FORM-1)
+        flash(request, msg, "bad")
+        request.session["goal_form"] = {"key": key, "value": typed, "error": field_msg}
+        return RedirectResponse(auth._safe_next((next or "/upload").split("#")[0]) + f"#goal-{key}", status_code=303)
     with db.pool.connection() as conn:
         g = conn.execute("SELECT label, value, unit FROM goals WHERE key=%s", (key,)).fetchone()
         if not g:
@@ -35,10 +41,10 @@ def confirm_goal(key: str, request: Request, background: BackgroundTasks, value:
         if value:
             v, problem = parse_goal_value(value, g["unit"] or "")   # the same rule as the Settings editor
             if problem or v is None:
-                flash(request, f"{g['label']}: {problem or 'enter a number'}.", "bad"); return back
+                return refuse(f"{g['label']}: {problem or 'enter a number'}.", problem or "enter a number")
             new = Decimal(str(v))
         elif g["value"] is None:
-            flash(request, f"{g['label']}: enter a number.", "bad"); return back
+            return refuse(f"{g['label']}: enter a number.", "enter a number")
         else:
             new = g["value"]
         changed = new != g["value"]
