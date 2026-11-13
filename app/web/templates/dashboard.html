@@ -1702,7 +1702,7 @@ finding('net', () => { const g = HL.rd('yearly'); if (g.status !== 'ok' || !g.da
 const lmGap = (field, up, down, keep) => () => { const g = dash.data('lm_cats'); if (g.status !== 'ok') return; const rows = g.data.filter(keep).filter((r) => Math.abs(r[field]) >= 0.5); if (!rows.length) return;
   const hi = rows.reduce((a, b) => b[field] > a[field] ? b : a), lo = rows.reduce((a, b) => b[field] < a[field] ? b : a), out = [];
   if (hi[field] > 0) out.push(up + ' ' + hi.category + ', ' + sg(hi[field])); if (lo[field] < 0) out.push(down + ' ' + lo.category + ', ' + sg(lo[field])); return out.join('; ') + '.'; };
-finding('lm-var', lmGap('vs_plan', 'Furthest over plan:', 'furthest under plan:', () => true));
+finding('lm-var', lmGap('vs_plan', 'Spending furthest over plan:', 'furthest under plan:', (r) => r.flow !== 'income'));
 finding('lm-avg', lmGap('vs_avg', 'Furthest above its average:', 'furthest below it:', (r) => r.flow !== 'income'));
 })();</script>
 {% endblock %}
