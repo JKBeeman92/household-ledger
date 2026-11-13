@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.8.0](https://github.com/JKBeeman92/household-ledger/compare/v0.7.0...v0.8.0) (2026-11-13)
+
+
+### Features
+
+* a look ahead: where the current pace leads in 3, 12 and 36 months ([#212](https://github.com/JKBeeman92/household-ledger/issues/212)) ([f74e8f1](https://github.com/JKBeeman92/household-ledger/commit/f74e8f17dfdfdb392027ed7ee62e953f9f6c6d28))
+* an annual check-in: a yearly checklist and the year in review ([#213](https://github.com/JKBeeman92/household-ledger/issues/213)) ([e6befbe](https://github.com/JKBeeman92/household-ledger/commit/e6befbef9c093a691a2f112ba27a2fcbd1288a7e))
+* planned purchases: goals with an amount and a date, and whether the pace gets there ([#211](https://github.com/JKBeeman92/household-ledger/issues/211)) ([a382d2c](https://github.com/JKBeeman92/household-ledger/commit/a382d2c0ab9376538b6ec30492c63fa37f419b02))
+* the yearly withholding check: each tax year's outcome and the trend in the year in review ([#214](https://github.com/JKBeeman92/household-ledger/issues/214)) ([9326d12](https://github.com/JKBeeman92/household-ledger/commit/9326d12f8f17d94802426b385ca1179abc78030c))
+
+
+### Bug Fixes
+
+* restoring a hand-added yearly bill brings it back with its values ([#209](https://github.com/JKBeeman92/household-ledger/issues/209)) ([5fd3fae](https://github.com/JKBeeman92/household-ledger/commit/5fd3faea6912e257f27dd0eca78f5ed36a3072d6))
+
 ## [0.7.0](https://github.com/JKBeeman92/household-ledger/compare/v0.6.0...v0.7.0) (2026-11-13)
 
 
