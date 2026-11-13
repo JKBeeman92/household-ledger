@@ -114,15 +114,29 @@ def test_dashboard_charts_draw_fixes_courses_and_waypoints():
 
 
 def test_templates_set_no_inline_style_except_a_custom_property_that_carries_data():
-    """DS-SPACE-1: a page spaces itself with the classes in app.css. The dashboard's own block is #191's."""
+    """DS-SPACE-1: a page spaces itself with the classes in app.css; the dashboard's styles live there too (#191), and it has no <style> block."""
     bad = {}
+    assert "<style" not in (WEB / "templates" / "dashboard.html").read_text(encoding="utf-8")
     for path in sorted((WEB / "templates").rglob("*.html")):
-        if path.name == "dashboard.html":
-            continue
         found = [m for m in re.findall(r'style="([^"]*)"', path.read_text(encoding="utf-8")) if not m.startswith("--")]
         if found:
             bad[path.name] = found
     assert not bad, f"inline style: use a class from app.css (DS-SPACE-1): {bad}"
+
+
+def test_dashboard_sheets_stamps_glyphs_and_accent_2():
+    """#191: chart cards are sheets and tiles stay flat (DS-SHEET-1, 2), verdicts are stamps (DS-STATUS-1), the figure glyphs are placed
+    and hidden from assistive technology (DS-GLYPH-1, 2), and --accent-2 marks only destinations (DS-COLOR-2)."""
+    css = (WEB / "static" / "app.css").read_text(encoding="utf-8")
+    page = (WEB / "templates" / "dashboard.html").read_text(encoding="utf-8")
+    assert re.search(r"\.hl \.card:not\(\.tile\) \{ border: 2px solid var\(--ink\); box-shadow: inset", css)
+    assert not re.search(r"\.hl \.chip[ .:{,]", css) and "border-radius: 999px" not in css   # no round pill left
+    assert "HL.stamp" in page and "'status-chip'" in page and "className = 'chip" not in page
+    for g in ("savings-rate", "net-worth", "emergency-fund"):
+        assert f"glyph('{g}')" in page, g
+    dash_css = css[css.index("The dashboard page (#dash-root.hl)"):]
+    lines = [ln for ln in dash_css.splitlines() if "--accent-2" in ln and not ln.lstrip().startswith("/*")]
+    assert all(".key-mark.wp" in ln or ".eyebrow" in ln for ln in lines), lines   # destinations (the waypoint key) and eyebrows only
 
 
 def test_the_spacing_classes_the_pages_use_are_built_from_tokens():
@@ -140,3 +154,34 @@ def test_the_spacing_classes_the_pages_use_are_built_from_tokens():
 def test_no_route_flashes_not_saved_with_a_dash():
     for path in sorted((ROOT / "app" / "routes").glob("*.py")):
         assert "Not saved —" not in path.read_text(encoding="utf-8"), f"{path.name}: write \"Not saved: …\""
+
+
+def test_dashboard_motion_is_on_the_tokens_and_a_missing_goal_figure_has_no_verdict():
+    """DS-MOTION-1: no dashboard animation runs longer than --dur-slow (they read the token, never a typed ms). And a gauge whose
+    figure or goal is null is not drawn as on track: Number(null) is 0."""
+    import re
+    css = (ROOT / "app" / "web" / "static" / "app.css").read_text()
+    assert not re.search(r"animation:\s*hl-[\w-]+\s+\d+m?s", css)
+    dash = (ROOT / "app" / "web" / "templates" / "dashboard.html").read_text()
+    assert "x == null || x === '' ? NaN : Number(x)" in dash
+
+
+def test_display_size_is_a_token_every_kit_sets_and_the_dashboard_types_no_size():
+    """#191b: the headline figure takes --text-display (DESIGN.md section 3), set by every kit; no size is a multiple of a token, no weight a number."""
+    css = (WEB / "static" / "app.css").read_text(encoding="utf-8")
+    for name, d in KITS.items():
+        assert re.search(r"--text-display:\s*\d+px", (d / "theme.css").read_text(encoding="utf-8")), name
+    assert "--text-display" in css and "var(--text-display)" in css and "--text-display" in (ROOT / "docs" / "DESIGN.md").read_text(encoding="utf-8")
+    dash = css[css.index("The dashboard page (#dash-root.hl)"):]
+    assert not re.search(r"font-size:\s*calc\(var\(--text", dash) and not re.search(r"font-weight:\s*\d", dash), "a size or weight of its own (DS-TYPE-1)"
+    page = (WEB / "templates" / "dashboard.html").read_text(encoding="utf-8")
+    assert not re.search(r'class="glyph[ "]', page) and "key-mark" in page   # .glyph is the SVG set; a key's marks are .key-mark, hidden from assistive technology
+    assert all('aria-hidden="true"' in tag for tag in re.findall(r'<span class="key-mark[^>]*>', page))
+
+
+def test_chart_findings_are_read_into_the_text_alternative():
+    """DS-CHART-5: a chart's one-line finding is drawn from its data and a11y.js adds it to the chart's aria-label."""
+    page = (WEB / "templates" / "dashboard.html").read_text(encoding="utf-8")
+    for n in ("goal", "ef", "dti", "debts", "nw", "net", "lm-var", "lm-avg"):
+        assert f'data-draw="fd-{n}"' in page and f"finding('{n}'" in page, n
+    assert "querySelector('.finding')" in (WEB / "static" / "a11y.js").read_text(encoding="utf-8")

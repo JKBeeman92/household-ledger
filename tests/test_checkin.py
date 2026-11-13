@@ -81,6 +81,19 @@ def test_a_step_that_does_not_apply_never_blocks_and_a_later_step_is_not_retroac
     assert "balances" not in status("2025-05")   # no accounts: the step does not apply
 
 
+def test_page_turn_names_the_neighbouring_loaded_months(client, loaded):
+    """DS-SHEET-4: earlier month at the left, later at the right, links that name the month, absent at the ends of the loaded months."""
+    mid = client.get("/checkin/2025-02").text
+    assert 'class="turn prev" href="/checkin/2025-01"' in mid and 'class="turn next" href="/checkin/2025-03"' in mid
+    assert mid.index('class="turn prev"') < mid.index('class="turn next"') and "January 2025" in mid and "March 2025" in mid
+    first, last = client.get("/checkin/2025-01").text, client.get("/checkin/2025-04").text
+    assert 'class="turn prev"' not in first and 'class="turn next" href="/checkin/2025-02"' in first
+    assert 'class="turn next"' not in last and 'class="turn prev" href="/checkin/2025-03"' in last
+    assert 'class="turn prev" href="/checkin/2025-04"' in client.get("/checkin/2025-05").text   # a month not loaded yet still turns back
+    dash = client.get("/").text   # the Last month tab is one month: it turns back to the month before it
+    assert 'aria-label="Earlier month"' in dash and 'href="/checkin/2025-03"' in dash
+
+
 def test_catch_up_over_three_missing_months(client, loaded):
     o = ov("2025-04")
     assert o["missing"] == ["2025-01", "2025-02", "2025-03"]

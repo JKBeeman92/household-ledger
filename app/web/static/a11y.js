@@ -14,6 +14,7 @@
     const parts = ['Chart: ' + title + '.'];
     const legend = [...(card || document).querySelectorAll('.legend span')].map((s) => s.textContent.trim()).filter(Boolean);
     if (legend.length) parts.push((chart.classList.contains('radar') ? 'Years: ' : 'Series: ') + legend.join(', ') + '.');
+    const finding = card && card.querySelector('.finding'); if (finding && finding.textContent.trim()) parts.push(finding.textContent.trim());   // the one-line finding the page draws from the data
     if (chart.dataset.span) parts.push('Figures from ' + chart.dataset.span + '.');   // the data's own range, not the first and last tick
     else for (const g of svg.querySelectorAll(':scope > g')) {
       const t = [...g.querySelectorAll('.tick text')].map((x) => x.textContent.trim()).filter(Boolean);

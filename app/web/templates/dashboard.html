@@ -1,208 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ household.title }}{% endblock %}
 {% block content %}
-<style>
-.hl [hidden] { display: none !important; }
-/* Layout: a short header with the takeaway, one control row (dollar basis + tabs), then one section per question. */
-.hl { font-family: var(--font-sans); font-variant-numeric: tabular-nums; }
-.hl h1 { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.02em; font-size: var(--text-title); margin: 0 0 var(--space-1); }
-.hl .lede { color: var(--ink-muted); margin: 0 0 var(--space-4); max-width: 90ch; }
-.hl .lede b { font-weight: 500; color: var(--ink); }
-.hl .controls { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-bottom: var(--space-4); }
-.hl .ctl-label { font-size: var(--text-caption); color: var(--ink-muted); font-weight: var(--weight-strong); }
-.hl .seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; }
-.hl .seg button, .hl .tabs button { font: inherit; background: var(--surface-200); color: var(--ink-muted); border: 0; padding: var(--space-1) var(--space-2); cursor: pointer; }
-.hl .seg button + button { border-left: 1px solid var(--line); }
-.hl .seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface-100); }
-.hl .tabs { display: flex; flex-wrap: wrap; gap: var(--space-1); }
-.hl .tabs button { border: 1px solid var(--line); border-radius: var(--radius-md); }
-.hl .tabs button[aria-selected="true"] { background: var(--ink); color: var(--surface-100); border-color: var(--ink); }
-.hl .seg button:focus-visible, .hl .tabs button:focus-visible, .hl select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.hl .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: var(--space-4); margin-bottom: var(--space-4); }
-.hl .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); gap: var(--space-4); margin-bottom: var(--space-4); }
-.hl .card { background: var(--surface-200); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-4); min-width: 0; }
-.hl .card h2 { font-size: var(--text-heading); font-weight: var(--weight-strong); margin: 0; }
-.hl .card .note { color: var(--ink-muted); font-size: var(--text-caption); margin: var(--space-1) 0 var(--space-2); }
-.hl .tile .k { color: var(--ink-muted); font-size: var(--text-caption); }
-.hl .tile .v { font-family: var(--font-display); font-size: var(--text-title); font-weight: 600; line-height: 1.15; margin: var(--space-1) 0; }
-.hl .tile .d { font-size: var(--text-caption); color: var(--ink-muted); }
-.hl .tile .d.up { color: var(--success); } .hl .tile .d.down { color: var(--danger); } .hl dl.dti .down { color: var(--danger); }
-.hl .chart { position: relative; min-height: 260px; }
-.hl .radars { grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); margin: var(--space-2) 0 0; }
-.hl .radars .sub { font-size: var(--text-caption); font-weight: var(--weight-strong); color: var(--ink-muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 var(--space-1); text-align: center; }
-.hl .chart svg { width: 100%; height: auto; display: block; overflow: visible; }
-.hl .chart text { font-family: var(--font-sans); font-size: var(--text-caption); fill: var(--ink-muted); }
-.hl .tip { position: absolute; background: var(--surface-300); border: 1px solid var(--line-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-md); padding: var(--space-1) var(--space-2); font-size: var(--text-caption); pointer-events: none; white-space: nowrap; z-index: 2; }
-.hl .tip .t { color: var(--ink-muted); }
-.hl .tip .sw { display: inline-block; width: .6em; height: .6em; border-radius: 50%; margin-right: .4em; vertical-align: middle; }
-.hl .legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: var(--text-caption); color: var(--ink-muted); margin-top: var(--space-2); }
-.hl .legend.years span { cursor: pointer; } .hl .legend.years span:focus-visible, .hl dfn:focus-visible, .hl .page:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; } .hl .legend.years span[aria-pressed="false"] { opacity: .4; text-decoration: line-through; }
-.hl .legend span::before { content: ""; display: inline-block; width: .6em; height: .6em; border-radius: 50%; margin-right: .4em; background: var(--sw); vertical-align: middle; }
-.hl .tbl { overflow-x: auto; max-height: 28rem; overflow-y: auto; } .hl .tbl.short { max-height: 20rem; }   /* scrolls inside its card, header stays */
-.hl table { border-collapse: collapse; width: 100%; font-size: var(--text-caption); }
-.hl th, .hl td { text-align: right; padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--line); white-space: nowrap; }
-.hl th:first-child, .hl td:first-child { text-align: left; }
-.hl table.words2 th:nth-child(2), .hl table.words2 td:nth-child(2) { text-align: left; }   /* a name in the second column (DS-TABLE-1) */
-.hl th { position: sticky; top: 0; background: var(--surface-200); font-weight: var(--weight-strong); color: var(--ink-muted); }
-.hl tr.filled td { color: var(--warning); }
-.hl td.neg { color: var(--danger); }
-.hl .prose { max-width: 70ch; }
-.hl .prose p, .hl .prose li { line-height: 1.5; }
-.hl .prose h3 { font-size: var(--text-heading); font-weight: var(--weight-strong); margin: var(--space-4) 0 var(--space-1); }
-.hl select { font: inherit; background: var(--surface-200); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-1) var(--space-2); }
-.hl [data-dash-source-state=empty] { color: transparent; }
-.hl [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--dur-slow); }
-/* Brand accents arrive through dash.colors (set on --accent/--accent-2 in script), never typed here. */
-.hl .eyebrow { font-size: var(--text-caption); font-weight: var(--weight-strong); letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2-text, var(--ink-muted)); margin: 0 0 var(--space-1); }
-.hl .masthead { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1); }
-.hl .mark { width: 56px; height: 56px; flex: none; }   /* the full seal: 48 px and up (DS-MARK-1) */
-.hl .intro { color: var(--ink-muted); margin: 0 0 var(--space-4); max-width: 75ch; }
-.hl .intro dfn, .hl .lede dfn, .hl .prose dfn { font-style: normal; border-bottom: 1px dotted var(--accent-2, var(--ink-muted)); cursor: help; }
-.hl details.how { margin: var(--space-2) 0 0; font-size: var(--text-caption); color: var(--ink-muted); }
-.hl details.how summary { cursor: pointer; color: var(--accent-2-text, var(--ink-muted)); font-weight: var(--weight-strong); letter-spacing: .04em; }
-.hl details.how summary:focus-visible { outline: 2px solid var(--accent, var(--ink)); outline-offset: 2px; }
-.hl details.how p { margin: var(--space-1) 0 0; max-width: 75ch; line-height: 1.5; }
-.hl .card h3.sub { font-size: var(--text-body); margin: var(--space-3) 0 var(--space-2); }
-.hl .card h2 { border-left: 3px solid var(--accent-2, var(--line)); padding-left: var(--space-2); }
-.hl tbody tr:hover td { background: color-mix(in srgb, var(--ink) 6%, transparent); }
-.hl .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.hl .seg button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 14%, var(--surface-200)); color: var(--ink); box-shadow: inset 0 0 0 2px var(--accent); }
-.hl .review h3 { font-size: var(--text-heading); font-weight: var(--weight-strong); margin: var(--space-4) 0 var(--space-1); } .hl .review h3:first-child { margin-top: 0; } .hl .review p { margin: 0; line-height: 1.55; max-width: 70ch; }
-.hl .summary-list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-1); }
-.hl .summary-list li { padding: var(--space-1) var(--space-2); border-left: 3px solid var(--line); }
-.hl .summary-list li.over { border-left-color: var(--danger); } .hl .summary-list li.under { border-left-color: var(--success); }
-/* Explanation beside what it explains: a narrow aside (heading, a visual key, the accordion) and the content in the rest. */
-.hl .split { display: grid; grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr); gap: var(--space-6); align-items: start; }
-@media (max-width: 900px) { .hl .split { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); } }
-.hl .aside-note { display: block; font-size: var(--text-caption); margin-top: var(--space-1); }
-.hl .key { list-style: none; margin: var(--space-2) 0; padding: 0; display: grid; gap: var(--space-1); font-size: var(--text-caption); color: var(--ink-muted); }
-.hl .key.row { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
-.hl .key li { display: flex; align-items: center; gap: var(--space-1); }
-.hl .key li:not(:has(.glyph))::before { content: ""; flex: none; width: 1.6rem; height: 6px; background: radial-gradient(circle, var(--ink-muted) 2.5px, transparent 3px); }
-.hl .key .glyph { flex: none; min-width: 1.6rem; text-align: center; font-weight: var(--weight-strong); color: var(--ink); }   /* DS-COLOR-2: --accent-2 is for the goal mark (.glyph.wp) only */
-/* Line-style swatches: the chip shows the stroke it describes instead of a character standing in for it. */
-.hl .key .glyph.ln { min-width: 1.4rem; height: 0; border-top: 2px solid currentColor; align-self: center; }
-.hl .key .glyph.ln.dash { border-top-style: dashed; } .hl .key .glyph.ln.dot { border-top-style: dotted; border-top-width: 3px; }
-/* DS-CHART-1, 3: a fix (a ring with a dot: a month that happened) and a waypoint (a filled --accent-2 dot: a goal) in a chart's key */
-.hl .key .glyph.fix { min-width: 0; width: .7rem; height: .7rem; align-self: center; border-radius: 50%; border: 1.5px solid currentColor; background: radial-gradient(currentColor 0 22%, transparent 26%); }
-.hl .key .glyph.wp { min-width: 0; width: .7rem; height: .7rem; align-self: center; border-radius: 50%; background: var(--accent-2); }
-.hl .key .glyph.fade { min-width: 1.4rem; height: .7rem; align-self: center; border-radius: 2px; background: linear-gradient(90deg, currentColor 50%, color-mix(in srgb, currentColor 30%, transparent) 50%); }
-.hl .key .bar { flex: none; width: 1.6rem; height: .6rem; border-radius: 2px; background: var(--k); }
-.hl .key .bar.r { clip-path: polygon(0 0, 80% 0, 100% 50%, 80% 100%, 0 100%); }
-.hl .key .bar.l { clip-path: polygon(20% 0, 100% 0, 100% 100%, 20% 100%, 0 50%); }
-.hl .review { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--space-4); }
-.hl .review .rv { border-top: 2px solid var(--accent-2, var(--line)); padding-top: var(--space-1); }
-.hl .review { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); align-items: start; }
-.hl .review .rv h3 { margin: 0 0 var(--space-1); } .hl .review .rv p { max-width: none; margin: 0; }
-.hl .review summary { cursor: pointer; list-style: none; } .hl .review summary::-webkit-details-marker { display: none; }
-.hl .review summary h3::after { content: " ▸"; color: var(--accent-2-text, var(--ink-muted)); } .hl .review details[open] summary h3::after { content: " ▾"; }
-.hl .review summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.hl .review .more { margin-top: var(--space-1); color: var(--ink-muted); }
-.hl .review details[open] { grid-column: span 2; }
-.hl .summary-list.two { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
-.hl .card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
-.hl .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.hl .topics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: var(--space-2) var(--space-4); margin-top: var(--space-2); }
-.hl details.topic { border-top: 1px solid var(--line); padding-top: var(--space-1); }
-.hl details.topic summary { cursor: pointer; display: grid; gap: 2px; } .hl details.topic summary span { color: var(--ink-muted); font-size: var(--text-caption); }
-.hl details.topic summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.hl details.topic[open] { grid-column: 1 / -1; } .hl details.topic .prose { max-width: 90ch; }
-/* Motion: content rises in, bars grow from their baseline, timelines reveal left to right, stars open from the centre.
-   CSS animations restart whenever a chart's SVG is redrawn or its tab is shown; none run with reduced motion or in print. */
-@keyframes hl-in { from { opacity: 0; transform: translateY(6px); } }
-@keyframes hl-grow-y { from { transform: scaleY(0); } }
-@keyframes hl-grow-x { from { transform: scaleX(0); } }
-@keyframes hl-wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
-@keyframes hl-open { from { opacity: 0; transform: scale(.6); } }
-@media (prefers-reduced-motion: no-preference) {
-  .hl .page:not([hidden]) > * { animation: hl-in 320ms cubic-bezier(.2, .7, .2, 1) backwards; }
-  .hl .page:not([hidden]) > :nth-child(2) { animation-delay: 40ms; } .hl .page:not([hidden]) > :nth-child(3) { animation-delay: 80ms; }
-  .hl .page:not([hidden]) > :nth-child(4) { animation-delay: 120ms; } .hl .page:not([hidden]) > :nth-child(n+5) { animation-delay: 160ms; }
-  .hl .chart svg rect.b { transform-box: fill-box; transform-origin: 50% 100%; animation: hl-grow-y 600ms cubic-bezier(.2, .7, .2, 1) backwards; }
-  .hl .chart svg rect.b.neg { transform-origin: 50% 0; }
-  .hl .chart svg rect.b.h { transform-origin: 0 50%; animation-name: hl-grow-x; }
-  .hl .chart svg rect.b.h.neg { transform-origin: 100% 50%; }
-  .hl .chart[data-draw="monthly"] svg, .hl .chart[data-draw="goal-lines"] svg { animation: hl-wipe 900ms cubic-bezier(.3, .6, .2, 1) backwards; }
-  .hl .chart.radar svg { transform-origin: 50% 50%; animation: hl-open 600ms cubic-bezier(.2, .7, .2, 1) backwards; }
-  .hl .review .rv { animation: hl-in 320ms cubic-bezier(.2, .7, .2, 1) backwards; }
-}
-@media print { .hl *, .hl *::before { animation: none !important; } }
-/* Hover: the mark under the pointer stays bright and its neighbours dim, so the tooltip clearly belongs to it. */
-.hl .chart svg rect.b, .hl .chart svg path.ring { transition: opacity 150ms ease-out, filter 150ms ease-out, stroke-width 150ms ease-out; }
-.hl .chart svg:hover rect.b { opacity: .45; }
-.hl .chart svg rect.b:hover { opacity: 1; filter: brightness(1.12) saturate(1.1); }
-.hl .chart.radar svg:hover path.ring { opacity: .35; }
-.hl .chart.radar svg path.ring:hover { opacity: 1; stroke-width: 3px; }
-.hl tbody td { transition: background-color 120ms ease-out; }
-@media (prefers-reduced-motion: no-preference) { .hl .tip:not([hidden]) { animation: hl-in 140ms ease-out backwards; } }
-@media (prefers-reduced-motion: reduce) { .hl .chart svg rect.b, .hl .chart svg path.ring, .hl tbody td { transition: none; } }
-.hl .range { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); font-size: var(--text-caption); color: var(--ink-muted); }
-.hl .range label { display: inline; margin: 0; font-weight: var(--weight-strong); }
-.hl .range select { width: auto; max-width: 100%; min-height: 36px; margin: 0; }
-@media (max-width: 820px) { .hl .range { width: 100%; } .hl .range #range-pick { flex: 1 1 0; min-width: 0; } }
-.hl .range #range-custom:not([hidden]) { display: inline-flex; align-items: center; gap: var(--space-1); }
-.hl .range-status { font-size: var(--text-caption); color: var(--ink-muted); margin: calc(-1 * var(--space-2)) 0 var(--space-4); padding-left: var(--space-2); border-left: 3px solid var(--accent-2, var(--line)); }
-/* Scrolling tables show a soft edge where more rows are hidden (background-attachment trick; tokens only). */
-.hl .tbl { background: linear-gradient(var(--surface-200) 30%, transparent) top / 100% 2.5rem no-repeat local, linear-gradient(transparent, var(--surface-200) 70%) bottom / 100% 2.5rem no-repeat local,
-  radial-gradient(farthest-side at 50% 0, color-mix(in srgb, var(--ink) 18%, transparent), transparent) top / 100% .8rem no-repeat scroll,
-  radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--ink) 18%, transparent), transparent) bottom / 100% .8rem no-repeat scroll; }
-.hl table[data-source="goals"] td:nth-child(3) { white-space: normal; min-width: 12rem; }
-.hl .key.events li { white-space: nowrap; }
-/* Headline summaries: one figure, one plain takeaway, then status chips; detail stays a click away. */
-.hl .headline { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: var(--space-1) var(--space-6); align-items: end; margin-bottom: var(--space-4); }
-.hl .headline .eyebrow { margin: 0; } .hl .headline .aside-note { grid-column: 1 / -1; color: var(--ink-muted); margin: 0; }
-.hl .headline .fig { font-family: var(--font-display); font-size: calc(var(--text-title) * 1.7); font-weight: 600; line-height: 1.05; }
-.hl .fig.good { color: var(--success); } .hl .fig.off { color: var(--danger); }
-.hl .headline .take { font-size: var(--text-heading); margin: 0 0 .3em; }
-.hl .chips { list-style: none; display: flex; flex-wrap: wrap; gap: var(--space-1); margin: var(--space-1) 0 0; padding: 0; grid-column: 1 / -1; }
-.hl .chip { display: inline-flex; align-items: center; gap: .4em; border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px 3px 10px; font-size: var(--text-caption); background: var(--surface-200); white-space: nowrap; }
-.hl .chip::before { content: ""; width: .55em; height: .55em; border-radius: 50%; background: var(--ink-muted); flex: none; }
-.hl .chip.good { border-color: color-mix(in srgb, var(--success) 55%, transparent); } .hl .chip.good::before { background: var(--success); }
-.hl .chip.off { border-color: color-mix(in srgb, var(--danger) 55%, transparent); } .hl .chip.off::before { background: var(--danger); }
-.hl .chip b { font-weight: var(--weight-strong); }
-@media (max-width: 700px) { .hl .headline { grid-template-columns: minmax(0, 1fr); } }
-.hl .spark { margin-top: var(--space-1); height: 28px; }
-.hl .gauge { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-1); }
-.hl .gauge .track, .hl .sumrow .vsplan { position: relative; flex: 1 1 auto; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--ink) 8%, transparent); }
-.hl .gauge .track i, .hl .sumrow .vsplan i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--ink-muted); }
-.hl .gauge .track i.good { background: var(--success); } .hl .gauge .track i.off { background: var(--danger); }
-.hl .gauge .track b, .hl .sumrow .vsplan b { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--ink); }
-.hl .sumrows { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
-.hl .sumrow { display: grid; grid-template-columns: minmax(7rem, 11rem) minmax(4rem, 1fr) auto minmax(6.5rem, auto); align-items: center; gap: var(--space-2); }
-.hl .sumrow.off .vsplan i { background: var(--danger); } .hl .sumrow.good .vsplan i { background: var(--success); }
-.hl .sumrow .usual { font-size: var(--text-caption); color: var(--ink-muted); text-align: right; }
-.hl .key .tick { display: inline-block; width: 2px; height: .9em; background: var(--ink); margin: 0 .55rem; }
-@media (max-width: 600px) { .hl .sumrow { grid-template-columns: minmax(0, 1fr) auto; } .hl .sumrow .vsplan { grid-column: 1 / -1; order: 3; } .hl .sumrow .usual { grid-column: 1 / -1; text-align: left; order: 4; } }
-.hl details.datatable { margin-top: var(--space-2); font-size: var(--text-caption); }
-/* closed, "How to read this" and the table sit side by side on one line; open, each takes the full width */
-.hl details.how:not([open]):has(+ details.datatable), .hl details.how:not([open]) + details.datatable:not([open]) { display: inline-block; margin-right: var(--space-6); }
-.hl details.datatable summary { cursor: pointer; color: var(--accent-2-text, var(--ink-muted)); font-weight: var(--weight-strong); }
-.hl details.datatable summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-/* Phone first screen: the masthead, one control row and the tab strip fit above the first tiles. The aside-notes and the
-   Overview's question line are kept for wider screens; the Method tab says the same. */
-@media (max-width: 600px) {
-  .hl .eyebrow { margin-bottom: 2px; }
-  .hl .masthead { margin-bottom: 2px; } .hl .masthead .mark { display: none; }
-  .hl h1 { font-size: var(--text-heading); line-height: 1.2; }
-  .hl > .lede { font-size: var(--text-caption); margin-bottom: var(--space-2); }
-  .hl > .lede .aside-note, .hl #overview > .intro { display: none; }
-  #dash-root.hl > .controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-1); margin-bottom: var(--space-2); }
-  #dash-root.hl > .controls .ctl-label { display: none; }
-  #dash-root.hl > .controls .seg { width: auto; min-width: 0; }
-  #dash-root.hl > .controls .seg button { padding-inline: var(--space-1); font-size: var(--text-caption); }
-  #dash-root.hl > .controls .range { width: auto; min-width: 0; flex-wrap: nowrap; }
-  #dash-root.hl > .controls .range > label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  #dash-root.hl > .controls .range #range-pick { min-height: 44px; width: 100%; }
-  #dash-root.hl > .controls .range #range-custom:not([hidden]) { grid-column: 1 / -1; }
-  #dash-root.hl > .controls .tabs { grid-column: 1 / -1; }
-}
-/* First run: one card instead of empty charts */
-.hl.empty .controls, .hl.empty .page, .hl.empty > .lede, .hl.empty #range-status, .hl.empty .masthead + .lede { display: none !important; }
-.hl .firstrun h2 { font-size: var(--text-title); margin: 0 0 var(--space-2); }
-.hl .firstrun .steps { margin: 0 0 var(--space-4); padding-left: 1.4em; display: grid; gap: var(--space-1); max-width: 70ch; }
-.hl .firstrun .actions { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; } .hl .firstrun form.inline { display: inline; margin: 0; }
-.hl .foot { color: var(--ink-muted); font-size: var(--text-caption); margin-top: var(--space-6); padding-top: var(--space-2); border-top: 1px solid var(--line); max-width: 90ch; }
-</style>
 
 <div id="dash-root" class="hl{% if not span.has_data %} empty{% endif %}">
   {% if freshness.stale %}<div class="flash warn" id="stale-banner" role="status">{{ freshness.message }}.{% if user and user.is_editor %} <a href="/upload">Close a month</a>{% endif %}</div>{% endif %}
@@ -260,18 +58,18 @@
       <div class="card tile"><div class="k">Income, last 12 months</div><div class="v" data-draw="t-inc-n" data-source="last12" data-field="income">—</div><div class="d" data-draw="d-inc-n" data-source="last12" data-field="income_delta">—</div><div class="spark" data-draw="sp-inc-n" data-source="monthly" data-field="income" aria-hidden="true"></div></div>
       <div class="card tile"><div class="k">Living spend, last 12 months</div><div class="v" data-draw="t-sp-n" data-source="last12" data-field="spend">—</div><div class="d" data-draw="d-sp-n" data-source="last12" data-field="spend_delta">—</div><div class="spark" data-draw="sp-sp-n" data-source="monthly" data-field="spend" aria-hidden="true"></div></div>
       <div class="card tile"><div class="k">Debt payments, last 12 months</div><div class="v" data-draw="t-db-n" data-source="last12" data-field="debt">—</div><div class="d" data-draw="d-db-n" data-source="last12" data-field="debt_delta">—</div><div class="spark" data-draw="sp-db-n" data-source="monthly" data-field="debt" aria-hidden="true"></div></div>
-      <div class="card tile"><div class="k">Net kept, last 12 months</div><div class="v" data-draw="t-net-n" data-source="last12" data-field="net">—</div><div class="d" data-draw="d-sr-n" data-source="last12" data-field="savings_rate">—</div><div class="spark" data-draw="sp-net-n" data-source="monthly" data-field="net" aria-hidden="true"></div></div>
+      <div class="card tile"><div class="k">{{ glyph('savings-rate') }} Net kept, last 12 months</div><div class="v" data-draw="t-net-n" data-source="last12" data-field="net">—</div><div class="d" data-draw="d-sr-n" data-source="last12" data-field="savings_rate">—</div><div class="spark" data-draw="sp-net-n" data-source="monthly" data-field="net" aria-hidden="true"></div></div>
     </div>
     <div class="tiles basis-real" hidden>
       <div class="card tile"><div class="k">Income, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-inc-r" data-source="last12_real" data-field="income">—</div><div class="d" data-draw="d-inc-r" data-source="last12_real" data-field="income_delta">—</div><div class="spark" data-draw="sp-inc-r" data-source="monthly" data-field="income" aria-hidden="true"></div></div>
       <div class="card tile"><div class="k">Living spend, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-sp-r" data-source="last12_real" data-field="spend">—</div><div class="d" data-draw="d-sp-r" data-source="last12_real" data-field="spend_delta">—</div><div class="spark" data-draw="sp-sp-r" data-source="monthly" data-field="spend" aria-hidden="true"></div></div>
       <div class="card tile"><div class="k">Debt payments, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-db-r" data-source="last12_real" data-field="debt">—</div><div class="d" data-draw="d-db-r" data-source="last12_real" data-field="debt_delta">—</div><div class="spark" data-draw="sp-db-r" data-source="monthly" data-field="debt" aria-hidden="true"></div></div>
-      <div class="card tile"><div class="k">Net kept, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-net-r" data-source="last12_real" data-field="net">—</div><div class="d" data-draw="d-sr-r" data-source="last12_real" data-field="savings_rate">—</div><div class="spark" data-draw="sp-net-r" data-source="monthly" data-field="net" aria-hidden="true"></div></div>
+      <div class="card tile"><div class="k">{{ glyph('savings-rate') }} Net kept, last 12 months ({{ span.cpi_base_short }} prices)</div><div class="v" data-draw="t-net-r" data-source="last12_real" data-field="net">—</div><div class="d" data-draw="d-sr-r" data-source="last12_real" data-field="savings_rate">—</div><div class="spark" data-draw="sp-net-r" data-source="monthly" data-field="net" aria-hidden="true"></div></div>
     </div>
 
     <div class="card">
       <h2 id="monthly-chart">Income against outgo, by budget month</h2>
-        <ul class="key row"><li><span class="glyph">=</span>outgo is living spend plus debt payments</li><li><span class="glyph">−</span>transfers and exclusions left out (Method tab)</li><li><span class="glyph ln dot" aria-hidden="true"></span>dotted markers are life events: hover one, or open the list below the chart</li></ul>
+        <ul class="key row"><li><span class="key-mark" aria-hidden="true">=</span>outgo is living spend plus debt payments</li><li><span class="key-mark" aria-hidden="true">−</span>transfers and exclusions left out (Method tab)</li><li><span class="key-mark ln dot" aria-hidden="true"></span>dotted markers are life events: hover one, or open the list below the chart</li></ul>
       <details class="how"><summary>How to read this</summary><p>Outgo is living spend plus debt payments. Income and outgo leave out transfers between envelopes and the other exclusions listed on the Method tab. Dotted markers are life events; hover for the label. Each ring is a month. The gap between the income track and the thinner spend-plus-debt track is the month’s net. Months where spend-plus-debt sits above income were funded from savings or a one-off inflow. Spikes in income are bonuses, tax refunds, stimulus or severance; spikes in spend are usually a tax bill, a trip or a project. Hover a dot along the top for the event behind a step change.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Spend + debt</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-monthly" data-source="monthly events"></tbody></table></div></details>
       <div class="chart" data-draw="monthly" data-source="monthly events"></div>
       <details class="how evlist"><summary>Life events in this period</summary><ul class="key row events" data-draw="event-list" data-source="events" aria-label="Life events"></ul></details>
@@ -281,7 +79,7 @@
 
     <div class="card">
       <h2 id="radar-chart">Category shape, year over year</h2>
-        <ul class="key row"><li>up to three stars, each on its own scale</li><li>a spoke is a category, a ring a year</li><li><span class="glyph fade" aria-hidden="true"></span>current year solid, older years fade</li><li>click a year in the legend to hide it</li></ul>
+        <ul class="key row"><li>up to three stars, each on its own scale</li><li>a spoke is a category, a ring a year</li><li><span class="key-mark fade" aria-hidden="true"></span>current year solid, older years fade</li><li>click a year in the legend to hide it</li></ul>
       <details class="how"><summary>How to read this</summary><p>Up to three stars so the small categories are readable: each has its own dollar scale. A spoke is a category, a ring is a year. The current year is drawn solid; earlier years fade with age. Click a year in the legend to hide or show it on every star. Read a star as a fingerprint: the current year’s solid outline against the faded outlines of earlier years. A spoke that grows year over year is a category whose share of life grew; a spoke that shrinks is one that was tamed. The stars are made from your own categories: those with spending are ranked by their total over all years and dealt into the largest third, the middle third and the smallest third (fewer stars when there are fewer than nine categories, and never one with fewer than three spokes). Scales differ between stars, so compare shapes within a star, not across them. Switch to real dollars to see whether a growing spoke is more than inflation.</p></details>
       <div class="legend years" data-draw="radar-legend" data-source="cat_year"></div>
       <div class="grid radars">
@@ -294,7 +92,7 @@
     <div class="grid">
       <div class="card">
         <h2 id="annual-chart">By year</h2>
-        <ul class="key row"><li><span class="glyph">=</span>net is income − spend − debt</li><li>the latest year may be partial (Position tab)</li></ul>
+        <ul class="key row"><li><span class="key-mark" aria-hidden="true">=</span>net is income − spend − debt</li><li>the latest year may be partial (Position tab)</li></ul>
       <details class="how"><summary>How to read this</summary><p>The latest year may cover only part of a year; the Months column on the Position tab says how many. Net is income minus spend minus debt payments. Three bars per year. When the income bar clears the other two combined, the year was positive. A year with fewer than twelve months loaded has shorter bars than a full year would.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Year</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Debt payments</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-annual" data-source="yearly"></tbody></table></div></details>
         <div class="chart" data-draw="annual" data-source="yearly"></div>
         <div class="legend"><span data-c="0">Income</span><span data-c="1">Living spend</span><span data-c="3">Debt payments</span></div>
@@ -321,7 +119,7 @@
       <p class="aside-note">Planned and spent are your budget tool's own figures, so moves between envelopes count as they did in the app; the other tabs use the cleaned ledger.</p>
     </div>
     <div class="card" id="lm-nw-card">
-      <h2 id="lm-nw">Net worth</h2>
+      <h2 id="lm-nw">{{ glyph('net-worth') }} Net worth</h2>
       <ul class="key row"><li>what you own less what you owe, at the month-end</li><li>the change, split into what you did and what happened to you</li></ul>
       <p class="tools" data-draw="lm-nw-toggle" data-source="net_worth"></p>
       <details class="how"><summary>How to read this</summary><p>Net worth is every account's month-end balance (Settings → Accounts; entered at Close a month), assets less debts, leaving out accounts marked not in net worth. Its change since last month is split in two. <b>What you did</b> is the month's income less living spend: what was kept plus what was paid on debts, since paying a loan down is the household's own doing (and, once stated, pre-tax saving such as a 401(k)). <b>What happened to you</b> is the rest: investments and the home's estimate moving, interest charged, and money moving into or out of accounts this page does not track. An account's first month is shown on its own, so adding one is not read as progress. A debt with no balance entered is estimated, and the figure says so. One thing lands on the wrong side: money your budget counts as spent that goes into an account tracked here (a savings envelope paid into a savings account) shows under what happened, not what you did. <b>Excluding home</b> takes a home's typed estimate out, since it moves the total more than any month's decisions.</p></details>
@@ -353,7 +151,7 @@
         <dl class="dti" data-draw="lm-payoff" data-source="payoff" data-list="unbounded"></dl></details>
     </div>
     <div class="card" id="lm-ef-card">
-      <h2 id="lm-ef">Emergency fund</h2>
+      <h2 id="lm-ef">{{ glyph('emergency-fund') }} Emergency fund</h2>
       <ul class="key row"><li>if income stopped: months of outgo the emergency savings would cover</li></ul>
       <details class="how"><summary>How to read this</summary><p>Emergency money is the month-end balance of the asset accounts marked Emergency (Settings → Accounts; cash and savings accounts are, unless you switch one off, such as a holiday fund). Outgo is living spend plus debt payments, averaged over the last twelve budget months, so one heavy month does not swing it. Total outgo is used, not a bare-bones budget: it is the honest figure. A target shows when you set emergency_months on Settings → Goals.</p></details>
       <dl class="dti" data-draw="lm-ef" data-source="emergency_fund goals"></dl>
@@ -361,7 +159,7 @@
     <div class="card" id="lm-dti-card">
       <h2 id="lm-dti">Debt against income</h2>
       <ul class="key row"><li>debt payments ÷ gross pay (the stated salary ÷ 12)</li><li>the same payments ÷ take-home, after it</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Debt-to-income is the share of gross pay already spoken for by debt payments, the figure lenders quote; take-home is what the household actually feels, so it is shown after it. <b>All debt</b> counts every row with Flow debt. <b>Housing</b> counts the housing categories (Pipeline rules, goal_housing_categories: Housing and Utilities unless changed) plus any debt of type mortgage, each payment once; rent counts here and not under all debt. Lenders' housing figure usually leaves utilities out, so take Utilities out of that rule to compare with one. A cap shows only when you set one on Settings → Goals (dti_cap, housing_dti_cap); the app has no opinion of its own.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Debt against income (lenders call it debt-to-income) is the share of gross pay already spoken for by debt payments, the figure lenders quote; take-home is what the household actually feels, so it is shown after it. <b>All debt</b> counts every row with Flow debt. <b>Housing</b> counts the housing categories (Pipeline rules, goal_housing_categories: Housing and Utilities unless changed) plus any debt of type mortgage, each payment once; rent counts here and not under all debt. Lenders' housing figure usually leaves utilities out, so take Utilities out of that rule to compare with one. A cap shows only when you set one on Settings → Goals (dti_cap, housing_dti_cap); the app has no opinion of its own.</p></details>
       <dl class="dti" data-draw="lm-dti" data-source="debt_to_income goals"></dl>
     </div>
     <div class="card">
@@ -383,15 +181,19 @@
     <div class="grid">
       <div class="card">
         <h2 id="lm-var-chart">Over and under plan, by category</h2>
+        <p class="finding" data-draw="fd-lm-var" data-source="lm_cats"></p>
         <ul class="key row"><li><span class="bar" style="--k: var(--danger)"></span>needs a look</li><li><span class="bar" style="--k: var(--success)"></span>room to spare</li><li>for income, savings, giving and debt, more is better</li></ul>
         <details class="how"><summary>How to read this</summary><p>Spent minus planned for the month. Red bars went over their envelope; green came in under. A large red bar on a planned-zero category means an unplanned expense, not an overrun. Income is shown as received minus expected, so red means less arrived than expected.</p></details>
         <div class="chart" data-draw="lm-var" data-source="lm_cats"></div>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Category</th><th scope="col">Planned</th><th scope="col">Spent</th><th scope="col">vs plan</th></tr></thead><tbody data-draw="dt-lm-var" data-source="lm_cats"></tbody></table></div></details>
       </div>
       <div class="card">
         <h2 id="lm-avg-chart">Against the trailing twelve months</h2>
+        <p class="finding" data-draw="fd-lm-avg" data-source="lm_cats"></p>
         <ul class="key row"><li><span class="bar r" style="--k: var(--danger)"></span>above its average</li><li><span class="bar l" style="--k: var(--success)"></span>below it</li><li>should the plan move?</li></ul>
         <details class="how"><summary>How to read this</summary><p>Spent this month minus the average of the twelve months before it, by category. This compares the month with its own recent history rather than with the plan. A category that is over plan but at its twelve-month average has a plan problem; one that is at plan but far above its average had an unusual month.</p></details>
         <div class="chart" data-draw="lm-avg" data-source="lm_cats"></div>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Category</th><th scope="col">12-month average</th><th scope="col">Spent</th><th scope="col">vs average</th></tr></thead><tbody data-draw="dt-lm-avg" data-source="lm_cats"></tbody></table></div></details>
       </div>
     </div>
     <div class="card">
@@ -400,19 +202,22 @@
         <div class="seg" role="group" aria-label="Which table" data-switch="lm-tables"><button type="button" aria-pressed="true" data-show="lm-t-cats">By category</button><button type="button" aria-pressed="false" data-show="lm-t-items">Envelopes that missed most</button></div>
       </div>
       <div id="lm-t-cats">
-        <ul class="key row"><li><span class="glyph">Σ</span>Planned, spent, 12-month average</li><li><span class="glyph">↑10</span>Suggested plan: the average rounded up to the next $10</li><li><span class="glyph">=</span>Housing, Debt, Insurance keep their plan</li></ul>
+        <ul class="key row"><li><span class="key-mark" aria-hidden="true">Σ</span>Planned, spent, 12-month average</li><li><span class="key-mark" aria-hidden="true">↑10</span>Suggested plan: the average rounded up to the next $10</li><li><span class="key-mark" aria-hidden="true">=</span>Housing, Debt, Insurance keep their plan</li></ul>
         <div class="tbl short"><table data-source="lm_cats" data-row-key="category"><thead><tr>
           <th data-field="category">Category</th><th data-field="planned">Planned</th><th data-field="actual">Spent</th><th data-field="vs_plan">vs plan</th><th data-field="avg12">12-mo avg</th><th data-field="vs_avg">vs avg</th><th data-field="suggest">Suggested plan</th>
         </tr></thead><tbody data-draw="lm-cats"></tbody></table></div>
       </div>
       <div id="lm-t-items" hidden>
         <h3 class="visually-hidden" id="lm-items">Envelopes that missed by the most</h3>
-        <ul class="key row"><li><span class="glyph">25</span>Largest gaps, either way</li><li><span class="glyph">+</span>spent more than planned</li><li><span class="glyph">&lt;$1</span>hidden</li></ul>
+        <ul class="key row"><li><span class="key-mark" aria-hidden="true">25</span>Largest gaps, either way</li><li><span class="key-mark" aria-hidden="true">+</span>spent more than planned</li><li><span class="key-mark" aria-hidden="true">&lt;$1</span>hidden</li></ul>
         <div class="tbl short"><table data-source="lm_items" data-row-key="item"><thead><tr>
           <th data-field="item">Envelope</th><th data-field="category">Category</th><th data-field="planned">Planned</th><th data-field="actual">Spent</th><th data-field="gap">Gap</th>
         </tr></thead><tbody data-draw="lm-items"></tbody></table></div>
       </div>
     </div>
+    {% if checkin and checkin.prev %}<nav class="page-turn" aria-label="Earlier month">
+      <a class="turn prev" href="/checkin/{{ checkin.prev }}" aria-label="{{ checkin.prev|month }} check-in"><span aria-hidden="true">←</span> {{ checkin.prev|month }}</a>
+    </nav>{% endif %}
   </section>
 
 
@@ -422,28 +227,31 @@
       <span class="aside-note">Targets are shares of gross or take-home pay, so they move with income, not with the plan. Which categories and groups count is set in the rules on the Settings page.</span></p>
     <div class="tiles">
       <div class="card tile"><div class="k">Giving, last 12 months</div><div class="v" data-draw="g-giving" data-source="goal_summary" data-field="giving_share" data-where="row=last12">—</div><div class="d" data-draw="g-giving-d" data-source="goal_summary" data-field="giving_vs_floor" data-where="row=last12">—</div><div class="gauge" data-draw="gg-giving" data-source="goal_summary goals" aria-hidden="true"></div></div>
-      <div class="card tile"><div class="k">Planned into savings groups, last 12 months</div><div class="v" data-draw="g-joy" data-source="goal_summary" data-field="joy_share" data-where="row=last12">—</div><div class="d" data-draw="g-joy-d" data-source="goal_summary" data-field="joy_vs_target" data-where="row=last12">—</div><div class="gauge" data-draw="gg-joy" data-source="goal_summary goals" aria-hidden="true"></div></div>
-      <div class="card tile"><div class="k">Housing + utilities, last 12 months</div><div class="v" data-draw="g-house" data-source="goal_summary" data-field="housing_share" data-where="row=last12">—</div><div class="d" data-draw="g-house-d" data-source="goal_summary" data-field="housing_vs_cap" data-where="row=last12">—</div><div class="gauge" data-draw="gg-house" data-source="goal_summary goals" aria-hidden="true"></div></div>
+      <div class="card tile"><div class="k">Planned savings, last 12 months</div><div class="v" data-draw="g-joy" data-source="goal_summary" data-field="joy_share" data-where="row=last12">—</div><div class="d" data-draw="g-joy-d" data-source="goal_summary" data-field="joy_vs_target" data-where="row=last12">—</div><div class="gauge" data-draw="gg-joy" data-source="goal_summary goals" aria-hidden="true"></div></div>
+      <div class="card tile"><div class="k">Housing and utilities, last 12 months</div><div class="v" data-draw="g-house" data-source="goal_summary" data-field="housing_share" data-where="row=last12">—</div><div class="d" data-draw="g-house-d" data-source="goal_summary" data-field="housing_vs_cap" data-where="row=last12">—</div><div class="gauge" data-draw="gg-house" data-source="goal_summary goals" aria-hidden="true"></div></div>
       <div class="card tile"><div class="k">Take-home as share of gross</div><div class="v" data-draw="g-th" data-source="goal_summary" data-field="takehome_share" data-where="row=last12">—</div><div class="d" data-draw="g-th-d" data-source="goal_summary" data-field="takehome_note" data-where="row=last12">—</div></div>
     </div>
     <div class="card">
       <h2 id="goal-chart">The three ratios, month by month</h2>
-        <ul class="key row"><li><span class="glyph fix" aria-hidden="true"></span>each month: the twelve-month trailing share</li><li><span class="glyph wp" aria-hidden="true"></span>a target, floor or cap, with its figure</li><li><span class="glyph">↑</span>above target is good for giving and savings, bad for housing</li></ul>
+        <p class="finding" data-draw="fd-goal" data-source="goal_month goals"></p>
+        <ul class="key row"><li><span class="key-mark fix" aria-hidden="true"></span>each month: the twelve-month trailing share</li><li><span class="key-mark wp" aria-hidden="true"></span>a target, floor or cap, with its figure</li><li><span class="key-mark" aria-hidden="true">↑</span>above target is good for giving and savings, bad for housing</li></ul>
       <div class="chart" data-draw="goal-lines" data-source="goal_month goals"></div>
-        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Giving / gross</th><th scope="col">Savings groups / gross</th><th scope="col">Housing / take-home</th></tr></thead><tbody data-draw="dt-goal-lines" data-source="goal_month"></tbody></table></div></details>
-      <div class="legend"><span data-c="0">Giving / gross</span><span data-c="1">Savings groups / gross</span><span data-c="2">Housing + utilities / take-home</span></div>
-      <details class="how"><summary>How to read this</summary><p>Each line is a share over the last twelve months, one ring a month; the filled dot at the right, with its dotted level, is your target, floor or cap. Above it is good for giving and savings, and bad for housing. Twelve months smooth out a three-paycheck month or a lump payment, so a change in habit takes a few months to show.</p><p>Giving and savings groups are shares of gross: the stated annual salary spread evenly across months. Housing and utilities are a share of take-home: the paychecks that actually landed.</p></details>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Giving / gross</th><th scope="col">Planned savings / gross</th><th scope="col">Housing and utilities / take-home</th></tr></thead><tbody data-draw="dt-goal-lines" data-source="goal_month"></tbody></table></div></details>
+      <div class="legend"><span data-c="0">Giving / gross</span><span data-c="1">Planned savings / gross</span><span data-c="2">Housing and utilities / take-home</span></div>
+      <details class="how"><summary>How to read this</summary><p>Each line is a share over the last twelve months, one ring a month; the filled dot at the right, with its dotted level, is your target, floor or cap. Above it is good for giving and savings, and bad for housing. Twelve months smooth out a three-paycheck month or a lump payment, so a change in habit takes a few months to show.</p><p>Giving and planned savings are shares of gross: the stated annual salary spread evenly across months. Housing and utilities are a share of take-home: the paychecks that actually landed.</p></details>
     </div>
     <div class="card">
-      <h2 id="ef-chart">Emergency fund coverage, month by month</h2>
-        <ul class="key row"><li><span class="glyph fix" aria-hidden="true"></span>months of outgo the emergency savings cover</li><li><span class="glyph wp" aria-hidden="true"></span>your target, when set</li><li><span class="glyph">↑</span>higher is safer</li></ul>
+      <h2 id="ef-chart">{{ glyph('emergency-fund') }} Emergency fund coverage, month by month</h2>
+        <p class="finding" data-draw="fd-ef" data-source="emergency_fund goals"></p>
+        <ul class="key row"><li><span class="key-mark fix" aria-hidden="true"></span>months of outgo the emergency savings cover</li><li><span class="key-mark wp" aria-hidden="true"></span>your target, when set</li><li><span class="key-mark" aria-hidden="true">↑</span>higher is safer</li></ul>
       <div class="chart" data-draw="ef-lines" data-source="emergency_fund goals"></div>
         <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Emergency money</th><th scope="col">Outgo a month</th><th scope="col">Months covered</th></tr></thead><tbody data-draw="dt-ef" data-source="emergency_fund"></tbody></table></div></details>
       <details class="how"><summary>How to read this</summary><p>Each month-end's emergency money (accounts marked Emergency on Settings → Accounts) divided by the average monthly living spend plus debt payments over the twelve budget months to then. The waypoint, with its dotted level, is emergency_months from Settings → Goals.</p></details>
     </div>
     <div class="card">
-      <h2 id="dti-chart">Debt-to-income, month by month</h2>
-        <ul class="key row"><li><span class="glyph fix" aria-hidden="true"></span>each month: the twelve-month trailing share of gross</li><li><span class="glyph wp" aria-hidden="true"></span>your cap, when set</li><li><span class="glyph">↓</span>lower is better</li></ul>
+      <h2 id="dti-chart">Debt against income, month by month</h2>
+        <p class="finding" data-draw="fd-dti" data-source="debt_to_income"></p>
+        <ul class="key row"><li><span class="key-mark fix" aria-hidden="true"></span>each month: the twelve-month trailing share of gross</li><li><span class="key-mark wp" aria-hidden="true"></span>your cap, when set</li><li><span class="key-mark" aria-hidden="true">↓</span>lower is better</li></ul>
       <div class="chart" data-draw="dti-lines" data-source="debt_to_income goals"></div>
         <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">All debt / gross</th><th scope="col">Housing / gross</th><th scope="col">All debt / take-home</th><th scope="col">Housing / take-home</th></tr></thead><tbody data-draw="dt-dti" data-source="debt_to_income"></tbody></table></div></details>
       <div class="legend"><span data-c="0">All debt / gross</span><span data-c="2">Housing / gross</span></div>
@@ -452,17 +260,17 @@
     <div class="grid">
       <div class="card">
         <h2 id="goal-table">Latest months in detail</h2>
-        <ul class="key row"><li><span class="glyph">1</span>single months, newest first</li><li><span class="glyph">3×</span>three-paycheck months lower the housing share</li></ul>
+        <ul class="key row"><li><span class="key-mark" aria-hidden="true">1</span>single months, newest first</li><li><span class="key-mark" aria-hidden="true">3×</span>three-paycheck months lower the housing share</li></ul>
         <details class="how"><summary>How to read this</summary><p>Single-month figures, newest first. Expect the housing share to drop in three-paycheck months and rise in two-paycheck months.</p></details>
         <div class="tbl"><table data-source="goal_month" data-row-key="m"><thead><tr>
-          <th data-field="m">Month</th><th data-field="paychecks">Paychecks</th><th data-field="takehome">Take-home</th><th data-field="giving">Giving</th><th data-field="giving_share">/ gross</th><th data-field="joy_planned">Savings planned</th><th data-field="joy_share">/ gross</th><th data-field="housing">Housing + util.</th><th data-field="housing_share">/ take-home</th>
+          <th data-field="m">Month</th><th data-field="paychecks">Paychecks</th><th data-field="takehome">Take-home</th><th data-field="giving">Giving</th><th data-field="giving_share">/ gross</th><th data-field="joy_planned">Planned savings</th><th data-field="joy_share">/ gross</th><th data-field="housing">Housing and utilities</th><th data-field="housing_share">/ take-home</th>
         </tr></thead><tbody data-draw="goal-table"></tbody></table></div>
       </div>
       <div class="card">
-        <h2 id="goal-params">The targets as recorded</h2>
+        <div class="card-head"><h2 id="goal-params">The targets as recorded</h2><p class="m-0" data-draw="goal-set" data-source="goals"></p></div>
         <ul class="key row"><li>your stated figures, not derived from data</li><li>gross salary is asked for at every month-close</li></ul>
         <div class="tbl"><table data-source="goals" data-row-key="key"><thead><tr><th data-field="label">Target</th><th data-field="value">Value</th><th data-field="note">Note</th><th data-field="confirmed_at">Last confirmed</th></tr></thead><tbody data-draw="goal-params"></tbody></table></div>
-        <details class="how"><summary>What is not here yet</summary><p>These are the user's stated figures, not derived from the data. Gross salary is asked for at every month-close; the others change only when the user says so. Investing that is deposited outside your budget tool never appears in the exports, so this page cannot see it. Once the amount is recorded in the targets table it can be shown as a share of gross alongside the others, and it should be: it is the one goal this page currently cannot check.</p></details>
+        <details class="how"><summary>What is not here yet</summary><p>These are the user's stated figures, not derived from the data. Gross salary is asked for at every month-close; the others change only when the user says so. Record or change any of them on Settings → Goals. Investing that is deposited outside your budget tool never appears in the exports, so this page cannot see it. Once the amount is recorded in the targets table it can be shown as a share of gross alongside the others, and it should be: it is the one goal this page currently cannot check.</p></details>
       </div>
     </div>
   </section>
@@ -472,7 +280,7 @@
     <p class="intro">Which categories carry the spending, how each has grown, and what sits inside any one of them.</p>
     <div class="card">
       <h2 id="cat-chart">Spend by category, by year</h2>
-        <ul class="key row"><li>stacked by category, largest at the bottom</li><li><span class="glyph">+</span>debt, taxes, large purchases and savings spending included</li><li><span class="glyph">−</span>transfers and plugs left out</li></ul>
+        <ul class="key row"><li>stacked by category, largest at the bottom</li><li><span class="key-mark" aria-hidden="true">+</span>debt, taxes, large purchases and savings spending included</li><li><span class="key-mark" aria-hidden="true">−</span>transfers and plugs left out</li></ul>
       <details class="how"><summary>How to read this</summary><p>Stacked by category. Debt payments, taxes, large purchases and savings-envelope spending are included and labelled; transfers and plugs are not. Each column is a year; each band a category, largest at the bottom. A band that suddenly grows or appears marks a year when that category changed size, such as a one-off purchase or two years of one bill paid in one budget year.</p></details>
       <div class="chart" data-draw="cat-stack" data-source="cat_year"></div>
       <div class="legend" data-draw="cat-legend" data-source="cat_year"></div>
@@ -483,7 +291,7 @@
         <div class="seg" role="group" aria-label="Which table" data-switch="where-tables"><button type="button" aria-pressed="true" data-show="w-t-cats">Category by year</button><button type="button" aria-pressed="false" data-show="w-t-items">Items inside a category</button></div>
       </div>
       <div id="w-t-cats">
-        <ul class="key row"><li><span class="glyph">Σ</span>last column: the {{ span.years }}-year total</li><li><span class="glyph">—</span>nothing booked that year</li></ul>
+        <ul class="key row"><li><span class="key-mark" aria-hidden="true">Σ</span>last column: the {{ span.years }}-year total</li><li><span class="key-mark" aria-hidden="true">—</span>nothing booked that year</li></ul>
       
       <details class="how"><summary>How to read this</summary><p>Same figures as the chart. Columns are budget years; the last column is the {{ span.years }}-year total. Dashes mean nothing was booked to that category that year. Negative numbers are possible where refunds or inbound transfers outweighed spending in an envelope.</p></details>
       <div class="tbl"><table data-source="cat_pivot" data-row-key="category"><thead><tr>
@@ -508,7 +316,7 @@
     <p class="intro">Costs that recur without a decision, and envelopes that quietly absorbed spending they were not meant for.</p>
     <div class="card">
       <h2 id="recurring-table">Recurring costs</h2>
-        <ul class="key row"><li>subscriptions, utilities and insurance</li><li><span class="glyph">÷12</span>now: twelve-month average, empty months included</li><li>inactive: no charge in three months</li></ul>
+        <ul class="key row"><li>subscriptions, utilities and insurance</li><li><span class="key-mark" aria-hidden="true">÷12</span>now: twelve-month average, empty months included</li><li>inactive: no charge in three months</li></ul>
       <details class="how"><summary>How to read this</summary><p>Subscriptions, utilities and insurance. "Now" is the average over the last twelve budget months, including months with no charge, so an annual bill shows as a twelfth. Inactive rows have had no charge in the last three months. “Now / month” averages the last twelve budget months including months with no charge, so an annual bill shows as a twelfth of itself. Compare it with the lifetime column to see how long a cost has been running.</p></details>
       <div class="tbl"><table data-source="recurring" data-row-key="item"><thead><tr>
         <th data-field="item">Item</th><th data-field="active">Active</th><th data-field="first">First</th><th data-field="last">Last</th><th data-field="monthly_now">Now / month</th><th data-field="lifetime">Lifetime</th>
@@ -517,7 +325,7 @@
     <div class="grid">
       <div class="card">
         <h2 id="slush-chart">Catch-all envelopes</h2>
-        <ul class="key row"><li><span class="glyph">Σ</span>catch-alls: <span data-draw="slush-items" data-source="goal_config">none yet</span></li><li><span class="glyph">↑</span>a tall bar is spending under a saving label</li><li><code>catchall_items</code> in the rules on Settings</li></ul>
+        <ul class="key row"><li><span class="key-mark" aria-hidden="true">Σ</span>catch-alls: <span data-draw="slush-items" data-source="goal_config">none yet</span></li><li><span class="key-mark" aria-hidden="true">↑</span>a tall bar is spending under a saving label</li><li><code>catchall_items</code> in the rules on Settings</li></ul>
       <details class="how"><summary>How to read this</summary><p>Spending booked to the envelopes your rules name as catch-alls; name them as <code>catchall_items</code> in the rules on the Settings page. Envelopes named like savings can end up holding everyday spending. When a bar here is tall, real spending was hidden under a saving label that year. An empty chart means nothing was booked to these envelopes.</p></details>
         <div class="chart" data-draw="slush" data-source="slush"></div>
         <div class="legend" data-draw="slush-legend" data-source="slush"></div>
@@ -525,7 +333,7 @@
       </div>
       <div class="card">
         <h2 id="excl-table">What was removed from the totals</h2>
-        <ul class="key row"><li><span class="glyph">−</span>taken out before any total</li><li><span class="glyph">Σ</span><span data-draw="excl-context" data-source="exclusions">—</span></li></ul>
+        <ul class="key row"><li><span class="key-mark" aria-hidden="true">−</span>taken out before any total</li><li><span class="key-mark" aria-hidden="true">Σ</span><span data-draw="excl-context" data-source="exclusions">—</span></li></ul>
       <details class="how"><summary>How to read this</summary><p>Rows and dollars taken out so income and spend mean what they say. These rows and dollars exist in the raw exports but were removed before any total was computed. Dollar rows show the amount removed; row counts show how many transactions the rule touched.</p></details>
         <div class="tbl"><table data-source="exclusions" data-row-key="key"><thead><tr><th data-field="key">Adjustment</th><th data-field="value">Amount</th></tr></thead><tbody data-draw="exclusions"></tbody></table></div>
       </div>
@@ -560,24 +368,26 @@
     <p class="intro">The year-end view: what came in, what went out, what was kept, and the debts that were paid down and taken on.</p>
     <div class="card">
       <h2 id="yearly-table">Year by year</h2>
-        <ul class="key row"><li><span class="glyph">%</span>savings rate is net ÷ income; with pre-tax, (net + pre-tax saving) ÷ (income + pre-tax saving)</li><li><span class="glyph">$</span>real columns in {{ span.cpi_base_long }} prices (Method)</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Savings rate is net divided by income, both as they reach the budget (take-home). With pre-tax adds the 401(k), 403(b), HSA and similar saving taken from pay before it reaches the budget, as stated per person on Settings → Goals, to both sides; it shows "—" until one is stated. Real columns restate each month in {{ span.cpi_base_long }} prices using the price index; see Method. Savings rate is net divided by income: positive means the year added to savings, negative means it drew them down. Real columns restate every month in {{ span.cpi_base_long }} prices; the Method tab explains the index used.</p></details>
+        <ul class="key row"><li><span class="key-mark" aria-hidden="true">%</span>savings rate is net ÷ income</li><li><span class="key-mark" aria-hidden="true">$</span>real columns in {{ span.cpi_base_long }} prices (Method)</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Savings rate is net ÷ income, both as they reach the budget (take-home): positive means the year added to savings, negative means it drew them down. Savings rate incl. pre-tax saving adds the 401(k), 403(b), HSA and similar saving taken from pay before it reaches the budget, as stated per person on Settings → Goals, to both sides; it shows "—" until one is stated. Real columns restate each month in {{ span.cpi_base_long }} prices using the price index (Method tab).</p></details>
       <div class="tbl"><table data-source="yearly" data-row-key="y"><thead><tr>
-        <th data-field="y">Year</th><th data-field="months">Months</th><th data-field="income">Income</th><th data-field="spend">Living spend</th><th data-field="debt">Debt paid</th><th data-field="net">Net</th><th data-field="savings_rate">Savings rate</th><th data-field="savings_rate_pretax">With pre-tax</th><th data-field="income_real">Income (real)</th><th data-field="spend_real">Spend (real)</th><th data-field="net_real">Net (real)</th>
+        <th data-field="y">Year</th><th data-field="months">Months</th><th data-field="income">Income</th><th data-field="spend">Living spend</th><th data-field="debt">Debt paid</th><th data-field="net">Net</th><th data-field="savings_rate">Savings rate</th><th data-field="savings_rate_pretax">Savings rate incl. pre-tax saving</th><th data-field="income_real">Income (real)</th><th data-field="spend_real">Spend (real)</th><th data-field="net_real">Net (real)</th>
       </tr></thead><tbody data-draw="yearly"></tbody></table></div>
     </div>
     <div class="grid">
       <div class="card">
         <h2 id="debt-chart">Debt timeline</h2>
-        <ul class="key row"><li><span class="glyph">↔</span>first to last payment month</li><li><span class="glyph">Σ</span>label: total paid, interest included</li></ul>
+        <p class="finding" data-draw="fd-debts" data-source="debts"></p>
+        <ul class="key row"><li><span class="key-mark" aria-hidden="true">↔</span>first to last payment month</li><li><span class="key-mark" aria-hidden="true">Σ</span>label: total paid, interest included</li></ul>
         <p class="tools" data-draw="debt-order" data-source="debts"></p>
       <details class="how"><summary>How to read this</summary><p>Each bar spans the months a debt item received payments; the label is the total paid. Bars run from first to last payment month. Debts given a type (Settings → Item mapping → Debt types) are grouped by it, with each type's total; once any debt has a type, a debt with no payment in the latest months (the debt_paid_off_months rule, 3 by default) is folded under Paid off. Total paid includes principal and interest as the budget tool recorded them, not the original loan balance.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Debt</th><th scope="col">Type</th><th scope="col">First payment</th><th scope="col">Last payment</th><th scope="col">Months</th><th scope="col">Total paid</th></tr></thead><tbody data-draw="dt-debts" data-source="debts"></tbody></table></div></details>
         <div class="chart" data-draw="debts" data-source="debts"></div>
         <details class="how paidoff" data-draw="debts-paid-box" data-source="debts"><summary>Paid off</summary><div class="chart" data-draw="debts-paid" data-source="debts"></div></details>
       </div>
       <div class="card">
-        <h2 id="nw-chart">Net worth, month by month</h2>
-        <ul class="key row"><li><span class="glyph fix" aria-hidden="true"></span>net worth at each month-end</li><li><span class="glyph ln dot" aria-hidden="true"></span>dotted: a debt in it is estimated</li><li><span class="glyph">▼</span>accounts added</li></ul>
+        <h2 id="nw-chart">{{ glyph('net-worth') }} Net worth, month by month</h2>
+        <p class="finding" data-draw="fd-nw" data-source="net_worth"></p>
+        <ul class="key row"><li><span class="key-mark fix" aria-hidden="true"></span>net worth at each month-end</li><li><span class="key-mark ln dot" aria-hidden="true"></span>dotted: a debt in it is estimated</li><li><span class="key-mark" aria-hidden="true">▼</span>accounts added</li></ul>
         <div class="chart" data-draw="nw-chart" data-source="balances net_worth"></div>
         <div class="legend" data-draw="nw-legend" data-source="balances"></div>
         <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Assets</th><th scope="col">Debts</th><th scope="col">Net worth</th><th scope="col">Change</th><th scope="col">You did</th><th scope="col">Happened</th></tr></thead><tbody data-draw="dt-nw" data-source="net_worth"></tbody></table></div></details>
@@ -591,6 +401,7 @@
       </div>
       <div class="card">
         <h2 id="net-chart">Net kept, by year</h2>
+        <p class="finding" data-draw="fd-net" data-source="yearly"></p>
         <ul class="key row"><li><span class="bar " style="--k: var(--success)"></span>added to savings</li><li><span class="bar " style="--k: var(--danger)"></span>drawn from savings</li></ul>
       <details class="how"><summary>How to read this</summary><p>Income minus living spend minus debt payments. Below zero means the year was funded from savings or one-off inflows. Green years added to savings; red years drew on them. A deep red bar usually means taxes, giving or savings-envelope spending landed in a year with lower income.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Year</th><th scope="col">Net kept</th><th scope="col">Savings rate</th></tr></thead><tbody data-draw="dt-net" data-source="yearly"></tbody></table></div></details>
         <div class="chart" data-draw="net" data-source="yearly"></div>
@@ -620,7 +431,7 @@
     </div>
     <div class="card">
       <h2 id="people-table">Earner and payer shares by year</h2>
-        <ul class="key row"><li><span class="glyph">%</span>share of that year's total income or spend</li></ul>
+        <ul class="key row"><li><span class="key-mark" aria-hidden="true">%</span>share of that year's total income or spend</li></ul>
         <details class="how"><summary>How to read this</summary><p>Shares are of that year's total income or total spend.</p></details>
       <div class="tbl"><table data-source="people_pivot" data-row-key="y"><thead><tr>
         <th data-field="y">Year</th></tr></thead><tbody data-draw="people-pivot"></tbody></table></div>
@@ -734,7 +545,7 @@ window.HL = (() => {
     const t = tip(el);
     svg.append('g').selectAll('g').data(stacked).join('g').attr('fill', (d, i) => col(i)).selectAll('rect').data((d) => d.map((p) => ({ ...p, key: d.key }))).join('rect').attr('class', 'b')
       .attr('x', (d) => x(d.data.x)).attr('width', x.bandwidth()).attr('y', (d) => y(d[1])).attr('height', (d) => Math.max(0, y(d[0]) - y(d[1]))).attr('rx', 2)
-      .on('pointermove', (ev, d) => { const [px, py] = d3.pointer(ev, el); const i = series.indexOf(d.key); t.show(px, py, `<div class="t">${esc(opts.xfmt ? opts.xfmt(d.data.x) : d.data.x)}</div><div><span class="sw" style="background:${col(i)}"></span>${esc(d.key)} ${esc(money(d[1] - d[0]))}</div><div class="t">Total ${esc(money(d3.sum(series, (s) => d.data[s])))}</div>`); })
+      .on('pointermove', (ev, d) => { const [px, py] = d3.pointer(ev, el); const i = series.indexOf(d.key); t.show(px, py, `<div class="t">${esc(opts.xfmt ? opts.xfmt(d.data.x) : d.data.x)}</div><div><span class="sw" style="--sw:${col(i)}"></span>${esc(d.key)} ${esc(money(d[1] - d[0]))}</div><div class="t">Total ${esc(money(d3.sum(series, (s) => d.data[s])))}</div>`); })
       .on('pointerleave', () => t.hide());
     const marks = (opts.markers || []).filter((e) => x(e.x) !== undefined);   // [{x, text}]: dashed line and dot over that bar, label on hover
     if (marks.length) {
@@ -750,6 +561,8 @@ window.HL = (() => {
     tbody.replaceChildren(...rows.map((r) => { const tr = document.createElement('tr'); for (const c of cells) { const td = document.createElement('td'); tr.appendChild(td); const v = c(r, td); td.textContent = v == null ? '—' : v; } return tr; }));
   };
   const mo = (m) => (m ? fmtM(parseM(m)) : '—');
+  const dayFmt = (() => { try { return new Intl.DateTimeFormat(dash.locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }); } catch (e) { return new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }); } })();
+  const day = (iso) => { const d = new Date(String(iso).slice(0, 10) + 'T00:00:00Z'); return Number.isNaN(d.getTime()) ? '—' : dayFmt.format(d); };   // a stored date as the page shows one (DS-WORD-6)
   // DS-EMPTY-1: an empty chart says what will appear and offers the first step as a button
   const empty = (el, text, href, label) => { el.replaceChildren(); const p = Object.assign(document.createElement('p'), { textContent: text });
     el.append(p, Object.assign(document.createElement('a'), { className: 'btn', href, textContent: label })); };   // a YYYY-MM month as a table shows it (DS-WORD-6)
@@ -779,7 +592,7 @@ window.HL = (() => {
   const waypoints = (svg, x1, x2, items) => {   // items: [{y (screen), label}]; labels at least 14px apart, highest first
     const list = items.filter((w) => w && Number.isFinite(w.y)).sort((a, b) => a.y - b.y); let last = -Infinity;
     for (const w of list) { const ty = Math.max(w.y - 7, last + 15); last = ty; waypoint(svg, x1, x2, w.y, w.label, ty); } };
-  return { money, pct, basis, fld, parseM, fmtM, mo, empty, fixes, waypoint, waypoints, WP_ROOM, colors, tip, esc, margins, stackChart, legend, fillTable, usd0, edgeTicks };
+  return { money, pct, basis, fld, parseM, fmtM, mo, day, empty, fixes, waypoint, waypoints, WP_ROOM, colors, tip, esc, margins, stackChart, legend, fillTable, usd0, edgeTicks };
 })();
 // ---- period filter (issue #116): one range for every timeline, resolved against the LOADED months, not today's date ----
 (() => {
@@ -879,6 +692,9 @@ dash.calc('lm_items', { inputs: ['budget_items'], title: 'Last month envelopes b
 } });
 // what counts as giving, housing and savings: the goal_config dataset (from rules.json), or the pipeline defaults before a rebuild has emitted it
 // "good", "off" or "neutral" for a gap: under plan is good for spending, but a shortfall for savings, giving and debt
+// DS-STATUS-1: a verdict is a stamp with a word from a fixed set (On track, Needs a look, No goal set); the figure beside it is plain text
+HL.stamp = (tone) => { if (tone === 'neutral') return null; const s = document.createElement('span'); s.className = 'status-chip' + (tone === 'good' ? ' ok' : tone === 'off' ? ' bad' : '');
+  s.textContent = tone === 'good' ? 'On track' : tone === 'off' ? 'Needs a look' : 'No goal set'; return s; };
 HL.tone = (r, gap) => Math.abs(gap) < 0.5 ? 'neutral' : ((r.want_more ? gap > 0 : gap < 0) ? 'good' : 'off');
 const goalConfig = HL.goalConfig = () => { const g = dash.data('goal_config'); const c = g.status === 'ok' && g.data[0] ? g.data[0] : {};
   return { giving_categories: c.giving_categories || ['Giving'], housing_categories: c.housing_categories || ['Housing', 'Utilities'], savings_groups: c.savings_groups || [], catchall_items: c.catchall_items || [] }; };   // role default
@@ -1006,7 +822,7 @@ dash.draw('monthly', (el) => {
   const bis = d3.bisector((r) => r.d).center;
   svg.append('rect').attr('x', ml).attr('y', mt).attr('width', Math.max(0, W - ml - 8)).attr('height', H - mt - mb).attr('fill', 'transparent')
     .on('pointermove', (pe) => { const [px, py] = d3.pointer(pe, el); const i = bis(rows, x.invert(px)); const r = rows[i]; if (!r) return; hover.attr('display', null).select('line').attr('x1', x(r.d)).attr('x2', x(r.d)); dots.attr('cx', x(r.d)).attr('cy', (k) => y([r.income, r.spend, r.outgo][k]));
-      t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}</div><div><span class="sw" style="background:${c[0]}"></span>Income ${HL.esc(HL.usd0(r.income))}</div><div><span class="sw" style="background:${c[1]}"></span>Living spend ${HL.esc(HL.usd0(r.spend))}</div><div><span class="sw" style="background:${c[2]}"></span>Spend + debt ${HL.esc(HL.usd0(r.outgo))}</div><div class="t">Net ${HL.esc(HL.usd0(r.income - r.outgo))}</div>` + (ev.status === 'ok' ? HL.rd('events').data.filter((e) => e.m === r.m).map((e) => `<div>┊ ${HL.esc(e.label)}</div>`).join('') : '')); })
+      t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}</div><div><span class="sw" style="--sw:${c[0]}"></span>Income ${HL.esc(HL.usd0(r.income))}</div><div><span class="sw" style="--sw:${c[1]}"></span>Living spend ${HL.esc(HL.usd0(r.spend))}</div><div><span class="sw" style="--sw:${c[2]}"></span>Spend + debt ${HL.esc(HL.usd0(r.outgo))}</div><div class="t">Net ${HL.esc(HL.usd0(r.income - r.outgo))}</div>` + (ev.status === 'ok' ? HL.rd('events').data.filter((e) => e.m === r.m).map((e) => `<div>┊ ${HL.esc(e.label)}</div>`).join('') : '')); })
     .on('pointerleave', () => { hover.attr('display', 'none'); t.hide(); });
   svg.selectAll('circle.ev').raise();   // markers above the hover overlay, so their own tooltip works
 });
@@ -1023,7 +839,7 @@ dash.draw('event-list', (ul) => {
   // display, not the hidden attribute: dash-shim skips draws inside [hidden], so a hidden box could never show itself again
   if (box) { box.style.display = n ? '' : 'none'; box.querySelector('summary').textContent = `Life events in this period (${n})`; }
   if (!n) return;
-  for (const e of [...g.data].sort((a, b) => a.m < b.m ? -1 : 1)) { const li = document.createElement('li'); const gl = document.createElement('span'); gl.className = 'glyph'; gl.textContent = '┊';
+  for (const e of [...g.data].sort((a, b) => a.m < b.m ? -1 : 1)) { const li = document.createElement('li'); const gl = document.createElement('span'); gl.className = 'key-mark'; gl.setAttribute('aria-hidden', 'true'); gl.textContent = '┊';
     li.append(gl, `${HL.fmtM(HL.parseM(e.m))}: ${HL.evText(e)}`); ul.append(li); }
 });
 dash.draw('annual', (el) => {
@@ -1041,7 +857,7 @@ dash.draw('annual', (el) => {
   const c = HL.colors(); const t = HL.tip(el);
   svg.append('g').selectAll('g').data(rows).join('g').attr('transform', (r) => `translate(${x0(r.y)},0)`).selectAll('rect').data((r) => keys.map((k, i) => ({ y: r.y, k, i, v: Number(r[f(k)]) }))).join('rect').attr('class', (d) => d.v < 0 ? 'b neg' : 'b')
     .attr('x', (d) => x1(d.k)).attr('width', x1.bandwidth()).attr('y', (d) => y(d.v)).attr('height', (d) => y(0) - y(d.v)).attr('rx', 2).attr('fill', (d) => c[ci[d.i]])
-    .on('pointermove', (pe, d) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(d.y)}</div><div><span class="sw" style="background:${c[ci[d.i]]}"></span>${names[d.i]} ${HL.esc(HL.usd0(d.v))}</div>`); }).on('pointerleave', () => t.hide());
+    .on('pointermove', (pe, d) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(d.y)}</div><div><span class="sw" style="--sw:${c[ci[d.i]]}"></span>${names[d.i]} ${HL.esc(HL.usd0(d.v))}</div>`); }).on('pointerleave', () => t.hide());
 });
 
 dash.draw('net', (el) => {
@@ -1551,8 +1367,8 @@ dash.draw('lm-take', (el) => { const r = lmRow(); if (!r) { el.textContent = '�
   const a = Math.abs(vsAvg) < 25 ? 'about your usual month' : `${HL.usd0(Math.abs(vsAvg))} ${vsAvg > 0 ? 'above' : 'below'} your usual month`;
   el.textContent = `${p}, ${a}.`; });
 dash.draw('lm-chips', (ul) => { const r = lmRow(); const c = dash.data('lm_cats'); if (!r) { ul.replaceChildren(); return; }
-  const chip = (label, value, gap, wantMore) => { const li = document.createElement('li'); const tone = HL.tone({ want_more: wantMore }, gap); li.className = 'chip ' + tone;
-    const b = document.createElement('b'); b.textContent = label; li.append(b, ' ' + HL.usd0(value) + ' · ' + (Math.abs(gap) < 0.5 ? 'on plan' : (gap > 0 ? '+' : '−') + HL.usd0(Math.abs(gap)) + ' vs plan')); return li; };
+  const chip = (label, value, gap, wantMore) => { const li = document.createElement('li'); const tone = HL.tone({ want_more: wantMore }, gap); li.className = 'verdict';
+    const b = document.createElement('b'); b.textContent = label; const st = HL.stamp(tone); if (st) li.append(st); li.append(b, ' ' + HL.usd0(value) + ' · ' + (Math.abs(gap) < 0.5 ? 'on plan' : (gap > 0 ? '+' : '−') + HL.usd0(Math.abs(gap)) + ' vs plan')); return li; };
   const out = [chip('Income', r.income_actual, r.income_vs_plan, true), chip('Living spend', r.spend_actual, r.spend_vs_plan, false), chip('Debt', r.debt_actual, r.debt_vs_plan, true)];   // label, not a role
   if (c.status === 'ok') for (const x of c.data.filter((x) => x.want_more && x.flow === 'expense' && x.vs_plan <= -0.5)) out.push(chip(x.category, x.actual, x.vs_plan, true));   // a savings or giving shortfall is named
   ul.replaceChildren(...out); });
@@ -1617,11 +1433,12 @@ dash.draw('lm-summary', (ul) => {   // the three that need a look and the three 
     const bar = document.createElement('span'); bar.className = 'vsplan'; const max = Math.max(r.planned, r.actual, 1);
     const fill = document.createElement('i'); fill.style.width = (100 * r.actual / max) + '%'; const tick = document.createElement('b'); tick.style.left = (100 * r.planned / max) + '%';
     bar.append(fill, tick); bar.setAttribute('aria-hidden', 'true');
-    const chip = document.createElement('span'); chip.className = 'chip ' + tone;
-    chip.textContent = HL.usd0(Math.abs(r.vs_plan)) + (r.want_more ? (r.vs_plan < 0 ? ' short' : ' extra') : (r.vs_plan > 0 ? ' over' : ' under'));
+    const chip = document.createElement('span'); chip.className = 'verdict'; const st = HL.stamp(tone); const amt = document.createElement('span'); amt.className = 'amt';
+    amt.textContent = HL.usd0(Math.abs(r.vs_plan)) + (r.want_more ? (r.vs_plan < 0 ? ' short' : ' extra') : (r.vs_plan > 0 ? ' over' : ' under'));
+    if (st) chip.append(st); chip.append(amt);
     const usual = document.createElement('span'); usual.className = 'usual';
     usual.textContent = Math.abs(r.vs_avg) < 25 ? '≈ usual' : (r.vs_avg > 0 ? '▲ ' : '▼ ') + HL.usd0(Math.abs(r.vs_avg)) + ' vs usual';
-    li.append(name, bar, chip, usual); li.setAttribute('aria-label', `${r.category}: spent ${HL.usd0(r.actual)} of ${HL.usd0(r.planned)} planned, ${chip.textContent}; ${usual.textContent}`); return li; };
+    li.append(name, bar, chip, usual); li.setAttribute('aria-label', `${r.category}: spent ${HL.usd0(r.actual)} of ${HL.usd0(r.planned)} planned, ${st ? st.textContent + ', ' : ''}${amt.textContent}; ${usual.textContent}`); return li; };
   ul.replaceChildren(...look.map(row), ...room.map(row));
 });
 dash.draw('lm-items', (tb) => {
@@ -1636,25 +1453,40 @@ dash.draw('lm-items', (tb) => {
 // ---- goals ----
 const pct1 = dash.fmt.pct(1);
 // each goal as a bar from 0 with its line marked: the bar is the last twelve months, the tick is the goal
+const gvNum = (k) => { const G = dash.data('goals'); const r = G.status === 'ok' ? G.data.find((x) => x.key === k) : null; return r && r.value != null && r.value !== '' && Number.isFinite(Number(r.value)) ? Number(r.value) : null; };
+const goLink = (label, href = '/settings#goals') => Object.assign(document.createElement('a'), { className: 'btn', href, textContent: label });   // a link-styled button to where the figure is recorded
 const gGauge = (name, field, goalKey, goodBelow) => dash.draw(name, (el) => { el.replaceChildren(); const g = dash.data('goal_summary'); const G = dash.data('goals');
-  const v = g.status === 'ok' && g.data[0] ? Number(g.data[0][field]) : NaN; const goal = G.status === 'ok' ? Number((G.data.find((x) => x.key === goalKey) || {}).value) : NaN;
-  if (!Number.isFinite(v)) return; const max = Math.max(v, Number.isFinite(goal) ? goal : 0) * 1.25 || 1;
+  const num = (x) => x == null || x === '' ? NaN : Number(x);   // Number(null) is 0: a missing figure would read as on track
+  const v = g.status === 'ok' && g.data[0] ? num(g.data[0][field]) : NaN; const goal = G.status === 'ok' ? num((G.data.find((x) => x.key === goalKey) || {}).value) : NaN;
+  if (!Number.isFinite(v)) return;   // no figure: the line under it says why and where to record it
+  const max = Math.max(v, Number.isFinite(goal) ? goal : 0) * 1.25 || 1;
   const track = document.createElement('span'); track.className = 'track'; const fill = document.createElement('i'); fill.style.width = Math.min(100, 100 * v / max) + '%';
   const ok = !Number.isFinite(goal) ? null : goodBelow ? v <= goal : v >= goal; fill.className = ok == null ? '' : ok ? 'good' : 'off'; track.append(fill);
   if (Number.isFinite(goal)) { const t = document.createElement('b'); t.style.left = Math.min(100, 100 * goal / max) + '%'; track.append(t); }
-  const chip = document.createElement('span'); chip.className = 'chip ' + (ok == null ? 'neutral' : ok ? 'good' : 'off'); chip.textContent = ok == null ? 'no goal set' : ok ? 'on track' : goodBelow ? 'over the cap' : 'below the line';
+  const chip = document.createElement('span'); chip.className = 'verdict'; chip.append(HL.stamp(ok == null ? 'none' : ok ? 'good' : 'off'));
+  if (ok === false) { const amt = document.createElement('span'); amt.className = 'amt'; amt.textContent = goodBelow ? 'over the cap' : 'below the line'; chip.append(amt); }
+  if (ok == null) chip.append(goLink('Set a target'));
   el.append(track, chip); });
 gGauge('gg-giving', 'giving_share', 'giving_floor', false); gGauge('gg-joy', 'joy_share', 'joy_target', false); gGauge('gg-house', 'housing_share', 'housing_cap', true);
 const gTile = (name, field) => dash.draw(name, (el) => { const g = dash.data('goal_summary'); el.textContent = g.status === 'ok' && g.data[0] && g.data[0][field] != null ? pct1(g.data[0][field]) : '—'; });
 gTile('g-giving', 'giving_share'); gTile('g-joy', 'joy_share'); gTile('g-house', 'housing_share'); gTile('g-th', 'takehome_share');
 const goalPct = (key) => { const G = dash.data('goals'); const r = G.status === 'ok' ? G.data.find((x) => x.key === key) : null; const v = r ? Number(r.value) : NaN; return Number.isFinite(v) ? dash.fmt.pct(Number.isInteger(v * 100) ? 0 : 1)(v) : null; };
-const gDelta = (name, field, words, goodUp) => dash.draw(name, (el) => {
-  const g = dash.data('goal_summary'); el.classList.remove('up', 'down');
-  if (g.status !== 'ok' || !g.data[0] || g.data[0][field] == null) { el.textContent = '—'; return; }
-  const v = g.data[0][field]; if (typeof v === 'string') { el.textContent = v; return; }
+// a missing figure says why and links to where it is recorded (DS-EMPTY-1); a missing target says so; otherwise the gap in points
+const gDelta = (name, field, shareField, words, goodUp, goalKey, none, needs) => dash.draw(name, (el) => {
+  const g = dash.data('goal_summary'); el.classList.remove('up', 'down'); el.replaceChildren();
+  if (g.status !== 'ok' || !g.data[0]) { el.textContent = '—'; return; }
+  const row = g.data[0];
+  if (row[shareField] == null) { const n = needs(); el.append(n[0] + ' ', goLink(n[1], n[2])); return; }
+  if (goalKey && gvNum(goalKey) == null) { el.textContent = none; return; }
+  const v = row[field]; if (v == null) { el.textContent = '—'; return; }
+  if (typeof v === 'string') { el.textContent = v; return; }
   el.textContent = dash.fmt.dec(1)(Math.abs(v) * 100) + ' pts ' + (v >= 0 ? 'above' : 'below') + ' ' + (typeof words === 'function' ? words() : words); el.classList.add((v >= 0) === goodUp ? 'up' : 'down');   // a gap between two shares is in percentage points
 });
-gDelta('g-giving-d', 'giving_vs_floor', () => 'the ' + (goalPct('giving_floor') || '') + ' floor', true); gDelta('g-joy-d', 'joy_vs_target', () => 'the ' + (goalPct('joy_target') || '') + ' target', true); gDelta('g-house-d', 'housing_vs_cap', () => 'the ' + (goalPct('housing_cap') || '') + ' cap', false); gDelta('g-th-d', 'takehome_note', '', true);
+const needGross = () => ['Needs gross pay recorded', 'Record gross pay'];
+gDelta('g-giving-d', 'giving_vs_floor', 'giving_share', () => 'the ' + (goalPct('giving_floor') || '') + ' floor', true, 'giving_floor', 'No floor set', needGross);
+gDelta('g-joy-d', 'joy_vs_target', 'joy_share', () => 'the ' + (goalPct('joy_target') || '') + ' target', true, 'joy_target', 'No target set', () => gvNum('gross_annual') == null ? needGross() : ['Needs savings groups chosen', 'Choose savings groups', '/settings#rules/roles']);
+gDelta('g-house-d', 'housing_vs_cap', 'housing_share', () => 'the ' + (goalPct('housing_cap') || '') + ' cap', false, 'housing_cap', 'No cap set', () => ['Needs paychecks read from the exports', 'Check the employer rules', '/settings#rules/people']);
+gDelta('g-th-d', 'takehome_note', 'takehome_share', '', true, null, '', needGross);
 
 dash.draw('goal-lines', (el) => {
   const g = HL.rd('goal_month'), G = dash.data('goals'); el.replaceChildren();
@@ -1673,13 +1505,13 @@ dash.draw('goal-lines', (el) => {
   svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
   ['a', 'b', 'c'].forEach((k, i) => HL.fixes(svg, rows.map((r) => ({ x: x(r.d), y: r[k] == null ? null : y(r[k]) })), c[i]));   // DS-CHART-1
-  HL.waypoints(svg, ml, W - 8, [['giving_floor', 'giving floor'], ['giving_target', 'giving target'], ['joy_target', 'savings groups target'], ['housing_cap', 'housing cap']]   // DS-CHART-3
+  HL.waypoints(svg, ml, W - 8, [['giving_floor', 'giving floor'], ['giving_target', 'giving target'], ['joy_target', 'planned savings target'], ['housing_cap', 'housing cap']]   // DS-CHART-3
     .filter(([k]) => gv(k) != null).map(([k, label]) => ({ y: y(gv(k)), label: `${label} ${dash.fmt.pct(0)(gv(k))}` })));
   const t = HL.tip(el); const bis = d3.bisector((r) => r.d).center;
   const hover = svg.append('g').attr('display', 'none'); hover.append('line').attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--chart-axis)');
   svg.append('rect').attr('x', ml).attr('y', mt).attr('width', Math.max(0, W - ml - 8)).attr('height', H - mt - mb).attr('fill', 'transparent')
     .on('pointermove', (pe) => { const [px, py] = d3.pointer(pe, el); const r = rows[bis(rows, x.invert(px))]; if (!r) return; hover.attr('display', null).select('line').attr('x1', x(r.d)).attr('x2', x(r.d));
-      t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}, trailing 12 months</div><div><span class="sw" style="background:${c[0]}"></span>Giving ${r.a == null ? '—' : pct1(r.a)}</div><div><span class="sw" style="background:${c[1]}"></span>Savings groups ${r.b == null ? '—' : pct1(r.b)}</div><div><span class="sw" style="background:${c[2]}"></span>Housing + utilities ${r.c == null ? '—' : pct1(r.c)}</div>`); })
+      t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}, trailing 12 months</div><div><span class="sw" style="--sw:${c[0]}"></span>Giving ${r.a == null ? '—' : pct1(r.a)}</div><div><span class="sw" style="--sw:${c[1]}"></span>Planned savings ${r.b == null ? '—' : pct1(r.b)}</div><div><span class="sw" style="--sw:${c[2]}"></span>Housing and utilities ${r.c == null ? '—' : pct1(r.c)}</div>`); })
     .on('pointerleave', () => { hover.attr('display', 'none'); t.hide(); });
 });
 // Debt-to-income (#145): the debt_to_income dataset, against the household's own caps when it has set them
@@ -1755,18 +1587,19 @@ dash.draw('dti-lines', (el) => {
   const hover = svg.append('g').attr('display', 'none'); hover.append('line').attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--chart-axis)');
   svg.append('rect').attr('x', ml).attr('y', mt).attr('width', Math.max(0, W - ml - 8)).attr('height', H - mt - mb).attr('fill', 'transparent')
     .on('pointermove', (pe) => { const [px, py] = d3.pointer(pe, el); const r = rows[bis(rows, x.invert(px))]; if (!r) return; hover.attr('display', null).select('line').attr('x1', x(r.d)).attr('x2', x(r.d));
-      t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}, trailing 12 months</div><div><span class="sw" style="background:${col[0]}"></span>All debt ${r.a == null ? '—' : pct1(r.a)}</div><div><span class="sw" style="background:${col[1]}"></span>Housing ${r.b == null ? '—' : pct1(r.b)}</div>`); })
+      t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}, trailing 12 months</div><div><span class="sw" style="--sw:${col[0]}"></span>All debt ${r.a == null ? '—' : pct1(r.a)}</div><div><span class="sw" style="--sw:${col[1]}"></span>Housing ${r.b == null ? '—' : pct1(r.b)}</div>`); })
     .on('pointerleave', () => { hover.attr('display', 'none'); t.hide(); });
 });
 dash.draw('goal-table', (tb) => {
   const g = dash.data('goal_month'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   const rows = [...g.data].sort((a, b) => a.m < b.m ? 1 : -1).slice(0, 24);
   const sh = (v) => v == null ? '—' : pct1(v);
-  HL.fillTable(tb, rows, [(r) => r.m, (r) => r.paychecks == null ? '—' : r.paychecks, (r) => HL.usd0(r.takehome), (r) => HL.usd0(r.giving), (r) => sh(r.giving_share), (r) => HL.usd0(r.joy_planned), (r) => sh(r.joy_share), (r) => HL.usd0(r.housing), (r) => sh(r.housing_share)]);
+  HL.fillTable(tb, rows, [(r) => HL.mo(r.m), (r) => r.paychecks == null ? '—' : r.paychecks, (r) => HL.usd0(r.takehome), (r) => HL.usd0(r.giving), (r) => sh(r.giving_share), (r) => HL.usd0(r.joy_planned), (r) => sh(r.joy_share), (r) => HL.usd0(r.housing), (r) => sh(r.housing_share)]);
 });
+dash.draw('goal-set', (el) => { const g = dash.data('goals'); el.replaceChildren(); if (g.status === 'ok' && g.data.some((r) => r.value == null)) el.append(goLink('Set targets')); });   // a plain button: the view's one primary is elsewhere
 dash.draw('goal-params', (tb) => {
   const g = dash.data('goals'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
-  HL.fillTable(tb, g.data, [(r) => r.label, (r) => r.value == null ? 'not yet given' : (r.unit === 'usd' ? HL.usd0(Number(r.value)) : r.unit && r.unit.startsWith('share') ? dash.fmt.pct(0)(Number(r.value)) : String(r.value) + ' ' + (r.unit || '')), (r) => r.note, (r) => r.confirmed_at ? r.confirmed_at.slice(0, 10) : 'never']);
+  HL.fillTable(tb, g.data, [(r) => r.label, (r) => r.value == null ? 'not yet given' : (r.unit === 'usd' ? HL.usd0(Number(r.value)) : r.unit && r.unit.startsWith('share') ? dash.fmt.pct(0)(Number(r.value)) : String(r.value) + ' ' + (r.unit || '')), (r) => r.note, (r) => r.confirmed_at ? HL.day(r.confirmed_at) : 'never']);
   for (const tr of tb.children) { const row = g.data.find((d) => d.label === tr.firstChild.textContent); if (row) tr.dataset.key = row.key; }
 });
 
@@ -1839,5 +1672,37 @@ const byYThen = (k) => (rows) => [...rows].sort((a, b) => Number(b.y) - Number(a
 table('slush', 'slush', byYThen('item'), [(r) => HL.yearLabel(r.y), (r) => r.item, (r) => $(r.amount)], ySpan);
 table('radar', 'cat_year', byYThen('category'), [(r) => HL.yearLabel(r.y), (r) => r.category, (r) => $(r[HL.fld('amount')] ?? r.amount)], ySpan);
 table('net', 'yearly', byY, [(r) => HL.yearLabel(r.y), (r) => $(r[HL.fld('net')]), (r) => P1(r.savings_rate)], ySpan);
+// Last month's two bar charts, as figures (DS-CHART-5): the same order as the bars
+const sg = (v) => (Number(v) >= 0 ? '+' : '−') + $(Math.abs(Number(v)));
+const lmFigures = (name, field, cells, keep) => dash.draw('dt-' + name, (tb) => { const g = dash.data('lm_cats'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
+  HL.fillTable(tb, g.data.filter(keep).sort((a, b) => b[field] - a[field]), cells); });
+lmFigures('lm-var', 'vs_plan', [(r) => r.category, (r) => $(r.planned), (r) => $(r.actual), (r) => sg(r.vs_plan)], () => true);
+lmFigures('lm-avg', 'vs_avg', [(r) => r.category, (r) => $(r.avg12), (r) => $(r.actual), (r) => sg(r.vs_avg)], (r) => r.flow !== 'income');
+
+// DS-CHART-5: each chart's finding, one line drawn from the same data; a11y.js reads it into the chart's text alternative
+const finding = (name, fn) => dash.draw('fd-' + name, (el) => { let t = ''; try { t = fn() || ''; } catch (e) { t = ''; } el.textContent = t; });
+const lastWith = (rows, ok) => { for (let i = rows.length - 1; i >= 0; i--) if (ok(rows[i])) return rows[i]; return null; };
+const gval = (k) => { const G = dash.data('goals'); const r = G.status === 'ok' ? G.data.find((x) => x.key === k) : null; return r && r.value != null && r.value !== '' && Number.isFinite(Number(r.value)) ? Number(r.value) : null; };
+const vs = (v, goal, word) => goal == null ? '' : ', ' + dash.fmt.dec(1)(Math.abs(v - goal) * 100) + ' pts ' + (v >= goal ? 'above' : 'below') + ' the ' + dash.fmt.pct(0)(goal) + ' ' + word;
+finding('goal', () => { const g = HL.rd('goal_month'); if (g.status !== 'ok') return; const r = lastWith(g.data, (x) => x.giving_share_12 != null || x.joy_share_12 != null || x.housing_share_12 != null); if (!r) return;
+  const bits = []; if (r.giving_share_12 != null) bits.push('giving ' + P1(r.giving_share_12) + vs(r.giving_share_12, gval('giving_floor'), 'floor'));
+  if (r.joy_share_12 != null) bits.push('planned savings ' + P1(r.joy_share_12) + vs(r.joy_share_12, gval('joy_target'), 'target'));
+  if (r.housing_share_12 != null) bits.push('housing and utilities ' + P1(r.housing_share_12) + vs(r.housing_share_12, gval('housing_cap'), 'cap'));
+  return M(r.m) + ', twelve months to date: ' + bits.join('; ') + '.'; });
+finding('ef', () => { const g = HL.rd('emergency_fund'); if (g.status !== 'ok') return; const r = lastWith(g.data, (x) => x.months != null); if (!r) return; const tg = gval('emergency_months');
+  return M(r.m) + ': emergency savings cover ' + Number(r.months).toFixed(1) + ' months of outgo' + (tg == null ? '' : ', against a target of ' + tg) + '.'; });
+finding('dti', () => { const g = HL.rd('debt_to_income'); if (g.status !== 'ok') return; const r = lastWith(g.data, (x) => x.dti_12 != null); if (!r) return;
+  return M(r.m) + ': debt payments are ' + P1(r.dti_12) + ' of gross pay' + (r.housing_dti_12 != null ? ', housing ' + P1(r.housing_dti_12) : '') + ', over the trailing twelve months.'; });
+finding('debts', () => { const g = HL.rd('debts'); if (g.status !== 'ok' || !g.data.length) return; const top = [...g.data].sort((a, b) => Number(b.total) - Number(a.total))[0];
+  return g.data.length + (g.data.length === 1 ? ' debt' : ' debts') + ' on the timeline; the most paid is ' + top.item + ', ' + $(top.total) + ' in all.'; });
+finding('nw', () => { const g = HL.rd('net_worth'); if (g.status !== 'ok' || !g.data.length) return; const rows = [...g.data].sort((a, b) => a.m < b.m ? -1 : 1), r = rows[rows.length - 1];
+  return 'Net worth is ' + $(r.net_worth) + ' at ' + M(r.m) + (r.change == null ? '' : ', ' + (Number(r.change) >= 0 ? 'up ' : 'down ') + $(Math.abs(Number(r.change))) + ' on the month before') + '.'; });
+finding('net', () => { const g = HL.rd('yearly'); if (g.status !== 'ok' || !g.data.length) return; const r = [...g.data].sort((a, b) => Number(a.y) - Number(b.y)).pop(); const n = Number(r[HL.fld('net')]);
+  return HL.yearLabel(r.y) + ': the household ' + (n >= 0 ? 'kept ' : 'drew down ') + $(Math.abs(n)) + (r.savings_rate == null ? '' : ', a savings rate of ' + P1(r.savings_rate)) + '.'; });
+const lmGap = (field, up, down, keep) => () => { const g = dash.data('lm_cats'); if (g.status !== 'ok') return; const rows = g.data.filter(keep).filter((r) => Math.abs(r[field]) >= 0.5); if (!rows.length) return;
+  const hi = rows.reduce((a, b) => b[field] > a[field] ? b : a), lo = rows.reduce((a, b) => b[field] < a[field] ? b : a), out = [];
+  if (hi[field] > 0) out.push(up + ' ' + hi.category + ', ' + sg(hi[field])); if (lo[field] < 0) out.push(down + ' ' + lo.category + ', ' + sg(lo[field])); return out.join('; ') + '.'; };
+finding('lm-var', lmGap('vs_plan', 'Spending furthest over plan:', 'furthest under plan:', (r) => r.flow !== 'income'));
+finding('lm-avg', lmGap('vs_avg', 'Furthest above its average:', 'furthest below it:', (r) => r.flow !== 'income'));
 })();</script>
 {% endblock %}

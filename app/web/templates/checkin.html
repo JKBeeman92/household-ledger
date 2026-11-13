@@ -30,6 +30,10 @@
   <button class="btn primary" type="submit" id="checkin-finish" {% if not ov.can_complete %}disabled aria-disabled="true"{% endif %}>Finish the check-in</button>
   <span class="muted">records who finished it, and when</span>
 </form>{% endif %}
+{% if earlier or later %}<nav class="page-turn" aria-label="Other months">
+  {% if earlier %}<a class="turn prev" href="/checkin/{{ earlier }}" aria-label="{{ earlier|month }} check-in"><span aria-hidden="true">←</span> {{ earlier|month }}</a>{% endif %}
+  {% if later %}<a class="turn next" href="/checkin/{{ later }}" aria-label="{{ later|month }} check-in">{{ later|month }} <span aria-hidden="true">→</span></a>{% endif %}
+</nav>{% endif %}
 <script nonce="{{ csp_nonce(request) }}">
 // A save returns to its step (#step-<key>, DS-FLASH-1): open that step and put focus on it, on load and when the hash changes.
 const openHash = () => { const t = location.hash && document.getElementById(location.hash.slice(1)), d = t && t.closest('details.step'); if (!d) return;

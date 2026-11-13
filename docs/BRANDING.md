@@ -34,7 +34,7 @@ Brand: `--accent --accent-hover --accent-soft --on-accent --accent-2 --accent-2-
 Status: `--success --warning --danger --info --on-status`
 Charts: `--series-1 … --series-8` (categorical order used by every chart), `--chart-grid --chart-axis --chart-reference`
 Sign-in: `--login-backdrop` (an `url()`), `--login-overlay` (a gradient laid over it)
-Type: `--font-display --font-sans --font-mono`, `--text-caption --text-small --text-body --text-heading --text-title`, `--weight-heading --weight-strong --tracking-caps`
+Type: `--font-display --font-sans --font-mono`, `--text-caption --text-small --text-body --text-heading --text-title --text-display`, `--weight-heading --weight-strong --tracking-caps`
 Rhythm, shape, motion: `--space-1 2 3 4 6 8 12 16`, `--radius-sm md lg full`, `--shadow-sm md glow`, `--dur-fast --dur --dur-slow --ease`
 Page and glyphs: `--graticule` (the page's grid; `transparent` for plain paper), `--glyph-weight`
 

@@ -23,7 +23,7 @@
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
   --radius-sm: 2px; --radius-md: 4px; --radius-lg: 8px; --radius-full: 999px;
   /* the tokens docs/DESIGN.md added: a larger text size for Garamond, bold Cinzel headings, plain paper, a finer glyph line */
-  --text-caption: 14px; --text-small: 15px; --text-body: 17px; --text-heading: 18px; --text-title: 24px;
+  --text-caption: 14px; --text-small: 15px; --text-body: 17px; --text-heading: 18px; --text-title: 24px; --text-display: 44px;
   --weight-heading: 700; --weight-strong: 600; --tracking-caps: .12em; --graticule: transparent; --glyph-weight: 1.4;
 }
 :root[data-theme="light"] {

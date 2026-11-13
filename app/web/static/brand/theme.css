@@ -31,7 +31,7 @@
   --font-display: "Libre Caslon Text", "Iowan Old Style", Georgia, serif;
   --font-sans: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-mono: "IBM Plex Mono", Consolas, monospace;
-  --text-caption: 13px; --text-small: 14px; --text-body: 16px; --text-heading: 19px; --text-title: 28px;
+  --text-caption: 13px; --text-small: 14px; --text-body: 16px; --text-heading: 19px; --text-title: 28px; --text-display: 48px;
   --weight-heading: 400; --weight-strong: 600; --tracking-caps: .1em;
   /* rhythm, shape, motion, glyphs */
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
