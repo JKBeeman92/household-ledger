@@ -1459,12 +1459,12 @@ const gGauge = (name, field, goalKey, goodBelow) => dash.draw(name, (el) => { el
   const num = (x) => x == null || x === '' ? NaN : Number(x);   // Number(null) is 0: a missing figure would read as on track
   const v = g.status === 'ok' && g.data[0] ? num(g.data[0][field]) : NaN; const goal = G.status === 'ok' ? num((G.data.find((x) => x.key === goalKey) || {}).value) : NaN;
   if (!Number.isFinite(v)) return;   // no figure: the line under it says why and where to record it
-  const max = Math.max(v, Number.isFinite(goal) ? goal : 0) * 1.25 || 1;
-  const track = document.createElement('span'); track.className = 'track'; track.setAttribute('aria-hidden', 'true');   // the bar is drawing; the stamp and link stay exposed (DS-A11Y-1) const fill = document.createElement('i'); fill.style.width = Math.min(100, 100 * v / max) + '%';
+  const max = Math.max(v, Number.isFinite(goal) ? goal : 0) * 1.25 || 1;   // below: only the bar is aria-hidden; the stamp and the link stay exposed (DS-A11Y-1)
+  const track = document.createElement('span'); track.className = 'track'; track.setAttribute('aria-hidden', 'true'); const fill = document.createElement('i'); fill.style.width = Math.min(100, 100 * v / max) + '%';
   const ok = !Number.isFinite(goal) ? null : goodBelow ? v <= goal : v >= goal; fill.className = ok == null ? '' : ok ? 'good' : 'off'; track.append(fill);
   if (Number.isFinite(goal)) { const t = document.createElement('b'); t.style.left = Math.min(100, 100 * goal / max) + '%'; track.append(t); }
   const chip = document.createElement('span'); chip.className = 'verdict'; chip.append(HL.stamp(ok == null ? 'none' : ok ? 'good' : 'off'));
-  if (ok === false) { const amt = document.createElement('span'); amt.className = 'amt'; amt.textContent = goodBelow ? 'over the cap' : 'below the line'; chip.append(amt); }
+  if (ok === false) { const amt = document.createElement('span'); amt.className = 'amt'; amt.textContent = goodBelow ? 'over the cap' : 'below the line'; chip.append(' ', amt); }
   if (ok == null) chip.append(goLink('Set a target'));
   el.append(track, chip); });
 gGauge('gg-giving', 'giving_share', 'giving_floor', false); gGauge('gg-joy', 'joy_share', 'joy_target', false); gGauge('gg-house', 'housing_share', 'housing_cap', true);

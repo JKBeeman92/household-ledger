@@ -2,6 +2,7 @@
 from __future__ import annotations
 import csv, io, re
 from urllib.parse import urlparse
+import logging
 from urllib.request import Request, urlopen
 
 DEFAULT_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL"
@@ -9,6 +10,9 @@ SETTING = "cpi_series_url"
 MAX_BYTES = 1_000_000
 ESTIMATE_RE = re.compile(r"carried|interpolat|estimat", re.I)
 MONTH_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
+
+
+log = logging.getLogger("ledger")
 
 
 class CpiFetchError(ValueError):
@@ -93,8 +97,10 @@ def fetch_latest(conn, url: str | None = None) -> dict:
         text = TRANSPORT(url)
     except CpiFetchError:
         raise
-    except Exception as e:  # noqa: BLE001
-        raise CpiFetchError(f"could not fetch {url}: {e}") from e
+    except Exception as e:  # noqa: BLE001   # the detail goes to the log; the page gets the cause and the remedy (DS-WORD-4)
+        log.warning("cpi fetch from %s failed: %r", url, e)
+        raise CpiFetchError(f"the series at {url} could not be reached. Check the server's internet connection or the series URL "
+                            "below, then fetch again") from e
     fetched = parse(text)
     have = {r["month"]: r["source"] for r in conn.execute("SELECT month, source FROM cpi").fetchall()}
     label = source_label(url)

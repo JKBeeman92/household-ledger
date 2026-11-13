@@ -42,19 +42,21 @@ def map_items(request: Request, background: BackgroundTasks, item: list[str] = F
     """Rows with a category filled in are added to (or corrected in) item_mapping; rows left blank are skipped. Then rebuild."""
     rows = [(norm(i), norm(c) or norm(i), norm(g), f) for i, c, g, f in zip(item, canonical, category, flow) if norm(g)]
     bad = [r[0] for r in rows if r[3] not in FLOWS or r[2].upper() == "UNMAPPED"]
+
+    def again(error: str, rows_bad=()):   # the panel comes back with what was typed and the error under it (DS-FORM-1, DS-FLASH-1)
+        request.session["map_form"] = {"rows": {norm(i): {"canonical": c, "category": g, "flow": f} for i, c, g, f in zip(item, canonical, category, flow)},
+                                       "bad": list(rows_bad), "error": error}
+        return RedirectResponse("/upload#unmapped-panel", status_code=303)
     if bad:
-        flash(request, f"Not saved: choose a real category and flow for {', '.join(bad[:5])}.", "bad")
-        return RedirectResponse("/upload", status_code=303)
+        return again(f"Choose a real category and flow for {', '.join(bad[:5])}{' and more' if len(bad) > 5 else ''}.", bad)
     if not rows:
-        flash(request, "Nothing to add: fill in a category for at least one item.", "bad")
-        return RedirectResponse("/upload", status_code=303)
+        return again("Fill in a category for at least one item.")
     with db.pool.connection() as conn:
         try:   # an existing canonical item keeps its category (#133): a row naming another one is refused, not a silent move
             mapping_store.write_rows(conn, [{"item": i, "canonical_item": c, "category": g, "flow": f, "note": ""} for i, c, g, f in rows])
         except mapping_store.MappingError as e:
             conn.rollback()
-            flash(request, f"Not saved: {e}", "bad")
-            return RedirectResponse("/upload", status_code=303)
+            return again(f"{str(e)[:1].upper()}{str(e)[1:]}.")
         conn.commit()
         busy = build_running(conn)
     if busy:
@@ -62,4 +64,4 @@ def map_items(request: Request, background: BackgroundTasks, item: list[str] = F
     else:
         background.add_task(run_background)
         flash(request, f"Mapped {len(rows)} item(s). Rebuilding in the background; progress is shown below.")
-    return RedirectResponse("/upload", status_code=303)
+    return RedirectResponse("/upload#findings-panel", status_code=303)

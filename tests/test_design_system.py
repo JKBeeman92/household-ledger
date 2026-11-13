@@ -208,3 +208,11 @@ def test_every_table_scroller_is_a_named_focusable_region():
             if 'role="region"' not in tag or 'tabindex="0"' not in tag or not re.search(r'aria-label(ledby)?="', tag):
                 bad.append(f"{path.name}: {tag}")
     assert not bad, bad
+
+
+def test_no_line_comment_swallows_code_on_the_dashboard():
+    """A `//` comment runs to the end of the line, so it must not sit in front of more code on the same line (it hid the gauges once)."""
+    import re
+    page = (ROOT / "app" / "web" / "templates" / "dashboard.html").read_text()
+    bad = [ln for ln in page.splitlines() if re.search(r";\s+//[^\n]*;\s*(const|let|var|el\.|track\.)\s", ln)]
+    assert not bad, bad[:3]

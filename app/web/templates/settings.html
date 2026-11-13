@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Settings · {{ household.title }}{% endblock %}
+{% block head %}<meta name="ledger-currency" content="{{ fmt.currency }}"><meta name="ledger-locale" content="{{ fmt.locale }}">{% endblock %}
 {% block content %}
 <p class="eyebrow">Configuration</p>
 <h1 class="page-title">Settings</h1>

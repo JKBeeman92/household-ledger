@@ -5,15 +5,17 @@
 <h1 class="page-title">Reviews</h1>
 <p class="linkrow muted">Written by {{ prov.label }}{% if problem %} (not configured: {{ problem }}){% endif %}.
   <a href="/reviews/provider">Review provider</a> <a href="/reviews/prompt">Instructions</a> <a href="/reviews/history">Prompts sent</a></p>
+{% if job %}<div class="panel mt-4" role="status">{% if job.state in ('queued', 'running') %}<p><span class="status-chip">Writing</span> The {{ job.month|month }} review is being written by {{ job.provider }}. It is stored when the model answers; <a href="/upload#review-job">follow it on Close a month</a>.</p>
+  {% else %}<p><span class="status-chip bad">Not written</span> The {{ job.month|month }} review failed: {{ job.error }}</p><p><a class="btn" href="/reviews/confirm?month={{ job.month }}&amp;back=/reviews">Write it again</a></p>{% endif %}</div>{% endif %}
 {% if not reviews %}<div class="panel mt-4">{% if problem %}<p>No reviews yet. A review is written by a model you choose; set one up first.</p>
   <p><a class="btn" href="/reviews/provider">Set up a review provider</a></p>{% else %}<p>No reviews yet. A month's review is written once its files are loaded.</p>
   <p><a class="btn" href="/upload#review">Write review</a></p>{% endif %}</div>
 {% else %}<div class="panel mt-4"><ul class="review-list" data-list="unbounded">
   {% for r in reviews %}{% set secs = (r.sections or [])|sort(attribute='order') %}<li>
     <div><strong>{{ r.month|month }}</strong> <span class="meta">· {{ secs|length }} section{{ '' if secs|length == 1 else 's' }} · {{ r.model }} · {{ r.generated_at|date }}{% if r.hand_edited_at %} · hand-edited{% endif %}</span></div>
-    {% if secs %}<p class="lead"><b>{{ secs[0].heading }}.</b> {{ secs[0].text|truncate(220) }}</p>{% endif %}
+    {% if secs %}<p class="lead measure"><b>{{ secs[0].heading }}.</b> {{ secs[0].text|truncate(220) }}</p>{% endif %}
     {% if later[r.month] %}<p class="meta">Since this was written: {% for x in later[r.month] %}{{ x.old }} was renamed {{ x.new }} on {{ x.at|date }}{{ '; ' if not loop.last }}{% endfor %}.</p>{% endif %}
-    <details><summary>Read all of it</summary>{% for s in secs %}<h3>{{ s.heading }}</h3><p>{{ s.text }}</p>{% endfor %}</details>
+    <details><summary>Read all of it</summary>{% for s in secs %}<h3>{{ s.heading }}</h3><p class="measure">{{ s.text }}</p>{% endfor %}</details>
     <p class="linkrow mt-2 mb-0"><a href="/reviews/edit/{{ r.month }}?back=/reviews" aria-label="Edit the {{ r.month|month }} review">Edit</a> <a href="/reviews/confirm?month={{ r.month }}&amp;back=/reviews" aria-label="Write review again for {{ r.month|month }}">Write review again</a></p>
   </li>{% endfor %}
 </ul></div>{% endif %}

@@ -1,3 +1,14 @@
+var FMT = (function () {   // the household's locale and currency, as the server's formatters use them (DS-WORD-6)
+  var meta = function (n, d) { var e = document.querySelector('meta[name="ledger-' + n + '"]'); return (e && e.content) || d; };
+  var loc = meta("locale", "en-US"), cur = meta("currency", "USD");
+  var nf = function (o) { try { return new Intl.NumberFormat(loc, o); } catch (e) { return new Intl.NumberFormat("en-US", o); } };
+  var cf = function (d) { try { return nf({ style: "currency", currency: cur, minimumFractionDigits: d, maximumFractionDigits: d }); } catch (e) { return nf({ style: "currency", currency: "USD", minimumFractionDigits: d, maximumFractionDigits: d }); } };
+  var m0 = cf(0), m2 = cf(2), pc = nf({ style: "percent", minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  var mo; try { mo = new Intl.DateTimeFormat(loc, { month: "short", year: "numeric", timeZone: "UTC" }); } catch (e) { mo = new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric", timeZone: "UTC" }); }
+  var minus = function (t) { return t.replace(/-/g, "\u2212"); };
+  return { money0: function (n) { return minus(m0.format(n)); }, money2: function (n) { return minus(m2.format(n)); }, share: function (n) { return minus(pc.format(n)); },
+           month: function (m) { var p = m.split("-"); return mo.format(new Date(Date.UTC(+p[0], +p[1] - 1, 1))); } };
+})();
 /* Settings page: inline row editors for mapping, goals, events and accounts. Plain JS; the tables are server-rendered and work read-only without it. */
 (function () {
   var csrf = document.getElementById("csrf-form");
@@ -44,9 +55,16 @@
       var v = function (f) { return row[f] == null ? "" : String(row[f]); };
       return kind === "events" ? (v(fields[0]) + " " + v(fields[1])).trim() || "this row" : v(fields[0]) || "this row";
     }
+    function shown(f, row) {   // the figure as the grid macro in settings.html formats it (DS-WORD-6), or null to show the value as stored
+      var v = row[f], n = Number(v), u = String(row.unit || "");
+      if (kind === "goals" && f === "value" && isFinite(n)) { if (u.indexOf("share") === 0) return FMT.share(n); if (u.indexOf("usd") === 0) return FMT.money0(n); }
+      if (kind === "accounts" && f === "escrow" && isFinite(n)) return FMT.money2(n);
+      if (kind === "events" && f === "m" && /^\d{4}-\d{2}$/.test(String(v))) return FMT.month(String(v));
+      return null;
+    }
     function show(tr, row) {
       tr.className = ""; tr.textContent = "";
-      fields.forEach(function (f) { var th = table.querySelector('th[data-sort="' + f + '"]'), at = { "data-f": f }, empty = row[f] == null || row[f] === ""; if (th && th.classList.contains("num")) at["class"] = "num"; if (empty) at["data-v"] = ""; tr.appendChild(el("td", at, empty ? "\u2014" : String(row[f]))); });   // a missing figure is a dash, the stored value kept in data-v (DS-WORD-6)   // a figure column stays right-aligned (DS-TYPE-3)
+      fields.forEach(function (f) { var th = table.querySelector('th[data-sort="' + f + '"]'), at = { "data-f": f }, empty = row[f] == null || row[f] === "", s = empty ? null : shown(f, row); if (th && th.classList.contains("num")) at["class"] = "num"; if (empty) at["data-v"] = ""; else if (s != null) at["data-v"] = String(row[f]); tr.appendChild(el("td", at, empty ? "\u2014" : s != null ? s : String(row[f]))); });   // the stored value stays in data-v for the editor and the sort   // a missing figure is a dash, the stored value kept in data-v (DS-WORD-6)   // a figure column stays right-aligned (DS-TYPE-3)
       var td = el("td", { "class": "acts" });
       var what = whatOf(row);   // a button names its row to a screen reader (DS-A11Y-2)
       var eb = el("button", { type: "button", "class": "btn", "data-act": "edit", "aria-label": "Edit " + what }, "Edit"), db = el("button", { type: "button", "class": "btn", "data-act": "del", "aria-label": "Delete " + what }, "Delete");

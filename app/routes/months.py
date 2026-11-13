@@ -16,7 +16,7 @@ router = APIRouter()
 def delete_month(month: str, request: Request, background: BackgroundTasks, user=Depends(auth.require_editor)):
     if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", month):
         flash(request, f"{month!r} is not a budget month.", "bad")
-        return RedirectResponse("/upload", status_code=303)
+        return RedirectResponse("/upload#loaded-months", status_code=303)
     with db.pool.connection() as conn:
         record_history(conn.cursor(), "deleted", user.get("email", ""), budget_month=month)
         n = conn.execute("DELETE FROM source_files WHERE budget_month=%s", (month,)).rowcount
@@ -29,4 +29,4 @@ def delete_month(month: str, request: Request, background: BackgroundTasks, user
     else:
         background.add_task(run_background)
         flash(request, f"Deleted both files for {month_text(month)}. Rebuilding in the background; progress is shown below.")
-    return RedirectResponse("/upload", status_code=303)
+    return RedirectResponse("/upload#loaded-months", status_code=303)

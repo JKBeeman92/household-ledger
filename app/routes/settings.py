@@ -372,7 +372,7 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
     from .yearly_bills import slug as _yb_slug
     return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP, bills=bills,
                   yb_form=request.session.pop("yb_form", None), tax_form=request.session.pop("tax_form", None), bal_hist=request.session.pop("bh_form", None), yb_slug=_yb_slug, tax_cfg=_tax_cfg(),
-                  categories=categories, rules=rules, hh=household, name_families=name_families, unmapped=unmapped,
+                  categories=categories, rules={**rules, **(request.session.pop("people_typed", None) or {})}, hh=household, name_families=name_families, unmapped=unmapped,
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS,
                   event_choices={"kind": [""] + list(EVENT_KINDS)}, people=list(rules.get("people") or []),
                   defs=defs, mapping_notes=mapping_notes, canonical_category={c["name"]: c["category"] for c in defs["canonical"]},
@@ -674,7 +674,7 @@ async def rules_roles_form(request: Request, user=Depends(auth.require_editor)):
         else:
             db.mark_inputs_changed(conn); conn.commit()
             flash(request, "Saved the roles. The dashboard shows them after a rebuild: press Rebuild now.")
-    return RedirectResponse("/settings#rules", status_code=303)
+    return RedirectResponse("/settings#rules/roles", status_code=303)   # back to the sub-tab it was saved from (DS-FLASH-1)
 
 
 @router.post("/settings/rules/people")
@@ -687,9 +687,10 @@ async def rules_people_form(request: Request, user=Depends(auth.require_editor))
     with db.pool.connection() as conn:
         rules = {**(db.get_setting(conn, "rules", {}) or {}), "people": people, "employers": employers}
         problems = _save_setting(conn, "rules", rules)
-        if problems:
+        if problems:   # what was typed comes back with the message
             conn.rollback(); flash(request, "Not saved: " + "; ".join(problems[:4]), "bad")
+            request.session["people_typed"] = {"people": people, "employers": employers}
         else:
             db.mark_inputs_changed(conn); conn.commit()
             flash(request, f"Saved {len(people)} people and {len(employers)} employer rule(s). The dashboard shows them after a rebuild: press Rebuild now.")
-    return RedirectResponse("/settings#rules", status_code=303)
+    return RedirectResponse("/settings#rules/people", status_code=303)
