@@ -7,11 +7,11 @@
     <span><label for="yc-new">Add an item</label> <input id="yc-new" name="label" size="36" maxlength="200" value="{{ f.get('label', '') }}"{% if f.get('error') %} aria-invalid="true" aria-describedby="yc-new-err"{% endif %}></span>
     <button class="btn" type="submit">Add it</button></form>
   {% if f.get("error") %}<p class="err" id="yc-new-err" role="alert">{{ f.error[:1]|upper ~ f.error[1:] }}</p>{% endif %}
-  {% if yc_items %}<ol data-list="unbounded">{% for it in yc_items %}<li id="yci-{{ it.key }}" tabindex="-1">
-    <form method="post" action="/yearly-checklist/{{ it.key }}/rename" class="tools">{{ csrf_field(request) }}<label class="sr" for="yci-{{ it.key }}-l">Wording of item {{ loop.index }}</label><input id="yci-{{ it.key }}-l" name="label" size="36" maxlength="200" value="{{ it.label }}"> <button class="btn" type="submit" aria-label="Save the wording of item {{ loop.index }}">Save</button></form>
-    {% if not loop.first %}<form method="post" action="/yearly-checklist/{{ it.key }}/move" class="inline">{{ csrf_field(request) }}<input type="hidden" name="dir" value="up"><button class="btn" type="submit" aria-label="Move {{ it.label }} up">Up</button></form>{% endif %}
+  {% if yc_items %}<ol class="yc-list" data-list="unbounded">{% for it in yc_items %}<li id="yci-{{ it.key }}" tabindex="-1">
+    <form method="post" action="/yearly-checklist/{{ it.key }}/rename" class="yc-row">{{ csrf_field(request) }}<label class="sr" for="yci-{{ it.key }}-l">Wording of {{ it.label }}</label><input id="yci-{{ it.key }}-l" name="label" maxlength="200" value="{{ it.label }}"> <button class="btn" type="submit" aria-label="Save the wording of {{ it.label }}">Save</button></form>
+    <div class="yc-row">{% if not loop.first %}<form method="post" action="/yearly-checklist/{{ it.key }}/move" class="inline">{{ csrf_field(request) }}<input type="hidden" name="dir" value="up"><button class="btn" type="submit" aria-label="Move {{ it.label }} up">Up</button></form>{% endif %}
     {% if not loop.last %}<form method="post" action="/yearly-checklist/{{ it.key }}/move" class="inline">{{ csrf_field(request) }}<input type="hidden" name="dir" value="down"><button class="btn" type="submit" aria-label="Move {{ it.label }} down">Down</button></form>{% endif %}
-    <form method="post" action="/yearly-checklist/{{ it.key }}/remove" class="inline">{{ csrf_field(request) }}<button class="btn" type="submit" aria-label="Remove {{ it.label }}">Remove</button></form></li>{% endfor %}</ol>
+    <form method="post" action="/yearly-checklist/{{ it.key }}/remove" class="inline yc-remove">{{ csrf_field(request) }}<button class="btn" type="submit" aria-label="Remove {{ it.label }}">Remove</button></form></div></li>{% endfor %}</ol>
   {% else %}<p>The list is empty. Add an item above.</p>{% endif %}
 </section>
 <script nonce="{{ csp_nonce(request) }}">

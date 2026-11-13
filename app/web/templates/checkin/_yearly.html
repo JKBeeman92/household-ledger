@@ -6,5 +6,5 @@
     <form method="post" action="/checkin/{{ month }}/yearly/{{ it.key }}/untick" class="inline">{{ csrf_field(request) }}<button class="btn" type="submit" aria-label="Undo: {{ it.label }}">Undo</button></form>
   {% else %}<form method="post" action="/checkin/{{ month }}/yearly/{{ it.key }}/tick" class="tools">{{ csrf_field(request) }}
     <span><strong>{{ it.label }}</strong></span>
-    <span><label for="yc-{{ it.key }}-note">Note</label> <input id="yc-{{ it.key }}-note" name="note" size="24" maxlength="1000"></span>
-    <button class="btn" type="submit" aria-label="Tick: {{ it.label }}">Tick it off</button></form>{% endif %}</li>{% endfor %}</ul>{% endif %}
+    <span class="field"><label for="yc-{{ it.key }}-note">Note for next year (optional)</label><br><input id="yc-{{ it.key }}-note" name="note" size="24" maxlength="1000"></span>
+    <button class="btn" type="submit" aria-label="Tick it off: {{ it.label }}">Tick it off</button></form>{% endif %}</li>{% endfor %}</ul>{% endif %}

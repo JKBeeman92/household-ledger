@@ -110,7 +110,7 @@ def test_year_mode_only_on_the_years_last_month_and_year_start_month_moves_it(cl
 def test_checklist_ticks_persist_per_year_and_the_list_is_editable(client, sample):
     _set_year_start(client, 7)
     page = client.get("/checkin/2026-06").text
-    assert "Pull credit reports" in page and page.count("Tick it off") == 7
+    assert "Pull credit reports" in page and page.count(">Tick it off</button>") == 7
     r = client.post("/checkin/2026-06/yearly/credit_reports/tick", data={"note": "all three, nothing odd"})
     assert r.headers["location"] == "/checkin/2026-06#yc-credit_reports"
     with _db() as conn:
