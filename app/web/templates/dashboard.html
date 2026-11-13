@@ -1442,7 +1442,8 @@ dash.draw('lm-items', (tb) => {
 const pct1 = dash.fmt.pct(1);
 // each goal as a bar from 0 with its line marked: the bar is the last twelve months, the tick is the goal
 const gGauge = (name, field, goalKey, goodBelow) => dash.draw(name, (el) => { el.replaceChildren(); const g = dash.data('goal_summary'); const G = dash.data('goals');
-  const v = g.status === 'ok' && g.data[0] ? Number(g.data[0][field]) : NaN; const goal = G.status === 'ok' ? Number((G.data.find((x) => x.key === goalKey) || {}).value) : NaN;
+  const num = (x) => x == null || x === '' ? NaN : Number(x);   // Number(null) is 0: a missing figure would read as on track
+  const v = g.status === 'ok' && g.data[0] ? num(g.data[0][field]) : NaN; const goal = G.status === 'ok' ? num((G.data.find((x) => x.key === goalKey) || {}).value) : NaN;
   if (!Number.isFinite(v)) return; const max = Math.max(v, Number.isFinite(goal) ? goal : 0) * 1.25 || 1;
   const track = document.createElement('span'); track.className = 'track'; const fill = document.createElement('i'); fill.style.width = Math.min(100, 100 * v / max) + '%';
   const ok = !Number.isFinite(goal) ? null : goodBelow ? v <= goal : v >= goal; fill.className = ok == null ? '' : ok ? 'good' : 'off'; track.append(fill);

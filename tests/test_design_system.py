@@ -154,3 +154,13 @@ def test_the_spacing_classes_the_pages_use_are_built_from_tokens():
 def test_no_route_flashes_not_saved_with_a_dash():
     for path in sorted((ROOT / "app" / "routes").glob("*.py")):
         assert "Not saved —" not in path.read_text(encoding="utf-8"), f"{path.name}: write \"Not saved: …\""
+
+
+def test_dashboard_motion_is_on_the_tokens_and_a_missing_goal_figure_has_no_verdict():
+    """DS-MOTION-1: no dashboard animation runs longer than --dur-slow (they read the token, never a typed ms). And a gauge whose
+    figure or goal is null is not drawn as on track: Number(null) is 0."""
+    import re
+    css = (ROOT / "app" / "web" / "static" / "app.css").read_text()
+    assert not re.search(r"animation:\s*hl-[\w-]+\s+\d+m?s", css)
+    dash = (ROOT / "app" / "web" / "templates" / "dashboard.html").read_text()
+    assert "x == null || x === '' ? NaN : Number(x)" in dash

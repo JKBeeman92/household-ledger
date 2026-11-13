@@ -425,16 +425,16 @@ details[open]:not(#dash-root details) > summary::before { transform: translateY(
 @keyframes hl-wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 @keyframes hl-open { from { opacity: 0; transform: scale(.6); } }
 @media (prefers-reduced-motion: no-preference) {
-  .hl .page:not([hidden]) > * { animation: hl-in 320ms cubic-bezier(.2, .7, .2, 1) backwards; }
+  .hl .page:not([hidden]) > * { animation: hl-in var(--dur-slow) var(--ease) backwards; }
   .hl .page:not([hidden]) > :nth-child(2) { animation-delay: 40ms; } .hl .page:not([hidden]) > :nth-child(3) { animation-delay: 80ms; }
   .hl .page:not([hidden]) > :nth-child(4) { animation-delay: 120ms; } .hl .page:not([hidden]) > :nth-child(n+5) { animation-delay: 160ms; }
-  .hl .chart svg rect.b { transform-box: fill-box; transform-origin: 50% 100%; animation: hl-grow-y 600ms cubic-bezier(.2, .7, .2, 1) backwards; }
+  .hl .chart svg rect.b { transform-box: fill-box; transform-origin: 50% 100%; animation: hl-grow-y var(--dur-slow) var(--ease) backwards; }
   .hl .chart svg rect.b.neg { transform-origin: 50% 0; }
   .hl .chart svg rect.b.h { transform-origin: 0 50%; animation-name: hl-grow-x; }
   .hl .chart svg rect.b.h.neg { transform-origin: 100% 50%; }
-  .hl .chart[data-draw="monthly"] svg, .hl .chart[data-draw="goal-lines"] svg { animation: hl-wipe 900ms cubic-bezier(.3, .6, .2, 1) backwards; }
-  .hl .chart.radar svg { transform-origin: 50% 50%; animation: hl-open 600ms cubic-bezier(.2, .7, .2, 1) backwards; }
-  .hl .review .rv { animation: hl-in 320ms cubic-bezier(.2, .7, .2, 1) backwards; }
+  .hl .chart[data-draw="monthly"] svg, .hl .chart[data-draw="goal-lines"] svg { animation: hl-wipe var(--dur-slow) var(--ease) backwards; }
+  .hl .chart.radar svg { transform-origin: 50% 50%; animation: hl-open var(--dur-slow) var(--ease) backwards; }
+  .hl .review .rv { animation: hl-in var(--dur-slow) var(--ease) backwards; }
 }
 @media print { .hl *, .hl *::before { animation: none !important; } }
 /* Hover: the mark under the pointer stays bright and its neighbours dim, so the tooltip clearly belongs to it. */
@@ -444,7 +444,7 @@ details[open]:not(#dash-root details) > summary::before { transform: translateY(
 .hl .chart.radar svg:hover path.ring { opacity: .35; }
 .hl .chart.radar svg path.ring:hover { opacity: 1; stroke-width: 3px; }
 .hl tbody td { transition: background-color 120ms ease-out; }
-@media (prefers-reduced-motion: no-preference) { .hl .tip:not([hidden]) { animation: hl-in 140ms ease-out backwards; } }
+@media (prefers-reduced-motion: no-preference) { .hl .tip:not([hidden]) { animation: hl-in var(--dur-fast) var(--ease) backwards; } }
 @media (prefers-reduced-motion: reduce) { .hl .chart svg rect.b, .hl .chart svg path.ring, .hl tbody td { transition: none; } }
 .hl .range { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); font-size: var(--text-caption); color: var(--ink-muted); }
 .hl .range label { display: inline; margin: 0; font-weight: var(--weight-strong); }
