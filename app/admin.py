@@ -18,7 +18,7 @@ EX_TEMPFAIL = 75
 log = logging.getLogger("ledger.admin")
 SETTERS = {"import-mapping": "mapping", "set-rules": "rules", "set-events": "events", "set-goals": "goals", "set-cpi": "cpi", "set-household": "household",
            "set-accounts": "accounts", "set-balances": "balances"}   # set-balances adds or corrects month-ends (account,YYYY-MM,amount); it never deletes
-EXPORTABLE = ("mapping", "rules", "events", "goals", "cpi", "household", "accounts", "balances", "decisions", "yearly_bills", "tax_payments", "yearly_checklist")
+EXPORTABLE = ("mapping", "rules", "events", "goals", "cpi", "household", "accounts", "balances", "decisions", "yearly_bills", "tax_payments", "tax_outcomes", "yearly_checklist")
 
 
 def _read(path: str) -> str:
@@ -401,6 +401,9 @@ def main(argv: list[str] | None = None) -> int:
     tsub = sp.add_subparsers(dest="tcmd", required=True, metavar="action")
     x = tsub.add_parser("paid", help="the quarter ending MONTH: its estimated tax is paid"); x.add_argument("month"); x.add_argument("--amount")
     x = tsub.add_parser("unpaid", help="undo marking it paid"); x.add_argument("month")
+    x = tsub.add_parser("outcome", help="the yearly withholding check: tax year YEAR came out as a refund or a bill of AMOUNT")
+    x.add_argument("year"); x.add_argument("kind", choices=["refund", "owed"]); x.add_argument("amount"); x.add_argument("--note", default="")
+    x = tsub.add_parser("forget-outcome", help="delete tax year YEAR's outcome"); x.add_argument("year")
     sub.add_parser("preview-mapping-migration", help="before upgrading to 0.5.0: print what migration 0133 would change in the item mapping "
                                                      "(nothing is changed; run it against a copy of the 0.4.x database)")
     a = p.parse_args(argv)
@@ -440,6 +443,11 @@ def main(argv: list[str] | None = None) -> int:
         from app import tax
         with _connect() as conn:
             try:
+                if a.tcmd == "outcome":
+                    signed = tax.set_outcome(conn, a.year, a.amount, a.kind, a.note, f"{_who()} (cli)"); conn.commit()
+                    print(f"{a.year}: {'a refund' if signed >= 0 else 'a bill'} of {abs(signed):,.2f} recorded. Rebuild to apply it."); return 0
+                if a.tcmd == "forget-outcome":
+                    n = tax.delete_outcome(conn, a.year); conn.commit(); print(f"{a.year}: " + ("outcome deleted." if n else "no outcome recorded.")); return 0 if n else 1
                 (tax.mark_paid(conn, a.month, a.amount, f"{_who()} (cli)") if a.tcmd == "paid" else tax.unmark(conn, a.month)); conn.commit()
                 print(f"{a.month}: estimated tax {'marked paid' if a.tcmd == 'paid' else 'no longer marked paid'}. Rebuild to apply it."); return 0
             except ValueError as e:

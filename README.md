@@ -541,6 +541,10 @@ check-in says when none is entered for the coming year.
 - With no contract income items nothing is shown anywhere. From the command line: `python -m app.admin tax paid|unpaid MONTH`. The
   payments travel in `settings.zip` as `tax_payments.json`; the `tax` dataset reaches the review and MCP. Tax calculation, preparation
   and reading tax forms are out of scope.
+- **Once a year, the withholding check**: the annual check-in's "Record last year's tax outcome" item takes one amount per tax year,
+  a refund or a bill (tax owed), chosen from a list so no sign is typed. The year in review shows the trend; a refund or a bill of at
+  least `withholding_note_at` (1000) two tax years running adds "consider adjusting withholding". It travels in `settings.zip` as
+  `tax_outcomes.json`; from the command line, `python -m app.admin tax outcome YEAR refund|owed AMOUNT`.
 
 ## The quarter
 

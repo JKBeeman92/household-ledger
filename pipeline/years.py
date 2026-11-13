@@ -18,7 +18,10 @@ figure is the sum of its months (a total) with its per-month figure beside it; a
   events           the life events dated in the year.
   movers           the categories whose spending changed most against the previous year, per month, by dollars, nominal and real;
                    the categories in `set_apart` (debt and savings groups) are left out, as on the Quarter tab.
-  ahead            the look ahead's 12-month row (#148): "where next year leads"."""
+  ahead            the look ahead's 12-month row (#148): "where next year leads".
+  withholding      every recorded tax outcome (#153, a refund positive, a bill negative), oldest first, and `adjust`: true when the two
+                   latest tax years are consecutive and each is a refund or a bill of at least `withholding_note_at` ("consider adjusting
+                   withholding"); `adjust_kind` says which way the two went (refund, owed, or mixed)."""
 from __future__ import annotations
 
 FIELDS = ("income", "spend", "debt", "net", "pretax")
@@ -83,7 +86,8 @@ def _span(nw: dict[str, dict], months: list[str]) -> dict | None:
 
 
 def review(monthly: list[dict], cat_month: list[dict], net_worth: list[dict], balances: list[dict], decisions: list[dict], events: list[dict],
-           look_ahead: list[dict], closing: str | None, ys: int = 1, set_apart: set[str] | None = None, top: int = 5) -> dict | None:
+           look_ahead: list[dict], closing: str | None, ys: int = 1, set_apart: set[str] | None = None, top: int = 5,
+           tax_outcomes: list[dict] | None = None, withholding_note_at: float = 1000) -> dict | None:
     """The `year_review` row for the budget year of `closing`, or None with nothing loaded."""
     if not closing:
         return None
@@ -137,10 +141,17 @@ def review(monthly: list[dict], cat_month: list[dict], net_worth: list[dict], ba
                      "change": round(a.get(c, 0) / n - b.get(c, 0) / pn, 2)} for c in set(a) | set(b) if c not in (set_apart or set())]
             movers[key] = sorted(rows, key=lambda r: (-abs(r["change"]), r["category"]))[:top]
     ahead = next((r for r in look_ahead if r.get("h") == 12 and r.get("m") == closing), None)
+    outs = sorted(({"year": str(o["year"]), "amount": round(float(o["amount"]), 2)} for o in tax_outcomes or []), key=lambda o: o["year"])
+    last2 = outs[-2:]
+    adjust = len(last2) == 2 and int(last2[1]["year"]) - int(last2[0]["year"]) == 1 and all(abs(o["amount"]) >= withholding_note_at for o in last2)
+    kinds = {"refund" if o["amount"] >= 0 else "owed" for o in last2}
+    withholding = {"outcomes": outs, "note_at": withholding_note_at, "adjust": adjust,
+                   "adjust_kind": (kinds.pop() if len(kinds) == 1 else "mixed") if adjust else None} if outs else None
     return {"year": label, "first": months[0], "last": this["last"], "months": this["months"], "partial": this["months"] < 12,
             "this": this, "previous": ({**prev, "year": plabel} if prev else None), "change": _change(this, prev),
             "net_worth": span, "net_worth_previous": _span(nw, pmonths) if prev else None, "debt": debt,
             "decisions": {"checked": len(mine), "kept": kept, "rate": round(kept / len(mine), 3) if mine else None, "biggest": biggest},
             "events": [{k: e.get(k) for k in ("m", "label", "kind", "person")} for e in events if months[0] <= e["m"] <= months[-1]],
             "movers": movers,
-            "ahead": {k: ahead[k] for k in ("until", "pace", "pace_3", "cash", "net_worth", "debt_free", "growth_pct")} if ahead else None}
+            "ahead": {k: ahead[k] for k in ("until", "pace", "pace_3", "cash", "net_worth", "debt_free", "growth_pct")} if ahead else None,
+            "withholding": withholding}

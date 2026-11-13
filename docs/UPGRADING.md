@@ -13,6 +13,9 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
 
 ## 0.8.0
 
+- **The withholding check** (#153, `0153_tax_outcomes.sql`): a new table only. `settings.zip` gains `tax_outcomes.json`; a new rule,
+  `withholding_note_at`, defaults to 1000. It is filled from the annual check-in's tax outcome item, or the CLI.
+
 - **The annual check-in** (#157, `0157_yearly_checklist.sql`): two new tables, the yearly checklist (seeded with seven items) and its
   ticks; nothing existing changes. Rebuild once to emit `year_review` (in `datasets.zip`, the review and MCP). `settings.zip` gains
   `yearly_checklist.json`. The year's last budget month (December unless `year_start_month` says otherwise) adds two check-in steps.

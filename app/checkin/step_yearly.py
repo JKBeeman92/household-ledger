@@ -21,7 +21,9 @@ def _status(conn, month, state):
 def _context(conn, month, state):
     from app import yearly_checklist
     y = year_label(conn, month)
-    return {"year": y, "list": yearly_checklist.items(conn), "ticks": yearly_checklist.ticks(conn, y)}
+    from app import tax
+    return {"year": y, "list": yearly_checklist.items(conn), "ticks": yearly_checklist.ticks(conn, y),
+            "tax_year": str(int(month[:4]) - 1), "outcomes": {o["year"]: o for o in tax.outcomes(conn)}}   # #153: last calendar year's outcome
 
 
 register(Step("yearly", 67, "Yearly checklist", _status, applies=_applies, context=_context, actions=("skip",), issue="#157"))

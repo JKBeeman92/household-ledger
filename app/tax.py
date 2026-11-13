@@ -112,3 +112,47 @@ def unmark(conn, month: str) -> None:
 def export_json(conn) -> str:
     rows = _x(conn, "SELECT month, deadline_m, label, expected, amount, note FROM tax_payments ORDER BY month").fetchall()
     return json.dumps([{**r, **{k: float(r[k]) if r[k] is not None else None for k in ("expected", "amount")}} for r in rows], indent=1)
+
+
+# ---- the yearly withholding check (#153, part 2): one signed outcome per tax year, a refund positive, a bill negative ----
+
+class OutcomeError(ValueError):
+    def __init__(self, message: str, field: str = "amount"):
+        super().__init__(message); self.field = field
+
+
+def outcomes(conn) -> list[dict]:
+    return [{**r, "amount": float(r["amount"])} for r in _x(conn, "SELECT year, amount, note FROM tax_outcomes ORDER BY year").fetchall()]
+
+
+def set_outcome(conn, year, amount, kind: str = "refund", note: str = "", by: str = "") -> float:
+    """Record a tax year's outcome. `amount` is what was refunded or owed, as typed; `kind` says which ("refund" or "owed"), so a person
+    never has to type a sign. Returns the signed amount stored."""
+    from .yearly_bills import parse_amount
+    y = str(year or "").strip()
+    if not re.fullmatch(r"\d{4}", y):
+        raise OutcomeError("the tax year looks like 2025.", "tax_year")
+    try:
+        a = parse_amount(amount)
+    except ValueError:
+        raise OutcomeError("the amount is a number, such as 1200.", "amount") from None
+    if a is None:
+        raise OutcomeError("say how much was refunded or owed; 0 if it came out even.", "amount")
+    if kind not in ("refund", "owed"):
+        raise OutcomeError("say whether it was a refund or a bill.", "kind")
+    signed = abs(a) if kind == "refund" else -abs(a)
+    _x(conn, "INSERT INTO tax_outcomes (year, amount, note, updated_by) VALUES (%s,%s,%s,%s) ON CONFLICT (year) DO UPDATE "
+             "SET amount=EXCLUDED.amount, note=EXCLUDED.note, updated_at=now(), updated_by=EXCLUDED.updated_by", (y, signed, (note or "").strip()[:500], by))
+    db.mark_inputs_changed(conn)
+    return signed
+
+
+def delete_outcome(conn, year: str) -> int:
+    n = _x(conn, "DELETE FROM tax_outcomes WHERE year=%s", (year,)).rowcount
+    if n:
+        db.mark_inputs_changed(conn)
+    return n
+
+
+def outcomes_json(conn) -> str:
+    return json.dumps(outcomes(conn), indent=1)
