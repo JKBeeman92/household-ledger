@@ -102,3 +102,12 @@ def test_debt_types_have_a_sub_tab_of_their_own_and_saves_land_on_it(client, res
     assert r.status_code == 303 and r.headers["location"] == "/settings#mapping/debts"
     r = client.post("/settings/mapping/category/rename", data={"old": "Debt", "new": "Debts"})
     assert r.headers["location"] == "/settings#mapping/categories"
+
+
+def test_the_mapping_draft_list_ends_its_panel(client, reset_db):
+    upload_files(client, GOLDEN / "exports")
+    from app import db
+    with db.pool.connection() as conn:
+        conn.execute("DELETE FROM item_mapping WHERE item IN (SELECT item FROM item_mapping ORDER BY item LIMIT 2)"); conn.commit()
+    html = client.get("/settings/mapping/draft").text
+    assert 'data-list="unbounded"' in html and problems(html) == []

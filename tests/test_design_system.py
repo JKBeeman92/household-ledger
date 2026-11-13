@@ -197,3 +197,14 @@ def test_every_figures_table_tells_its_own_chart_the_span():
         named = re.search(r", '([a-z-]+)'\);", m.group(0))
         target = named.group(1) if named else m.group(1)
         assert target in charts or m.group(1) == "radar", (m.group(1), target)
+
+
+def test_every_table_scroller_is_a_named_focusable_region():
+    """DS-FOCUS-1, DS-A11Y-1: a .tablewrap scrolls sideways on a phone, so a keyboard has to reach it and a screen reader has to name it."""
+    import re
+    bad = []
+    for path in sorted((WEB / "templates").rglob("*.html")):
+        for tag in re.findall(r'<div class="tablewrap"[^>]*>', path.read_text(encoding="utf-8")):
+            if 'role="region"' not in tag or 'tabindex="0"' not in tag or not re.search(r'aria-label(ledby)?="', tag):
+                bad.append(f"{path.name}: {tag}")
+    assert not bad, bad

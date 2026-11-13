@@ -393,7 +393,9 @@ def mapping_draft_page(request: Request, user=Depends(auth.require_editor)):
     """The draft for review (#105): nothing is saved until the editor presses Add."""
     with db.pool.connection() as conn:
         rows = draft_mapping(conn)
-    return render(request, "mapping_draft.html", user, active="settings", rows=rows, body=draft_csv(rows) if rows else "")
+    df = request.session.pop("draft_form", None)
+    return render(request, "mapping_draft.html", user, active="settings", rows=rows, draft_error=df["error"] if df else None,
+                  body=df["body"] if df else draft_csv(rows) if rows else "")
 
 
 @router.post("/settings/mapping/draft")
@@ -404,7 +406,8 @@ def mapping_draft_save(request: Request, body: str = Form(...), user=Depends(aut
             db.mark_inputs_changed(conn); conn.commit()
             flash(request, f"Added {what}. The dashboard shows them after a rebuild: press Rebuild now.")
         except Exception as e:  # noqa: BLE001
-            conn.rollback(); flash(request, f"Not saved: {e}", "bad")
+            conn.rollback()   # the edited draft comes back with the error under it (DS-FORM-1)
+            request.session["draft_form"] = {"body": body, "error": str(e)}
             return RedirectResponse("/settings/mapping/draft", status_code=303)
     return RedirectResponse("/settings#mapping", status_code=303)
 

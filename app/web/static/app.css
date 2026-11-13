@@ -110,7 +110,7 @@ table.edit [aria-invalid=true] { border-color: var(--danger); }
   input[type=file]::file-selector-button { min-height: 32px; }
   .panel { padding: var(--space-4); }
   .panel summary, details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
-  .shell table.plain { display: block; overflow-x: auto; max-width: 100%; }
+  .shell :not(.tablewrap) > table.plain { display: block; overflow-x: auto; max-width: 100%; }   /* in a .tablewrap the wrapper scrolls: it holds the focus, so arrow keys scroll it (DS-A11Y-1) */
   textarea.json { min-height: 16rem; }
   .shell form p > button.btn, .shell form button.btn { margin-top: var(--space-1); }
 
