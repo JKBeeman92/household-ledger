@@ -152,11 +152,11 @@
     </div>
     <div class="card" id="lm-ahead-card">
       <h2 id="lm-ahead">Where the current pace leads</h2>
-      <ul class="key row"><li>estimates: if the household keeps the pace it has</li><li>the 12-month pace, with the 3-month pace beside it</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Plain arithmetic from what the app already knows, at three horizons. The pace is the monthly net (income less living spend and debt payments), averaged over the last twelve budget months; the last three months sit beside it, so a change of direction shows. Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. There is no investment return unless the assumed_growth_pct rule sets one, and then it says so. No planned change in income or spending is assumed: this is where the current pace leads, not a plan.</p></details>
+      <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the 12-month pace, with the 3-month pace beside it</li></ul>
       <div class="tbl" role="region" tabindex="0" aria-labelledby="lm-ahead"><table><thead><tr><th scope="col">In</th><th scope="col" class="num">Kept, 12-month pace</th><th scope="col" class="num">Kept, 3-month pace</th><th scope="col" class="num">Net worth</th></tr></thead><tbody data-draw="ahead-rows" data-source="look_ahead"></tbody></table></div>
-      <dl class="dti" data-draw="ahead-facts" data-source="look_ahead"></dl>
-      <details class="how"><summary>How it is calculated</summary><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
+      <h3 class="sub" id="lm-ahead-dates">Dates at this pace, 12 months on</h3>
+      <dl class="dti" data-draw="ahead-facts" data-source="look_ahead" aria-labelledby="lm-ahead-dates"></dl>
+      <details class="how"><summary>How it is worked out</summary><p>The pace is the monthly net (income less living spend and debt payments) averaged over the last twelve budget months. Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. No investment return is assumed unless a yearly growth is set (Settings → Pipeline rules → All rules as JSON: assumed_growth_pct), and no change in income or spending.</p><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
     </div>
     <div class="card" id="lm-ef-card">
       <h2 id="lm-ef">{{ glyph('emergency-fund') }} Emergency fund</h2>
@@ -373,11 +373,11 @@
     </div>
     <div class="card" id="q-ahead-card">
       <h2 id="q-ahead">Where the current pace leads</h2>
-      <ul class="key row"><li>estimates: if the household keeps the pace it has</li><li>the 12-month pace, with the 3-month pace beside it</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Plain arithmetic from what the app already knows, at three horizons. The pace is the monthly net (income less living spend and debt payments), averaged over the last twelve budget months; the last three months sit beside it, so a change of direction shows. Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. There is no investment return unless the assumed_growth_pct rule sets one, and then it says so. No planned change in income or spending is assumed: this is where the current pace leads, not a plan.</p></details>
+      <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the 12-month pace, with the 3-month pace beside it</li></ul>
       <div class="tbl" role="region" tabindex="0" aria-labelledby="q-ahead"><table><thead><tr><th scope="col">In</th><th scope="col" class="num">Kept, 12-month pace</th><th scope="col" class="num">Kept, 3-month pace</th><th scope="col" class="num">Net worth</th></tr></thead><tbody data-draw="ahead-rows" data-source="look_ahead"></tbody></table></div>
-      <dl class="dti" data-draw="ahead-facts" data-source="look_ahead"></dl>
-      <details class="how"><summary>How it is calculated</summary><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
+      <h3 class="sub" id="q-ahead-dates">Dates at this pace, 12 months on</h3>
+      <dl class="dti" data-draw="ahead-facts" data-source="look_ahead" aria-labelledby="q-ahead-dates"></dl>
+      <details class="how"><summary>How it is worked out</summary><p>The pace is the monthly net (income less living spend and debt payments) averaged over the last twelve budget months. Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. No investment return is assumed unless a yearly growth is set (Settings → Pipeline rules → All rules as JSON: assumed_growth_pct), and no change in income or spending.</p><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
     </div>
   </section>
   <section id="position" class="page" role="tabpanel" aria-labelledby="tab-position" tabindex="0" hidden>
@@ -1107,14 +1107,14 @@ const aheadMonth = (m) => HL.fmtM(HL.parseM(m));
 dash.draw('ahead-rows', (tb) => { tb.replaceChildren(); const rows = ahead();
   if (!rows.length) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = dash.data('look_ahead').status === 'missing' ? 'Rebuild the ledger to see where the pace leads (Close a month).' : 'Load a month to see where the pace leads.'; tr.append(td); tb.append(tr); return; }
   for (const r of rows) { const tr = document.createElement('tr');
-    [`${r.h} months, to ${aheadMonth(r.until)}`, aheadSigned(r.cash), aheadSigned(r.cash_3), r.net_worth == null ? 'needs balances' : HL.usd0(r.net_worth) + (r.growth_pct ? ' *' : '')].forEach((c, i) => {
+    [`${r.h} months, to ${aheadMonth(r.until)}`, aheadSigned(r.cash), aheadSigned(r.cash_3), r.net_worth == null ? 'add balances (Settings → Accounts)' : HL.usd0(r.net_worth) + (r.growth_pct ? ' *' : '')].forEach((c, i) => {
       const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); });
     tb.append(tr); } });
 dash.draw('ahead-facts', (el) => { el.replaceChildren(); const rows = ahead(); if (!rows.length) return; const r = rows.find((x) => x.h === 12) || rows[0];
   const add = (dt, dd) => { el.append(Object.assign(document.createElement('dt'), { textContent: dt }), Object.assign(document.createElement('dd'), { textContent: dd })); };
-  add('Debt-free, not counting a mortgage', r.debt_free === r.m ? 'already' : r.debt_free ? aheadMonth(r.debt_free) + ' (est.)' : `no date yet: ${r.debt_free_open} ${r.debt_free_open === 1 ? 'debt has' : 'debts have'} no payoff date at its payment`);
+  add('Debt-free (mortgage excluded)', r.debt_free === r.m ? 'already' : r.debt_free ? aheadMonth(r.debt_free) : `no date yet: ${r.debt_free_open} ${r.debt_free_open === 1 ? 'debt has' : 'debts have'} no payoff date at the current payment`);
   for (const g of r.goals) add(g.label, g.reach_m ? `${aheadMonth(g.reach_m)} at its pace (wanted by ${aheadMonth(g.target_month)})` : (g.within ? 'reached' : 'not at this pace'));
-  if (r.growth_pct) add('*', `includes ${r.growth_pct}% a year growth on assets (the assumed_growth_pct rule)`); });
+  if (r.growth_pct) add('*', `includes an assumed ${r.growth_pct}% a year growth on assets`); });
 dash.draw('ahead-inputs', (el) => { el.replaceChildren(); const rows = ahead(); if (!rows.length) return; const r0 = rows[0];
   const add = (dt, dd) => { el.append(Object.assign(document.createElement('dt'), { textContent: dt }), Object.assign(document.createElement('dd'), { textContent: dd })); };
   add('12-month pace', `${aheadSigned(r0.pace)} a month, the average net of ${r0.pace_months} budget month${r0.pace_months === 1 ? '' : 's'} from ${aheadMonth(r0.pace_from)}`);

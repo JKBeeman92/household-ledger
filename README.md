@@ -566,7 +566,7 @@ or two months loaded (labelled "2 of 3 months") still compares fairly. A quarter
 
 "If we keep doing what we did this year, where are we in a year? In three?" The **Where the current pace leads** panel, on the Last
 month and Quarter tabs and in the check-in's quarter step, answers at 3, 12 and 36 months from what the app already knows. Every
-figure is an estimate at the current pace, and "How it is calculated" lists each input, so any figure can be redone by hand.
+figure is an estimate at the current pace, and "How it is worked out" lists each input, so any figure can be redone by hand.
 
 - **The pace** is the monthly net (income less living spend and debt payments), averaged over the last twelve budget months; the last
   three months sit beside it, so a change of direction shows.
@@ -574,7 +574,7 @@ figure is an estimate at the current pace, and "How it is calculated" lists each
 - **Net worth** is today's (Net worth) plus what is kept, plus what the debt payments take off the balances (each debt paid down month
   by month at its payment and APR). There is no investment return unless the `assumed_growth_pct` rule sets a yearly % for asset
   balances; then every figure that uses it says so.
-- **Debt-free, not counting a mortgage**: the latest payoff estimate among the other debts, when each has one. Each planned purchase
+- **Debt-free (mortgage excluded)**: the latest payoff estimate among the other debts, when each has one. Each planned purchase
   shows the month it is reached at its own pace, or "not at this pace". The `coming_up` rows in each horizon are in the dataset.
 - Not a retirement planner, a simulation or a tax projection: no planned change in income or spending is assumed. The `look_ahead`
   dataset reaches the review and MCP (a freed payment is named by its debt's type, never its account).

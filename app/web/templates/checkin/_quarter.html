@@ -17,7 +17,7 @@
 {% endif %}
 {% if c.ahead %}<h3 class="sub">Where the current pace leads</h3>
 <p class="muted">Estimates, if the household keeps the pace of the last twelve months ({{ c.ahead[0].pace|money(signed=True) }} a month; the last three: {{ c.ahead[0].pace_3|money(signed=True) }}).</p>
-<dl class="dti">{% for r in c.ahead %}<dt>In {{ r.h }} months, {{ r.until|month_short }}</dt><dd>kept <span class="nowrap">{{ r.cash|money(signed=True) }}</span>{% if r.net_worth is not none %}; net worth about <strong>{{ r.net_worth|money }}</strong>{% if r.growth_pct %} (with {{ r.growth_pct|plain }}% a year growth on assets){% endif %}{% endif %}.</dd>{% endfor %}
-{% set y = c.ahead|selectattr("h", "equalto", 12)|first %}{% if y %}<dt>Debt-free, not counting a mortgage</dt><dd>{% if y.debt_free == y.m %}already{% elif y.debt_free %}{{ y.debt_free|month_short }} (est.){% else %}no date yet{% endif %}.</dd>{% endif %}</dl>{% endif %}
+<dl class="dti">{% for r in c.ahead %}<dt>In {{ r.h }} months, {{ r.until|month_short }}</dt><dd>kept about <span class="nowrap">{{ r.cash|money(signed=True) }}</span>{% if r.net_worth is not none %}; net worth about {{ r.net_worth|money }}{% if r.growth_pct %} (with {{ r.growth_pct|plain }}% a year growth on assets){% endif %}{% endif %}.</dd>{% endfor %}
+{% set y = c.ahead|selectattr("h", "equalto", 12)|first %}{% if y %}<dt>Debt-free (mortgage excluded)</dt><dd>{% if y.debt_free == y.m %}already{% elif y.debt_free %}about {{ y.debt_free|month_short }}{% else %}no date yet{% endif %}.</dd>{% endif %}</dl>{% endif %}
 <p><a href="/#quarter">The Quarter tab</a> has the rest: the change in percent, the five categories that moved most against each quarter, and the next quarter's figures.</p>
 <noscript><form method="post" action="/checkin/{{ month }}/steps/quarter/view">{{ csrf_field(request) }}<button class="btn" type="submit">Mark The quarter as read</button></form></noscript>
