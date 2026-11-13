@@ -27,7 +27,11 @@ SYSTEM = (
     "and name a life event (a move, a job change) rather than inferring it. "
     "When the data carries `quarter` (the month ends a quarter), add one more section, last, headed \"The quarter\": the quarter against "
     "the one before and the same quarter a year before, a month at a time (say so when a quarter is partial or not loaded), the "
-    "categories that moved most, and what falls in the next quarter. Return only the JSON object."
+    "categories that moved most, and what falls in the next quarter. "
+    "When the data carries `year` (the month ends the household's budget year), add one more section after that, last, headed \"The year\": "
+    "the year against the year before (totals, and a month at a time when either is partial), net worth and debts over the year, the "
+    "decisions kept, the year's life events, the categories that moved most, and where next year leads at the current pace (an estimate). "
+    "Return only the JSON object."
 )
 
 
@@ -108,7 +112,8 @@ def build_context(conn, month: str) -> dict:
            if ds.get("tax") and ds["tax"][0].get("m") == month else {}),   # #153
         **({"planned_purchases": pp} if (pp := purchases_context(ds.get("planned_purchases", []), month)) else {}),   # #158
         **({"look_ahead": la} if (la := look_ahead_context(ds.get("look_ahead", []), month)) else {}),   # #148
-        **({"quarter": qc} if (qc := quarter_context(conn, month)) else {}),   # #147: one review a month, extended at a quarter's end
+        **({"quarter": qc} if (qc := quarter_context(conn, month)) else {}),
+        **({"year": yc} if (yc := year_context(conn, month)) else {}),   # #157: the year's last month, one more section   # #147: one review a month, extended at a quarter's end
         **({"coming_up": coming_up_context(ds.get("coming_up", []), month)} if coming_up_context(ds.get("coming_up", []), month) else {}),
         "continuity": continuity(conn, month, prev),
     }
@@ -133,6 +138,25 @@ def quarter_context(conn, month: str) -> dict | None:
     nxt = {**q["next"], "coming_up": [{"m": c["m"], "kind": c["kind"], "label": c.get("public_label") or c["label"], "amount": c.get("amount")} for c in q["next"]["coming_up"]]}
     return {"note": QUARTER_NOTE, **{k: q[k] for k in ("quarter", "first", "last", "months", "partial", "this", "previous", "year_ago",
                                                        "movers_previous", "movers_year_ago", "net_worth_change", "debt_change")}, "next": nxt}
+
+
+YEAR_NOTE = ("This month ends the household's budget year (#157). this and previous are the years' totals, the sums of their months; change "
+             "is a month at a time, so a partial year compares fairly. previous is absent when the year before is not loaded: do not call it "
+             "zero. debt.paid_off names debts by type. decisions counts the year's confirmed checks. ahead is the look ahead's twelve months at "
+             "the current pace: an estimate, not a forecast.")
+
+
+def year_context(conn, month: str) -> dict | None:
+    """year_review (#157) for the review of the year's last month: derived figures and the household's own labels, no account names."""
+    from .checkin import mode_of
+    if mode_of(conn, month) != "year":
+        return None
+    r = conn.execute("SELECT rows FROM datasets WHERE name='year_review'").fetchone()
+    y = (r["rows"] or [None])[0] if r and r["rows"] else None
+    if not y or y.get("last") != month:
+        return None
+    return {"note": YEAR_NOTE, **{k: y[k] for k in ("year", "first", "last", "months", "partial", "this", "previous", "change", "net_worth",
+                                                    "net_worth_previous", "debt", "decisions", "events", "movers", "ahead")}}
 
 
 COMING_UP_NOTE = ("What falls due in the three budget months after this one: estimated payoffs at last month's payment and life events "
@@ -259,7 +283,8 @@ def latest_job(conn) -> dict | None:
     latest = conn.execute("SELECT max(budget_month) m FROM source_files").fetchone()["m"]
     job["where"] = "the dashboard's Last month tab" if job["month"] == latest else "Reviews → Past reviews"   # the line already names the month
     from .checkin import mode_of   # a quarter's last month carries one more section, "The quarter" (#147)
-    lo, hi = (6, 8) if mode_of(conn, job["month"]) in ("quarter", "year") else (5, 7)
+    mode = mode_of(conn, job["month"])   # ... and the year's last month one more again, "The year" (#157)
+    lo, hi = (7, 9) if mode == "year" else (6, 8) if mode == "quarter" else (5, 7)
     job["odd_count"] = job["state"] == "stored" and job["sections"] is not None and not lo <= job["sections"] <= hi
     job["expected_sections"] = f"{lo} to {hi}"
     return job

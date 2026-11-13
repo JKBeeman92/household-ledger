@@ -18,7 +18,7 @@ EX_TEMPFAIL = 75
 log = logging.getLogger("ledger.admin")
 SETTERS = {"import-mapping": "mapping", "set-rules": "rules", "set-events": "events", "set-goals": "goals", "set-cpi": "cpi", "set-household": "household",
            "set-accounts": "accounts", "set-balances": "balances"}   # set-balances adds or corrects month-ends (account,YYYY-MM,amount); it never deletes
-EXPORTABLE = ("mapping", "rules", "events", "goals", "cpi", "household", "accounts", "balances", "decisions", "yearly_bills", "tax_payments")
+EXPORTABLE = ("mapping", "rules", "events", "goals", "cpi", "household", "accounts", "balances", "decisions", "yearly_bills", "tax_payments", "yearly_checklist")
 
 
 def _read(path: str) -> str:
@@ -185,6 +185,33 @@ def purchases_cmd(a) -> int:
             return 0 if n else 1
         except purchases.PurchaseError as e:
             conn.rollback(); print(f"purchases {a.pcmd}: {e}", file=sys.stderr); return 2
+
+
+def yearly_checklist_cmd(a) -> int:
+    """`python -m app.admin yearly-checklist [list|add|rename|remove|tick|untick]` (#157): what Settings → Yearly checklist and the
+    check-in's year mode do. list (the default) shows the list and, with --year, that budget year's ticks; it writes nothing."""
+    from app import yearly_checklist as yc
+    with _connect() as conn:
+        try:
+            cmd = a.ccmd or "list"
+            if cmd == "list":
+                conn.execute("SET TRANSACTION READ ONLY")
+                have = yc.ticks(conn, a.year) if getattr(a, "year", None) else {}
+                for r in yc.items(conn):
+                    t = have.get(r["key"])
+                    print(f"{r['key']}\t{r['label']}" + (f"\tdone {t['done_at']:%Y-%m-%d}" + (f": {t['note']}" if t["note"] else "") if t else ""))
+                return 0
+            if cmd == "add":
+                key = yc.add(conn, a.label); conn.commit(); print(f"{key}: added."); return 0
+            if cmd == "rename":
+                yc.rename(conn, a.key, a.label); conn.commit(); print(f"{a.key}: saved."); return 0
+            if cmd == "remove":
+                n = yc.remove(conn, a.key); conn.commit(); print(f"{a.key}: removed." if n else f"{a.key}: not on the list."); return 0 if n else 1
+            if cmd == "tick":
+                yc.tick(conn, a.year, a.key, a.note or "", f"{_who()} (cli)"); conn.commit(); print(f"{a.key}: ticked for {a.year}."); return 0
+            n = yc.untick(conn, a.year, a.key); conn.commit(); print(f"{a.key}: unticked for {a.year}." if n else f"{a.key}: was not ticked for {a.year}."); return 0
+        except yc.ChecklistError as e:
+            conn.rollback(); print(f"yearly-checklist {a.ccmd}: {e}", file=sys.stderr); return 2
 
 
 def yearly_bills_cmd(a) -> int:
@@ -360,6 +387,14 @@ def main(argv: list[str] | None = None) -> int:
     x.add_argument("--loan-account"); x.add_argument("--borrowed"); x.add_argument("--apr")
     for name, what in (("reopen", "not bought after all"), ("delete", "delete planned purchase KEY")):
         x = psub.add_parser(name, help=what); x.add_argument("key")
+    sp = sub.add_parser("yearly-checklist", help="the yearly checklist (#157): list it (and a year's ticks), add, rename or remove an item, or tick one for a year")
+    csub = sp.add_subparsers(dest="ccmd", metavar="action")
+    x = csub.add_parser("list", help="(the default) the list; with --year, that budget year's ticks; read only"); x.add_argument("--year")
+    x = csub.add_parser("add", help="add an item"); x.add_argument("label")
+    x = csub.add_parser("rename", help="change an item's wording"); x.add_argument("key"); x.add_argument("label")
+    x = csub.add_parser("remove", help="take an item off the list (past ticks stay)"); x.add_argument("key")
+    x = csub.add_parser("tick", help="tick KEY for budget year YEAR (the year it starts in)"); x.add_argument("year"); x.add_argument("key"); x.add_argument("--note")
+    x = csub.add_parser("untick", help="undo a tick"); x.add_argument("year"); x.add_argument("key")
     sp = sub.add_parser("quarter", help="the quarter (#147): a read-only report of a quarter against the one before and a year before, and the next")
     sp.add_argument("which", nargs="?", help="YYYY-Qn (default: the quarter of the latest loaded month)")
     sp = sub.add_parser("tax", help="estimated tax (#153): mark a quarter's estimate paid at its check-in month, or unmark it")
@@ -397,6 +432,8 @@ def main(argv: list[str] | None = None) -> int:
         return yearly_bills_cmd(a)
     if a.cmd == "purchases":
         return purchases_cmd(a)
+    if a.cmd == "yearly-checklist":
+        return yearly_checklist_cmd(a)
     if a.cmd == "quarter":
         return quarter_cmd(a.which)
     if a.cmd == "tax":

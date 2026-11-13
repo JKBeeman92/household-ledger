@@ -297,6 +297,9 @@ def _editor_body(conn, key: str) -> str:
     if key == "tax_payments":   # not a Settings editor: the quarters' estimated tax ticked paid (#153), for settings.zip and the seed loader
         from .. import tax
         return tax.export_json(conn)
+    if key == "yearly_checklist":   # not a Settings editor: the yearly checklist and its ticks (#157), for settings.zip and the seed loader
+        from .. import yearly_checklist
+        return yearly_checklist.export_json(conn)
     if key == "yearly_bills":   # not a Settings editor: the household's word on yearly bills (#151), for settings.zip and the seed loader
         from .. import yearly_bills
         return yearly_bills.export_csv(conn)
@@ -399,8 +402,10 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
     from .. import purchases as _pp
     with db.pool.connection() as conn:
         purchases, debt_cat = _pp.for_page(conn), _pp.debt_category(conn)
+        from .. import yearly_checklist as _yc
+        yc_items = _yc.items(conn)   # Settings → Yearly checklist (#157)
         fund_choices = sorted({r["name"] for r in conn.execute("SELECT name FROM accounts WHERE active ORDER BY name").fetchall()})
-    return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP, bills=bills, purchases=purchases, pp_form=request.session.pop("pp_form", None), pp_bought=request.session.pop("pp_bought", None), debt_category=debt_cat, loan_categories=categories, fund_accounts=fund_choices,
+    return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP, bills=bills, purchases=purchases, pp_form=request.session.pop("pp_form", None), pp_bought=request.session.pop("pp_bought", None), debt_category=debt_cat, yc_items=yc_items, yc_form=request.session.pop("yc_form", None), loan_categories=categories, fund_accounts=fund_choices,
                   yb_form=request.session.pop("yb_form", None), tax_form=request.session.pop("tax_form", None), bal_hist=request.session.pop("bh_form", None), yb_slug=_yb_slug, tax_cfg=_tax_cfg(),
                   categories=categories, rules={**rules, **(request.session.pop("people_typed", None) or {})}, hh=household, name_families=name_families, unmapped=unmapped,
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS,

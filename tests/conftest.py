@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 GOLDEN = ROOT / "tests" / "fixtures" / "golden"
 RECON_FAIL = ROOT / "tests" / "fixtures" / "recon_fail"
 SAMPLE = ROOT / "examples" / "sample-household"
-TABLES = "source_files, transactions, budget_items, item_mapping, canonical_items, categories, renames, mapping_migration_notes, cpi, goals, life_events, ledger, datasets, reviews, build_log, settings, auth_sessions, source_file_history, upload_batches, api_tokens, webhook_deliveries, webhook_months_notified, source_profiles, upload_pending, review_jobs, accounts, balances, balance_history, checkins, decisions, decision_checks, yearly_bills, tax_payments"
+TABLES = "source_files, transactions, budget_items, item_mapping, canonical_items, categories, renames, mapping_migration_notes, cpi, goals, life_events, ledger, datasets, reviews, build_log, settings, auth_sessions, source_file_history, upload_batches, api_tokens, webhook_deliveries, webhook_months_notified, source_profiles, upload_pending, review_jobs, accounts, balances, balance_history, checkins, decisions, decision_checks, yearly_bills, tax_payments, yearly_checklist, yearly_checklist_items"
 
 
 def csrf_token_of(c) -> str | None:
@@ -77,6 +77,9 @@ def reset_db(client):
     def reset(refs: Path = GOLDEN) -> None:
         with db.pool.connection() as conn:
             conn.execute(f"TRUNCATE {TABLES} RESTART IDENTITY CASCADE")
+            from pipeline.run_pipeline import YEARLY_CHECKLIST_DEFAULTS   # the list as migration 0157 ships it (#157)
+            for i, (k, label) in enumerate(YEARLY_CHECKLIST_DEFAULTS):
+                conn.execute("INSERT INTO yearly_checklist_items (key, label, position) VALUES (%s, %s, %s)", (k, label, (i + 1) * 10))
             seed_reference_tables(conn, refs)
             db.put_setting(conn, "household", {"name": "Household", "title": "Household Ledger", "theme": "homestead", "currency": "USD"})
     reset()
