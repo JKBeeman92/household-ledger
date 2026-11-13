@@ -121,3 +121,27 @@ def test_settings_zip_and_cli(client, sample, reset_db, tmp_path, capsys):
     reset_db(tmp_path)
     with _db() as conn:
         assert float(conn.execute("SELECT amount FROM tax_payments WHERE month='2026-06'").fetchone()["amount"]) == 1200
+
+
+def test_errors_sit_under_their_field_and_nothing_due_can_be_undone(client, sample):
+    """From the #153 UX review: DS-FORM-1 (an error under its field, marked aria-invalid, the typed value kept), DS-BTN-2 (the
+    nothing-due button names the act), and the nothing-due choice shown with an Undo, as Books does."""
+    r = client.post("/tax/2026-06/paid", data={"amount": "about a grand"})
+    page = client.get(r.headers["location"]).text
+    step = page[page.find('id="step-tax"'):]
+    assert 'aria-invalid="true" aria-describedby="tax-amount-err"' in step and 'id="tax-amount-err"' in step
+    assert 'value="about a grand"' in step and "The amount paid is a number" in step
+    assert 'aria-invalid' not in client.get("/checkin/2026-06").text[page.find('id="step-tax"'):].split("</section>")[0]   # shown once
+    r = client.post("/tax/settings", data={"items": "Second Breakfast", "aside": "", "pct": "30%", "deadlines": "2026-09 Q3"})
+    html = client.get(r.headers["location"]).text
+    assert 'id="tax-items"' in html and 'aria-describedby="tax-items-err"' in html and "Second Breakfast is not one of your budget items" in html
+    assert 'value="Second Breakfast"' in html and "2026-09 Q3</textarea>" in html
+    assert "Say nothing is due this quarter" in step
+    client.post("/checkin/2026-06/steps/tax/ack")
+    step = client.get("/checkin/2026-06").text
+    step = step[step.find('id="step-tax"'):]
+    assert "Nothing due this quarter." in step and "/steps/tax/undo" in step and "Mark this quarter's estimate paid" not in step.split("</section>")[0]
+    client.post("/checkin/2026-06/steps/tax/undo")
+    with _db() as conn:
+        from app import checkin
+        assert {x["key"]: x["status"] for x in checkin.overview(conn, "2026-06")["steps"]}["tax"] == "todo"

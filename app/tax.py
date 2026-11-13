@@ -14,6 +14,12 @@ GOAL_NOTE = "Ask at each month-close: the share of contract income set aside for
 MONTH_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 
 
+class TaxError(ValueError):
+    """A value the form refuses, with the field it belongs under (DS-FORM-1)."""
+    def __init__(self, field: str, message: str):
+        super().__init__(message); self.field = field
+
+
 def _x(conn, sql, params=()):
     cur = conn.cursor(row_factory=dict_row); cur.execute(sql, params); return cur
 
@@ -46,7 +52,7 @@ def parse_deadlines(text: str) -> list[dict]:
             continue
         m, _, label = line.partition(" ")
         if not MONTH_RE.match(m):
-            raise ValueError(f"line {n}: start with the month as YYYY-MM, then the label (2026-09 Q3 federal estimate)")
+            raise TaxError("deadlines", f"line {n}: start with the month as YYYY-MM, then the label (2026-09 Q3 federal estimate)")
         out.append({"m": m, "label": label.strip() or "Estimated tax"})
     return sorted(out, key=lambda d: d["m"])
 
@@ -57,10 +63,10 @@ def save_settings(conn, items: list[str], aside: list[str], pct, deadlines: list
     accounts = {r["name"] for r in _x(conn, "SELECT name FROM accounts").fetchall()}
     bad = [i for i in items if i not in names]
     if bad:
-        raise ValueError(f"{', '.join(bad)} {'is' if len(bad) == 1 else 'are'} not one of your budget items")
+        raise TaxError("items", f"{', '.join(bad)} {'is' if len(bad) == 1 else 'are'} not one of your budget items")
     bad = [a for a in aside if a not in names and a not in accounts]
     if bad:
-        raise ValueError(f"{', '.join(bad)} {'is' if len(bad) == 1 else 'are'} neither a budget item nor an account")
+        raise TaxError("aside", f"{', '.join(bad)} {'is' if len(bad) == 1 else 'are'} neither a budget item nor an account")
     r = dict(db.get_setting(conn, "rules", {}) or {})
     r.update(contract_income_items=items, tax_set_aside_items=aside, tax_deadlines=deadlines)
     db.put_setting(conn, "rules", r)
@@ -70,7 +76,7 @@ def save_settings(conn, items: list[str], aside: list[str], pct, deadlines: list
         from .routes.settings import parse_goal_value
         v, problem = parse_goal_value(str(pct), GOAL_UNIT)
         if problem or v is None:
-            raise ValueError(f"the share set aside: {problem or 'give a percentage, such as 25%'}")
+            raise TaxError("pct", f"the share set aside: {problem or 'give a percentage, such as 25%'}")
         _x(conn, "INSERT INTO goals (key, value, unit, label, note, confirmed_at) VALUES (%s,%s,%s,%s,%s, now()) ON CONFLICT (key) DO UPDATE "
                  "SET value=EXCLUDED.value, unit=EXCLUDED.unit, label=EXCLUDED.label, note=EXCLUDED.note, confirmed_at=now()",
            (GOAL, v, GOAL_UNIT, "Estimated tax set aside", GOAL_NOTE))
@@ -84,13 +90,13 @@ def payment(conn, month: str) -> dict | None:
 def mark_paid(conn, month: str, amount=None, by: str = "") -> None:
     """The quarter's estimated payment is paid; the deadline, label and expected amount are kept as they stand now."""
     if not MONTH_RE.match(month or ""):
-        raise ValueError("a payment is recorded at a quarter's check-in (YYYY-MM)")
+        raise TaxError("amount", "a payment is recorded at a quarter's check-in (YYYY-MM)")
     try:
         amount = None if amount in (None, "") else round(float(re.sub(r"[^\d.\-]", "", str(amount).replace(",", ""))), 2)
     except ValueError:
-        raise ValueError("the amount paid is a number, such as 1200") from None
+        raise TaxError("amount", "the amount paid is a number, such as 1200") from None
     if amount is not None and amount < 0:
-        raise ValueError("the amount paid is not negative")
+        raise TaxError("amount", "the amount paid is not negative")
     s = summary(conn) or {}
     _x(conn, "INSERT INTO tax_payments (month, deadline_m, label, expected, amount, paid_by) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT (month) DO UPDATE "
              "SET amount=EXCLUDED.amount, paid_at=now(), paid_by=EXCLUDED.paid_by",

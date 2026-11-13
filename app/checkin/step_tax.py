@@ -12,7 +12,7 @@ def _status(conn, month, state):
     from app import tax
     p = tax.payment(conn, month)
     if p:
-        return "done", "paid" + (f" ({p['amount']:,.0f})" if p["amount"] is not None else "")
+        return "done", "paid"   # the amount is in the step, formatted for the household
     if "tax" in (state.get("ack") or {}):
         return "done", "nothing due this quarter"
     return "todo", "pay this quarter's estimate, or say nothing is due"
