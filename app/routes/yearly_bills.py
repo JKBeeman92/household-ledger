@@ -68,6 +68,11 @@ def dismiss_bill(item: str, request: Request, user=Depends(auth.require_editor))
 @router.post("/yearly-bills/{item}/restore")
 def restore_bill(item: str, request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
-        yearly_bills.restore(conn, item); conn.commit()
-    flash(request, f"Restored {item}: rebuild to see whether the app finds it as a yearly bill.")
-    return _back("yb-dismissed")
+        was = yearly_bills.restore(conn, item); conn.commit()
+        now = yearly_bills.for_page(conn)
+    flash(request, f"Restored {item} as you {was} it, with its month, amount and funding." if was in ("added", "confirmed")
+          else f"Restored {item}: rebuild to see whether the app finds it as a yearly bill.")
+    # land on the restored row, else the dismissed list if any remain, else the section itself, never the page top (DS-A11Y-5)
+    if any(b["item"] == item and b["source"] != "dismissed" for b in now):
+        return _back(slug(item))
+    return _back("yb-dismissed" if any(b["source"] == "dismissed" for b in now) else "yearly-bills")
