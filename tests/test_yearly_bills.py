@@ -227,6 +227,7 @@ def test_restoring_a_hand_added_bill_brings_it_back_with_its_values(client, samp
     client.post("/rebuild")
     assert {b["item"]: b for b in client.get("/api/datasets").json()["yearly_bills"]}["Groceries"]["source"] == "dismissed"
     r = client.post("/yearly-bills/Groceries/restore", follow_redirects=False)
+    assert r.headers["location"] == "/settings?focus=yb-groceries#yearly-bills"   # lands on the restored row (DS-A11Y-5)
     assert "Restored Groceries as you added it" in client.get(r.headers["location"]).text
     client.post("/rebuild")
     g = {b["item"]: b for b in client.get("/api/datasets").json()["yearly_bills"]}["Groceries"]
@@ -243,6 +244,7 @@ def test_a_bill_dismissed_before_0206_restores_to_the_detector(client, sample):
     """Rows dismissed before the migration have dismissed_from NULL and keep the old behaviour: Restore deletes the row."""
     with _db() as conn:
         conn.execute("INSERT INTO yearly_bills (item, month, source) VALUES ('Groceries', 5, 'dismissed')"); conn.commit()
-    client.post("/yearly-bills/Groceries/restore")
+    r = client.post("/yearly-bills/Groceries/restore", follow_redirects=False)
+    assert r.headers["location"] == "/settings?focus=yearly-bills#yearly-bills"   # the last dismissed one: the section, not the page top
     with _db() as conn:
         assert conn.execute("SELECT 1 FROM yearly_bills WHERE item='Groceries'").fetchone() is None
