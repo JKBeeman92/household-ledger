@@ -8,7 +8,7 @@ from psycopg.rows import dict_row
 
 from . import db
 
-COLUMNS = ["item", "month", "amount", "every_years", "funded_by", "source"]
+COLUMNS = ["item", "month", "amount", "every_years", "funded_by", "source", "dismissed_from"]
 
 
 class BillError(ValueError):
@@ -22,7 +22,7 @@ def _x(conn, sql, params=()):
 
 
 def stored(conn) -> list[dict]:
-    return _x(conn, "SELECT item, month, amount, every_years, funded_by, source FROM yearly_bills ORDER BY item").fetchall()
+    return _x(conn, "SELECT item, month, amount, every_years, funded_by, source, dismissed_from FROM yearly_bills ORDER BY item").fetchall()
 
 
 def built(conn) -> list[dict]:
@@ -90,20 +90,36 @@ def save(conn, item: str, month, amount, every_years=1, funded_by: str | None = 
         raise BillError("the amount is not negative.", "amount")
     _x(conn, "INSERT INTO yearly_bills (item, month, amount, every_years, funded_by, source, updated_by) VALUES (%s,%s,%s,%s,%s,%s,%s) "
              "ON CONFLICT (item) DO UPDATE SET month=EXCLUDED.month, amount=EXCLUDED.amount, every_years=EXCLUDED.every_years, "
-             "funded_by=EXCLUDED.funded_by, source=EXCLUDED.source, updated_at=now(), updated_by=EXCLUDED.updated_by",
+             "funded_by=EXCLUDED.funded_by, source=EXCLUDED.source, dismissed_from=NULL, updated_at=now(), updated_by=EXCLUDED.updated_by",
        (item, month, amount, every_years, (funded_by or "").strip() or None, source, by or ""))
     db.mark_inputs_changed(conn)
 
 
 def dismiss(conn, item: str, by: str = "") -> None:
+    """Off the list for good. A bill the household added or confirmed keeps its month, amount, cadence and funding, and remembers
+    which it was (`dismissed_from`, #206), so Restore can put it back as it was; a detected bill is stored as dismissed only."""
+    mine = _x(conn, "SELECT source FROM yearly_bills WHERE item=%s", (item,)).fetchone()
+    if mine and mine["source"] in ("added", "confirmed"):
+        _x(conn, "UPDATE yearly_bills SET dismissed_from=source, source='dismissed', updated_at=now(), updated_by=%s WHERE item=%s", (by or "", item))
+        db.mark_inputs_changed(conn)
+        return
+    if mine:   # already dismissed
+        return
     cur = next((b for b in for_page(conn) if b["item"] == item), None)
     save(conn, item, (cur or {}).get("month") or 1, None, 1, None, "dismissed", by)
 
 
-def restore(conn, item: str) -> None:
-    """Back to the detector: the household's word on this item is forgotten."""
+def restore(conn, item: str) -> str:
+    """Undo a dismissal. A bill the household added or confirmed comes back as it was, with its values; a detected one goes back to
+    the detector (the household's word on it is forgotten). Returns what happened: 'added', 'confirmed' or 'detector'."""
+    mine = _x(conn, "SELECT source, dismissed_from FROM yearly_bills WHERE item=%s", (item,)).fetchone()
+    if mine and mine["source"] == "dismissed" and mine["dismissed_from"] in ("added", "confirmed"):
+        _x(conn, "UPDATE yearly_bills SET source=dismissed_from, dismissed_from=NULL, updated_at=now() WHERE item=%s", (item,))
+        db.mark_inputs_changed(conn)
+        return mine["dismissed_from"]
     _x(conn, "DELETE FROM yearly_bills WHERE item=%s", (item,))
     db.mark_inputs_changed(conn)
+    return "detector"
 
 
 def rename_fund(conn, old: str, new: str) -> int:
@@ -114,5 +130,5 @@ def rename_fund(conn, old: str, new: str) -> int:
 def export_csv(conn) -> str:
     out = io.StringIO(); w = csv.writer(out, lineterminator="\n"); w.writerow(COLUMNS)
     for r in stored(conn):
-        w.writerow([r["item"], r["month"], "" if r["amount"] is None else f"{r['amount']:.2f}", r["every_years"], r["funded_by"] or "", r["source"]])
+        w.writerow([r["item"], r["month"], "" if r["amount"] is None else f"{r['amount']:.2f}", r["every_years"], r["funded_by"] or "", r["source"], r["dismissed_from"] or ""])
     return out.getvalue()

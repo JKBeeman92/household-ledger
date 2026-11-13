@@ -194,8 +194,9 @@ def yearly_bills_cmd(a) -> int:
             elif a.ycmd == "dismiss":
                 yearly_bills.dismiss(conn, a.item, f"{_who()} (cli)")
             elif a.ycmd == "restore":
-                yearly_bills.restore(conn, a.item)
-            conn.commit(); print(f"{a.item}: {dict(confirm='confirmed', add='added', dismiss='dismissed', restore='handed back to the detector')[a.ycmd]}. Rebuild to apply it."); return 0
+                was = yearly_bills.restore(conn, a.item)
+                conn.commit(); print(f"{a.item}: " + (f"restored as {was}, with its values" if was != "detector" else "handed back to the detector") + ". Rebuild to apply it."); return 0
+            conn.commit(); print(f"{a.item}: {dict(confirm='confirmed', add='added', dismiss='dismissed')[a.ycmd]}. Rebuild to apply it."); return 0
         except ValueError as e:
             conn.rollback(); print(f"yearly-bills {a.ycmd}: {e}", file=sys.stderr); return 2
 
@@ -311,7 +312,7 @@ def main(argv: list[str] | None = None) -> int:
         x = ysub.add_parser(name, help=what); x.add_argument("item"); x.add_argument("--month", type=int, required=(name == "add"))
         x.add_argument("--amount", type=float); x.add_argument("--every", type=int, default=1); x.add_argument("--fund", help="the envelope or account that saves for it")
     x = ysub.add_parser("dismiss", help="not a yearly bill: stays dismissed across rebuilds"); x.add_argument("item")
-    x = ysub.add_parser("restore", help="hand a bill back to the detector"); x.add_argument("item")
+    x = ysub.add_parser("restore", help="undo a dismissal: a bill you added or confirmed comes back with its values; a detected one goes back to the detector"); x.add_argument("item")
     sp = sub.add_parser("quarter", help="the quarter (#147): a read-only report of a quarter against the one before and a year before, and the next")
     sp.add_argument("which", nargs="?", help="YYYY-Qn (default: the quarter of the latest loaded month)")
     sp = sub.add_parser("tax", help="estimated tax (#153): mark a quarter's estimate paid at its check-in month, or unmark it")

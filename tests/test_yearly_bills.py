@@ -215,3 +215,34 @@ def test_an_amount_with_no_figure_in_it_is_refused_not_saved_blank():
     assert parse_amount("") is None and parse_amount("  ") is None and parse_amount("USD 45") == 45
     with pytest.raises(ValueError):
         parse_amount("lots")
+
+
+def test_restoring_a_hand_added_bill_brings_it_back_with_its_values(client, sample):
+    """#206: add, dismiss, restore, rebuild: the bill is back as added, with its month, amount, cadence and funding."""
+    client.post("/yearly-bills", data={"item": "Groceries", "month": "5", "amount": "45", "every_years": "2", "funded_by": "Smial Insurance Fund", "source": "added"})
+    client.post("/yearly-bills/Groceries/dismiss")
+    with _db() as conn:
+        r = conn.execute("SELECT source, dismissed_from, month, amount, every_years, funded_by FROM yearly_bills WHERE item='Groceries'").fetchone()
+    assert (r["source"], r["dismissed_from"], r["month"], float(r["amount"]), r["every_years"], r["funded_by"]) == ("dismissed", "added", 5, 45.0, 2, "Smial Insurance Fund")
+    client.post("/rebuild")
+    assert {b["item"]: b for b in client.get("/api/datasets").json()["yearly_bills"]}["Groceries"]["source"] == "dismissed"
+    r = client.post("/yearly-bills/Groceries/restore", follow_redirects=False)
+    assert "Restored Groceries as you added it" in client.get(r.headers["location"]).text
+    client.post("/rebuild")
+    g = {b["item"]: b for b in client.get("/api/datasets").json()["yearly_bills"]}["Groceries"]
+    assert (g["source"], g["month"], g["amount"], g["every_years"], g["funded_by"]) == ("added", 5, 45.0, 2, "Smial Insurance Fund")
+    # a confirmed bill comes back confirmed; a detected one still goes back to the detector (test above)
+    client.post("/yearly-bills", data={"item": "Smial Insurance", "month": "2", "amount": "1000", "funded_by": "Smial Insurance Fund", "source": "confirmed"})
+    client.post("/yearly-bills/Smial Insurance/dismiss"); client.post("/yearly-bills/Smial Insurance/restore")
+    with _db() as conn:
+        r = conn.execute("SELECT source, dismissed_from, amount FROM yearly_bills WHERE item='Smial Insurance'").fetchone()
+    assert (r["source"], r["dismissed_from"], float(r["amount"])) == ("confirmed", None, 1000.0)
+
+
+def test_a_bill_dismissed_before_0206_restores_to_the_detector(client, sample):
+    """Rows dismissed before the migration have dismissed_from NULL and keep the old behaviour: Restore deletes the row."""
+    with _db() as conn:
+        conn.execute("INSERT INTO yearly_bills (item, month, source) VALUES ('Groceries', 5, 'dismissed')"); conn.commit()
+    client.post("/yearly-bills/Groceries/restore")
+    with _db() as conn:
+        assert conn.execute("SELECT 1 FROM yearly_bills WHERE item='Groceries'").fetchone() is None

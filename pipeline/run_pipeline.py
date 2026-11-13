@@ -588,9 +588,10 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
         cur.execute("SELECT count(*) FROM yearly_bills")
         if cur.fetchone()[0] == 0 and (seed_dir / "yearly_bills.csv").exists():   # the household's yearly bills (#151), from settings.zip
             for r in csv.DictReader(io.StringIO(_read(seed_dir / "yearly_bills.csv"))):
-                cur.execute("INSERT INTO yearly_bills (item, month, amount, every_years, funded_by, source) SELECT %s,%s,%s,%s,%s,%s "
+                cur.execute("INSERT INTO yearly_bills (item, month, amount, every_years, funded_by, source, dismissed_from) SELECT %s,%s,%s,%s,%s,%s,%s "
                             "WHERE EXISTS (SELECT 1 FROM canonical_items WHERE name=%s) ON CONFLICT DO NOTHING",
-                            (r["item"], int(r["month"]), r.get("amount") or None, int(r.get("every_years") or 1), r.get("funded_by") or None, r["source"], r["item"]))
+                            (r["item"], int(r["month"]), r.get("amount") or None, int(r.get("every_years") or 1), r.get("funded_by") or None, r["source"],
+                             r.get("dismissed_from") if r["source"] == "dismissed" and r.get("dismissed_from") in ("added", "confirmed") else None, r["item"]))
         cur.execute("SELECT count(*) FROM decisions")
         if cur.fetchone()[0] == 0 and (seed_dir / "decisions.json").exists():   # the decisions log and its checks (#155), from settings.zip
             for d in json.loads(_read(seed_dir / "decisions.json")):

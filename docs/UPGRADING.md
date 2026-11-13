@@ -11,6 +11,13 @@ Every upgrade, whatever the version:
 
 Migrations are not reversible. To roll back, pin the previous image tag in `docker-compose.yml` and restore the backup from step 2.
 
+## 0.8.0
+
+- **Restoring a dismissed yearly bill** (#206, `0206_yearly_bills_dismissed_from.sql`): one nullable column on `yearly_bills`. A bill
+  you added or confirmed and then dismiss now keeps its values, and Restore brings it back as it was. Bills dismissed before this
+  upgrade have no record of what they were, so Restore still hands them back to the detector; re-add a hand-added one if you need it.
+  `yearly_bills.csv` in `settings.zip` gains a `dismissed_from` column; an older file without it still loads.
+
 ## 0.7.0
 
 - **The quarter** (#147): no migration. Rebuild once after upgrading to emit `quarterly`, `cat_quarter` and `quarter_review` (in
