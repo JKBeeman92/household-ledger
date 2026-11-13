@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.7.0](https://github.com/JKBeeman92/household-ledger/compare/v0.6.0...v0.7.0) (2026-11-13)
+
+
+### Features
+
+* a decisions log: what we decided at the check-in, and whether it happened ([#198](https://github.com/JKBeeman92/household-ledger/issues/198)) ([b08147f](https://github.com/JKBeeman92/household-ledger/commit/b08147f93e8008351129e302baaea0a7396ed8dd))
+* dashboard charts as fixes, courses and waypoints, with a table for every chart ([#201](https://github.com/JKBeeman92/household-ledger/issues/201)) ([a2908df](https://github.com/JKBeeman92/household-ledger/commit/a2908df669da5fa9e4e28f4d186f76b8f84f57cf))
+* estimated payoff per debt at last month's payment, and a coming_up dataset ([#196](https://github.com/JKBeeman92/household-ledger/issues/196)) ([f035de3](https://github.com/JKBeeman92/household-ledger/commit/f035de3ac5efab0e904ef43edff0c041062df657))
+* estimated tax set-aside at the check-in ([#202](https://github.com/JKBeeman92/household-ledger/issues/202)) ([d5e80d5](https://github.com/JKBeeman92/household-ledger/commit/d5e80d52d8c08098ce1b2deb422ad10e51ca8762))
+* one formatter for money, dates and months on every server-rendered page ([#195](https://github.com/JKBeeman92/household-ledger/issues/195)) ([bfc931f](https://github.com/JKBeeman92/household-ledger/commit/bfc931fc6d2c62c9e50807af8fc71686fbcb451e))
+* the dashboard in keeping with the design system: stamps, sheets, glyphs, page turns ([#205](https://github.com/JKBeeman92/household-ledger/issues/205)) ([1a9e1ab](https://github.com/JKBeeman92/household-ledger/commit/1a9e1abb3882b811cc491444c3f504d93264b9e2))
+* the quarter at the check-in, on the dashboard and in the review ([#203](https://github.com/JKBeeman92/household-ledger/issues/203)) ([6160499](https://github.com/JKBeeman92/household-ledger/commit/61604995dededa75dbfa793d907737c074198b83))
+* yearly bills: what's due in the next three months, and whether the sinking funds hold it ([#200](https://github.com/JKBeeman92/household-ledger/issues/200)) ([95742c3](https://github.com/JKBeeman92/household-ledger/commit/95742c317af6721b67295ba8fe7844dbc2094798))
+
+
+### Bug Fixes
+
+* one name for each act on Reviews and the check-in, and a way forward from every dead end ([#199](https://github.com/JKBeeman92/household-ledger/issues/199)) ([0f95a50](https://github.com/JKBeeman92/household-ledger/commit/0f95a50fb96728f042c1c63806743a6c86c8eb48))
+* Settings and Close a month in keeping with the design system ([#204](https://github.com/JKBeeman92/household-ledger/issues/204)) ([d8a7daa](https://github.com/JKBeeman92/household-ledger/commit/d8a7daa475935a4d5aa010cff944ad2b2ccfe6b1))
+* the 0.7.0 UX critique's findings, focus after check-in actions, and a cheaper ux-critique ([#208](https://github.com/JKBeeman92/household-ledger/issues/208)) ([09518d0](https://github.com/JKBeeman92/household-ledger/commit/09518d0cebad0e51a6de83b9505c316bf2b4a60a))
+
 ## [0.6.0](https://github.com/JKBeeman92/household-ledger/compare/v0.5.0...v0.6.0) (2026-11-12)
 
 
