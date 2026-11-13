@@ -33,9 +33,9 @@ def reviews_page(request: Request, user=Depends(auth.require_editor)):
 def reviews_save(request: Request, provider: str = Form(""), model: str = Form(""), base_url: str = Form(""), user=Depends(auth.require_editor)):
     provider, model, base_url = provider.strip().lower(), model.strip(), base_url.strip().rstrip("/")
     if provider and provider not in rp.PROVIDERS:
-        flash(request, f"Not saved — unknown provider {provider}.", "bad")
+        flash(request, f"Not saved: unknown provider {provider}.", "bad")
     elif base_url and not base_url.startswith(("http://", "https://")):
-        flash(request, "Not saved — the base URL must start with http:// or https://.", "bad")
+        flash(request, "Not saved: the base URL must start with http:// or https://.", "bad")
     else:
         with db.pool.connection() as conn:
             db.put_setting(conn, rp.SETTING, {"provider": provider, "model": model, "base_url": base_url}); conn.commit()

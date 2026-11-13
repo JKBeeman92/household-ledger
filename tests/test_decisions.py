@@ -208,7 +208,7 @@ def test_the_check_in_and_last_month_tab_show_them(client, loaded):
     step = page[page.find('id="step-decisions"'):page.find('id="step-goals"')]
     assert "Groceries under $50" in step and "Groceries was $" in step and "Carry it on next month" in step
     nxt = page[page.find('id="step-next"'):]
-    assert "Add the decision" in nxt and "No changes this month" in nxt
+    assert "Add the decision" in nxt and "Say there are no changes this month" in nxt
     assert 'data-draw="lm-decisions"' in client.get("/").text
 
 

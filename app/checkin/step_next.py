@@ -1,5 +1,5 @@
 """Step 9, Next month (#155): up to three decisions for the coming month, written down so the next check-in can check them. A row
-of the Suggested plan can be taken as a plan change in one press. "No changes this month" also completes the step. Only on the
+of the Suggested plan can be taken as a plan change in one press. Saying there are no changes this month also completes the step. Only on the
 full check-in: decisions are made at the latest month, not while catching up."""
 from . import Step, register, _x
 

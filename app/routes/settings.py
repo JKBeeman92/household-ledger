@@ -404,7 +404,7 @@ def mapping_draft_save(request: Request, body: str = Form(...), user=Depends(aut
             db.mark_inputs_changed(conn); conn.commit()
             flash(request, f"Added {what}. The dashboard shows them after a rebuild: press Rebuild now.")
         except Exception as e:  # noqa: BLE001
-            conn.rollback(); flash(request, f"Not saved — {e}", "bad")
+            conn.rollback(); flash(request, f"Not saved: {e}", "bad")
             return RedirectResponse("/settings/mapping/draft", status_code=303)
     return RedirectResponse("/settings#mapping", status_code=303)
 
@@ -566,7 +566,7 @@ async def pretax_form(request: Request, user=Depends(auth.require_editor)):
                          "SET value=EXCLUDED.value, unit=EXCLUDED.unit, confirmed_at=now(), updated_at=now()", (key, v, u, f"Pre-tax saving, {person}", PRETAX_NOTE))
             done += 1
         if problems:
-            conn.rollback(); flash(request, "Not saved — " + "; ".join(problems), "bad")
+            conn.rollback(); flash(request, "Not saved: " + "; ".join(problems), "bad")
         else:
             db.mark_inputs_changed(conn); conn.commit()
             flash(request, f"Saved pre-tax saving for {done} {'person' if done == 1 else 'people'}. The dashboard shows it after a rebuild: press Rebuild now.")
@@ -582,7 +582,7 @@ def balances_backfill(request: Request, body: str = Form(...), user=Depends(auth
             db.mark_inputs_changed(conn); conn.commit()
             flash(request, f"Saved {what}. The dashboard shows them after a rebuild: press Rebuild now.")
         except ValueError as e:
-            conn.rollback(); flash(request, f"Not saved — {e}", "bad")
+            conn.rollback(); flash(request, f"Not saved: {e}", "bad")
     return RedirectResponse("/settings#accounts/history", status_code=303)
 
 
@@ -605,7 +605,7 @@ def settings_save(request: Request, key: str, body: str = Form(...), user=Depend
             conn.commit()
             flash(request, f"Saved {what}." + (" The dashboard shows it after a rebuild: press Rebuild now." if key in PIPELINE_INPUTS else ""))
         except Exception as e:  # noqa: BLE001
-            conn.rollback(); flash(request, f"Not saved — {e}", "bad")
+            conn.rollback(); flash(request, f"Not saved: {e}", "bad")
     return RedirectResponse(f"/settings#{key}", status_code=303)   # back to the tab that was saved
 
 
@@ -627,7 +627,7 @@ async def household_form(request: Request, user=Depends(auth.require_editor)):
                 data[k] = f[k].upper() if k == "currency" else f[k]
         problems = _save_setting(conn, "household", data)
         if problems:
-            conn.rollback(); flash(request, "Not saved — " + "; ".join(problems[:4]), "bad")
+            conn.rollback(); flash(request, "Not saved: " + "; ".join(problems[:4]), "bad")
         else:
             conn.commit(); flash(request, "Saved the household's name and display settings.")
     return RedirectResponse("/settings#household", status_code=303)
@@ -664,7 +664,7 @@ async def rules_roles_form(request: Request, user=Depends(auth.require_editor)):
                 rules.pop(key, None)
         problems = _save_setting(conn, "rules", rules)
         if problems:
-            conn.rollback(); flash(request, "Not saved — " + "; ".join(problems[:4]), "bad")
+            conn.rollback(); flash(request, "Not saved: " + "; ".join(problems[:4]), "bad")
         else:
             db.mark_inputs_changed(conn); conn.commit()
             flash(request, "Saved the roles. The dashboard shows them after a rebuild: press Rebuild now.")
@@ -682,7 +682,7 @@ async def rules_people_form(request: Request, user=Depends(auth.require_editor))
         rules = {**(db.get_setting(conn, "rules", {}) or {}), "people": people, "employers": employers}
         problems = _save_setting(conn, "rules", rules)
         if problems:
-            conn.rollback(); flash(request, "Not saved — " + "; ".join(problems[:4]), "bad")
+            conn.rollback(); flash(request, "Not saved: " + "; ".join(problems[:4]), "bad")
         else:
             db.mark_inputs_changed(conn); conn.commit()
             flash(request, f"Saved {len(people)} people and {len(employers)} employer rule(s). The dashboard shows them after a rebuild: press Rebuild now.")

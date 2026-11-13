@@ -2,7 +2,7 @@
 {% block title %}CPI · {{ household.title }}{% endblock %}
 {% block content %}
 <p class="eyebrow">Real dollars</p>
-<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-4)">CPI index</h1>
+<h1 class="page-title loose">CPI index</h1>
 <div class="row">
   <div class="panel">
     <h2>Fetch latest</h2>
@@ -13,9 +13,11 @@
   <form class="panel" method="post" action="/cpi/url">{{ csrf_field(request) }}
     <h2>Series URL</h2>
     <p class="muted">A CSV in FRED's layout (a header, then date and value per month). Leave blank for FRED's CPIAUCSL; non-US households can point at their own index.</p>
+    {% set cf = cpi_form or none %}
     <label for="url">URL</label>
-    <input id="url" name="url" type="text" inputmode="url" value="{{ '' if url == default_url else url }}" placeholder="{{ default_url }}">
-    <p style="margin-top:var(--space-3)"><button class="btn" type="submit">Save URL</button></p>
+    <input id="url" name="url" type="text" inputmode="url" value="{{ cf.url if cf else ('' if url == default_url else url) }}" placeholder="{{ default_url }}"{% if cf %} aria-invalid="true" aria-describedby="url-err"{% endif %}>
+    {% if cf %}<p class="err" id="url-err" role="alert">{{ cf.error[:1]|upper ~ cf.error[1:] }}{{ '' if cf.error.endswith('.') else '.' }}</p>{% endif %}
+    <p class="mt-3"><button class="btn" type="submit">Save URL</button></p>
   </form>
 </div>
 {% endblock %}

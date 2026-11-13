@@ -111,7 +111,7 @@ Weights: `--weight-heading`, `--weight-strong`. Capitals: `--tracking-caps`.
 Spacing `--space-1 2 3 4 6 8 12 16` (4 to 64 px). Radius `--radius-sm md lg full`. Motion `--dur-fast` 120 ms, `--dur` 220 ms,
 `--dur-slow` 300 ms, `--ease`. Breakpoints: phone at 600 px, small at 820 px.
 
-- **DS-SPACE-1** Gaps and padding come from the spacing scale.
+- **DS-SPACE-1** Gaps and padding come from the spacing scale. A page spaces itself with the classes in `app.css` built from it (`.mt-3`, `.mb-2`, `.measure`, `.page-title`), never an inline `style`; only a custom property that carries data (`style="--edge: var(--success)"`) may be set inline.
 - **DS-SHAPE-1** Sheets and controls are square-cornered, within what the kit's radius allows; only a count or a person is round.
 - **DS-MOTION-1** Motion shows where something came from, and lasts no longer than `--dur-slow`. Nothing moves under
   `prefers-reduced-motion`.
@@ -223,12 +223,8 @@ and the critique reports them only on the surfaces a change touches. Each row na
 | Where | Rule | What is wrong | Issue |
 |---|---|---|---|
 | Dashboard page | DS-TOKEN-1 | A 200-line `<style>` block of its own, with raw `em` sizes | #191 |
-| Templates | DS-SPACE-1 | About 135 inline `style` attributes, most of them margins | #193 |
 | Check-in, dashboard | DS-SHEET-4 | No page turn between months | #191 |
 | Dashboard tiles | DS-GLYPH-1 | The figure glyphs (`savings-rate`, `net-worth`, `emergency-fund`) are drawn but not yet placed | #191 |
 | Dashboard | DS-COLOR-2 | `--accent-2` marks card headings, summaries and definitions, which are not destinations | #191 |
 | Dashboard gauges | DS-STATUS-1 | Verdicts are round pills with a dot, not stamps | #191 |
-| Dashboard, Settings | DS-SHEET-1, 2 | Cards and lists lie straight on the paper; one sheet is nested in another | #191 |
-| Settings, Reviews | DS-FORM-1, DS-EMPTY-1 | Filter boxes have no visible label; empty states link in prose where a button should be | #193 |
-| Settings tables | DS-TYPE-3 | Number columns are left-aligned (`.num` exists; the columns do not yet use it) | #193 |
-| Close a month, Settings | DS-BTN-1 | More than one primary button in a view; which is primary is the owner's choice | #193 |
+| Dashboard | DS-SHEET-1, 2 | Cards and lists lie straight on the paper | #191 |

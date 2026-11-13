@@ -2,14 +2,14 @@
 {% block title %}Sources · {{ household.title }}{% endblock %}
 {% block content %}
 <p class="eyebrow">Configuration</p>
-<h1 style="font-family:var(--font-display);font-weight:600;letter-spacing:.02em;margin:0 0 var(--space-2)">Sources</h1>
-<p class="muted" style="max-width:75ch">Files in the internal format, and EveryDollar's exports (the built-in profile below), are read as they are. Any other tool's files are read through a <strong>source profile</strong>:
+<h1 class="page-title">Sources</h1>
+<p class="muted measure">Files in the internal format, and EveryDollar's exports (the built-in profile below), are read as they are. Any other tool's files are read through a <strong>source profile</strong>:
 which column is the date, the amount, the group and the item, and how dates and numbers are written. A profile is created the first
 time you upload that tool's files on <a href="/upload">Close a month</a>. Editing a profile here re-reads every month stored with it
 (the files are kept as uploaded) and rebuilds. The format is described in the README, under "Other budget tools".</p>
 <p class="muted"><a href="/settings">Back to settings</a></p>
 
-<section class="panel" style="margin-top:var(--space-4)" id="builtin-everydollar">
+<section class="panel mt-4" id="builtin-everydollar">
   <h2>EveryDollar (built in)</h2>
   <p class="muted">EveryDollar's Transactions and BudgetItems exports are the internal format with MM/DD/YYYY dates, so files it names
     (<code>…-MM-YYYY-EveryDollar-Transactions.csv</code>) need no mapping step. This profile is read-only; export it to start your own. ·
@@ -18,22 +18,22 @@ time you upload that tool's files on <a href="/upload">Close a month</a>. Editin
 </section>
 
 {% for p in profiles %}
-<form class="panel" method="post" action="/settings/sources" style="margin-top:var(--space-4)">{{ csrf_field(request) }}
+<form class="panel mt-4" method="post" action="/settings/sources">{{ csrf_field(request) }}
   <h2>{{ p.name }}</h2>
   <p class="muted">{{ p.files }} stored file{{ '' if p.files == 1 else 's' }} · last changed {{ p.updated_at|datetime }} ·
     <a href="/settings/sources/{{ p.id }}.json" download>Export JSON</a></p>
   <textarea class="json" name="body" spellcheck="false" aria-label="Profile {{ p.name }} as JSON">{{ p.body }}</textarea>
-  <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Save and re-read its files</button>
+  <p class="mt-3"><button class="btn primary" type="submit">Save and re-read its files</button>
     {% if not p.files %}<button class="btn" type="submit" formaction="/settings/sources/{{ p.id }}/delete">Delete</button>{% endif %}</p>
 </form>
 {% else %}
-<p class="panel muted" style="margin-top:var(--space-4)">No source profiles of your own yet: everything so far was read in the internal format or through the built-in EveryDollar profile.</p>
+<p class="panel muted mt-4">No source profiles of your own yet: everything so far was read in the internal format or through the built-in EveryDollar profile.</p>
 {% endfor %}
 
-<form class="panel" method="post" action="/settings/sources" style="margin-top:var(--space-4)">{{ csrf_field(request) }}
+<form class="panel mt-4" method="post" action="/settings/sources">{{ csrf_field(request) }}
   <h2>Import a profile</h2>
   <p class="muted">Paste a profile exported from another install. A profile with the same name is replaced.</p>
   <textarea class="json" name="body" spellcheck="false" aria-label="Profile JSON to import" required></textarea>
-  <p style="margin-top:var(--space-3)"><button class="btn primary" type="submit">Import</button></p>
+  <p class="mt-3"><button class="btn primary" type="submit">Import</button></p>
 </form>
 {% endblock %}

@@ -48,7 +48,7 @@ def map_items(request: Request, background: BackgroundTasks, item: list[str] = F
             mapping_store.write_rows(conn, [{"item": i, "canonical_item": c, "category": g, "flow": f, "note": ""} for i, c, g, f in rows])
         except mapping_store.MappingError as e:
             conn.rollback()
-            flash(request, f"Not saved — {e}", "bad")
+            flash(request, f"Not saved: {e}", "bad")
             return RedirectResponse("/upload", status_code=303)
         conn.commit()
         busy = build_running(conn)

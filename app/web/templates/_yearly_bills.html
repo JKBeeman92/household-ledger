@@ -5,7 +5,7 @@
 {% set chip = {"detected": ("Found", ""), "confirmed": ("Confirmed", "ok"), "added": ("Added", "ok")} %}
 <section class="panel" id="yearly-bills">
   <h2>Yearly bills</h2>
-  <p class="muted" style="max-width:75ch">Bills that fall once a year, or every few years: insurance premiums, property tax, registration. The app finds an item paid in about the same month in at least two of the last three years; confirm what it found, correct a month or amount, or add one it missed. Name the envelope (or account) that saves for each, and the check-in says how much is set aside.</p>
+  <p class="muted measure">Bills that fall once a year, or every few years: insurance premiums, property tax, registration. The app finds an item paid in about the same month in at least two of the last three years; confirm what it found, correct a month or amount, or add one it missed. Name the envelope (or account) that saves for each, and the check-in says how much is set aside.</p>
   <details class="how" id="yb-add" {% if f or not live %}open{% endif %}><summary>Add a yearly bill</summary>
     <form method="post" action="/yearly-bills" class="tools">{{ csrf_field(request) }}<input type="hidden" name="source" value="added">
       <span><label for="yb-new-item">Budget item</label> <input id="yb-new-item" name="item" list="settings-canonicals" required size="20" value="{{ f.get('item', '') }}"{% if bad == 'item' %} aria-invalid="true" aria-describedby="yb-new-err"{% endif %}></span>

@@ -42,7 +42,7 @@
     function setOrig(tr, row) { origFields.forEach(function (f, i) { tr.dataset["o" + i] = row[f] == null ? "" : row[f]; }); }
     function show(tr, row) {
       tr.className = ""; tr.textContent = "";
-      fields.forEach(function (f) { tr.appendChild(el("td", { "data-f": f }, row[f] == null ? "" : String(row[f]))); });
+      fields.forEach(function (f) { var th = table.querySelector('th[data-sort="' + f + '"]'), at = { "data-f": f }; if (th && th.classList.contains("num")) at["class"] = "num"; tr.appendChild(el("td", at, row[f] == null ? "" : String(row[f]))); });   // a figure column stays right-aligned (DS-TYPE-3)
       var td = el("td", { "class": "acts" });
       var what = String(row[fields[0]] == null ? "this row" : row[fields[0]]);   // a button names its row to a screen reader (DS-A11Y-2)
       var eb = el("button", { type: "button", "class": "btn", "data-act": "edit", "aria-label": "Edit " + what }, "Edit"), db = el("button", { type: "button", "class": "btn", "data-act": "del", "aria-label": "Delete " + what }, "Delete");

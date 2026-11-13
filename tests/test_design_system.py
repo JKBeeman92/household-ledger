@@ -111,3 +111,32 @@ def test_dashboard_charts_draw_fixes_courses_and_waypoints():
     for chart in ("monthly", "goal-lines", "ef-lines", "dti-lines", "nw-chart"):
         start = page.index(f"dash.draw('{chart}'"); body = page[start:page.index("\ndash.draw(", start + 10)]
         assert "HL.fixes(" in body, chart
+
+
+def test_templates_set_no_inline_style_except_a_custom_property_that_carries_data():
+    """DS-SPACE-1: a page spaces itself with the classes in app.css. The dashboard's own block is #191's."""
+    bad = {}
+    for path in sorted((WEB / "templates").rglob("*.html")):
+        if path.name == "dashboard.html":
+            continue
+        found = [m for m in re.findall(r'style="([^"]*)"', path.read_text(encoding="utf-8")) if not m.startswith("--")]
+        if found:
+            bad[path.name] = found
+    assert not bad, f"inline style: use a class from app.css (DS-SPACE-1): {bad}"
+
+
+def test_the_spacing_classes_the_pages_use_are_built_from_tokens():
+    css = (WEB / "static" / "app.css").read_text(encoding="utf-8")
+    for cls in ("mt-0", "mt-2", "mt-3", "mt-4", "mb-0", "mb-2", "mb-3", "ml-2", "ml-4", "m-0", "measure", "page-title", "edge", "edge-note", "filterbox", "err"):
+        assert re.search(rf"\.{cls}\b[^{{]*{{", css), cls
+    assert re.search(r"\.measure\s*{\s*max-width:\s*75ch", css)   # DS-TYPE-4
+    used = set()
+    for path in (WEB / "templates").rglob("*.html"):
+        for c in re.findall(r'class="([^"{}]*)"', path.read_text(encoding="utf-8")):
+            used |= {x for x in c.split() if re.fullmatch(r"m[tbl]?-\d", x)}
+    assert used <= {"mt-0", "mt-2", "mt-3", "mt-4", "mb-0", "mb-2", "mb-3", "ml-2", "ml-4", "m-0"}, used   # no class the stylesheet lacks
+
+
+def test_no_route_flashes_not_saved_with_a_dash():
+    for path in sorted((ROOT / "app" / "routes").glob("*.py")):
+        assert "Not saved —" not in path.read_text(encoding="utf-8"), f"{path.name}: write \"Not saved: …\""

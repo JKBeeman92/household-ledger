@@ -257,3 +257,33 @@ label.check { display: inline-flex; align-items: center; gap: var(--space-2); }
 dl.dti dt, dl.dti dd { min-width: 0; overflow-wrap: anywhere; }   /* DS-LAYOUT-1: typed text wraps inside its card */
 dl.dti.long-labels { grid-template-columns: minmax(0, 40ch) minmax(14ch, 1fr); }   /* a sentence as the label leaves the figure room */
 @media (max-width: 600px) { dl.dti.long-labels { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- Spacing and type utilities (DS-SPACE-1, DS-TYPE-4): built from the spacing and type tokens, so a page types no value of its own ---- */
+.mt-0 { margin-top: 0; } .mt-2 { margin-top: var(--space-2); } .mt-3 { margin-top: var(--space-3); } .mt-4 { margin-top: var(--space-4); }
+.mb-0 { margin-bottom: 0; } .mb-2 { margin-bottom: var(--space-2); } .mb-3 { margin-bottom: var(--space-3); }
+.ml-2 { margin-left: var(--space-2); } .ml-4 { margin-left: var(--space-4); }
+.m-0 { margin: 0; }
+.measure { max-width: 75ch; }   /* running text is no wider than 75 characters (DS-TYPE-4) */
+.w-form { max-width: 50rem; } .w-confirm { max-width: 44rem; }
+/* a page's title: the display face, set once */
+.page-title { font-family: var(--font-display); font-weight: var(--weight-heading); letter-spacing: .02em; margin: 0 0 var(--space-2); }
+.page-title.loose { margin-bottom: var(--space-4); }
+/* a verdict's rule down the left of a sheet or a note; the colour only repeats the words beside it (DS-COLOR-4) */
+.edge { border-left: 3px solid var(--edge, var(--info)); }
+.edge.warn { --edge: var(--warning); } .edge.ok { --edge: var(--success); } .edge.bad { --edge: var(--danger); }
+.edge-note { padding-left: var(--space-3); }
+.text-bad { color: var(--danger); }
+.strong { font-weight: var(--weight-strong); }
+.pre-wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+.indent-list { margin: 0; padding-left: var(--space-6); }
+.bare-list { list-style: none; margin: 0; padding: 0; }
+.rule-row { padding: var(--space-3) 0; border-top: 1px solid var(--line); }
+.fields-row { display: flex; gap: var(--space-4); align-items: end; flex-wrap: wrap; }
+.tokenline { display: flex; gap: var(--space-2); align-items: center; }
+.label-inline { display: inline; font-weight: 400; }
+.bare-fieldset { border: 0; padding: 0; margin: var(--space-3) 0 0; }
+/* a filter box has its label above it (DS-FORM-1) */
+.filterbox { margin: var(--space-3) 0 0; max-width: 18rem; }
+/* a field's error sits under it in words, and the field is marked (DS-FORM-1) */
+.err { color: var(--danger); font-size: var(--text-small); margin: var(--space-1) 0 0; }
+[aria-invalid=true] { border-color: var(--danger); }
