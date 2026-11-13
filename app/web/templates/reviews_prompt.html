@@ -1,5 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Review instructions · {{ household.title }}{% endblock %}
+{% block title %}Review instructions · {{ household.title }}<script nonce="{{ csp_nonce(request) }}">
+// Preview reloads the page: while the instructions have unsaved edits it waits, and says why, so the edits are not lost
+(() => { const ta = document.getElementById('instructions'), btn = document.getElementById('preview-btn'), note = document.getElementById('preview-note'); if (!ta || !btn || btn.disabled) return;
+  const first = ta.value; ta.addEventListener('input', () => { const dirty = ta.value !== first; btn.disabled = dirty;
+    note.textContent = dirty ? 'Save the instructions first: Preview uses the saved ones.' : 'Uses the saved instructions.'; }); })();
+</script>
+{% endblock %}
 {% block content %}
 <p class="eyebrow">Month-close review</p>
 <h1 class="page-title">Review instructions</h1>
@@ -15,7 +21,7 @@
     <p class="muted">The exact JSON that would be sent with the instructions for a month. Nothing is sent to a provider.</p>
     <form method="get" action="/reviews/prompt#ctx-h">
       <p><label for="month">Budget month</label><br><select id="month" name="month">{% for m in months %}<option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m|month_short }}</option>{% endfor %}</select></p>
-      <p><button class="btn" type="submit" {% if not months %}disabled{% endif %}>Preview</button></p>
+      <p><button class="btn" type="submit" id="preview-btn" {% if not months %}disabled{% endif %}>Preview</button> <span class="muted" id="preview-note" aria-live="polite">Uses the saved instructions.</span></p>
     </form>
     <form method="post" action="/reviews/prompt/reset">{{ csrf_field(request) }}<input type="hidden" name="month" value="{{ month or '' }}">
       <h3>Reset</h3><p class="muted">Discard the saved text and use the built-in instructions.</p>

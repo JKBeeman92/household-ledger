@@ -354,14 +354,14 @@
     <div class="card">
       <h2 id="q-compare">The quarter, a month at a time</h2>
       <ul class="key row"><li>each figure is a month's average, so a partial quarter compares fairly</li></ul>
-      <details class="how"><summary>How to read this</summary><p>A quarter is three budget months, counted from the year's first month (the year_start_month rule; January unless changed). Each figure is the quarter's total divided by its months, so a quarter with only two months loaded is compared fairly; it says so. "A year before" is the same quarter of the year before, which takes out the seasons; when that quarter is not loaded the column says so rather than showing zero. Real figures (the toggle) are in one month's prices.</p></details>
+      <details class="how"><summary>How to read this</summary><p>A quarter is three budget months, counted from the year's first month (January unless changed in Settings). Each figure is the quarter's total divided by its months, so a quarter with only two months loaded is compared fairly; it says so. "A year before" is the same quarter of the year before, which takes out the seasons; when that quarter is not loaded the column says so rather than showing zero. Real figures (the toggle) are in one month's prices.</p></details>
       <div class="tbl" role="region" tabindex="0" aria-labelledby="q-compare"><table><thead><tr><th scope="col">Figure</th><th scope="col" class="num" data-draw="q-head-this" data-source="quarter_review">This quarter</th><th scope="col" class="num" data-draw="q-head-prev" data-source="quarter_review">Previous</th><th scope="col" class="num">Change</th><th scope="col" class="num" data-draw="q-head-ago" data-source="quarter_review">A year before</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="q-compare" data-source="quarter_review"></tbody></table></div>
       <p class="note" data-draw="q-balances" data-source="quarter_review"></p>
     </div>
     <div class="card">
       <h2 id="q-movers">What moved</h2>
-      <ul class="key row"><li>the five categories that moved most, a month at a time</li><li>by dollars, against the previous quarter and a year before</li><li><i>also last year</i>: the same move happened a year before, so it is a season or a yearly bill, not a new habit</li></ul>
-      <details class="how"><summary>How to read this</summary><p>The categories whose monthly spending changed most, in dollars, against the previous quarter and against the same quarter a year before. A change of a few dollars on a small line is left out of the percentage list, so a $3 line doubling does not crowd out the ones that matter.</p></details>
+      <ul class="key row"><li>the biggest moves in living spend, in dollars a month</li><li>debt and savings lines follow, marked (debt or savings)</li><li><i>also last year</i>: the same move happened a year before, so it is a season or a yearly bill, not a new habit</li></ul>
+      <details class="how"><summary>How to read this</summary><p>The categories whose monthly spending changed most, in dollars, against the previous quarter and against the same quarter a year before.</p></details>
       <div class="grid"><div><h3 class="sub" id="q-movers-prev-h">Against the previous quarter</h3><div class="tbl short" role="region" tabindex="0" aria-labelledby="q-movers q-movers-prev-h"><table><thead><tr><th scope="col">Category</th><th scope="col" class="num">A month now</th><th scope="col" class="num">Then</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="q-movers-prev" data-source="quarter_review" data-list="unbounded"></tbody></table></div></div>
         <div><h3 class="sub" id="q-movers-ago-h">Against a year before</h3><div class="tbl short" role="region" tabindex="0" aria-labelledby="q-movers q-movers-ago-h"><table><thead><tr><th scope="col">Category</th><th scope="col" class="num">A month now</th><th scope="col" class="num">Then</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="q-movers-ago" data-source="quarter_review" data-list="unbounded"></tbody></table></div></div></div>
     </div>
@@ -939,20 +939,22 @@ dash.draw('cat-pivot', (tb) => {
   const yearCols = yearsOf(dash.data('cat_year').data); yearHead(tb, yearCols);
   HL.fillTable(tb, g.data, [(r) => r.category, ...yearCols.map((y) => (r) => r['y' + y + sfx] ? HL.usd0(r['y' + y + sfx]) : '—'), (r) => HL.usd0(r['total' + sfx])]);
 });
-dash.draw('cat-pick', (sel) => {
-  const g = dash.data('cat_year'); const cats = g.status === 'ok' ? Array.from(new Set(g.data.map((r) => r.category))).sort() : [];
-  // start on the category with the most items (ties: the most spent), so the table opens on a useful one, not a one-row category
+// the category the items table shows: the one picked, else the one with the most items (ties: the most spent), so it opens on a useful
+// category, not a one-row one. The picker and the table both ask here, so they always agree (a picked category no longer there falls back).
+HL.itemCat = (cats) => { const p = dash.params().cat; if (p && cats.includes(p)) return p;
   const it = dash.data('item_year'), n = new Map(), spent = new Map();
   if (it.status === 'ok') for (const r of it.data) { (n.get(r.category) || n.set(r.category, new Set()).get(r.category)).add(r.item); spent.set(r.category, (spent.get(r.category) || 0) + Math.abs(Number(r.amount) || 0)); }
-  const best = cats.slice().sort((a, b) => ((n.get(b) || new Set()).size - (n.get(a) || new Set()).size) || ((spent.get(b) || 0) - (spent.get(a) || 0)))[0];
-  const cur = dash.params().cat || best || '';
+  return cats.slice().sort((a, b) => ((n.get(b) || new Set()).size - (n.get(a) || new Set()).size) || ((spent.get(b) || 0) - (spent.get(a) || 0)) || (a < b ? -1 : 1))[0] || ''; };
+dash.draw('cat-pick', (sel) => {
+  const g = dash.data('cat_year'); const cats = g.status === 'ok' ? Array.from(new Set(g.data.map((r) => r.category))).sort() : [];
+  const cur = HL.itemCat(cats);
   sel.replaceChildren(...cats.map((c) => new Option(c, c))); sel.value = cur;
   sel.onchange = () => dash.setParams({ cat: sel.value || null });
 });
 dash.draw('item-pivot', (tb) => {
   const g = dash.data('item_pivot'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   const cats = Array.from(new Set(g.data.map((r) => r.category))).sort();
-  const cat = dash.params().cat || (cats.includes('Groceries') ? 'Groceries' : cats[0]);
+  const cat = HL.itemCat(Array.from(new Set(dash.data('cat_year').status === 'ok' ? dash.data('cat_year').data.map((r) => r.category) : cats)).sort());
   const yearCols = yearsOf(dash.data('item_year').data); yearHead(tb, yearCols);
   HL.fillTable(tb, g.data.filter((r) => r.category === cat), [(r) => r.item, ...yearCols.map((y) => (r) => r['y' + y] ? HL.usd0(r['y' + y]) : '—'), (r) => HL.usd0(r.total)]);
   for (const tr of tb.children) tr.dataset.key = tr.firstChild.textContent;
