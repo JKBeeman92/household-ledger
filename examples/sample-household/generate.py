@@ -41,7 +41,13 @@ ITEMS = [
     ("Fun", "Date Night", "Date Night", "Fun", "expense", 100, ["Green Dragon Inn", "Hobbiton Picture House"], (0, 2), (0.6, 1.3)),
     ("Debt", "Student Loan", "Student Loan", "Debt", "debt", 275, ["Lembas Loan Servicing"], (1, 1), (1.0, 1.0)),
     ("Other", "Venmo Pass-Through", "Venmo Pass-Through", "Other", "exclude", 0, ["Venmo"], (0, 2), (1.0, 1.0)),
+    # yearly bills (#151), written without the random stream so every row above stays as it was: a premium saved for in its own
+    # envelope, and a registration with none; the detector finds both, and the monthly bills above are not mistaken for one
+    ("Insurance", "Smial Insurance", "Smial Insurance", "Insurance", "expense", 0, ["Brandybuck Mutual"], (0, 0), (1.0, 1.0)),
+    ("Savings", "Smial Insurance Fund", "Smial Insurance Fund", "Savings", "expense", 80, ["Green Hills Credit Union"], (0, 0), (1.0, 1.0)),
+    ("Transportation", "Cart Registration", "Cart Registration", "Transportation", "expense", 0, ["Shire Cart Office"], (0, 0), (1.0, 1.0)),
 ]
+YEARLY = {"Smial Insurance": (2, 96000, 11), "Cart Registration": (3, 18600, 8)}   # item: (month, cents, day)
 DEBT_TYPES = {"Student Loan": "student"}   # the mapping's optional DebtType column (#141)
 FIXED_DAY = {"Rent": 1, "Internet": 6, "Renters Insurance": 9, "Car Insurance": 12, "Student Loan": 15, "Emergency Fund": 4, "Electric": 18, "Water": 21, "Charity": 5}
 SEASON = {"Electric": {12: 1.35, 1: 1.45, 2: 1.35, 7: 1.15, 8: 1.15}}
@@ -131,6 +137,14 @@ def build_month(rng, y, m):
     txns, planned = [], {}   # txns: (day, group, item, type, merchant, cents, note)
     for g, item, canon, cat, flow, plan, merch, ntx, spread in ITEMS:
         base = plan * 100
+        if item in YEARLY:   # once a year, in its month
+            mo, cents, day = YEARLY[item]
+            planned[item] = cents if m == mo else 0
+            if m == mo: txns.append((day, g, item, "Expense", merch[0], -cents, "the yearly bill"))
+            continue
+        if item == "Smial Insurance Fund":   # the envelope saving for it: planned each month, spent only by moving money in
+            planned[item] = base
+            continue
         if item == "Rosie Paycheck":
             days = pay_dates(y, m); net = (RAISE[1] if bm >= RAISE[0] else NET_PAY) * 100
             planned[item] = net * len(days)

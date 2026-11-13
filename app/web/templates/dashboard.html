@@ -329,6 +329,14 @@
       <details class="listcount" id="lm-decisions-list" open><summary data-draw="lm-decisions-count" data-source="decisions">Decisions</summary>
         <dl class="dti long-labels" data-draw="lm-decisions" data-source="decisions" data-list="unbounded"></dl></details>
     </div>
+    <div class="card" id="lm-bills-card">
+      <h2 id="lm-bills">Yearly bills coming up</h2>
+      <ul class="key row"><li>bills that fall once a year, due in the next three months</li><li>what is set aside for each</li></ul>
+      <details class="how"><summary>How to read this</summary><p>A yearly bill is an item paid in about the same month in at least two of the last three years, or one you added on Settings → Yearly bills. Its amount is last year's. Set aside is what its envelope was given less what was spent from it since the bill last fell due; with no envelope, the line says what a month from now would cover it. Confirm, correct or dismiss bills on Settings → Yearly bills.</p></details>
+      <div data-draw="lm-bills-empty" data-source="yearly_bills"></div>
+      <details class="listcount" id="lm-bills-list" open><summary data-draw="lm-bills-count" data-source="yearly_bills">Bills</summary>
+        <dl class="dti" data-draw="lm-bills" data-source="yearly_bills" data-list="unbounded"></dl></details>
+    </div>
     <div class="card" id="lm-payoff-card">
       <h2 id="lm-payoff">When the debts are gone</h2>
       <ul class="key row"><li>each debt's month-end balance and its change</li><li>the month it is paid off at last month's payment (est.)</li></ul>
@@ -1150,6 +1158,27 @@ dash.draw('lm-decisions', (el) => {
     v.textContent = r.verdict ? DEC_WORDS[word] : (DEC_CHIP[word] ? 'looks ' + DEC_WORDS[word] : DEC_WORDS[word] || '—');
     const fig = decFigure(r);
     d.className = 'muted'; d.textContent = (r.verdict ? 'your verdict' : 'the app’s reading, not yet confirmed') + (fig ? ' · ' + fig : '');
+    dd.append(v, d); el.append(dt, dd);
+  }
+});
+// yearly bills (#151): due in the next three months after the latest month, with the set-aside
+const billsSoon = () => { const g = dash.data('yearly_bills'), m = dash.data('monthly'); if (g.status !== 'ok' || m.status !== 'ok' || !m.data.length) return null;
+  const last = m.data.map((r) => r.m).sort().pop(), [y, mo] = last.split('-').map(Number), i = y * 12 + mo - 1 + 3, until = `${Math.floor(i / 12)}-${String(i % 12 + 1).padStart(2, '0')}`;
+  return g.data.filter((b) => b.source !== 'dismissed' && b.next_due && b.next_due > last && b.next_due <= until).sort((a, b) => a.next_due < b.next_due ? -1 : 1); };
+dash.draw('lm-bills-count', (el) => { const soon = billsSoon(); if (!soon) return; el.textContent = soon.length + ' yearly bill' + (soon.length === 1 ? '' : 's') + ' in the next three months';
+  const d = el.closest('details'); if (d) d.open = soon.length <= 3; });
+dash.draw('lm-bills-empty', (el) => { el.replaceChildren(); const g = dash.data('yearly_bills'), soon = billsSoon(), p = document.createElement('p'), list = document.getElementById('lm-bills-list');
+  if (list) list.hidden = !(soon && soon.length);
+  if (soon && soon.length) return;
+  if (g.status === 'ok') { p.textContent = g.data.some((b) => b.source !== 'dismissed') ? 'No yearly bill falls in the next three months.' : 'No yearly bill found yet. Bills paid once a year show here three months before they fall due.';
+    el.append(p, Object.assign(document.createElement('a'), { className: 'btn', href: '/settings#yearly-bills', textContent: 'See yearly bills' })); }
+  else { p.className = 'muted'; p.textContent = g.status === 'missing' ? 'Rebuild the ledger to see yearly bills (Close a month).' : '—'; el.append(p); } });
+dash.draw('lm-bills', (el) => { el.replaceChildren(); const soon = billsSoon(); if (!soon) return;
+  for (const b of soon) {
+    const dt = document.createElement('dt'), dd = document.createElement('dd'), v = document.createElement('span'), d = document.createElement('div');
+    dt.textContent = b.item; v.className = 'v'; v.textContent = `${HL.fmtM(HL.parseM(b.next_due))} · ${HL.usd0(b.amount)}`;
+    d.className = 'muted'; d.textContent = b.set_aside != null ? `${HL.usd0(b.set_aside)} set aside in ${b.funded_by}` + (b.short ? ` · ${HL.usd0(b.per_month)} a month covers the rest` : ' · covered')
+      : `no envelope saves for it · ${HL.usd0(b.per_month)} a month covers it`;
     dd.append(v, d); el.append(dt, dd);
   }
 });

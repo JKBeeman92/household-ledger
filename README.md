@@ -486,6 +486,24 @@ null), `source` (`estimated` or `planned`) and `ref` (the account or event it co
 written to the life events. The check-in's **Coming up** step lists the next three months, the review reads the same months with
 public labels, and MCP serves `coming_up` with `public_label` as its label and no `ref`.
 
+## Yearly bills
+
+"Which big once-a-year bills land in the next three months, and have we set enough aside?" A yearly premium otherwise shows only as a
+small average on the Recurring tab, and its month looks broken when it is just its turn. At every build the app looks for items paid
+in about the same budget month (within `yearly_bill_tolerance`, 1 month) in at least `yearly_bill_min_years` (2) of the last three
+budget years, and never three months or more in one year; each is due in that month, for about last year's amount.
+
+- **Settings → Yearly bills** lists what was found. Confirm a bill, correct its month, amount or cadence (every two years, say), add
+  one the app missed, or dismiss one: a dismissal stays across rebuilds. Each bill can name what saves for it: a budget envelope (the
+  default guess is an item named after the bill with Fund, `Car Insurance` → `Car Insurance Fund`) or an account.
+- **Set aside** is the envelope's planned amounts less what was spent from it since the bill last fell due, or the account's latest
+  balance. Where it falls short, the app says what a month from now would cover it.
+- The **Last month tab** and the check-in's **Coming up** step show the bills due in the next three months, with what is set aside.
+  Each bill's next due month is a `yearly_bill` row in `coming_up`.
+- From the command line: `python -m app.admin yearly-bills` prints what the last build found, with the months each was seen in (read
+  only, safe against a live install); `yearly-bills confirm|add|dismiss|restore ITEM` changes the list. It travels in `settings.zip`
+  as `yearly_bills.csv`; the `yearly_bills` dataset reaches MCP (without an account's name).
+
 ## Decisions
 
 "Last month we said we'd cut eating out to $400 and put $200 extra on the car loan. Did we?" The check-in's **Next month** step writes

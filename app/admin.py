@@ -18,7 +18,7 @@ EX_TEMPFAIL = 75
 log = logging.getLogger("ledger.admin")
 SETTERS = {"import-mapping": "mapping", "set-rules": "rules", "set-events": "events", "set-goals": "goals", "set-cpi": "cpi", "set-household": "household",
            "set-accounts": "accounts", "set-balances": "balances"}   # set-balances adds or corrects month-ends (account,YYYY-MM,amount); it never deletes
-EXPORTABLE = ("mapping", "rules", "events", "goals", "cpi", "household", "accounts", "balances", "decisions")
+EXPORTABLE = ("mapping", "rules", "events", "goals", "cpi", "household", "accounts", "balances", "decisions", "yearly_bills")
 
 
 def _read(path: str) -> str:
@@ -151,6 +151,55 @@ def decisions_cmd(a) -> int:
             conn.rollback(); print(f"decisions {a.dcmd}: {e}", file=sys.stderr); return 2
 
 
+MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+
+
+def yearly_bills_cmd(a) -> int:
+    """`python -m app.admin yearly-bills [report|confirm|add|dismiss|restore]` (#151). The report reads the last build in a
+    read-only transaction, so it is safe against a live install: it is the check a household runs on its own back catalogue."""
+    from app import yearly_bills
+    with _connect() as conn:
+        if (a.ycmd or "report") == "report":
+            conn.execute("SET TRANSACTION READ ONLY")   # nothing below writes; on an install not yet upgraded it changes nothing either
+            has_table = conn.execute("SELECT to_regclass('public.yearly_bills') AS t").fetchone()["t"] is not None
+            built = conn.execute("SELECT 1 FROM datasets WHERE name='yearly_bills'").fetchone()
+            if built and has_table:
+                rows, how = yearly_bills.for_page(conn), "from the last build"
+            else:   # not built with this version yet (e.g. a 0.6 install checked from this branch): work it out from the last build's budget rows
+                from pipeline import yearly_bills as detect
+                ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('budget_items', 'balances')").fetchall()}
+                budget = ds.get("budget_items") or []
+                if not budget:
+                    conn.rollback(); print("No build to read: the install has no budget_items dataset yet.", file=sys.stderr); return 1
+                stored = [dict(r) for r in conn.execute("SELECT item, month, amount, every_years, funded_by, source FROM yearly_bills").fetchall()] if has_table else []
+                last = {b["account"]: b["amount"] for b in ds.get("balances") or []}
+                months_loaded = {r["m"] for r in budget}
+                rows, how = detect.bills(budget, stored, max(months_loaded), months_loaded, sorted({r["canonical"] for r in budget}), last), "worked out now from the last build's budget rows; nothing saved"
+            conn.rollback()
+            print(f"# yearly bills, {how}", file=sys.stderr)
+            print("item\tsource\tmonth\tabout\tyears seen\tpaid in\tsaved for in\tset aside\tnext due\tnot paid in")
+            for b in rows:
+                print("\t".join(str(x) for x in (b["item"], b["source"], MONTHS[int(b["month"]) - 1] + (f" (every {b['every_years']} years)" if (b.get("every_years") or 1) > 1 else ""),
+                      "" if b.get("amount") is None else f"{b['amount']:.2f}", b.get("years_seen", 0), ",".join(b.get("evidence") or []),
+                      (b.get("funded_by") or "") + (" (guess)" if b.get("funded_guess") else ""), "" if b.get("set_aside") is None else f"{b['set_aside']:.2f}", b.get("next_due") or "", b.get("missed") or "")))
+            found = [b for b in rows if b["source"] == "detected"]
+            print(f"\n{len(found)} found and not yet confirmed, {sum(1 for b in rows if b['source'] in ('confirmed', 'added'))} confirmed or added, "
+                  f"{sum(1 for b in rows if b['source'] == 'dismissed')} dismissed.", file=sys.stderr)
+            return 0
+        try:
+            if a.ycmd in ("confirm", "add"):
+                cur = next((b for b in yearly_bills.for_page(conn) if b["item"] == a.item), {})
+                yearly_bills.save(conn, a.item, a.month or cur.get("month") or 1, a.amount if a.amount is not None else cur.get("amount"), a.every,
+                                  a.fund or cur.get("funded_by"), "added" if a.ycmd == "add" else "confirmed", f"{_who()} (cli)")
+            elif a.ycmd == "dismiss":
+                yearly_bills.dismiss(conn, a.item, f"{_who()} (cli)")
+            elif a.ycmd == "restore":
+                yearly_bills.restore(conn, a.item)
+            conn.commit(); print(f"{a.item}: {dict(confirm='confirmed', add='added', dismiss='dismissed', restore='handed back to the detector')[a.ycmd]}. Rebuild to apply it."); return 0
+        except ValueError as e:
+            conn.rollback(); print(f"yearly-bills {a.ycmd}: {e}", file=sys.stderr); return 2
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m app.admin", description=__doc__.split("\n\n")[0])
     sub = p.add_subparsers(dest="cmd", required=True, metavar="command")
@@ -185,6 +234,14 @@ def main(argv: list[str] | None = None) -> int:
     x = dsub.add_parser("check", help="the household's verdict on decision ID for MONTH"); x.add_argument("id", type=int); x.add_argument("month"); x.add_argument("verdict", choices=["kept", "partly", "dropped"])
     x = dsub.add_parser("carry", help="keep decision ID in force one month after MONTH"); x.add_argument("id", type=int); x.add_argument("month")
     x = dsub.add_parser("remove", help="delete decision ID and its checks"); x.add_argument("id", type=int)
+    sp = sub.add_parser("yearly-bills", help="yearly bills (#151): a read-only report of what the last build found, or confirm/add/dismiss/restore one")
+    ysub = sp.add_subparsers(dest="ycmd", metavar="action")
+    ysub.add_parser("report", help="(the default) every bill the last build found or you listed, with the months it was seen in; read only")
+    for name, what in (("confirm", "confirm a found bill, correcting it if need be"), ("add", "add a bill the detector missed")):
+        x = ysub.add_parser(name, help=what); x.add_argument("item"); x.add_argument("--month", type=int, required=(name == "add"))
+        x.add_argument("--amount", type=float); x.add_argument("--every", type=int, default=1); x.add_argument("--fund", help="the envelope or account that saves for it")
+    x = ysub.add_parser("dismiss", help="not a yearly bill: stays dismissed across rebuilds"); x.add_argument("item")
+    x = ysub.add_parser("restore", help="hand a bill back to the detector"); x.add_argument("item")
     sub.add_parser("preview-mapping-migration", help="before upgrading to 0.5.0: print what migration 0133 would change in the item mapping "
                                                      "(nothing is changed; run it against a copy of the 0.4.x database)")
     a = p.parse_args(argv)
@@ -212,6 +269,8 @@ def main(argv: list[str] | None = None) -> int:
         return checkin_status(a.month)
     if a.cmd == "decisions":
         return decisions_cmd(a)
+    if a.cmd == "yearly-bills":
+        return yearly_bills_cmd(a)
     with _connect() as conn:
         if a.cmd == "export-settings":
             from app.settings_export import write_dir
