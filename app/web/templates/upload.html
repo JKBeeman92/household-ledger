@@ -54,11 +54,11 @@ addEventListener('DOMContentLoaded', () => {
 </div>{% endif %}
 <div class="row mt-4">
   <form class="panel" method="post" action="/upload" enctype="multipart/form-data">{{ csrf_field(request) }}
-    <h2>1 · Upload the month's two files</h2>
+    <h2>1 · Upload the month's files</h2>
     <ul class="checks">
-      <li><b>Both exports</b> for the month that just ended, from your budget tool: its transactions file and its budget file (from EveryDollar, the files ending <code>Transactions.csv</code> and <code>BudgetItems.csv</code>; files in the <a href="https://github.com/JKBeeman92/household-ledger#the-internal-format">internal format</a> too).</li>
-      <li><b>Or a <code>.zip</code></b> of several months (up to {{ max_upload_mb }} MB). Re-uploading a month replaces it.</li>
-      <li><b>Another budget tool?</b> Upload its transactions and budget CSVs together; you map their columns once (<a href="/settings/sources">Sources</a>).</li>
+      <li><b>The month that just ended:</b> its transactions file and its budget file from your budget tool. From EveryDollar these end in <code>Transactions.csv</code> and <code>BudgetItems.csv</code>.</li>
+      <li><b>Several months at once:</b> a <code>.zip</code> of them, up to {{ max_upload_mb }} MB. Uploading a month again replaces it.</li>
+      <li><b>Another budget tool:</b> upload its two CSVs together and map their columns once (<a href="/settings/sources">Sources</a>). Files in the <a href="https://github.com/JKBeeman92/household-ledger#the-internal-format">internal format</a> load as they are.</li>
     </ul>
     <p class="muted">On arrival each envelope's transactions are checked against its Spent, then the ledger rebuilds.</p>
     <label for="files">Export files</label>
@@ -70,7 +70,8 @@ addEventListener('DOMContentLoaded', () => {
   <div class="panel" id="review">
     <h2>2 · Write the month's review</h2>
     <p class="muted">Sends the closed month's figures (planned vs spent, category gaps against plan and against the trailing twelve months, the ledger's clean totals, and the standing targets) to the model and stores the result. Nothing else leaves the server. The review appears on the dashboard's Last month tab.</p>
-    {% if review_enabled %}<form method="get" action="/reviews/confirm"><input type="hidden" name="back" value="/upload#review">
+    {% if review_enabled and not months %}<p>A review needs a month to read. Upload a month first (step 1).</p>
+    {% elif review_enabled %}<form method="get" action="/reviews/confirm"><input type="hidden" name="back" value="/upload#review">
       <label for="month">Budget month</label>
       <select id="month" name="month">{% for m in months %}<option value="{{ m }}" {% if loop.first %}selected{% endif %}>{{ m|month_short }}</option>{% endfor %}</select>
       <p class="mt-4"><button class="btn" type="submit">Write review</button></p>

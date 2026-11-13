@@ -22,6 +22,8 @@ PAIRS = [
     ("on-accent", "accent", TEXT, "primary button, selected tab, current nav"), ("on-accent", "accent-hover", TEXT, "primary button hover"),
     ("accent-2-text", "surface-100", TEXT, "eyebrow"), ("accent-2-text", "surface-200", TEXT, "eyebrow, 'how to read this' in panels"),
     ("success", "surface-200", TEXT, "tile deltas"), ("warning", "surface-200", TEXT, "filled rows"), ("danger", "surface-200", TEXT, "negative amounts"),
+    ("success", "surface-100", TEXT, "status stamps and flashes on the page"), ("warning", "surface-100", TEXT, "status stamps on the page"),
+    ("danger", "surface-100", TEXT, "errors under a field, failed flashes"), ("info", "surface-200", TEXT, "status stamps"),
     ("focus", "surface-100", GRAPHIC, "focus ring"), ("focus", "surface-200", GRAPHIC, "focus ring in panels"), ("focus", "surface-300", GRAPHIC, "focus ring on inputs"),
     ("line-strong", "surface-100", GRAPHIC, "button borders"), ("line-strong", "surface-300", GRAPHIC, "input borders"),
     ("accent-2", "surface-200", GRAPHIC, "dotted <dfn> underline"),

@@ -14,7 +14,7 @@ def cpi_page(request: Request, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         url = cpi_fetch.series_url(conn)
         rows = conn.execute("SELECT month, cpi, source FROM cpi ORDER BY month DESC").fetchall()
-    est = [r for r in rows if cpi_fetch.is_estimate(r["source"])]
+    est = [r for r in rows if cpi_fetch.is_estimate(r["source"])]   # newest first, like rows
     return render(request, "cpi.html", user, active="settings", url=url, default_url=cpi_fetch.DEFAULT_URL, latest=rows[0] if rows else None, latest_label=cpi_fetch.source_display(rows[0]["source"]) if rows else "", estimated=est, cpi_form=request.session.pop("cpi_form", None))
 
 
@@ -45,7 +45,7 @@ def cpi_fetch_now(request: Request, user=Depends(auth.require_editor)):
             return RedirectResponse("/cpi", status_code=303)
         n = len(res["added"]) + len(res["replaced"])
         if not n:
-            flash(request, "CPI is already current: nothing to add or replace.")
+            flash(request, "Nothing new: the series has no month the table lacks, and no estimated month is published yet.")
             return RedirectResponse("/cpi", status_code=303)
         db.mark_inputs_changed(conn); conn.commit()   # cleared by the rebuild below; stays if that rebuild cannot run
         msg = f"Added {len(res['added'])} month(s), replaced {len(res['replaced'])} estimated month(s)."

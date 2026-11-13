@@ -165,6 +165,10 @@ def test_write_review_follows_configured_provider(client, reset_db, cfg):
     page = client.get("/upload").text
     assert "Set up a review provider" in page and ">Write review</button>" not in page
     cfg(review_provider="ollama", review_base_url="http://o:11434", review_model_explicit="llama-x")
+    page = client.get("/upload").text   # a provider but no month loaded: say what comes first, no empty month picker (DS-EMPTY-1)
+    assert ">Write review</button>" not in page and "Upload a month first" in page
+    from conftest import GOLDEN, upload_files
+    upload_files(client, GOLDEN / "exports")
     page = client.get("/upload").text
     assert ">Write review</button>" in page and 'name="back" value="/upload#review"' in page
 

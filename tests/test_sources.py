@@ -207,7 +207,8 @@ def test_editing_a_profile_rereads_stored_files_and_a_broken_edit_changes_nothin
     assert spec["name"] == "Bree Bank"
     broken = json.loads(json.dumps(spec)); broken["transactions"]["date_format"] = "MM/DD/YYYY"
     client.post("/settings/sources", data={"body": json.dumps(broken)})
-    assert "Profile not saved" in client.get("/settings/sources").text
+    page = client.get("/settings/sources").text   # the typed profile comes back, with its error under it (DS-FORM-1)
+    assert "Not saved: see the profile marked below." in page and 'aria-invalid="true"' in page and 'class="err" id="src-' in page
     with db.pool.connection() as conn:
         assert conn.execute("SELECT spec FROM source_profiles").fetchone()["spec"] == spec
         assert conn.execute("SELECT count(*) n FROM transactions WHERE merchant <> ''").fetchone()["n"] > 0

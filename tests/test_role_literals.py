@@ -135,7 +135,7 @@ def test_roles_form_saves_names_and_blank_means_default(client, reset_db):
     with db.pool.connection() as conn:   # an explicit [] ("none") set in the JSON editor, and a name with a comma
         db.put_setting(conn, "rules", {**(db.get_setting(conn, "rules", {}) or {}), "debt_groups": [], "recurring_categories": ["Bills, monthly"]}); conn.commit()
     page = client.get("/settings").text
-    assert "(none: set to [] in the JSON)" in page and ">Bills, monthly</textarea>" in page
+    assert "(none: set to [] in All rules as JSON)" in page and ">Bills, monthly</textarea>" in page
     r = client.post("/settings/rules/roles", data={"paycheck_items": "Salary\nContract Income", "paycheck_items__was": "",
                                                    "debt_groups": "", "debt_groups__was": "",
                                                    "recurring_categories": "Bills, monthly", "recurring_categories__was": "Bills, monthly",

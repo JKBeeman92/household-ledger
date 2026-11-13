@@ -90,18 +90,18 @@ def _norm_target(conn, kind: str, target: dict | None, made: str) -> dict | None
     if kind == "extra_payment" and t.get("debt") and not t.get("item"):
         a = _x(conn, "SELECT debt_item FROM accounts WHERE name=%s", (t["debt"],)).fetchone()
         if not a or not a["debt_item"]:
-            raise ValueError(f"the account {t['debt']} has no linked budget item to check payments against")
+            raise DecisionError(f"the account {t['debt']} has no linked budget item to check payments against", "what")
         t["item"] = a["debt_item"]
     if t.get("category") and not _x(conn, "SELECT 1 FROM categories WHERE name=%s", (t["category"],)).fetchone():
-        raise ValueError(f"there is no category {t['category']}")
+        raise DecisionError(f"there is no category {t['category']}", "what")
     if t.get("item") and not _x(conn, "SELECT 1 FROM canonical_items WHERE name=%s", (t["item"],)).fetchone():
-        raise ValueError(f"there is no budget item {t['item']}")
+        raise DecisionError(f"there is no budget item {t['item']}", "what")
     need = {"spend_cap": "max", "save": "min", "extra_payment": "extra", "plan_change": "planned"}[kind]
     if need not in t:
-        raise ValueError({"max": "give the most to spend", "min": "give the least to put in", "extra": "give the extra to pay",
-                          "planned": "give the new planned amount"}[need])
+        raise DecisionError({"max": "give the most to spend", "min": "give the least to put in", "extra": "give the extra to pay",
+                             "planned": "give the new planned amount"}[need], "amount")
     if not (t.get("category") or t.get("item")):
-        raise ValueError("say which category or budget item it is about")
+        raise DecisionError("say which category or budget item it is about", "what")
     rows = _dataset(conn, "budget_items")
     if kind == "extra_payment" and "base" not in t:
         t["base"] = rules.usual_payment(rows, t["item"], rules.add_months(made, 1))
@@ -112,25 +112,31 @@ def _norm_target(conn, kind: str, target: dict | None, made: str) -> dict | None
     return t
 
 
+class DecisionError(ValueError):
+    """A decision that cannot be saved, with the Next month form's field it is about (DS-FORM-1), as TaxError does."""
+    def __init__(self, message: str, field: str = "text"):
+        super().__init__(message); self.field = field
+
+
 def add(conn, made: str, text: str, kind: str = "other", target: dict | None = None, until: str | None = None,
         person: str | None = None, note: str = "", by: str = "") -> tuple[int, int]:
     """A new decision made at month `made`'s check-in. Returns (its id, how many were made that month), so the page can say three
     is usually enough once a fourth arrives (the soft cap, rules.SOFT_CAP)."""
     if not MONTH_RE.match(made or ""):
-        raise ValueError("a decision is made at a month's check-in (YYYY-MM)")
+        raise DecisionError("a decision is made at a month's check-in (YYYY-MM)", "text")
     text = re.sub(r"\s+", " ", text or "").strip()
     if not text:
-        raise ValueError("say what you decided, in a few words")
+        raise DecisionError("say what you decided, in a few words", "text")
     if len(text) > 300:
-        raise ValueError("keep it under 300 characters")
+        raise DecisionError("keep it under 300 characters", "text")
     if kind not in rules.KINDS:
-        raise ValueError(f"kind is one of {', '.join(rules.KINDS)}")
+        raise DecisionError(f"kind is one of {', '.join(rules.KINDS)}", "kind")
     until = (until or "").strip() or None
     if until:
         if not MONTH_RE.match(until):
-            raise ValueError("until is a month (YYYY-MM)")
+            raise DecisionError("until is a month (YYYY-MM)", "until")
         if until <= made:
-            raise ValueError("until is a month after the check-in")
+            raise DecisionError("until is a month after the check-in", "until")
         if until == rules.add_months(made, 1):
             until = None   # one month: the default
     t = _norm_target(conn, kind, target, made)
