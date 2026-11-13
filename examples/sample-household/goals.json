@@ -1,5 +1,12 @@
 [
  {
+  "key": "tax_set_aside_pct",
+  "value": 0.25,
+  "unit": "share of contract income",
+  "label": "Estimated tax set aside",
+  "note": "Ask at each month-close: the share of contract income set aside for estimated tax; it changes with income and tax law."
+ },
+ {
   "key": "gross_annual",
   "value": 78000,
   "unit": "usd",

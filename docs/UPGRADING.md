@@ -13,6 +13,10 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
 
 ## 0.7.0
 
+- **Estimated tax** (#153, `0153_tax_payments.sql`): a new table only. Nothing shows until contract income items are set on Settings →
+  Goals → Estimated tax. Three new rules (`contract_income_items`, `tax_set_aside_items`, `tax_deadlines`) default to empty;
+  `settings.zip` gains `tax_payments.json`; `datasets.zip` and MCP gain `tax`; `coming_up` gains `tax_deadline` rows.
+
 - **Yearly bills** (#151, `0151_yearly_bills.sql`): a new table only, so nothing existing changes. After upgrading, rebuild once and
   look at Settings → Yearly bills (or `python -m app.admin yearly-bills`): confirm what was found, dismiss what is not a yearly bill,
   add what was missed. `settings.zip` gains `yearly_bills.csv`; `datasets.zip` and MCP gain `yearly_bills`; `coming_up` gains

@@ -258,6 +258,10 @@ def export_for_pipeline(conn: psycopg.Connection, wd: Path) -> None:
         checks = [dict(r, auto_figure=float(r["auto_figure"]) if r["auto_figure"] is not None else None) for r in cur]
         with open(wd / "decisions.json", "w") as out:
             json.dump({"decisions": decisions, "checks": checks}, out)
+        # estimated tax payments ticked at the check-in (#153), read by make_budget_items.py through pipeline/tax.py
+        cur.execute("SELECT month, amount FROM tax_payments ORDER BY month")
+        with open(wd / "tax_payments.json", "w") as out:
+            json.dump([{"month": r["month"], "amount": float(r["amount"]) if r["amount"] is not None else None} for r in cur], out)
         # yearly bills (#151): the household's own list, read by make_budget_items.py through pipeline/yearly_bills.py
         cur.execute("SELECT item, month, amount, every_years, funded_by, source FROM yearly_bills ORDER BY item")
         with open(wd / "yearly_bills.csv", "w", newline="") as out:
@@ -576,6 +580,11 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
             for c in json.loads(_read(seed_dir / "checkins.json")):
                 cur.execute("INSERT INTO checkins (month, mode, steps, completed_at, completed_by, reopened_at) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
                             (c["month"], c.get("mode") or "month", json.dumps(c.get("steps") or {}), c.get("completed_at"), c.get("completed_by"), c.get("reopened_at")))
+        cur.execute("SELECT count(*) FROM tax_payments")
+        if cur.fetchone()[0] == 0 and (seed_dir / "tax_payments.json").exists():   # the quarters' estimated tax ticked paid (#153)
+            for p in json.loads(_read(seed_dir / "tax_payments.json")):
+                cur.execute("INSERT INTO tax_payments (month, deadline_m, label, expected, amount, note) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+                            (p["month"], p.get("deadline_m"), p.get("label") or "", p.get("expected"), p.get("amount"), p.get("note") or ""))
         cur.execute("SELECT count(*) FROM yearly_bills")
         if cur.fetchone()[0] == 0 and (seed_dir / "yearly_bills.csv").exists():   # the household's yearly bills (#151), from settings.zip
             for r in csv.DictReader(io.StringIO(_read(seed_dir / "yearly_bills.csv"))):

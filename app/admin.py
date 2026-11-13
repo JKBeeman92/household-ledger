@@ -18,7 +18,7 @@ EX_TEMPFAIL = 75
 log = logging.getLogger("ledger.admin")
 SETTERS = {"import-mapping": "mapping", "set-rules": "rules", "set-events": "events", "set-goals": "goals", "set-cpi": "cpi", "set-household": "household",
            "set-accounts": "accounts", "set-balances": "balances"}   # set-balances adds or corrects month-ends (account,YYYY-MM,amount); it never deletes
-EXPORTABLE = ("mapping", "rules", "events", "goals", "cpi", "household", "accounts", "balances", "decisions", "yearly_bills")
+EXPORTABLE = ("mapping", "rules", "events", "goals", "cpi", "household", "accounts", "balances", "decisions", "yearly_bills", "tax_payments")
 
 
 def _read(path: str) -> str:
@@ -242,6 +242,10 @@ def main(argv: list[str] | None = None) -> int:
         x.add_argument("--amount", type=float); x.add_argument("--every", type=int, default=1); x.add_argument("--fund", help="the envelope or account that saves for it")
     x = ysub.add_parser("dismiss", help="not a yearly bill: stays dismissed across rebuilds"); x.add_argument("item")
     x = ysub.add_parser("restore", help="hand a bill back to the detector"); x.add_argument("item")
+    sp = sub.add_parser("tax", help="estimated tax (#153): mark a quarter's estimate paid at its check-in month, or unmark it")
+    tsub = sp.add_subparsers(dest="tcmd", required=True, metavar="action")
+    x = tsub.add_parser("paid", help="the quarter ending MONTH: its estimated tax is paid"); x.add_argument("month"); x.add_argument("--amount")
+    x = tsub.add_parser("unpaid", help="undo marking it paid"); x.add_argument("month")
     sub.add_parser("preview-mapping-migration", help="before upgrading to 0.5.0: print what migration 0133 would change in the item mapping "
                                                      "(nothing is changed; run it against a copy of the 0.4.x database)")
     a = p.parse_args(argv)
@@ -271,6 +275,14 @@ def main(argv: list[str] | None = None) -> int:
         return decisions_cmd(a)
     if a.cmd == "yearly-bills":
         return yearly_bills_cmd(a)
+    if a.cmd == "tax":
+        from app import tax
+        with _connect() as conn:
+            try:
+                (tax.mark_paid(conn, a.month, a.amount, f"{_who()} (cli)") if a.tcmd == "paid" else tax.unmark(conn, a.month)); conn.commit()
+                print(f"{a.month}: estimated tax {'marked paid' if a.tcmd == 'paid' else 'no longer marked paid'}. Rebuild to apply it."); return 0
+            except ValueError as e:
+                conn.rollback(); print(f"tax {a.tcmd}: {e}", file=sys.stderr); return 2
     with _connect() as conn:
         if a.cmd == "export-settings":
             from app.settings_export import write_dir

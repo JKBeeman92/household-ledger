@@ -19,7 +19,9 @@ ASK = re.compile(r"\bask", re.I)
 def checklist_goals(conn) -> list[dict]:
     """Goals that get a prompt: value is null, or the note says to ask. Oldest confirmation first."""
     rows = conn.execute("SELECT key, value, unit, label, note, confirmed_at FROM goals ORDER BY confirmed_at NULLS FIRST, key").fetchall()
-    return [r for r in rows if r["value"] is None or ASK.search(r["note"] or "")]
+    from .. import tax   # the estimated-tax share is asked only while contract income items are set (#153)
+    off = not tax.enabled(conn)
+    return [r for r in rows if (r["value"] is None or ASK.search(r["note"] or "")) and not (off and r["key"] == tax.GOAL)]
 
 
 @router.post("/goals/{key}/confirm")

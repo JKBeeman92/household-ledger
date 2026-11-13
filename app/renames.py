@@ -14,7 +14,7 @@ DEBT_TYPES = mapping_store.DEBT_TYPES
 
 # rules that hold category names, and rules that hold canonical item names (lists, or person -> list)
 CATEGORY_RULES = ("goal_giving_categories", "goal_housing_categories", "recurring_categories", "plan_keep_categories", "loan_categories")
-CANONICAL_RULES = ("catchall_items", "paycheck_items")
+CANONICAL_RULES = ("catchall_items", "paycheck_items", "contract_income_items", "tax_set_aside_items")   # the last two: #153
 CANONICAL_BY_PERSON = ("income_by_person", "payer_items_by_person")
 
 

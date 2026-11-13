@@ -504,6 +504,24 @@ budget years, and never three months or more in one year; each is due in that mo
   only, safe against a live install); `yearly-bills confirm|add|dismiss|restore ITEM` changes the list. It travels in `settings.zip`
   as `yearly_bills.csv`; the `yearly_bills` dataset reaches MCP (without an account's name).
 
+## Estimated tax
+
+"Have we set aside enough for this quarter's estimated tax?" For income with no tax withheld (contract or self-employment work),
+Settings → Goals → **Estimated tax** takes which budget items that income is (the `contract_income_items` rule), the share set aside
+(the goal `tax_set_aside_pct`, asked again at each month-close because it changes with income and tax law), where it is set aside (the
+`tax_set_aside_items` rule: envelopes, or accounts) and the deadlines (the `tax_deadlines` rule, one `YYYY-MM label` per line). The
+app never hard-codes deadlines: they move with weekends and holidays and differ by state, so the household keeps them current, and the
+check-in says when none is entered for the coming year.
+
+- **Every check-in**, under Where we stand: the year's contract income, the tax expected on it, what is set aside (the envelopes'
+  planned amounts this year, or an account's balance plus the payments recorded) and any shortfall.
+- **A quarter's check-in** adds an **Estimated tax** step: the quarter's contract income and the share of it to set aside, the next
+  deadline, and a tick that this quarter's estimate was paid, with the amount. "Nothing due this quarter" completes it too.
+- The next deadlines are `tax_deadline` rows in `coming_up`, so Coming up lists them with the quarter's expected amount.
+- With no contract income items nothing is shown anywhere. From the command line: `python -m app.admin tax paid|unpaid MONTH`. The
+  payments travel in `settings.zip` as `tax_payments.json`; the `tax` dataset reaches the review and MCP. Tax calculation, preparation
+  and reading tax forms are out of scope.
+
 ## Decisions
 
 "Last month we said we'd cut eating out to $400 and put $200 extra on the car loan. Did we?" The check-in's **Next month** step writes
