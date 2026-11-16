@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.15-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PORT=8010 BRAND_DIR=/data/brand \
     FORWARDED_ALLOW_IPS='*'
 # The image listens on 0.0.0.0, so AUTH_DISABLED=true here also needs I_KNOW_AUTH_IS_OFF=1 (app/config.py)
