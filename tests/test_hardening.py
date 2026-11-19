@@ -67,6 +67,13 @@ def test_dockerfile_forwarded_allow_ips_is_env_configurable_with_todays_default(
     assert "trusted_hosts=settings.forwarded_allow_ips" in (ROOT / "app" / "main.py").read_text()
 
 
+def test_the_image_drops_pip_and_its_bundled_copy_after_installing():
+    # pip's vendored msgpack/urllib3/setuptools are what the PR image scan flagged (#218); nothing in the image runs pip
+    df = (ROOT / "Dockerfile").read_text()
+    install = next(l for l in df.split("\nRUN ") if l.startswith("pip install"))
+    assert "pip uninstall -y pip" in install and "ensurepip/_bundled" in install
+
+
 def test_dependabot_does_not_group_minor_bumps_of_zero_x_packages():
     groups = next(u for u in yaml.safe_load((ROOT / ".github/dependabot.yml").read_text())["updates"] if u["package-ecosystem"] == "pip")["groups"]
     zero = {re.sub(r"\[.*\]", "", p) for p in re.findall(r"^([A-Za-z0-9_.\[\]-]+)==0\.", (ROOT / "requirements.txt").read_text(), re.M)}

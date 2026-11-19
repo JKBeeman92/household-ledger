@@ -4,10 +4,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PORT=8010 BRAND_DIR=/data/brand
 # The image listens on 0.0.0.0, so AUTH_DISABLED=true here also needs I_KNOW_AUTH_IS_OFF=1 (app/config.py)
 ENV LEDGER_IN_CONTAINER=1
 WORKDIR /srv
-# Take the base image's pending Debian security updates: python:3.12-slim lags them, and the PR image scan fails on fixable HIGH/CRITICAL.
+# Take the base image's pending Debian security updates: python:*-slim lags them, and the PR image scan fails on fixable HIGH/CRITICAL.
 RUN apt-get update && apt-get -y upgrade && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Then drop pip, and the copy of it ensurepip keeps, once it has installed the app: nothing in the image runs it, and its vendored
+# msgpack, urllib3 and setuptools (pkg_resources) are what the PR image scan flags (#218, read from pip/_vendor/bom.cdx.json).
+# Upgrading pip is not enough: 26.3 still vendors setuptools 70.3.0. To add a package, rebuild; don't install into a running container.
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip uninstall -y pip && rm -rf /usr/local/lib/python3*/ensurepip/_bundled
 COPY app ./app
 COPY pipeline ./pipeline
 COPY db ./db
