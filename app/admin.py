@@ -17,8 +17,8 @@ from psycopg.rows import dict_row
 EX_TEMPFAIL = 75
 log = logging.getLogger("ledger.admin")
 SETTERS = {"import-mapping": "mapping", "set-rules": "rules", "set-events": "events", "set-goals": "goals", "set-cpi": "cpi", "set-household": "household",
-           "set-accounts": "accounts", "set-balances": "balances"}   # set-balances adds or corrects month-ends (account,YYYY-MM,amount); it never deletes
-EXPORTABLE = ("mapping", "rules", "events", "goals", "cpi", "household", "accounts", "balances", "decisions", "yearly_bills", "tax_payments", "tax_outcomes", "yearly_checklist")
+           "set-accounts": "accounts", "set-balances": "balances", "set-appearance": "appearance"}   # set-appearance: chart colours and hidden names (#132)   # set-balances adds or corrects month-ends (account,YYYY-MM,amount); it never deletes
+EXPORTABLE = ("mapping", "rules", "events", "goals", "cpi", "household", "accounts", "balances", "decisions", "yearly_bills", "tax_payments", "tax_outcomes", "yearly_checklist", "appearance")
 
 
 def _read(path: str) -> str:

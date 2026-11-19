@@ -83,7 +83,7 @@ database container, which sets its own ownership on first start; leave it alone.
 First boot applies the migrations and seeds the reference tables. Seeds come from `SEED_DIR` (`/srv/ledger/seed/` in the compose file)
 when a file is present there, else from the generic files in `pipeline/` (CPI table, empty mapping, goal keys with no values).
 A seed directory holds any of `item_mapping.csv`, `cpi_u.csv`, `goals.json`, `events.json`, `rules.json`, `review.json`,
-`household.json`; after the first boot the database owns them and the Settings page is the editor. A running install writes all of them
+`household.json`, `appearance.json`; after the first boot the database owns them and the Settings page is the editor. A running install writes all of them
 at once as `settings.zip` ([Backups](#backups)), so moving to a new box is: unzip into `seed/`, start. Their shapes:
 
 | File | Shape |
@@ -95,6 +95,7 @@ at once as `settings.zip` ([Backups](#backups)), so moving to a new box is: unzi
 | `rules.json` | object; keys and types in [`app/schemas/rules.schema.json`](app/schemas/rules.schema.json) |
 | `household.json` | object; [`app/schemas/household.schema.json`](app/schemas/household.schema.json) |
 | `review.json` | list of `{"m", "order", "heading", "text"}`, one row per review section |
+| `appearance.json` | list of `{"dimension", "name", "color", "hidden"}` ([Chart colours and hidden names](#chart-colours-and-hidden-names)); `color` and `hidden` are optional |
 
 [`examples/sample-household/`](examples/sample-household/) has a working copy of every file except `cpi_u.csv` (the shipped
 `pipeline/cpi_u.csv` is used when none is given) and `review.json`. Keep your seed directory out of public repos —
@@ -122,8 +123,8 @@ when the input is refused:
 docker compose exec -T ledger python -m app.admin import-mapping - < item_mapping.csv
 ```
 
-Commands: `import-mapping`, `set-rules`, `set-events`, `set-goals`, `set-cpi` and `set-household` replace one editor's contents from a file
-(`-` reads standard input); `export <mapping|rules|events|goals|cpi|household>` and `export-mapping` print them; `draft-mapping` prints the
+Commands: `import-mapping`, `set-rules`, `set-events`, `set-goals`, `set-cpi`, `set-household` and `set-appearance` replace one editor's contents from a file
+(`-` reads standard input); `export <mapping|rules|events|goals|cpi|household|appearance>` and `export-mapping` print them; `draft-mapping` prints the
 [drafted mapping](#roles) for unmapped items and `add-mapping FILE` adds a reviewed draft without touching existing
 rows; `rename-category OLD NEW`, `rename-canonical OLD NEW` and `move-canonical NAME CATEGORY` (and `set-debt-type NAME TYPE`) do what the Categories and canonical
 items panel does ([Roles](#roles)); `preview-mapping-migration` prints what the 0.5.0 upgrade will change in a 0.4 mapping
@@ -622,6 +623,35 @@ as `decisions.json`. The review reads the decisions and verdicts (the household'
 them in place of its own earlier suggestion; a decision's note never leaves the install. The Suggested plan the Last month tab shows
 is now worked out in the pipeline (`plan_suggestions`), so the tab and the check-in cannot disagree. Renaming a category, an item or
 an account updates the decisions that name it.
+
+## Chart colours and hidden names
+
+"Where did Housing go this year?" is quicker to answer when Housing is the same colour on every chart, whatever its rank, and when the
+names you don't care about this month are out of the way. **Settings → Chart appearance** has a list per kind of name a chart is
+coloured by, holding only the names your data has:
+
+| Kind | Charts it colours |
+|---|---|
+| Categories | Where it went: the category stack |
+| Catch-all items | Leaks: the catch-all envelopes (`catchall_items`) |
+| Employers | Overview: Paycheck source |
+| People | People: the earner and payer stacks |
+| Debts | Position: the Debts timeline |
+| Account types | Position: the stacks under net worth (`cash`, `owed: card`, …) |
+| Life-event kinds | the life-event markers on Overview and Paycheck source |
+
+- **Colour**: a palette slot, `series-1` to `series-8`, which follows the brand kit by day and by night, or a fixed colour (hex, `rgb()`,
+  `hsl()`, `oklch()`), the same in both. Blank keeps palette order, as before: an unassigned name takes the next slot no other name of
+  its kind has claimed, so two names never share a colour by accident. A fixed colour is checked against the kit in force: under 3:1
+  on a panel, or within ΔE 10 (OKLab) of `--success` or `--danger` (which mean kept and drew down), it is saved with a warning that
+  names the mode. Nothing is refused for how it looks.
+- **Hidden** takes a name out of its charts' bars, lines and legend, for everyone. It is display only: totals, tooltips' totals, net
+  lines, tables, the review and the reconciliation still count it. A chart with hidden names says so ("2 hidden · show"); **show**
+  reveals them on that chart for that viewer only, remembered in the browser like the period filter.
+- No rebuild: the dashboard picks a change up on its next load. The pipeline never reads it. A rename of a category or canonical item
+  carries its colour and switch. A row whose name has left the data is listed under **Not in the data**, with Delete.
+- Command line: `python -m app.admin set-appearance FILE` replaces the table from an `appearance.json`, `export appearance` prints it.
+  It travels in `settings.zip` as `appearance.json`. Which colours the slots *are* is the brand kit's ([docs/BRANDING.md](docs/BRANDING.md)).
 
 ## Try it with the sample household
 

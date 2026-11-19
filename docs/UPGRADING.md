@@ -11,6 +11,12 @@ Every upgrade, whatever the version:
 
 Migrations are not reversible. To roll back, pin the previous image tag in `docker-compose.yml` and restore the backup from step 2.
 
+## 0.9.0
+
+- **Chart colours and hidden names** (#132, `0132_appearance.sql`): a new table only; no existing data is touched, and with no rows
+  every chart draws as before. Settings gains a Chart appearance tab; `settings.zip` gains `appearance.json` (read back by the seed
+  loader), the command line `set-appearance FILE` and `export appearance`. No rebuild is needed: the pipeline never reads it.
+
 ## 0.8.0
 
 - **The withholding check** (#153, `0153_tax_outcomes.sql`): a new table only. `settings.zip` gains `tax_outcomes.json`; a new rule,

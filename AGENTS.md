@@ -44,7 +44,7 @@ Never edit an applied file in `db/migrations/`; add `NNNN_name.sql`, where NNNN 
 `app/db.py` applies, at start and under an advisory lock, every file not yet in `schema_migrations`, in filename order, each in its own
 transaction; a failure aborts start-up and leaves that file unrecorded. Out-of-order numbers from parallel branches still apply.
 Derived tables (`ledger`, `datasets`) may be dropped and rebuilt by a migration; raw tables (`source_files`, `transactions`,
-`budget_items`, `balances`) and reference tables (`item_mapping`, `categories`, `canonical_items`, `cpi`, `goals`, `life_events`, `settings`, `reviews`, `renames`, `accounts`) must migrate their data.
+`budget_items`, `balances`) and reference tables (`item_mapping`, `categories`, `canonical_items`, `cpi`, `goals`, `life_events`, `settings`, `reviews`, `renames`, `accounts`, `appearance`) must migrate their data.
 The mapping is written only through `pipeline/mapping_store.py`, which keeps a canonical item in one category; readers use the `mapping_rows` view.
 Accounts and month-end balances are written only through `pipeline/accounts_store.py`; a corrected balance keeps the old value in `balance_history`.
 

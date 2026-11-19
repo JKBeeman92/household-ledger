@@ -111,3 +111,26 @@ def test_the_mapping_draft_list_ends_its_panel(client, reset_db):
         conn.execute("DELETE FROM item_mapping WHERE item IN (SELECT item FROM item_mapping ORDER BY item LIMIT 2)"); conn.commit()
     html = client.get("/settings/mapping/draft").text
     assert 'data-list="unbounded"' in html and problems(html) == []
+
+
+def test_chart_appearance_lists_each_end_a_sub_tab_of_their_own_with_a_filter(client, reset_db):
+    """#132: one list per dimension, each the last thing in its own sub-tab with a filter box above it, and the orphans in another."""
+    upload_files(client, GOLDEN / "exports")
+    from app import appearance, db
+    with db.pool.connection() as conn:
+        appearance.set_one(conn, "employer", "A Mill Long Gone", "series-2", True); conn.commit()
+        have = appearance.present(conn)
+    html = client.get("/settings").text
+    assert problems(html) == []
+    t = Tree(); t.feed(html)
+    panels = {n.attrs["id"]: n for n in walk(t.root) if n.attrs.get("id", "").startswith("sp-appearance-")}
+    assert set(panels) == {f"sp-appearance-{d.replace('_', '-')}" for d in appearance.DIMENSIONS} | {"sp-appearance-orphans"}
+    for d in appearance.DIMENSIONS:
+        panel = panels[f"sp-appearance-{d.replace('_', '-')}"]
+        lists = [n for n in walk(panel) if n.attrs.get("data-list") == "unbounded"]
+        assert len(lists) == (1 if have[d] else 0), d   # a tab never holds two
+        if have[d]:
+            assert any(n.tag == "input" and n.attrs.get("data-filter-table") == lists[0].attrs["id"] for n in walk(panel)), d
+    assert sum(1 for d in appearance.DIMENSIONS if have[d]) >= 4   # the golden household draws most of them
+    orphans = [n for n in walk(panels["sp-appearance-orphans"]) if n.attrs.get("data-list") == "unbounded"]
+    assert len(orphans) == 1 and "A Mill Long Gone" in text(orphans[0])

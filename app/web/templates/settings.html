@@ -35,7 +35,7 @@
 </section>
 {% endmacro %}
 
-<div class="subtabs" role="tablist" aria-label="Settings" id="settings-tabs"><button type="button" role="tab" id="st-mapping" aria-controls="sp-mapping" aria-selected="true" tabindex="0">Item mapping</button><button type="button" role="tab" id="st-goals" aria-controls="sp-goals" aria-selected="false" tabindex="-1">Goals</button><button type="button" role="tab" id="st-events" aria-controls="sp-events" aria-selected="false" tabindex="-1">Life events</button><button type="button" role="tab" id="st-yearly-bills" aria-controls="sp-yearly-bills" aria-selected="false" tabindex="-1">Yearly bills</button><button type="button" role="tab" id="st-yearly-checklist" aria-controls="sp-yearly-checklist" aria-selected="false" tabindex="-1">Yearly checklist</button><button type="button" role="tab" id="st-accounts" aria-controls="sp-accounts" aria-selected="false" tabindex="-1">Accounts</button><button type="button" role="tab" id="st-rules" aria-controls="sp-rules" aria-selected="false" tabindex="-1">Pipeline rules</button><button type="button" role="tab" id="st-cpi" aria-controls="sp-cpi" aria-selected="false" tabindex="-1">CPI</button><button type="button" role="tab" id="st-household" aria-controls="sp-household" aria-selected="false" tabindex="-1">Household</button></div>
+<div class="subtabs" role="tablist" aria-label="Settings" id="settings-tabs"><button type="button" role="tab" id="st-mapping" aria-controls="sp-mapping" aria-selected="true" tabindex="0">Item mapping</button><button type="button" role="tab" id="st-goals" aria-controls="sp-goals" aria-selected="false" tabindex="-1">Goals</button><button type="button" role="tab" id="st-events" aria-controls="sp-events" aria-selected="false" tabindex="-1">Life events</button><button type="button" role="tab" id="st-yearly-bills" aria-controls="sp-yearly-bills" aria-selected="false" tabindex="-1">Yearly bills</button><button type="button" role="tab" id="st-yearly-checklist" aria-controls="sp-yearly-checklist" aria-selected="false" tabindex="-1">Yearly checklist</button><button type="button" role="tab" id="st-accounts" aria-controls="sp-accounts" aria-selected="false" tabindex="-1">Accounts</button><button type="button" role="tab" id="st-rules" aria-controls="sp-rules" aria-selected="false" tabindex="-1">Pipeline rules</button><button type="button" role="tab" id="st-cpi" aria-controls="sp-cpi" aria-selected="false" tabindex="-1">CPI</button><button type="button" role="tab" id="st-household" aria-controls="sp-household" aria-selected="false" tabindex="-1">Household</button><button type="button" role="tab" id="st-appearance" aria-controls="sp-appearance" aria-selected="false" tabindex="-1">Chart appearance</button></div>
 <div class="stack mt-4">
 <div role="tabpanel" id="sp-mapping" aria-labelledby="st-mapping">
 {% set debt_rows = defs.canonical|selectattr('debt_or_typed')|list %}
@@ -231,6 +231,41 @@
   {% if key == "rules" %}</div>{% endif %}
   </div>
   {% endfor %}
+{# Chart appearance (#132): a colour and a hide box per name the data has, one sub-tab per dimension, so each list ends its panel (AGENTS.md, "Long lists") #}
+<div role="tabpanel" id="sp-appearance" aria-labelledby="st-appearance">
+<datalist id="appearance-slots">{% for s in look_slots %}<option value="{{ s }}">{% endfor %}</datalist>
+<div class="subtabs" role="tablist" aria-label="Chart appearance" data-subtabs="appearance">{% for d, lab in look_labels.items() %}{% set slug = d|replace('_', '-') %}<button type="button" role="tab" id="st-appearance-{{ slug }}" aria-controls="sp-appearance-{{ slug }}" aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ 0 if loop.first else -1 }}">{{ lab[0] }} <span class="count">{{ look.dimensions[d]|length }}</span></button>{% endfor %}<button type="button" role="tab" id="st-appearance-orphans" aria-controls="sp-appearance-orphans" aria-selected="false" tabindex="-1">Not in the data <span class="count">{{ look.orphans|length }}</span></button></div>
+{% for d, lab in look_labels.items() %}{% set slug = d|replace('_', '-') %}{% set items = look.dimensions[d] %}{% set lf = look_form if look_form and look_form.dimension == d else none %}
+<div role="tabpanel" id="sp-appearance-{{ slug }}" aria-labelledby="st-appearance-{{ slug }}">
+<section class="panel" id="appearance-{{ slug }}">
+  <h2>{{ lab[0] }}</h2>
+  <p class="muted">The colour each {{ lab[1] }} keeps on {{ lab[2] }}, whatever its rank, and whether it is hidden there. A colour is a palette slot (<code>series-1</code> to <code>series-8</code>, which follows the theme by day and by night) or a fixed colour, written as hex, rgb, hsl or oklch, the same by day and by night; blank keeps palette order, skipping the slots chosen here. Hidden takes the name out of the chart's bars, lines and legend for everyone; totals and tables still count it, and a viewer can show it again from the chart. Takes effect at once, with no rebuild.</p>
+  {% if items %}
+  <form method="post" action="/settings/appearance/save">{{ csrf_field(request) }}<input type="hidden" name="dimension" value="{{ d }}">
+    <p class="filterbox"><label for="appearance-{{ slug }}-filter">Filter the {{ items|length }} {{ lab[0]|lower }}</label><input type="search" id="appearance-{{ slug }}-filter" data-filter-table="appearance-{{ slug }}-table" placeholder="Part of a name"></p>
+    <div class="tablewrap" role="region" tabindex="0" aria-label="{{ lab[0] }}: chart colours table"><table class="plain" id="appearance-{{ slug }}-table" data-list="unbounded"><thead><tr><th scope="col">{{ lab[1][:1]|upper ~ lab[1][1:] }}</th><th scope="col">Colour</th><th scope="col">Hidden</th></tr></thead><tbody>
+    {% for r in items %}{% set typed = lf["values"].get(r.name) if lf else none %}{% set err = lf.errors.get(r.name) if lf else none %}{% set rid = "ap-" ~ slug ~ "-" ~ loop.index %}
+    <tr><td>{% if r.color %}<span class="swatch" style="--sw: {{ ('var(--' ~ r.color ~ ')') if r.color in look_slots else r.color }}" aria-hidden="true"></span> {% endif %}{{ r.name }}<input type="hidden" name="name" value="{{ r.name }}"></td>
+      <td><input type="text" name="color" value="{{ typed.color if typed else (r.color or '') }}" list="appearance-slots" size="16" placeholder="palette order" aria-label="Colour for {{ r.name }}"{% if err %} aria-invalid="true" aria-describedby="{{ rid }}-err"{% endif %}>{% if err %}<span class="err" id="{{ rid }}-err" role="alert">{{ err[:1]|upper ~ err[1:] }}.</span>{% endif %}
+        {% for w in r.warnings %}<div class="muted">{{ w[:1]|upper ~ w[1:] }}.</div>{% endfor %}</td>
+      <td><label class="hidebox"><input type="checkbox" name="hidden" value="{{ r.name }}"{% if (typed.hidden if typed else r.hidden) %} checked{% endif %} aria-label="Hide {{ r.name }} on the chart"> hide</label></td></tr>{% endfor %}
+    </tbody></table></div>
+    <p class="mt-3"><button class="btn primary" type="submit">Save colours for {{ lab[0]|lower }}</button></p>
+  </form>
+  {% else %}<p class="muted">No {{ lab[0]|lower }} in the data yet. They are listed here once a build has drawn them.</p><p><a class="btn" href="/upload">Close a month</a></p>{% endif %}
+</section>
+</div>{% endfor %}
+<div role="tabpanel" id="sp-appearance-orphans" aria-labelledby="st-appearance-orphans">
+<section class="panel" id="appearance-orphans">
+  <h2>Not in the data</h2>
+  <p class="muted">A colour or hide switch kept for a name the current data no longer has: a category merged away, an employer renamed in Pipeline rules, a debt paid off before the first month loaded. It does nothing until the name comes back. Its palette slot stays claimed, so delete it to free the slot.</p>
+  {% if look.orphans %}<div class="tablewrap" role="region" tabindex="0" aria-label="Chart colours not in the data table"><table class="plain" id="appearance-orphans-table" data-list="unbounded"><thead><tr><th scope="col">Name</th><th scope="col">Kind of name</th><th scope="col">Colour</th><th scope="col">Hidden</th><th class="acts"><span class="sr">Actions</span></th></tr></thead><tbody>
+    {% for o in look.orphans %}<tr><td>{{ o.name }}</td><td>{{ o.noun }}</td><td class="mono">{{ o.color or "palette order" }}</td><td>{{ "yes" if o.hidden else "no" }}</td>
+      <td class="acts"><form method="post" action="/settings/appearance/delete" class="inline">{{ csrf_field(request) }}<input type="hidden" name="dimension" value="{{ o.dimension }}"><input type="hidden" name="name" value="{{ o.name }}"><button class="btn" type="submit" aria-label="Delete the colour kept for the {{ o.noun }} {{ o.name }}">Delete</button></form></td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<p class="muted">None: every colour and hide switch names something in the data.</p>{% endif %}
+</section>
+</div>
+</div>
 </div>
 <script src="/static/settings.js" defer></script>
 <script nonce="{{ csp_nonce(request) }}">
