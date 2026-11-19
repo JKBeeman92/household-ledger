@@ -43,7 +43,8 @@ def test_unreadable_and_nested_archives(client, reset_db):
     inner = make_zip({EXPORTS[0].name: EXPORTS[0].read_bytes()})
     post_zip(client, make_zip({"inner.zip": inner, "disguised.csv": inner, EXPORTS[0].name: inner}))
     page = client.get("/upload").text
-    assert page.count("nested archives are not accepted") == 2 and "0 of 3 files stored" in page
+    # disguised.csv is a CSV by name, so another tool's file could be it (#165): it is read, and refused by its bytes
+    assert page.count("nested archives are not accepted") == 3 and "0 of 3 files stored" in page
     assert client.get("/api/status").json()["months"] == 0
 
 

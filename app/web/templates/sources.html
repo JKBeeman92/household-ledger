@@ -6,7 +6,9 @@
 <p class="muted measure">Files in the internal format, and EveryDollar's exports (the built-in profile below), are read as they are. Any other tool's files are read through a <strong>source profile</strong>:
 which column is the date, the amount, the group and the item, and how dates and numbers are written. A profile is created the first
 time you upload that tool's files on <a href="/upload">Close a month</a>. Editing a profile here re-reads every month stored with it
-(the files are kept as uploaded) and rebuilds. The format is described in the README, under "Other budget tools".</p>
+(the files are kept as uploaded) and rebuilds. For a back catalogue, an optional <code>month_from</code> says where each file's budget month
+comes from: <code>{"filename": "…(?P&lt;yyyy&gt;\d{4})…(?P&lt;mm&gt;\d{2})…"}</code>, or <code>{"column": "date", "rule": "mode"}</code> for the most common month of the dates.
+The format is described in the README, under "Other budget tools".</p>
 <p><a class="back" href="/settings">Back to Settings</a></p>
 
 <section class="panel mt-4" id="builtin-everydollar">

@@ -58,7 +58,7 @@ addEventListener('DOMContentLoaded', () => {
     <ul class="checks">
       <li><b>The month that just ended:</b> its transactions file and its budget file from your budget tool. From EveryDollar these end in <code>Transactions.csv</code> and <code>BudgetItems.csv</code>.</li>
       <li><b>Several months at once:</b> a <code>.zip</code> of them, up to {{ max_upload_mb }} MB. Uploading a month again replaces it.</li>
-      <li><b>Another budget tool:</b> upload its two CSVs together and map their columns once (<a href="/settings/sources">Sources</a>). Files in the <a href="https://github.com/JKBeeman92/household-ledger#the-internal-format">internal format</a> load as they are.</li>
+      <li><b>Another budget tool:</b> upload one month's two CSVs together and map their columns once (<a href="/settings/sources">Sources</a>); then a <code>.zip</code> of its other months loads in one go, after you check the months it found. Files in the <a href="https://github.com/JKBeeman92/household-ledger#the-internal-format">internal format</a> load as they are.</li>
     </ul>
     <p class="muted">On arrival each envelope's transactions are checked against its Spent, then the ledger rebuilds.</p>
     <label for="files">Export files</label>

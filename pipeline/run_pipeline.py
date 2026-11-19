@@ -73,12 +73,13 @@ def _store_rows(cur, sid: int, kind: str, bm: str, rows: list[dict]) -> None:
 
 
 def ingest(conn: psycopg.Connection, filename: str, data: bytes, uploaded_by: str = "", *,
-           profile: dict | None = None, kind: str | None = None, budget_month: str | None = None) -> dict:
+           profile: dict | None = None, kind: str | None = None, budget_month: str | None = None, commit: bool = True) -> dict:
     """Store one export file. Replaces an existing file of the same kind+month.
 
     Without `profile` the file must be an EveryDollar export, named as EveryDollar names it. With a profile ({"id", "spec"} from
     source_profiles) the caller says which kind of file it is and for which budget month; the file is kept as uploaded and its
-    rows are read through the profile's mapping."""
+    rows are read through the profile's mapping. commit=False leaves the transaction open, so a batch is stored whole or not at all
+    (store_planned, #165)."""
     if profile is None:
         kind, bm, rows = parse_export(filename, data)
         content, profile_id = None, None
@@ -99,8 +100,52 @@ def ingest(conn: psycopg.Connection, filename: str, data: bytes, uploaded_by: st
             (kind, bm, os.path.basename(filename), sha, len(rows), uploaded_by, profile_id, content),
         )
         _store_rows(cur, cur.fetchone()[0], kind, bm, rows)
-    conn.commit()
+    if commit:
+        conn.commit()
     return {"kind": kind, "budget_month": bm, "rows": len(rows), "sha256": sha}
+
+
+def stored_files(conn: psycopg.Connection) -> dict[tuple[str, str], str]:
+    """{(kind, budget month): sha256} of every stored export file."""
+    with conn.cursor(row_factory=tuple_row) as cur:
+        cur.execute("SELECT kind, budget_month, sha256 FROM source_files")
+        return {(k, m): sha for k, m, sha in cur.fetchall()}
+
+
+def plan_files(conn: psycopg.Connection, files: list[tuple[str, bytes]], *, default_mode: bool, profile_name: str | None = None,
+               present: set[tuple[str, str]] = frozenset()) -> list[dict]:
+    """The dry run of a batch of files not named like exports (#165): sources.plan_batch against the saved profiles (only
+    `profile_name`'s when given; ValueError if there is none by that name) and the files already stored. Stores nothing."""
+    from .sources import plan_batch
+    profiles = load_profiles(conn)
+    if profile_name is not None:
+        profiles = [p for p in profiles if p["name"] == profile_name.strip()]
+        if not profiles:
+            raise ValueError(f"no saved source profile is called {profile_name!r}")
+    plan = plan_batch(files, profiles, default_mode=default_mode, present=set(present), stored=stored_files(conn))
+    conn.commit()   # read only: end the transaction the reads opened
+    return plan
+
+
+def store_planned(conn: psycopg.Connection, plan: list[dict], files: list[tuple[str, bytes]], uploaded_by: str = "", *,
+                  atomic: bool = True) -> list[dict]:
+    """Store the files of a plan that are ready, each through its profile, for the month and kind the plan found. atomic: all of
+    them in one transaction, or none (a zip's batch, confirmed once); otherwise each on its own, and one that fails is reported
+    and the rest go on (the import directory). Returns [{"name", "ok", "detail"}] for the ready files."""
+    specs = {p["id"]: p["spec"] for p in load_profiles(conn)}
+    out = []
+    for e in (x for x in plan if x["state"] == "ready"):
+        try:
+            info = ingest(conn, files[e["i"]][0], files[e["i"]][1], uploaded_by=uploaded_by, profile={"id": e["profile_id"], "spec": specs[e["profile_id"]]},
+                          kind=e["kind"], budget_month=e["month"], commit=not atomic)
+            out.append({"name": e["name"], "ok": True, "detail": f"{info['budget_month']}, {info['kind'].replace('_', ' ')}, {info['rows']} rows, read with “{e['profile']}”"})
+        except Exception as ex:  # noqa: BLE001
+            conn.rollback()
+            if atomic:
+                raise ValueError(f"{e['name']}: {ex}") from None
+            out.append({"name": e["name"], "ok": False, "detail": str(ex)[:300]})
+    conn.commit()
+    return out
 
 
 def reapply_profile(conn: psycopg.Connection, profile_id: int) -> int:
@@ -479,19 +524,39 @@ def _rebuild(conn: psycopg.Connection) -> dict:
 
 
 # ---------------------------------------------------------------- bulk import
+SEED_CSVS = {"item_mapping.csv", "cpi_u.csv", "accounts.csv", "balances.csv", "yearly_bills.csv"}   # seed_reference_tables' files, not exports
+
+
 def import_dir(conn: psycopg.Connection, import_dir: Path, uploaded_by: str = "import") -> dict:
-    """Load every EveryDollar export under import_dir that is new or changed (by sha256), then rebuild once if anything loaded.
-    Safe to run at every start: already-loaded files are skipped, so the directory can stay in place."""
+    """Load every export under import_dir that is new or changed (by sha256), then rebuild once if anything loaded.
+    Safe to run at every start: already-loaded files are skipped, so the directory can stay in place.
+
+    Files named like exports (the internal format, EveryDollar's) are read as they are. Once a source profile is saved, the other
+    CSVs are matched against the saved profiles by their headers (#165), and their months come from the profile's own month rule
+    (month_from) only: nobody sees this import before it stores, so the dates are never guessed from without one. A file that no
+    profile recognises, or that has no month or no other half, is not stored and is named in the build log. The seed files
+    (item_mapping.csv, accounts.csv, …: the sample household's folder is both) are not exports and are left alone."""
     import_dir = Path(import_dir)
     if not import_dir.is_dir():
         return {"loaded": 0, "skipped": 0}
-    known = {}
-    with conn.cursor(row_factory=tuple_row) as cur:
-        cur.execute("SELECT kind, budget_month, sha256 FROM source_files")
-        known = {(k, m): sha for k, m, sha in cur.fetchall()}
+    known = stored_files(conn)
     loaded = skipped = 0
     failed: list[dict] = []
-    for f in sorted(x for x in import_dir.rglob("*.csv") if filenames.is_export(x.name)):
+    csvs = sorted(import_dir.rglob("*.csv"))
+    named = [x for x in csvs if filenames.is_export(x.name)]
+    other = [x for x in csvs if not filenames.is_export(x.name) and x.name not in SEED_CSVS]
+    if other and load_profiles(conn):
+        files = [(str(x.relative_to(import_dir)), x.read_bytes()) for x in other]
+        plan = plan_files(conn, files, default_mode=False, present={filenames.parse(x.name) for x in named})
+        skipped += sum(1 for e in plan if e["state"] == "unchanged")
+        failed += [{"file": e["name"], "error": e["detail"]} for e in plan if e["state"] == "refused"]
+        for r in store_planned(conn, plan, files, uploaded_by, atomic=False):
+            if r["ok"]:
+                loaded += 1
+            else:
+                failed.append({"file": r["name"], "error": r["detail"]})
+    conn.commit()
+    for f in named:
         data = f.read_bytes()
         kind, bm = filenames.parse(f.name)
         if known.get((kind, bm)) == hashlib.sha256(data).hexdigest():

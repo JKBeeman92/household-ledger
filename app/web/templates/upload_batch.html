@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Check the months · {{ household.title }}{% endblock %}
+{% block content %}
+{# The dry run of a back catalogue from another budget tool (#165): one confirmation for the whole batch, then one rebuild. #}
+<p class="eyebrow">Month close</p>
+<h1 class="page-title">Check the months before storing</h1>
+<section class="panel mt-4" id="batch-summary">
+  <h2>{% if ready %}{{ ready|length }} file{{ '' if ready|length == 1 else 's' }} ready to store, {{ months|length }} budget month{{ '' if months|length == 1 else 's' }}{% else %}Nothing here can be stored yet{% endif %}</h2>
+  {% if ready %}<p class="measure">{{ months|first|month }} to {{ months|last|month }}, read with {{ profiles|join(', ') }}. Check the months found from the dates: they are guesses. Nothing is
+  stored until you confirm, once for the whole batch; then the ledger rebuilds once.</p>{% endif %}
+  {% if refused %}<p class="measure"><strong>{{ refused|length }} file{{ '' if refused|length == 1 else 's' }} will not be stored</strong>, listed first with the reason. To store them,
+  fix the files or the profile's month rule on <a href="/settings/sources">Settings → Sources</a>, and upload them again.</p>{% endif %}
+  {% if unchanged %}<p class="muted measure">Already stored exactly as uploaded, and left alone: {{ unchanged|length }} file{{ '' if unchanged|length == 1 else 's' }}.</p>{% endif %}
+  <div class="row mt-4">
+    {% if ready %}<form method="post" action="/upload/batch/{{ batch }}">{{ csrf_field(request) }}<button class="btn primary" type="submit" id="batch-confirm">Store {{ ready|length }} file{{ '' if ready|length == 1 else 's' }} and rebuild</button></form>{% endif %}
+    <form method="post" action="/upload/batch/{{ batch }}/discard">{{ csrf_field(request) }}<button class="btn" type="submit">Discard these files</button></form>
+  </div>
+</section>
+
+<section class="panel mt-4" id="batch-files">
+  <h2>The {{ plan|length }} file{{ '' if plan|length == 1 else 's' }}</h2>
+  <p class="muted measure">Each file was matched to a saved source profile by its column names, which also say whether it is the transactions file or the budget file.
+  A month comes from the file name when the profile has a pattern for it, or else from the most common month of the transaction dates; a budget file with no month in its name is paired with the transactions file whose sums give its spent figures.</p>
+  {% if plan|length > 8 %}<p class="filterbox"><label for="batch-filter">Filter the {{ plan|length }} files</label><input type="search" id="batch-filter" data-filter-table="batch-table" placeholder="Part of a name, month or reason"></p>{% endif %}
+  <div class="tablewrap" role="region" tabindex="0" aria-label="What would be stored, file by file"><table class="plain" id="batch-table" data-list="unbounded">
+    <thead><tr><th scope="col">Result</th><th scope="col">File</th><th scope="col">Profile</th><th scope="col">Kind</th><th scope="col">Budget month</th><th scope="col">How it was found, or why not</th></tr></thead>
+    <tbody>{% for e in plan %}<tr>
+      <td><span class="status-chip {{ {'ready': 'ok', 'refused': 'bad'}.get(e.state, '') }}">{{ state_label[e.state] }}</span></td>
+      <td class="mono nowrap">{{ e.name }}</td>
+      <td>{{ e.profile or '—' }}</td>
+      <td class="nowrap">{{ {'transactions': 'Transactions', 'budget_items': 'Budget'}.get(e.kind, '—') }}</td>
+      <td class="nowrap">{{ e.month|month if e.month else '—' }}</td>
+      <td>{% if e.state == 'refused' %}{{ e.detail }}{% else %}{{ e.how }}{% if e.detail %}; {{ e.detail }}{% endif %}{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+<script nonce="{{ csp_nonce(request) }}">
+  // the filter box: hides rows that do not contain the text (as on Settings)
+  document.querySelectorAll('[data-filter-table]').forEach((inp) => { const tb = document.getElementById(inp.dataset.filterTable).tBodies[0];
+    inp.addEventListener('input', () => { const q = inp.value.toLowerCase(); for (const tr of tb.rows) tr.hidden = !!q && !tr.textContent.toLowerCase().includes(q); }); });
+</script>
+{% endblock %}

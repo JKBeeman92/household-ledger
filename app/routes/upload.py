@@ -15,7 +15,8 @@ from ..builds import build_status, run_background
 from .findings import latest_findings
 from .checklist import checklist_goals
 from .balances import form_context as balances_form
-from pipeline.run_pipeline import ingest, build_running, FN_RX, EXPORT_NAMES
+from pipeline.run_pipeline import ingest, build_running, load_profiles, FN_RX, EXPORT_NAMES
+from pipeline import sources as src
 from .sources import stash
 
 router = APIRouter()
@@ -40,6 +41,14 @@ def upload_page(request: Request, user=Depends(auth.require_editor)):
     return render(request, "upload.html", user, active="upload", bal=bal, review_job=review_job, findings=findings, checklist=checklist, files=files, months=months, build=build, review_enabled=review_ok, last_upload=last, max_upload_mb=settings.max_upload_mb, import_dir_set=bool(settings.import_dir))
 
 
+def _recognised(data: bytes, specs: list[dict]) -> bool:
+    """Whether a saved source profile recognises this file's headers (#165)."""
+    try:
+        return src.match_profile(src.headers_of(data), specs) is not None
+    except src.ProfileError:
+        return False
+
+
 async def _read_capped(f: UploadFile) -> bytes | None:
     data = await f.read(MAX_FILE_BYTES + 1)
     return None if len(data) > MAX_FILE_BYTES else data
@@ -57,18 +66,22 @@ async def upload(request: Request, background: BackgroundTasks, files: list[Uplo
             items += expand_zip(name, data)
         else:
             items.append(Item(name, data))
-    # files not named like exports (internal format or EveryDollar's) go to the mapping step (#96); a zip holds named exports only
-    loose = [it for it in items if it.data is not None and not it.source and not FN_RX.match(it.name)]
+    # Files not named like exports (internal format or EveryDollar's): one month's pair goes to the mapping step (#96); a back
+    # catalogue (from a zip, or more than two files) to the dry run of the saved profiles, confirmed once for the batch (#165)
+    loose = [it for it in items if it.data is not None and not FN_RX.match(it.name)]
     other = [it for it in loose if it.name.lower().endswith(".csv")]
     items = [it for it in items if it not in loose] + [
         Item(it.name, error=f"not named like a monthly export ({EXPORT_NAMES}), "
-                            "and not a CSV another budget tool could have written") for it in loose if it not in other]
-    if len(other) > 2:
-        for it in other:
-            items.append(Item(it.name, error="more than two files that are not named like exports: upload one month's pair (transactions and budget) at a time"))
-        other = []
+                            "and not a CSV another budget tool could have written", source=it.source) for it in loose if it not in other]
+    bulk = [] if len(other) <= 2 and not any(it.source for it in other) else other
     results, stored = [], 0
     with db.pool.connection() as conn:
+        specs = [p["spec"] for p in load_profiles(conn)] if bulk else []
+        if bulk and not any(_recognised(it.data, specs) for it in bulk):
+            # nothing in it is another tool's file the ledger knows yet: the mapping is set up on one month's pair first
+            items += [Item(it.name, error="not named like a monthly export, and no saved source profile recognises its columns: upload one month's "
+                                          "pair (transactions and budget) on its own first to set up its mapping, then the rest together", source=it.source) for it in bulk]
+            other = bulk = []
         batch = stash(conn, [(it.name, it.data) for it in other], user.get("email", "")) if other else None
         for it in items:
             res = {"name": it.name, "source": it.source, "ok": False, "detail": it.error}
@@ -93,7 +106,7 @@ async def upload(request: Request, background: BackgroundTasks, files: list[Uplo
     if stored < len(results):
         flash(request, f"{len(results) - stored} of {len(results)} files were not stored; see the upload result below.", "bad")
     if batch:
-        return RedirectResponse(f"/upload/map/{batch}", status_code=303)
+        return RedirectResponse(f"/upload/{'batch' if bulk else 'map'}/{batch}", status_code=303)
     return RedirectResponse(auth._safe_next(next) if next else "/upload", status_code=303)   # the check-in's Files step returns to it (#164)
 
 
