@@ -1,5 +1,6 @@
 Group,Item,Type,Date,Merchant,Account,Amount,Note
 Housing,Rent,Expense,03/01/2026,Bywater Property Co,Bywater Checking,-1525.00,
+Other,Venmo Pass-Through,Income,03/02/2026,Venmo,Bywater Checking,160.00,"cabin weekend, a share"
 Income,Sam Contract Income,Income,03/03/2026,Gaffer's Garden Works,Bywater Checking,1445.55,
 Savings,Emergency Fund,Expense,03/04/2026,Green Hills Credit Union,Bywater Checking,-300.00,
 Transportation,Fuel,Expense,03/04/2026,Shire Fuel Stop,Bywater Checking,-54.97,
@@ -7,12 +8,15 @@ Other,Venmo Pass-Through,Expense,03/04/2026,Venmo,Bywater Checking,-51.51,dinner
 Giving,Charity,Expense,03/05/2026,Bywater Parish Alms,Bywater Checking,-380.00,
 Utilities,Internet,Expense,03/06/2026,Hobbit Hole Fibre,Bywater Checking,-65.00,
 Personal,Rosie Fun Money,Expense,03/06/2026,Westfarthing Mail Order,Bywater Checking,-57.86,
+Other,Venmo Pass-Through,Income,03/06/2026,Venmo,Bywater Checking,160.00,"cabin weekend, a share"
+Other,Venmo Pass-Through,Income,03/07/2026,Venmo,Bywater Checking,160.00,"cabin weekend, a share"
 Transportation,Cart Registration,Expense,03/08/2026,Shire Cart Office,Bywater Checking,-186.00,the yearly bill
 Food,Eating Out,Expense,03/09/2026,Michel Delving Kitchen,Bywater Checking,-58.62,
 Health,Medicine,Expense,03/09/2026,Healing Hands Apothecary,Bywater Checking,-49.60,
 Insurance,Renters Insurance,Expense,03/09/2026,Brandybuck Mutual,Bywater Checking,-22.00,
 Income,Sam Contract Income,Income,03/09/2026,Sackville Estates,Bywater Checking,674.60,
 Subscriptions,Streaming,Expense,03/10/2026,Bywater Songbook,Bywater Checking,-14.86,
+Other,Venmo Pass-Through,Income,03/10/2026,Venmo,Bywater Checking,160.00,"cabin weekend, a share"
 Personal,Rosie Fun Money,Expense,03/11/2026,Tea and Biscuits Cafe,Bywater Checking,-35.23,
 Insurance,Car Insurance,Expense,03/12/2026,Brandybuck Mutual,Bywater Checking,-118.00,
 Household,Household Supplies,Expense,03/12/2026,Tuckborough Timber,Bywater Checking,-38.26,

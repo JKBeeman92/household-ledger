@@ -100,7 +100,7 @@ def checkin_status(month: str | None) -> int:
 
 
 def rebuild_cmd() -> int:
-    from pipeline.run_pipeline import rebuild, BuildBusy
+    from pipeline.run_pipeline import rebuild, BuildBusy, describe_pass_through
     with _connect() as conn:
         try:
             res = rebuild(conn)
@@ -114,6 +114,8 @@ def rebuild_cmd() -> int:
     print(res["summary"])
     for p in res["reconciliation"].get("problems", []):
         print("PROBLEM", p)
+    for line in describe_pass_through(res.get("pass_through") or []):   # a hint, not a failure (#107): the exit code stays reconciliation's
+        print("PASS-THROUGH?", line)
     return 0 if res["reconciliation"]["clean"] else 1
 
 

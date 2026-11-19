@@ -11,6 +11,12 @@ Every upgrade, whatever the version:
 
 Migrations are not reversible. To roll back, pin the previous image tag in `docker-compose.yml` and restore the backup from step 2.
 
+## 0.9.0
+
+- **Money held for someone else** (#107): no migration. Three new rules, `pass_through_multiple` (5), `pass_through_floor` (250) and
+  `pass_through_window` (3), have defaults; an empty value turns the check off. After the first rebuild, Close a month may list
+  months where an item that is not excluded took in many times its usual amount and paid it back out; nothing else changes.
+
 ## 0.8.0
 
 - **The withholding check** (#153, `0153_tax_outcomes.sql`): a new table only. `settings.zip` gains `tax_outcomes.json`; a new rule,

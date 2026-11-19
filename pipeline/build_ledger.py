@@ -1,6 +1,6 @@
 #!/usr/bin/env python3 -I
 """Build the canonical ledger from the staged monthly exports (the internal format, or EveryDollar's; pipeline/filenames.py) + item_mapping.csv + cpi_u.csv."""
-import csv, os, re, json, collections
+import csv, os, re, json, collections, statistics
 from decimal import Decimal as D
 import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # filenames.py sits beside this script
 import filenames   # noqa: E402
@@ -49,6 +49,12 @@ RULES = {
   "debt_paid_off_months": 3,           # a debt with no payment in this many months is folded under "Paid off" on the Debts tab (#141)
   "loan_categories": ["Family Loan"],  # categories of loans between family: their inflows and repayments are counted on the Method tab
   "offbudget_since": None,             # "YYYY-MM": count unpaired off-budget outflows from here (exclusions table)
+  # ---- money held for someone else (#107): a month's net inflow on an expense or debt item more than this many times its usual
+  # size, above the floor (dollars), and paid back out (at least half of it) within the window (budget months) after it. Empty (null)
+  # in rules.json turns the check off, unlike the other rules, where null keeps the default ----
+  "pass_through_multiple": 5,
+  "pass_through_floor": 250,
+  "pass_through_window": 3,
   "merchant_rules": [                  # [regex, display name]; household extras go in rules.json and are tried first
     [r"^(amzn|amazon)", "Amazon"], [r"^wal-?mart|^wm supercenter", "Walmart"], [r"^sams ?club", "Sam's Club"], [r"^costco", "Costco"],
     [r"^target", "Target"], [r"home depot", "Home Depot"], [r"walgreens", "Walgreens"], [r"^cvs", "CVS"], [r"starbucks", "Starbucks"],
@@ -57,10 +63,13 @@ RULES = {
     [r"zelle|quickpay", "Zelle"], [r"^shell", "Shell"], [r"chevron", "Chevron"], [r"irs|us treas", "IRS"], [r"turbotax|intuit", "TurboTax"],
   ],
 }
+_r = {}
 if os.path.exists("rules.json"):
     _r = json.load(open("rules.json"))
     if _r.get("merchant_rules"): _r["merchant_rules"] = list(_r["merchant_rules"]) + RULES["merchant_rules"]
     RULES.update({k: v for k, v in _r.items() if v is not None})
+for _k in ("pass_through_multiple", "pass_through_floor", "pass_through_window"):   # #107: here an empty value means off, not the default
+    if _k in _r and _r[_k] in (None, ""): RULES[_k] = None
 CPI_BASE_MONTH = RULES["cpi_base_month"] or max(cpi); CPI_BASE = cpi[CPI_BASE_MONTH]
 PAYCHECK_ITEMS, INCOME_GROUPS, DEBT_GROUPS = set(RULES["paycheck_items"]), set(RULES["income_groups"]), set(RULES["debt_groups"])
 
@@ -162,6 +171,48 @@ cols = ["BudgetMonth","CalendarMonth","Date","Group","Item","Type","CanonicalIte
         "Amount","AmountReal","Earner","Payer","Employer","IsTransfer","IsPlug","TransferPair","InTotals","HasNote","Note","SourceFile","SourceRow"]
 with open("ledger.csv","w",newline="") as f:
     w = csv.DictWriter(f, fieldnames=cols); w.writeheader(); w.writerows(out)
+
+# ---- money held for someone else (#107) ----
+# A household that collects money for someone else (a group gift, donations for a relative, a bill friends pay back) into an expense
+# envelope sees one month of large negative spend, then inflated spending in the months it is paid out. Flow exclude on the item fixes
+# the charts (its rows stay in the exports and in reconciliation, and leave the ledger above); this finding points at where it is needed.
+# Per (budget month, canonical item) over expense and debt rows that are real money (not transfers or plugs), all three must hold:
+#   1. the month's net inflow is more than pass_through_multiple times the item's median absolute monthly net over the trailing 12
+#      budget months (a month with no rows counts as 0; months before the first export are not counted, so the first month has none);
+#   2. it is more than pass_through_floor dollars;
+#   3. the item's outflows in the pass_through_window budget months after it add up to at least half of it.
+# The third is what tells it from a refund, which comes in once and is not paid back out. Items already excluded never reach here.
+# Grouped by canonical item so that a renamed envelope ("Gifts 2") keeps its history; the finding names the raw items, where Flow is set.
+def add_months(m, n):
+    k = int(m[:4]) * 12 + int(m[5:7]) - 1 + n
+    return f"{k // 12}-{k % 12 + 1:02d}"
+
+def pass_through(out, first_month, multiple, floor, window):
+    if multiple is None or floor is None or window is None: return []
+    multiple, floor, window = float(multiple), float(floor), int(window)
+    net, spent, raw = collections.defaultdict(float), collections.defaultdict(float), collections.defaultdict(set)
+    for o in out:
+        if o["Flow"] not in ("expense", "debt") or o["IsTransfer"] or o["IsPlug"]: continue
+        k, a = (o["BudgetMonth"], o["CanonicalItem"]), float(o["Amount"])
+        net[k] += a; raw[k].add(o["Item"])
+        if a < 0: spent[k] -= a
+    hits = []
+    for (m, ci), inflow in sorted(net.items()):
+        if inflow <= floor: continue
+        before = [abs(net.get((add_months(m, -i), ci), 0.0)) for i in range(1, 13) if add_months(m, -i) >= first_month]
+        usual = statistics.median(before) if before else 0.0
+        later = sum(spent.get((add_months(m, i), ci), 0.0) for i in range(1, window + 1))
+        if inflow > multiple * usual and later >= inflow / 2:
+            hits.append({"m": m, "item": ci, "items": sorted(raw[(m, ci)]), "inflow": round(inflow, 2), "median": round(usual, 2),
+                         "later_outflows": round(later, 2), "window": window})
+    return hits
+
+_pt = pass_through(out, min((r["BudgetMonth"] for r in rows), default="0000-01"),
+                   RULES["pass_through_multiple"], RULES["pass_through_floor"], RULES["pass_through_window"])
+json.dump(_pt, open("pass_through.json", "w"))   # read back by run_pipeline into the build's findings, beside UNMAPPED and reconciliation
+for h in _pt:
+    print(f"pass-through? {h['m']} {', '.join(h['items'])}: {h['inflow']:.2f} in (usually {h['median']:.2f} a month), "
+          f"{h['later_outflows']:.2f} out in the {h['window']} month(s) after")
 
 json.dump(dict(excluded), open("excluded.json", "w"))
 json.dump({k: round(v, 2) for k, v in excluded_amt.items()}, open("excluded_amounts.json", "w"))   # gross dollars moved per excluded item (pass-through money nets to about zero)

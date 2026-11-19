@@ -350,7 +350,32 @@ transfer when its *merchant* is one of a few built-in names (`Transfer`, `Rebala
 **Money you hold for someone else.** Collecting money on someone's behalf and paying it out later (donations gathered for a relative,
 a group gift, a shared bill paid back by friends) shows as one month of large negative spending and later months of inflated
 spending. Give those items Flow `exclude`: their rows stay in the stored exports and in reconciliation, but leave the ledger and
-every chart. The sample household's `Venmo Pass-Through` item shows the pattern.
+every chart. The sample household's `Venmo Pass-Through` item shows the pattern: dinner splits, a group present collected in
+September 2025 and bought in October, and a cabin weekend collected in March 2026 and paid in April and May.
+
+Every build looks for the pattern in items that are not excluded yet (#107), and Close a month lists what it finds under **Money
+held for someone else?**, beside Reconciliation, with the same lines in the build log and after `rebuild` or `import_exports` on
+the command line. A budget month is listed for an item, its canonical item, in an `expense` or `debt` envelope (transfers and plugs
+left out) when all three hold:
+
+1. its net inflow that month is more than `pass_through_multiple` times the item's median absolute monthly amount over the
+   trailing 12 budget months (a month with no rows counts as 0; months before the first export are not counted);
+2. that inflow is more than `pass_through_floor` dollars;
+3. the item's outflows in the `pass_through_window` budget months after it add up to at least half of the inflow.
+
+The third is what tells money held for someone else from a refund: a refund comes in once and is not paid back out. Each entry
+says "Money held for someone else? Set Flow `exclude` on `<item>`." It is a hint, not an error: the build still succeeds and
+the exit code stays reconciliation's. If it is a refund or a one-off, leave it.
+
+| Rule | Default | What it sets |
+|---|---|---|
+| `pass_through_multiple` | `5` | How many times the item's usual month the inflow must be. |
+| `pass_through_floor` | `250` | The smallest inflow, in dollars, that is looked at. |
+| `pass_through_window` | `3` | How many budget months after the inflow count toward paying it out (1 to 12). |
+
+Set them in the rules JSON (Settings → Pipeline rules) or with `python -m app.admin set-rules`. Unlike the other rules, where an
+empty value (`null`) keeps the default, an empty value in any of these three turns the check off. The defaults are a first guess:
+on a long back catalogue, check what it lists and move them.
 
 **A first mapping for a back catalogue.** Settings → Item mapping offers **Draft a mapping from my budget groups** whenever the stored
 exports carry items with no mapping row. The draft fills only those items and never changes an existing row: Category is the budget

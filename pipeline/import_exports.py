@@ -4,7 +4,7 @@ from __future__ import annotations
 import os, sys
 from pathlib import Path
 import psycopg
-from .run_pipeline import ingest, rebuild, import_dir, FN_RX
+from .run_pipeline import ingest, rebuild, import_dir, describe_pass_through, FN_RX
 
 
 def main(paths: list[str]) -> int:
@@ -23,6 +23,8 @@ def main(paths: list[str]) -> int:
     print(res["summary"])
     for p in res["reconciliation"].get("problems", []):
         print("PROBLEM", p)
+    for line in describe_pass_through(res.get("pass_through") or []):   # a hint, not a failure: the exit code stays reconciliation's (#107)
+        print("PASS-THROUGH?", line)
     return 0 if res["reconciliation"]["clean"] else 1
 
 

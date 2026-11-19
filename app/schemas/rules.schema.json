@@ -72,6 +72,18 @@
       "type": ["string", "null"], "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
       "description": "Budget month (YYYY-MM) from which unpaired off-budget outflows are counted on the Exclusions table."
     },
+    "pass_through_multiple": {
+      "type": ["number", "null"], "minimum": 1,
+      "description": "Money held for someone else (#107): a month's net inflow on an expense or debt item counts when it is more than this many times the item's median absolute monthly amount over the trailing 12 budget months. Default 5. Empty (null) turns the check off."
+    },
+    "pass_through_floor": {
+      "type": ["number", "null"], "minimum": 0,
+      "description": "Money held for someone else (#107): the inflow must also be more than this many dollars, so small items that are usually near zero are left alone. Default 250. Empty (null) turns the check off."
+    },
+    "pass_through_window": {
+      "type": ["integer", "null"], "minimum": 1, "maximum": 12,
+      "description": "Money held for someone else (#107): the item's outflows in this many budget months after the inflow must add up to at least half of it, which is what tells it from a refund (one that is not paid back out). Default 3. Empty (null) turns the check off."
+    },
     "merchant_rules": {
       "type": "array",
       "items": {

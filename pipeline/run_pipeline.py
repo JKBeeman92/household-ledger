@@ -431,6 +431,21 @@ def describe_problems(problems: list[dict], conn: psycopg.Connection) -> list[st
             for m, n in sorted(collapsed.items())] + out
 
 
+def pass_through_findings(wd: Path) -> list[dict]:
+    """The months build_ledger.py found where one item's inflow is many times its usual size and is paid back out (#107).
+    Absent when the scripts are older than the file, which reads as none."""
+    p = wd / "pass_through.json"
+    return json.loads(_read(p)) if p.exists() else []
+
+
+def describe_pass_through(held: list[dict]) -> list[str]:
+    """The pass-through findings as sentences for the build log, each ending with the fix (Flow exclude), as the page says it."""
+    money = lambda v: f"{v:,.2f}"
+    return [f"{h['m']} {', '.join(h['items'])}: {money(h['inflow'])} came in, against a usual {money(h['median'])} a month, and "
+            f"{money(h['later_outflows'])} went out in the {h['window']} month(s) after. Money held for someone else? "
+            f"Set Flow exclude on {' and '.join(h['items'])}." for h in held]
+
+
 def incomplete_months_note(conn: psycopg.Connection) -> str:
     """'2026-06: the BudgetItems file is missing (upload it to finish this month). ' for every month with only one of its two files."""
     with conn.cursor(row_factory=dict_row) as cur:   # the app's pool and the CLI's plain connection return different row shapes
@@ -453,21 +468,26 @@ def _rebuild(conn: psycopg.Connection) -> dict:
     try:
         rec = reconcile(conn)
         # recorded before the scripts run: an unmapped item makes build_ledger.py exit, and that is when the list matters most
-        save_findings(conn, bid, {"unmapped": unmapped_items(conn), "reconciliation": dict(rec, problems=rec["problems"][:200])})
+        findings = {"unmapped": unmapped_items(conn), "reconciliation": dict(rec, problems=rec["problems"][:200])}
+        save_findings(conn, bid, findings)
+        held: list[dict] = []
         if conn.execute("SELECT 1 FROM source_files LIMIT 1").fetchone() is None:   # every month deleted: nothing to build, derived tables empty
             conn.execute("TRUNCATE ledger, datasets"); log = "no source files loaded; ledger and datasets emptied"; counts = {"ledger": 0}
         else:
             export_for_pipeline(conn, wd)
             log = run_scripts(wd)
             counts = load_outputs(conn, wd)
+            held = pass_through_findings(wd)
+        save_findings(conn, bid, {**findings, "pass_through": held[:200]})   # known only once build_ledger.py has run (#107)
         n_ok = sum(v for k, v in rec["counts"].items() if k.startswith("OK"))
         summary = note + (f"{counts.get('ledger')} ledger rows; " + (f"all {n_ok} envelope-months reconcile" if rec["clean"]
                    else f"{len(rec['problems'])} envelope-month(s) do not reconcile (listed below)"))
-        detail = log + "".join(f"\nReconciliation: {line}" for line in describe_problems(rec.get("problems", []), conn))
+        detail = log + "".join(f"\nReconciliation: {line}" for line in describe_problems(rec.get("problems", []), conn)) \
+                     + "".join(f"\nPass-through: {line}" for line in describe_pass_through(held))
         with conn.cursor(row_factory=tuple_row) as cur:
             cur.execute("UPDATE build_log SET finished_at=now(), ok=true, summary=%s, detail=%s WHERE id=%s", (summary, detail, bid))
         conn.commit()
-        return {"ok": True, "summary": summary, "reconciliation": rec, "counts": counts, "sources": sources, "build_id": bid}
+        return {"ok": True, "summary": summary, "reconciliation": rec, "counts": counts, "sources": sources, "build_id": bid, "pass_through": held}
     except Exception as e:  # noqa: BLE001
         conn.rollback()
         with conn.cursor(row_factory=tuple_row) as cur:
