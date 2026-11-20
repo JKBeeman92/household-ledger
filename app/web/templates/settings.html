@@ -138,7 +138,7 @@
 </div>
 <div role="tabpanel" id="sp-events" aria-labelledby="st-events">
 <datalist id="settings-people">{% for p in people %}<option value="{{ p }}">{% endfor %}</datalist>
-{% call grid("events", by_key.events, ["m","label","kind","person"], ["Month","Label","Kind","Person"], rows.events, event_choices) %}{% endcall %}
+{% call grid("events", by_key.events, ["m","label","kind","person","on_chart"], ["Month","Label","Kind","Person","On the chart"], rows.events, event_choices) %}{% endcall %}
 </div>
 <div role="tabpanel" id="sp-yearly-bills" aria-labelledby="st-yearly-bills">{% include "_yearly_bills.html" %}</div>
 <div role="tabpanel" id="sp-yearly-checklist" aria-labelledby="st-yearly-checklist">{% include "_yearly_checklist.html" %}</div>

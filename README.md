@@ -91,7 +91,7 @@ at once as `settings.zip` ([Backups](#backups)), so moving to a new box is: unzi
 | `item_mapping.csv` | columns `Item,CanonicalItem,Category,Flow,Note`, and optionally `DebtType` ([Roles](#roles)) |
 | `cpi_u.csv` | columns `month,cpi,source` (`month` is `YYYY-MM`) |
 | `goals.json` | list of `{"key", "label", "value", "unit", "note"}`; `value` may be `null` |
-| `events.json` | list of `{"m": "YYYY-MM", "label": "…", "kind": "…", "person": "…"}` (the key is `m`, not `month`); `kind` (one of `job`, `move`, `family`, `health`, `purchase`, `debt`, `other`) and `person` (best one of the `people` rule) are optional |
+| `events.json` | list of `{"m": "YYYY-MM", "label": "…", "kind": "…", "person": "…"}` (the key is `m`, not `month`); `kind` (one of `job`, `move`, `family`, `health`, `purchase`, `debt`, `other`) and `person` (best one of the `people` rule) are optional; `"on_chart": false` keeps an event off the timelines ([Life events on the timeline](#life-events-on-the-timeline)) |
 | `rules.json` | object; keys and types in [`app/schemas/rules.schema.json`](app/schemas/rules.schema.json) |
 | `household.json` | object; [`app/schemas/household.schema.json`](app/schemas/household.schema.json) |
 | `review.json` | list of `{"m", "order", "heading", "text"}`, one row per review section |
@@ -689,6 +689,33 @@ coloured by, holding only the names your data has:
   carries its colour and switch. A row whose name has left the data is listed under **Not in the data**, with Delete.
 - Command line: `python -m app.admin set-appearance FILE` replaces the table from an `appearance.json`, `export appearance` prints it.
   It travels in `settings.zip` as `appearance.json`. Which colours the slots *are* is the brand kit's ([docs/BRANDING.md](docs/BRANDING.md)).
+
+## Life events on the timeline
+
+"What happened around this change?" A job change, a move or a birth is a **life event** (Settings → Life events: month, label,
+and optionally its kind and person). Each is a dotted marker on **Income against outgo** (and, for jobs and events with no kind, on
+**Paycheck source**), and a line in the list under the chart, closed behind its count.
+
+- **Merged markers.** Events within one month of each other draw as one marker with a count: a crowded season is at most one marker a
+  month. Hover one, tab to it or tap it to list every event it holds; each marker is a button a keyboard reaches and a screen reader
+  names ("Oct 2025 to Nov 2025, 2 life events: …"). Markers closer than a 24 px target merge too, so on a dense axis (years at phone width) no two overlap.
+- **Colour by kind** comes from Settings → Chart appearance, Life-event kinds ([Chart colours and hidden names](#chart-colours-and-hidden-names)).
+  A marker holding events of different colours takes the reference colour.
+- **Chips above the chart** filter the markers and the list by kind ("All · Job · Move · Family …") and by person, offering only the
+  kinds and people your events on the chart have. The choice is remembered in this browser, like the period filter. The Employer chart
+  keeps its own rule (job events and events with no kind).
+- **On the chart, per event.** Settings → Life events has an **On the chart** column: *no* keeps an event in the list (marked "not
+  on the chart"), the review, the check-in and MCP, with no marker; for example "Started a new budget method". It is display only and
+  travels with the event (`"on_chart": false` in `events.json`, `settings.zip`, a seed directory and `set-events`); the pipeline passes
+  it through to the `events` dataset. It is a pipeline input like the rest of the event, so the dashboard shows a change after a rebuild.
+- **How the switches combine.** An event is drawn only when it is on the chart *and* its kind is not hidden in Chart appearance (or you
+  pressed that chart's "show"). "show" reveals hidden kinds, never an event switched off the chart, and the "N hidden" note counts
+  hidden kinds only. No total, table or reconciliation changes either way.
+- **Coming up.** When the period reaches the last loaded month, the chart ends in a **Coming up** strip: the next 12 months of the
+  `coming_up` dataset (payoffs, yearly bills, tax deadlines, planned purchases and life events dated later), drawn dotted because they
+  have not happened, never as markers off the end of the axis. A life event in it follows the same switches and chips. The **Coming
+  up** list under the chart says the same in words and keeps everything later too (a payoff years out, an event in two years),
+  marked "after the chart's 12 months", so nothing dated after the last month drops off the Overview.
 
 ## Try it with the sample household
 
