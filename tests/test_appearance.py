@@ -85,7 +85,9 @@ def test_settings_lists_the_names_the_data_has_and_saves_a_dimension(client, res
     for word in ("palette slot", "rank", "rebuild", "palette order"):
         assert word not in section, word
     for d, (_, noun, chart) in appearance.LABELS.items():
-        assert f'<p class="muted">The colour of each {noun} on {chart}, and whether it is hidden there.</p>' in html
+        tail = (". To take an event off the charts, set On the chart to no on <a href=\"/settings#events\">Life events</a>." if d in appearance.COLOUR_ONLY
+                else ", and whether it is hidden there.")   # a kind has a colour only (#235)
+        assert f'<p class="muted">The colour of each {noun} on {chart}{tail}</p>' in html
     assert "Saves this tab only." in html
     assert 'id="st-appearance-orphans"' not in html and 'id="sp-appearance-orphans"' not in html   # no leftovers, no tab
     r = client.post("/settings/appearance/save", data={"dimension": "category", "name": ["Housing", "Food"], "color": ["series-2", "#2f7f9a"], "hidden": ["Food"]})
@@ -182,7 +184,7 @@ def test_cli_set_and_export_round_trip(client, reset_db, tmp_path, capsys):
 
 def test_settings_zip_and_a_seed_dir_round_trip(client, reset_db, tmp_path):
     with db.pool.connection() as conn:
-        appearance.set_one(conn, "category", "Food", "series-3", False); appearance.set_one(conn, "event_kind", "move", "#2f7f9a", True); conn.commit()
+        appearance.set_one(conn, "category", "Food", "series-3", False); appearance.set_one(conn, "event_kind", "move", "#2f7f9a", False); conn.commit()
         files = settings_export.settings_files(conn)
         before = rows(conn)
     assert "appearance.json" in files
@@ -371,7 +373,7 @@ def test_hiding_changes_no_total_and_show_is_for_this_viewer_only(sample):
     set_table([])
     plain = harness(sample)["before"]
     set_table([{"dimension": "category", "name": "Housing", "hidden": True}, {"dimension": "item", "name": "Generosity", "hidden": True},
-               {"dimension": "account_type", "name": "savings", "hidden": True}, {"dimension": "event_kind", "name": "job", "hidden": True},
+               {"dimension": "account_type", "name": "savings", "hidden": True}, {"dimension": "event_kind", "name": "job", "color": "series-4"},
                {"dimension": "debt", "name": "Student Loan", "hidden": True}])
     r = harness(sample, press="cat-stack", reload=True, fresh=True)
     s = r["before"]
@@ -384,14 +386,14 @@ def test_hiding_changes_no_total_and_show_is_for_this_viewer_only(sample):
     assert {n: t["total"] for n, t in s["tips"]["cat-stack"].items()} == {n: t["total"] for n, t in plain["tips"]["cat-stack"].items() if n != "Housing"}
     assert "Generosity" not in dict(s["charts"]["slush"]["series"]) and s["charts"]["slush"]["note"] == "1 hidden · show"
     assert "asset:savings" not in dict(s["charts"]["nw-chart"]["series"]) and "savings" not in dict(s["legends"]["nw-legend"])
-    assert [k for _, k, _ in plain["charts"]["employer"]["markers"]] == ["job", "job"] and s["charts"]["employer"]["note"] == "1 hidden · show"
-    assert not [k for _, k, _ in s["charts"]["employer"]["markers"] if k == "job"] and not [k for _, k, _ in s["charts"]["monthly"]["markers"] if k == "job"]
-    assert s["charts"]["monthly"]["note"] == "1 hidden · show"
+    # an event kind has a colour only (#235): its markers stay, coloured, and neither timeline's note counts it
+    assert [k for _, k, _ in plain["charts"]["employer"]["markers"]] == ["job", "job"] == [k for _, k, _ in s["charts"]["employer"]["markers"]]
+    assert {f for *_, f in s["charts"]["employer"]["markers"]} == {s["colors"][3]} and s["charts"]["employer"]["note"] is None
+    assert s["charts"]["monthly"]["note"] is None
     assert "Student Loan" not in dict(s["charts"]["debts"]["bars"]) and s["charts"]["debts"]["note"] == "1 hidden · show"
     # the button's name is its visible words (WCAG 2.5.3, the 0.9.0 release review); what it hides, and for whom, is its title
     assert all(c["noteLabel"] is None for c in s["charts"].values() if c["note"])
     assert s["charts"]["cat-stack"]["noteTitle"] == "Hidden in Settings → Chart appearance: Housing. Show brings them back on this chart, for you only."
-    assert s["charts"]["employer"]["noteTitle"].startswith("Hidden in Settings → Chart appearance: Job (event kind).")
     assert s["charts"]["debts"]["noteTitle"].startswith("Hidden in Settings → Chart appearance: Student Loan.")
     # a debt group whose every debt is hidden leaves no empty heading; the others keep theirs
     assert len(plain["charts"]["debts"]["heads"]) == len(s["charts"]["debts"]["heads"]) + 1, (plain["charts"]["debts"]["heads"], s["charts"]["debts"]["heads"])

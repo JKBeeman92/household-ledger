@@ -1,4 +1,6 @@
-"""Chart appearance (issue #132): a colour and a hide switch per name, in one table for every chart coloured by a name.
+"""Chart appearance (issue #132): a colour and a hide switch per name, in one table for every chart coloured by a name. A life-event
+kind has a colour only (#235): an event leaves the charts by its own On the chart switch (#140), and the chips above the timeline are
+each viewer's filter, so a kind is never hidden here (db/migrations/0235_event_kind_hide_to_on_chart.sql turned the old flags into that).
 
 A dimension is the kind of name a chart is coloured by: a category (the category stack), a catch-all item ("Where it went"), an
 employer (Paycheck source), a person (the earner and payer stacks), a debt (the Debts bars), an account type (net worth's stacks)
@@ -13,7 +15,7 @@ orphans, listed with Delete. A fixed colour is checked against the kit in force 
 not within ΔE 10 (OKLab) of --success or --danger, which already mean kept and drew down. Either warns, naming the mode; neither
 refuses (the household may know its screen better than the check does)."""
 from __future__ import annotations
-import json, re
+import json, logging, re
 
 from . import brand_check, brand_kit
 
@@ -28,6 +30,9 @@ LABELS = {
     "account_type": ("Account types", "account type", "Position: the stacks under net worth"),
     "event_kind": ("Life-event kinds", "event kind", "the life-event markers on the timelines"),
 }
+COLOUR_ONLY = ("event_kind",)   # dimensions with a colour and no hide switch (#235); the table's CHECK says the same
+HIDE_REFUSED = ("{name}: a life-event kind has no hide switch; switch its events off the chart with On the chart in "
+                "Settings → Life events (or \"on_chart\": false in events.json)")
 FILTER_FROM = 8   # Settings shows a filter box over a list longer than this (AGENTS.md, "Long lists": one long enough to scan)
 SLOTS = tuple(f"series-{i}" for i in range(1, 9))
 CONTRAST = brand_check.GRAPHIC   # a chart mark against the sheet it sits on (DS-COLOR-3)
@@ -126,6 +131,8 @@ def set_one(conn, dimension: str, name: str, color, hidden: bool) -> str | None:
     c, problem = check_color(color)
     if problem:
         raise ValueError(f"{name}: {problem}")
+    if hidden and dimension in COLOUR_ONLY:
+        raise ValueError(HIDE_REFUSED.format(name=name))
     _written(conn)
     if c is None and not hidden:
         conn.execute("DELETE FROM appearance WHERE dimension=%s AND name=%s", (dimension, name))
@@ -149,9 +156,11 @@ def rename(conn, dimensions: tuple[str, ...], old: str, new: str) -> None:
         conn.execute("DELETE FROM appearance WHERE dimension=%s AND name=%s", (d, old))
 
 
-def parse(data) -> list[dict]:
+def parse(data, converted: list | None = None) -> list[dict]:
     """appearance.json (settings.zip, a seed directory, `set-appearance`): a list of {dimension, name, color?, hidden?}, checked as the
-    Settings page checks a row. ValueError lists the first problems by item number."""
+    Settings page checks a row. ValueError lists the first problems by item number. `hidden: true` on an event kind (a file from before
+    0.9.0, #235) is refused, unless the caller passes `converted`: the seed loader, which collects those kinds there and switches their
+    events off the chart, as the migration did, keeping the row's colour."""
     if not isinstance(data, list) or not all(isinstance(x, dict) for x in data):
         raise ValueError("appearance must be a JSON list of objects: {\"dimension\", \"name\", \"color\", \"hidden\"}")
     out, problems, seen = [], [], set()
@@ -167,6 +176,10 @@ def parse(data) -> list[dict]:
         h = x.get("hidden", False)
         if not isinstance(h, bool):
             problems.append(f"item {i}: hidden must be true or false"); continue
+        if h and d in COLOUR_ONLY:
+            if converted is None:
+                problems.append(f"item {i}: " + HIDE_REFUSED.format(name=f"{d} {n.strip()}")); continue
+            converted.append(n.strip()); h = False
         if (d, n.strip()) in seen:
             problems.append(f"item {i}: {d} {n.strip()} is listed twice"); continue
         seen.add((d, n.strip()))
@@ -198,12 +211,19 @@ def seed(conn, path) -> None:
     if not path.exists() or conn.execute("SELECT 1 FROM settings WHERE key=%s", (WRITTEN,)).fetchone() \
             or conn.execute("SELECT 1 FROM appearance LIMIT 1").fetchone():
         return
+    kinds: list[str] = []   # event kinds an older file hid: their events go off the chart instead (#235, as 0235_… did)
     try:
-        items = parse(json.loads(path.read_text(encoding="utf-8-sig")))
+        items = parse(json.loads(path.read_text(encoding="utf-8-sig")), converted=kinds)
     except ValueError as e:
         raise ValueError(f"seed {path}: {e}") from None
     conn.cursor().executemany("INSERT INTO appearance (dimension, name, color, hidden) VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING",
                               [(x["dimension"], x["name"], x["color"], x["hidden"]) for x in items])
+    if kinds and conn.execute("UPDATE life_events SET on_chart = false WHERE kind = ANY(%s) AND on_chart", (kinds,)).rowcount:
+        from . import db
+        db.mark_inputs_changed(conn)   # events.json changed: the next build carries the switch into the events dataset
+    if kinds:
+        logging.getLogger("ledger").info("seed %s: event kinds %s were hidden; their events are now off the chart (On the chart, #235)",
+                                         path, ", ".join(kinds))
     _written(conn)
 
 
@@ -229,8 +249,8 @@ def present(conn) -> dict[str, list[str]]:
 
 
 def page(conn) -> dict:
-    """Settings → Chart appearance: per dimension, each name the data has with its colour, hidden switch and warnings; and the orphans
-    (rows whose name the data no longer has)."""
+    """Settings → Chart appearance: per dimension, each name the data has with its colour, hidden switch (none for COLOUR_ONLY) and
+    warnings; and the orphans (rows whose name the data no longer has)."""
     names, table, toks = present(conn), for_page(conn), _theme_tokens()
     out = {}
     for d in DIMENSIONS:

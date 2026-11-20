@@ -451,9 +451,8 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         fund_choices = sorted({r["name"] for r in conn.execute("SELECT name FROM accounts WHERE active ORDER BY name").fetchall()})
         from .. import appearance
         look = appearance.page(conn)   # Settings → Chart appearance (#132): the names the data has, and the orphans
-    hidden_kinds = {r["name"] for r in look["dimensions"]["event_kind"] if r["hidden"]}   # Life events says which events a hidden kind keeps off the chart
     return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP, bills=bills, purchases=purchases, pp_form=request.session.pop("pp_form", None), pp_bought=request.session.pop("pp_bought", None), debt_category=debt_cat, hh_form=request.session.pop("hh_form", None), yc_items=yc_items, yc_form=request.session.pop("yc_form", None), loan_categories=categories, fund_accounts=fund_choices,
-                  look=look, hidden_kinds=hidden_kinds, look_labels=appearance.LABELS, look_slots=appearance.SLOTS, look_filter_from=appearance.FILTER_FROM, look_form=request.session.pop("appearance_form", None),
+                  look=look, look_colour_only=appearance.COLOUR_ONLY, look_labels=appearance.LABELS, look_slots=appearance.SLOTS, look_filter_from=appearance.FILTER_FROM, look_form=request.session.pop("appearance_form", None),
                   yb_form=request.session.pop("yb_form", None), tax_form=request.session.pop("tax_form", None), bal_hist=request.session.pop("bh_form", None), yb_slug=_yb_slug, tax_cfg=_tax_cfg(),
                   categories=categories, rules={**rules, **(request.session.pop("people_typed", None) or {})}, hh=household, name_families=name_families, unmapped=unmapped,
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS,
@@ -800,6 +799,9 @@ async def appearance_save(request: Request, user=Depends(auth.require_editor)):
     names, colors, hidden = [str(n) for n in f.getlist("name")], [str(c) for c in f.getlist("color")], {str(h) for h in f.getlist("hidden")}
     if len(colors) != len(names):
         flash(request, "Not saved: the form came back incomplete; reload the page and try again.", "bad")
+        return RedirectResponse(_appearance_back(dim), status_code=303)
+    if dim in appearance.COLOUR_ONLY and hidden:   # #235: a kind has a colour only; its events leave the chart one by one
+        flash(request, "Not saved: " + appearance.HIDE_REFUSED.format(name=", ".join(sorted(hidden))) + ".", "bad")
         return RedirectResponse(_appearance_back(dim), status_code=303)
     errors = {n: p for n, c in zip(names, colors) if (p := appearance.check_color(c)[1])}
     if errors:   # what was typed comes back, with each problem under its field
