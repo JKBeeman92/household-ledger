@@ -71,6 +71,19 @@ def test_null_and_bool_types():
     assert schema.validate({"people": [True]}, s) == ["people[0]: must be string, not true/false"]
 
 
+def test_maximum_is_checked_as_well_as_minimum():
+    """The schema declares ranges (pass_through_window 1 to 12, #107; year_start_month 1 to 12); both ends are enforced."""
+    s = schema.load("rules")
+    assert schema.validate({"pass_through_window": 12, "year_start_month": 1}, s) == []
+    assert schema.validate({"pass_through_window": 50}, s) == ["pass_through_window: must be at most 12"]
+    assert schema.validate({"pass_through_window": 0}, s) == ["pass_through_window: must be at least 1"]
+    assert schema.validate({"year_start_month": 13}, s) == ["year_start_month: must be at most 12"]
+    # a share of income: 0 (only the dollar floor) to 1
+    assert schema.validate({"pass_through_income_share": 0, "pass_through_floor": None}, s) == []
+    assert schema.validate({"pass_through_income_share": 1.5}, s) == ["pass_through_income_share: must be at most 1"]
+    assert schema.validate({"pass_through_income_share": -0.1}, s) == ["pass_through_income_share: must be at least 0"]
+
+
 # ---- the app: save validates, help text renders, schema is published ----
 def saved(client, key, body):
     r = client.post(f"/settings/{key}", data={"body": body})

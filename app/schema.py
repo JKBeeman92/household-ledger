@@ -1,7 +1,7 @@
 """A small JSON Schema validator for the published rules/household schemas (app/schemas/*.schema.json).
 
 Supports only what those schemas use: type, properties, required, additionalProperties (false or a schema), items, prefixItems,
-minItems/maxItems, minLength, minimum, pattern, enum and format "regex" (checked by compiling). Errors name the key, e.g. `employers[0].match`."""
+minItems/maxItems, minLength, minimum, maximum, pattern, enum and format "regex" (checked by compiling). Errors name the key, e.g. `employers[0].match`."""
 from __future__ import annotations
 import difflib, json, re
 from pathlib import Path
@@ -44,6 +44,9 @@ def validate(value, schema: dict, path: str = "") -> list[str]:
         errs.append(f"{at}must be one of {', '.join(map(str, schema['enum']))}")
     if isinstance(value, (int, float)) and not isinstance(value, bool) and "minimum" in schema and value < schema["minimum"]:
         errs.append(f"{at}must be at least {schema['minimum']}")
+    # maximum was declared by several rules (year_start_month 1 to 12, pass_through_window 1 to 12, #107) but never checked
+    if isinstance(value, (int, float)) and not isinstance(value, bool) and "maximum" in schema and value > schema["maximum"]:
+        errs.append(f"{at}must be at most {schema['maximum']}")
     if isinstance(value, str):
         if len(value) < schema.get("minLength", 0):
             errs.append(f"{at}must not be empty")

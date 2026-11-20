@@ -388,7 +388,45 @@ transfer when its *merchant* is one of a few built-in names (`Transfer`, `Rebala
 **Money you hold for someone else.** Collecting money on someone's behalf and paying it out later (donations gathered for a relative,
 a group gift, a shared bill paid back by friends) shows as one month of large negative spending and later months of inflated
 spending. Give those items Flow `exclude`: their rows stay in the stored exports and in reconciliation, but leave the ledger and
-every chart. The sample household's `Venmo Pass-Through` item shows the pattern.
+every chart. The sample household's `Venmo Pass-Through` item shows the pattern: dinner splits, a group present collected in
+September 2025 and bought in October, and a cabin weekend collected in March 2026 and paid in April and May.
+
+Every build looks for the pattern in items that are not excluded yet (#107), and Close a month lists what it finds under **Money
+held for someone else?**, beside Reconciliation, with the same lines in the build log and after `rebuild` or `import_exports` on
+the command line. A budget month is listed for an item, its canonical item, in an `expense` or `debt` envelope (transfers, plugs
+and the `loan_categories` categories left out: a loan from family comes in and is repaid by design, and the Method tab counts it)
+when both hold:
+
+1. **the item is usually quiet**: its net inflow that month is more than `pass_through_multiple` times its usual month, the median
+   absolute monthly amount over the trailing 12 budget months (a month with no rows counts as 0, so on an item that is usually
+   empty any inflow passes; months before the first export are not counted, and the first export month is not judged at all);
+2. **the inflow is large for this household**: more than `pass_through_income_share` of the household's usual monthly income (the
+   median of its monthly income, as the ledger counts it, over the same 12 budget months), and never less than `pass_through_floor`
+   dollars.
+
+The second keeps out what a household moves through its own sinking funds and giving envelopes: a few hundred dollars back into
+an emergency or vacation fund, or a tax refund on the tax envelope, is small beside a month's income. Most refunds stay out by
+the first: a refund lands on an item the household spends from, so its usual month is not small (a refund of a few hundred dollars
+on Eating Out is not listed). **The known trade-off**: any refund more than `pass_through_multiple` times the item's usual month
+and over the household's floor is listed, on an item spent every month (a returned appliance on Household Supplies, a large
+refund on Eating Out) as on one that is usually empty (a yearly bill refunded in another month); leave it as it is.
+
+What went back out is shown as evidence and is never a condition: each entry says how much more than its usual month left through
+the item in the `pass_through_window` budget months after ("$X more than usual went back out"), or that none did. Money collected
+for someone else is often handed over by a transfer, which the ledger leaves out, so "none went back out through this item" does
+not mean it was not someone else's money. Each entry ends "Money held for someone else? Set Flow `exclude` on `<item>`." It is a
+hint, not an error: the build still succeeds and the exit code stays reconciliation's. If it was a refund or your own money, leave it.
+
+| Rule | Default | What it sets |
+|---|---|---|
+| `pass_through_multiple` | `5` | How many times the item's usual month the inflow must be. |
+| `pass_through_income_share` | `0.10` | The share of the household's usual monthly income the inflow must be over (0 to 1; 0 leaves only the floor). |
+| `pass_through_floor` | `250` | The smallest inflow, in dollars, that is ever listed, whatever the income. |
+| `pass_through_window` | `3` | How many budget months after the inflow are shown as evidence (1 to 12). |
+
+Set them in the rules JSON (Settings → Pipeline rules) or with `python -m app.admin set-rules`. Unlike the other rules, where an
+empty value (`null`) keeps the default, an empty value turns the check off (`pass_through_window`: the evidence only). The defaults
+are a first guess: on a long back catalogue, check what it lists and move them.
 
 **A first mapping for a back catalogue.** Settings → Item mapping offers **Draft Item mapping rows from my budget groups** whenever the stored
 exports carry items with no mapping row. The draft fills only those items and never changes an existing row: Category is the budget

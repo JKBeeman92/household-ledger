@@ -1,4 +1,5 @@
-"""What the last build found (unmapped items, reconciliation) and the inline fix: append to the mapping, then rebuild."""
+"""What the last build found (unmapped items, reconciliation, money held for someone else) and the inline fix for unmapped items:
+append to the mapping, then rebuild."""
 from __future__ import annotations
 from fastapi import APIRouter, BackgroundTasks, Request, Depends, Form
 from fastapi.responses import RedirectResponse
@@ -33,7 +34,8 @@ def latest_findings(conn) -> dict:
     unmapped = [{**u, **({"canonical_guess": d["canonical_item"], "flow_guess": d["flow"], "category_guess": d["category"]} if (d := drafted.get(norm(u.get("item", "")))) else
                          guess(u.get("item", ""), u.get("group") or ""))} for u in f.get("unmapped", [])]
     return {"build_id": row and row["id"], "finished_at": row and row["finished_at"], "unmapped": unmapped,
-            "reconciliation": _checked(f.get("reconciliation") or {"counts": {}, "problems": [], "clean": True}), "categories": cats, "flows": FLOWS}
+            "reconciliation": _checked(f.get("reconciliation") or {"counts": {}, "problems": [], "clean": True}), "categories": cats, "flows": FLOWS,
+            "pass_through": f.get("pass_through") or []}   # #107; absent on a build that failed before the scripts ran, or one from before it
 
 
 @router.post("/upload/map")

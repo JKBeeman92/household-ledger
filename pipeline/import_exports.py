@@ -11,7 +11,7 @@ import argparse, os, sys
 from pathlib import Path
 import psycopg
 from . import filenames
-from .run_pipeline import ingest, rebuild, plan_files, store_planned, other_csv, FN_RX
+from .run_pipeline import ingest, rebuild, plan_files, store_planned, other_csv, describe_pass_through, FN_RX
 
 
 def _collect(paths: list[str]) -> list[tuple[Path, Path]]:
@@ -71,6 +71,8 @@ def run(conn, paths: list[str], *, profile: str | None = None, dry_run: bool = F
     out(res["summary"])
     for p in res["reconciliation"].get("problems", []):
         out(f"PROBLEM {p}")
+    for line in describe_pass_through(res.get("pass_through") or []):   # a hint, not a failure: the exit code stays reconciliation's (#107)
+        out(f"PASS-THROUGH? {line}")
     return 0 if res["reconciliation"]["clean"] and not refused else 1
 
 
