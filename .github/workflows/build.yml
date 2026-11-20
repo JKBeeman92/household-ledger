@@ -55,7 +55,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.12"
+          python-version: "3.15"
           cache: pip
           cache-dependency-path: requirements*.txt
       - run: pip install -r requirements-dev.txt
@@ -129,6 +129,8 @@ jobs:
           tags: bearings:pr-scan
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: The image ships without pip   # its vendored copies are what the scan flagged (#218); check the image, not the Dockerfile
+        run: docker run --rm --entrypoint python bearings:pr-scan -c "import importlib.util, pathlib, sys; sys.exit(importlib.util.find_spec('pip') is not None or any(pathlib.Path(sys.prefix, 'lib').glob('python3*/ensurepip/_bundled')))"
       - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: bearings:pr-scan
