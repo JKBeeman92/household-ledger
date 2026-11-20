@@ -104,7 +104,8 @@ background and the page shows its progress; only one rebuild runs at a time, eve
 
 **Bulk load at start.** Anything dropped in `/srv/ledger/import/` (mounted as `IMPORT_DIR`) is loaded when the container
 starts: every export named in the internal format or as EveryDollar names them, whose month is not yet in the database, or whose contents changed, is stored, then one rebuild
-runs. Files already loaded are skipped by checksum, so the directory can stay as a permanent archive of the raw exports.
+runs. Once a source profile is saved, another tool's CSVs there are read through it too ([Other budget tools](#other-budget-tools)).
+Files already loaded are skipped by checksum, so the directory can stay as a permanent archive of the raw exports.
 A failed start-up import is logged and recorded in the build log; it never stops the container from starting.
 **Close a month** also has a *Scan import directory now* button (no restart needed), and download links for `ledger.csv`, `datasets.zip` and
 `sources.zip` (internal-format and EveryDollar exports rebuilt in their own shape under their original filenames; other tools' files exactly as uploaded, under `YYYY-MM/`), also at `/export/...` for any signed-in user.
@@ -112,6 +113,7 @@ The same import is available by hand:
 
 ```sh
 docker compose exec ledger python -m pipeline.import_exports /data/import
+docker compose exec ledger python -m pipeline.import_exports --profile "Bree Bank" --dry-run /data/import/bree   # another tool's files
 ```
 
 **Without a browser.** The Settings editors and the rebuild have a command-line twin, run inside the container. Each command calls the
@@ -127,7 +129,9 @@ Commands: `import-mapping`, `set-rules`, `set-events`, `set-goals`, `set-cpi` an
 [drafted mapping](#roles) for unmapped items and `add-mapping FILE` adds a reviewed draft without touching existing
 rows; `rename-category OLD NEW`, `rename-canonical OLD NEW` and `move-canonical NAME CATEGORY` (and `set-debt-type NAME TYPE`) do what the Categories and canonical
 items panel does ([Roles](#roles)); `preview-mapping-migration` prints what the 0.5.0 upgrade will change in a 0.4 mapping
-([docs/UPGRADING.md](docs/UPGRADING.md)); `rebuild` exits 0 when the build reconciles, 1 when it fails or does not reconcile, and 75 when another rebuild is running. Every
+([docs/UPGRADING.md](docs/UPGRADING.md)); `rebuild` exits 0 when the build reconciles, 1 when it fails or does not reconcile, and 75 when another rebuild is running;
+`import DIR [--profile NAME] [--dry-run]` stores a back catalogue and rebuilds once, as `pipeline.import_exports` does
+([Other budget tools](#other-budget-tools)). Every
 write is logged as a `ledger.admin` line naming the command. API tokens stay read-only: shell access to the container already means
 full control, so the command line adds no new way in.
 
@@ -265,8 +269,9 @@ The pipeline reads one format of its own, a pair of CSV files per budget month:
 | `YYYY-MM-transactions.csv` | `Group, Item, Type, Date, Merchant, Account, Amount, Note`: `Date` is `YYYY-MM-DD`; `Amount` is signed, income positive and spending negative |
 | `YYYY-MM-budget.csv` | `Group, Item, Planned, Spent, Remaining` |
 
-The month in the file name is the budget month every row counts in. Files named this way are read as they are, on upload, from a
-`.zip`, from the import directory and by the standalone scripts. The app stages every rebuild in this format, and
+The month in the file name is the budget month every row counts in. Files named this way need no source profile: they are read as
+they are, on upload, from a `.zip`, from the import directory, by `python -m pipeline.import_exports` and by the standalone scripts,
+so a back catalogue converted to this format by any means loads in one go. The app stages every rebuild in this format, and
 `python -m pipeline.sources normalize` writes it. **EveryDollar's** exports are this format with `MM/DD/YYYY` dates and their own
 names (`<id>-MM-YYYY-EveryDollar-Transactions.csv`, `…-BudgetItems.csv`); they are the built-in profile, read without a mapping
 step, and always will be. `pipeline/filenames.py` recognises both.
@@ -292,8 +297,40 @@ for next month's files with the same columns. Profiles can be edited, exported a
 - **Signs**: say whether spending is negative or positive in each file; lines in the income groups (default `Income`) are income.
 
 The files are stored exactly as uploaded, and their rows are read through the profile, so correcting a profile re-reads every
-month stored with it; nothing needs uploading again. The import directory and `.zip` uploads take named exports only (the
-internal format, or EveryDollar's). The built-in EveryDollar profile is shown, read-only and exportable, on **Settings → Sources**.
+month stored with it; nothing needs uploading again. The built-in EveryDollar profile is shown, read-only and exportable, on **Settings → Sources**.
+
+**A back catalogue.** Map one month first, as above. After that the rest can arrive together, and every bulk path reads them
+through the saved profiles:
+
+- **A `.zip` upload** (or more than two files at once) opens a dry run: a table of every file with the profile that recognises
+  its columns, whether it is the transactions or the budget file, its budget month and how that month was found. Confirm once
+  for the whole batch; the files are stored in one go and the ledger rebuilds once. Nothing is stored before that, not even the
+  files in the zip named like exports, which wait in the same table (and win their month over another tool's file for it).
+- **The import directory** (`IMPORT_DIR`) matches files with no export name against the saved profiles by their headers (until a
+  profile is saved it reads named exports only, as before; the seed files such as `item_mapping.csv` are never read as exports).
+  A CSV that is not an export at all (a bank statement, notes) is named in the build log at every start; keep it under a folder
+  whose name starts with a dot (`.other/`), or name it starting with a dot, and the import leaves it alone.
+- **The command line**: `python -m pipeline.import_exports --profile NAME [--dry-run] DIR`, or `python -m app.admin import DIR
+  [--profile NAME] [--dry-run]`. Both print the table (each file's month and how it was found) before storing anything;
+  `--dry-run` prints it and stores nothing.
+
+A file is recognised by its exact set of column names, which also says which file of the pair it is. Its budget month comes from the
+profile's optional **month rule**, `month_from`, set in the profile's JSON on **Settings → Sources**:
+
+| `month_from` | The budget month is |
+|---|---|
+| `{"filename": "export-(?P<yyyy>\\d{4})-(?P<mm>\\d{2})"}` | read from the file name, for tools whose export names carry it |
+| `{"column": "date", "rule": "mode"}` | the most common month of a transactions file's dates, for one file per month with no dated name |
+| both keys | the file name when it matches, the dates otherwise |
+
+The date rule only guesses (the budget month stays the rule, and a pay or bill near a month's edge can fall either side): a tie
+between two months, or no readable date, gives no month. A budget file has no dates, so with no month in its name it is paired
+with the transactions file of the batch whose sums give its spent figures, the reconciliation check itself. Files are paired by
+month and kind, and none is guessed past that: a file no profile recognises, a second file for the same month and kind, or half a
+month whose other file is neither in the batch nor stored, is listed with the reason and not stored. A profile with no month rule
+falls back to the dates in a zip and on the command line, where the months are shown before they are stored; the import
+directory, which no one watches, uses only a profile's own rule, and names in the build log every file it did not store. Ready-made
+profiles for other tools are welcome in [`examples/source-profiles/`](examples/source-profiles/), each with a sample pair to test it.
 Outside the app, `python -m pipeline.sources propose …` prints a starting profile for a pair of files and
 `python -m pipeline.sources normalize --profile p.json --month YYYY-MM …` writes them in the internal format for the standalone
 pipeline scripts.
