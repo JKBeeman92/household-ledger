@@ -1,4 +1,5 @@
-"""Upload intake: a hard cap on request bodies, and safe in-memory unpacking of a zip of exports.
+"""Upload intake: a hard cap on request bodies, and safe in-memory unpacking of a zip of exports (named like exports, or any
+other tool's CSVs, which the upload route reads through the saved source profiles: #165).
 
 Zip limits are enforced while reading (a zip's declared sizes are attacker-controlled), nothing touches the disk, nested archives are
 refused, directories are ignored and only the basename of an entry is used, so a path inside the archive can never matter."""
@@ -63,8 +64,8 @@ def expand_zip(zname: str, data: bytes) -> list[Item]:
             name = basename(raw)
             if name.lower().endswith(".zip"):
                 items.append(Item(name, error="nested archives are not accepted", source=zname)); continue
-            if not FN_RX.match(name):
-                items.append(Item(name, error=f"not named like a monthly export ({EXPORT_NAMES})", source=zname)); continue
+            if not FN_RX.match(name) and not name.lower().endswith(".csv"):   # another tool's CSVs go on to its source profile (#165)
+                items.append(Item(name, error=f"not named like a monthly export ({EXPORT_NAMES}), and not a CSV", source=zname)); continue
             if name in seen:
                 items.append(Item(name, error="duplicate name in the archive; only the first is used", source=zname)); continue
             seen.add(name)

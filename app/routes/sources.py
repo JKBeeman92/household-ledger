@@ -2,9 +2,13 @@
 
 A pair of files that is not named like exports (the internal format, or EveryDollar's) waits in upload_pending while the editor confirms which file is which,
 the budget month, and how the columns map (proposed from the headers, or taken from a saved profile that recognises them). On
-confirm the profile is saved, both files are stored as uploaded with their rows read through it, and the ledger is rebuilt."""
+confirm the profile is saved, both files are stored as uploaded with their rows read through it, and the ledger is rebuilt.
+
+A back catalogue of such files (a zip, or more than two at once) waits there too, for the batch page (#165): a dry run of the saved
+profiles (file → profile → kind → month, and how the month was found), confirmed once for the whole batch, stored in one
+transaction and rebuilt once."""
 from __future__ import annotations
-import collections, json, secrets
+import json, re, secrets
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -13,7 +17,10 @@ from .. import auth, db
 from ..builds import run_background
 from ..web_helpers import flash, render, month_text
 from pipeline import sources as src
-from pipeline.run_pipeline import build_running, ingest, load_profiles, reapply_profile, save_profile
+from pipeline import filenames
+from pipeline.run_pipeline import (FN_RX, build_running, ingest, load_profiles, plan_files, plan_named, reapply_profile, save_profile,
+                                   store_planned, stored_files)
+from psycopg.types.json import Jsonb
 
 router = APIRouter()
 KIND_LABEL = {"transactions": "Transactions", "budget_items": "Budget"}
@@ -38,17 +45,10 @@ def _pending(conn, batch: str) -> list[dict]:
 
 
 def _month_guess(data: bytes, sec: dict) -> str:
-    """The most common YYYY-MM among the transaction dates, read with the section's date format; '' when none parse."""
+    """The most common YYYY-MM among the transaction dates, read with the section's date format; '' when none parse or two months
+    tie (src.month_of_dates, which the bulk paths use too: #165). The editor confirms or types it."""
     try:
-        _, rows = src.read_csv(data)
-        col, fmt = sec["columns"].get("date"), sec.get("date_format", "MM/DD/YYYY")
-        ms = collections.Counter()
-        for r in rows:
-            try:
-                ms[src.parse_date(r.get(col, ""), fmt)[:7]] += 1   # YYYY-MM-DD: its budget-month part
-            except src.ProfileError:
-                pass
-        return ms.most_common(1)[0][0] if ms else ""
+        return src.month_of_dates(data, sec)[0] or ""
     except Exception:  # noqa: BLE001  a guess only
         return ""
 
@@ -135,6 +135,8 @@ async def map_confirm(request: Request, batch: str, background: BackgroundTasks,
             name = (form.get("profile_name") or "").strip()
             old = existing.get(name)
             spec = {"name": name}
+            if old and old["spec"].get("month_from"):
+                spec["month_from"] = old["spec"]["month_from"]   # the month rule is set on Settings → Sources; this page keeps it (#165)
             for kind, key, prefix in (("transactions", "transactions", "t_"), ("budget_items", "budget", "b_")):
                 if kind in by_kind:
                     spec[key] = _section_from_form(form, prefix, kind, src.headers_of(by_kind[kind]["data"]), income_groups(conn))
@@ -170,6 +172,92 @@ def map_discard(request: Request, batch: str, user=Depends(auth.require_editor))
     with db.pool.connection() as conn:
         conn.execute("DELETE FROM upload_pending WHERE batch=%s", (batch,)); conn.commit()
     flash(request, "Discarded the files waiting for a mapping.")
+    return RedirectResponse("/upload", status_code=303)
+
+
+# ---------------------------------------------------------------- a back catalogue through the saved profiles (#165)
+STATE_LABEL = {"ready": "Ready","unchanged": "Unchanged", "refused": "Not stored"}
+
+
+def _batch_plan(conn, batch: str) -> tuple[list[tuple[str, bytes]], list[dict]]:
+    """The batch's files and their dry run. Worked out again on every view and on confirm, from the files as uploaded and the
+    profiles as saved, so what is stored is what the table showed (or newer, if a profile was edited in between)."""
+    pending = _pending(conn, batch)
+    files = [(f["filename"], f["data"]) for f in pending]
+    # A zip's files named like exports wait here with the rest (upload()), so the batch's own export wins its month and kind over a
+    # profiled file (as on the command line), and the whole zip is one confirmation and one rebuild (#165 review)
+    named = [i for i, (n, _) in enumerate(files) if FN_RX.match(n)]
+    other = [i for i in range(len(files)) if i not in set(named)]
+    plan = plan_named([files[i] for i in named], stored_files(conn))
+    for e in plan:
+        e["i"] = named[e["i"]]
+    if other:
+        present = {filenames.parse(files[i][0]) for i in named} - {None}
+        for e in plan_files(conn, [files[i] for i in other], default_mode=True, present=present):
+            plan.append(dict(e, i=other[e["i"]]))
+    conn.commit()   # read only
+    # problems first, then by month and kind: a long table is read for what will not be stored
+    order = {"refused": 0, "ready": 1, "unchanged": 2}
+    plan.sort(key=lambda e: (order[e["state"]], e["month"] or "", e["kind"] or "", e["name"]))
+    return files, plan
+
+
+_MONTH_RX = re.compile(r"(?<![\w-])\d{4}-(0[1-9]|1[0-2])(?![\w-])")   # a bare budget month in a sentence, not part of a file name or date
+
+
+@router.get("/upload/batch/{batch}", response_class=HTMLResponse)
+def batch_page(request: Request, batch: str, user=Depends(auth.require_editor)):
+    with db.pool.connection() as conn:
+        files, plan = _batch_plan(conn, batch)
+    if not files:
+        flash(request, "Those files are no longer waiting (they are kept for a day). Upload them again.", "bad")
+        return RedirectResponse("/upload", status_code=303)
+    # the page speaks months the household's way ("May 2026", DS-WORD-6); the dry run itself keeps ISO months, as the CLI prints them
+    plan = [dict(e, **{k: _MONTH_RX.sub(lambda m: month_text(m.group(0)), e[k]) for k in ("how", "detail") if e.get(k)}) for e in plan]
+    ready = [e for e in plan if e["state"] == "ready"]
+    return render(request, "upload_batch.html", user, active="upload", batch=batch, plan=plan, state_label=STATE_LABEL, ready=ready,
+                  months=sorted({e["month"] for e in ready}), profiles=sorted({e["profile"] for e in ready if e["profile"]}),
+                  named=sum(1 for e in ready if e.get("named")),
+                  refused=[e for e in plan if e["state"] == "refused"], unchanged=[e for e in plan if e["state"] == "unchanged"])
+
+
+@router.post("/upload/batch/{batch}")
+def batch_confirm(request: Request, batch: str, background: BackgroundTasks, user=Depends(auth.require_editor)):
+    """The one confirmation for the whole batch: every ready file stored in one transaction (or none), then one rebuild."""
+    with db.pool.connection() as conn:
+        files, plan = _batch_plan(conn, batch)
+        if not files:
+            flash(request, "Those files are no longer waiting (they are kept for a day). Upload them again.", "bad")
+            return RedirectResponse("/upload", status_code=303)
+        if not any(e["state"] == "ready" for e in plan):
+            flash(request, "Nothing in this batch can be stored; the table says why for each file.", "bad")
+            return RedirectResponse(f"/upload/batch/{batch}", status_code=303)
+        try:
+            done = store_planned(conn, plan, files, user.get("email", ""), atomic=True)
+        except ValueError as e:
+            conn.rollback()
+            flash(request, f"Nothing was stored: {str(e)[:300]}", "bad")
+            return RedirectResponse(f"/upload/batch/{batch}", status_code=303)
+        # per-file results live in the database, as an upload's do: a back catalogue would overflow the session cookie
+        results = done + [{"name": e["name"], "ok": False, "detail": e["detail"]} for e in plan if e["state"] == "refused"] \
+                       + [{"name": e["name"], "ok": False, "detail": e["detail"]} for e in plan if e["state"] == "unchanged"]
+        conn.execute("INSERT INTO upload_batches (uploaded_by, results) VALUES (%s, %s)", (user.get("email", ""), Jsonb(results)))
+        conn.execute("DELETE FROM upload_batches WHERE id <= (SELECT max(id) FROM upload_batches) - 20")
+        conn.execute("DELETE FROM upload_pending WHERE batch=%s", (batch,)); conn.commit()
+        running = build_running(conn)
+    if not running:
+        background.add_task(run_background)
+    months = len({e["month"] for e in plan if e["state"] == "ready"})
+    flash(request, f"Stored {len(done)} file{'s' if len(done) != 1 else ''} ({months} month{'s' if months != 1 else ''}). "
+                   + ("A rebuild is already running; it will run again to include them." if running else "Rebuilding in the background; progress is shown below."))
+    return RedirectResponse("/upload", status_code=303)
+
+
+@router.post("/upload/batch/{batch}/discard")
+def batch_discard(request: Request, batch: str, user=Depends(auth.require_editor)):
+    with db.pool.connection() as conn:
+        conn.execute("DELETE FROM upload_pending WHERE batch=%s", (batch,)); conn.commit()
+    flash(request, "Discarded the files; nothing was stored.")
     return RedirectResponse("/upload", status_code=303)
 
 
