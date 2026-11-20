@@ -16,6 +16,13 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
 - **Chart colours and hidden names** (#132, `0132_appearance.sql`): a new table only; no existing data is touched, and with no rows
   every chart draws as before. Settings gains a Chart appearance tab; `settings.zip` gains `appearance.json` (read back by the seed
   loader), the command line `set-appearance FILE` and `export appearance`. No rebuild is needed: the pipeline never reads it.
+- **Before and after a life event, and the new normal** (#159, `0159_new_normal.sql`): adds `life_events.new_normal`, false for every
+  existing event; nothing is marked for you, so every average reads as before until the household marks one (Settings → Life events).
+  Rebuild once (Close a month → Rebuild) for the new `before_after` dataset; until then the Overview card asks for a rebuild. The
+  `emergency_fund`, `look_ahead` and `plan_suggestions` rows gain fields that name the window (`outgo_from`, `outgo_since`,
+  `pace_since`, `avg_from`, `avg_months`, `avg_since`); `events.json` in `settings.zip` carries `"new_normal": true` only where set,
+  and an older `settings.zip` seeds as before. Agents reading the review context see a `new_normal` entry in the six months after a
+  marked event.
 
 ## 0.8.0
 

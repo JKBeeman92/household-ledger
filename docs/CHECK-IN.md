@@ -37,7 +37,8 @@ Then **Done**. The Last month tab says "October check-in: done 2 Nov", or how ma
 9. **Next month.** Write down what to do differently next month: up to three is usually enough (a fourth is allowed, with a note).
    A decision can name a category, a budget item or a debt and an amount, so the next check-in can check it: a spend cap, a save,
    an extra payment (until a date, or until the debt is paid off), or a plan change, checked against next month's planned figure.
-   A row of the Suggested plan can be taken in one press. Saying there are no changes this month completes the step too (and can be undone).
+   A row of the Suggested plan can be taken in one press. The plan averages the last twelve months, or the months since a life event
+   the household marked as its new normal (Settings → Life events), and says so (README, "Before and after a life event"). Saying there are no changes this month completes the step too (and can be undone).
 
 ## Catching up
 

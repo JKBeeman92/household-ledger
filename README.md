@@ -91,7 +91,7 @@ at once as `settings.zip` ([Backups](#backups)), so moving to a new box is: unzi
 | `item_mapping.csv` | columns `Item,CanonicalItem,Category,Flow,Note`, and optionally `DebtType` ([Roles](#roles)) |
 | `cpi_u.csv` | columns `month,cpi,source` (`month` is `YYYY-MM`) |
 | `goals.json` | list of `{"key", "label", "value", "unit", "note"}`; `value` may be `null` |
-| `events.json` | list of `{"m": "YYYY-MM", "label": "…", "kind": "…", "person": "…"}` (the key is `m`, not `month`); `kind` (one of `job`, `move`, `family`, `health`, `purchase`, `debt`, `other`) and `person` (best one of the `people` rule) are optional |
+| `events.json` | list of `{"m": "YYYY-MM", "label": "…", "kind": "…", "person": "…", "new_normal": true}` (the key is `m`, not `month`); `kind` (one of `job`, `move`, `family`, `health`, `purchase`, `debt`, `other`), `person` (best one of the `people` rule) and `new_normal` (`true` or `false`, default `false`: [Before and after a life event](#before-and-after-a-life-event)) are optional |
 | `rules.json` | object; keys and types in [`app/schemas/rules.schema.json`](app/schemas/rules.schema.json) |
 | `household.json` | object; [`app/schemas/household.schema.json`](app/schemas/household.schema.json) |
 | `review.json` | list of `{"m", "order", "heading", "text"}`, one row per review section |
@@ -476,7 +476,8 @@ figure applies to every month, as the stated gross does. The `monthly` and `year
 
 "If income stopped tomorrow, how many months could we cover?" Coverage is the month-end balance of the asset accounts marked
 **Emergency** (Settings → Accounts; on by default for cash and savings, so a holiday fund can be switched off) divided by the average
-monthly outgo, living spend plus debt payments, over the trailing twelve budget months. Total outgo, not a bare-bones budget: it is the
+monthly outgo, living spend plus debt payments, over the trailing twelve budget months (or since the household's new normal, and it
+says so: [Before and after a life event](#before-and-after-a-life-event)). Total outgo, not a bare-bones budget: it is the
 honest figure. The Last month tab gives it with its change since last month ("4.2 months (target 6)"), the Goals tab draws it month
 by month, and `emergency_months` on Settings → Goals sets the target. With no emergency account it shows "—" and says where to mark
 one. The `emergency_fund` dataset reaches the review and MCP.
@@ -625,8 +626,9 @@ runs in year mode with two more steps, and that month's review gets one more sec
 month and Quarter tabs and in the check-in's quarter step, answers at 3, 12 and 36 months from what the app already knows. Every
 figure is an estimate at the current pace, and "How it is worked out" lists each input, so any figure can be redone by hand.
 
-- **The pace** is the monthly net (income less living spend and debt payments), averaged over the last twelve budget months; the last
-  three months sit beside it, so a change of direction shows.
+- **The pace** is the monthly net (income less living spend and debt payments), averaged over the last twelve budget months (or since
+  the household's new normal: [Before and after a life event](#before-and-after-a-life-event)); the last three months sit beside it,
+  so a change of direction shows.
 - **Kept** is the pace × the months, plus the payments each debt frees from the month after its payoff estimate (listed on their own).
 - **Net worth** is today's (Net worth) plus what is kept, plus what the debt payments take off the balances (each debt paid down month
   by month at its payment and APR). There is no investment return unless the `assumed_growth_pct` rule sets a yearly % for asset
@@ -635,6 +637,26 @@ figure is an estimate at the current pace, and "How it is worked out" lists each
   shows the month it is reached at its own pace, or "not at this pace". The `coming_up` rows in each horizon are in the dataset.
 - Not a retirement planner, a simulation or a tax projection: no planned change in income or spending is assumed. The `look_ahead`
   dataset reaches the review and MCP (a freed payment is named by its debt's type, never its account).
+
+## Before and after a life event
+
+"What did our spending look like before the baby arrived, and after? Before the move, and after?" A new dependent, a move or a job
+change resets what a normal month is. **Before and after a life event**, on the Overview tab, sets the budget months before any life
+event against the event's own month and the months after it: 6 on each side by default, 3 and 12 offered.
+
+- Each figure is **a month's average** over the months loaded on that side, so a side with fewer months still compares fairly, and
+  the line above the table says when one is short ("only 5 of 6 months loaded"). Income, living spend, debt payments, net kept and the
+  savings rate, nominal or in one month's prices (the Dollars switch), so inflation is not read as a change of life.
+- **The categories that moved most** in living spend, by dollars and by percent (a percent only where at least $25 a month was spent
+  before), and the categories **new since** the event: nothing spent on them in any loaded month before it (childcare, a new utility).
+- **The new normal.** Any event can be marked as the new normal (Settings → Life events, *New normal*: yes). It is always the
+  household's choice: nothing is marked for you, and a new `move` or `family` event only offers it. Once a marked event has three
+  budget months loaded, the averages that look back start from it rather than from the old normal: the look ahead's pace, the
+  emergency fund's outgo and the Last month tab's twelve-month average and suggested plan. Each says "since *the event*". With fewer
+  than three months, the window before it is kept.
+- **The review** of a month within six months after an event marked as the new normal names it and its before-and-after comparison.
+- The `before_after` dataset (a row per event and window) reaches MCP and `datasets.zip`; the period filter does not apply to it.
+  `new_normal` travels in `settings.zip`'s `events.json`, and `python -m app.admin set-events FILE` sets it.
 
 ## Decisions
 
@@ -693,7 +715,7 @@ coloured by, holding only the names your data has:
 ## Try it with the sample household
 
 `examples/sample-household/` is a synthetic household (two earners, 18 budget months, a student loan, a transfer pair, three-paycheck
-months, life events, six accounts with two years of month-end balances) that reconciles clean, so you can see every tab before loading your own exports. The seed files go in `SEED_DIR`
+months, life events (the baby's birth marked as the new normal), six accounts with two years of month-end balances) that reconciles clean, so you can see every tab before loading your own exports. The seed files go in `SEED_DIR`
 (first boot only) and the exports in `IMPORT_DIR`.
 
 Compose, from a checkout of this repo (`LEDGER_DATA` defaults to `./data`, which git ignores):
