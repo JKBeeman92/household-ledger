@@ -59,6 +59,9 @@ function probe() {
   out.unreachable = [...document.querySelectorAll('.tbl')].filter((e) => e.getAttribute('role') !== 'region' || e.tabIndex !== 0 ||
     !((e.getAttribute('aria-label') || '').trim() || ((e.getAttribute('aria-labelledby') || '').split(' ').filter(Boolean).every((i) => document.getElementById(i)) && e.getAttribute('aria-labelledby')))).map((e) => e.outerHTML.slice(0, 80))
   out.sideways = document.documentElement.scrollWidth > document.documentElement.clientWidth   // DS-LAYOUT-1
+  // and with every disclosure opened, as a household reading the lists would (the life-event lists ran past the sheet at 390, #140)
+  { const shut = [...document.querySelectorAll('details:not([open])')]; shut.forEach((d) => { d.open = true })
+    out.sidewaysOpen = document.documentElement.scrollWidth > document.documentElement.clientWidth; shut.forEach((d) => { d.open = false }) }
   out.colors = dash.colors
   out.params = dash.params()
   return out
@@ -71,7 +74,7 @@ const snap = async (page) => {
     await page.waitForTimeout(120)
     const p = await page.evaluate(probe)
     for (const k of ['charts', 'legends', 'tables', 'tips', 'findings', 'lists']) Object.assign(all[k], p[k])
-    all.chips = all.chips || p.chips; all.sideways = all.sideways || p.sideways
+    all.chips = all.chips || p.chips; all.sideways = all.sideways || p.sideways; all.sidewaysOpen = all.sidewaysOpen || p.sidewaysOpen
     all.unreachable = p.unreachable
     all.tiles = all.tiles || p.tiles; all.colors = p.colors; all.params = p.params
   }

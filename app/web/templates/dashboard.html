@@ -70,7 +70,7 @@
     <div class="card">
       <h2 id="monthly-chart">Income against outgo, by budget month</h2>
         <p class="finding" data-draw="fd-monthly" data-source="monthly"></p>
-        <ul class="key row"><li>three lines, each named at its right end: income, living spend, and the thinner spend plus debt</li><li><span class="key-mark" aria-hidden="true">=</span>outgo is living spend plus debt payments</li><li><span class="key-mark" aria-hidden="true">−</span>transfers and exclusions left out (Method tab)</li><li><span class="key-mark ln dot" aria-hidden="true"></span>dotted markers are life events, a number where several fall within a month: hover or tab to one, or open the list below the chart</li><li><span class="key-mark ahead" aria-hidden="true"></span>after the last month, a Coming up strip: the next 12 months’ payoffs, yearly bills, tax deadlines, planned purchases and life events</li></ul>
+        <ul class="key row"><li>three lines, each named at its right end: income, living spend, and the thinner spend plus debt</li><li><span class="key-mark" aria-hidden="true">=</span>outgo is living spend plus debt payments</li><li><span class="key-mark" aria-hidden="true">−</span>transfers and exclusions left out (Method tab)</li><li><span class="key-mark ln dot" aria-hidden="true"></span>dotted markers are life events, a number where several fall within a month: tap, hover or tab to one, or open the list below the chart</li><li><span class="key-mark ahead" aria-hidden="true"></span>after the last month, a Coming up strip: the next 12 months’ payoffs, yearly bills, tax deadlines, planned purchases and life events</li></ul>
       <details class="how"><summary>How to read this</summary><p>Each ring is a month. The gap between income and spend plus debt is the month’s net. A month where spend plus debt sits above income was funded from savings or a one-off inflow. Spikes in income are bonuses, tax refunds, stimulus or severance; spikes in spend are usually a tax bill, a trip or a project.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Income against outgo, figures"><table><thead><tr><th scope="col">Month</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Spend + debt</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-monthly" data-source="monthly events"></tbody></table></div></details>
       <div class="ev-filter" data-draw="ev-filter" data-source="events"></div>
       <div class="chart" data-draw="monthly" data-source="monthly events coming_up"></div>
@@ -103,8 +103,8 @@
       <div class="card">
         <h2 id="employer-chart">Paycheck source, by month</h2>
         <p class="finding" data-draw="fd-employer" data-source="employer"></p>
-        <ul class="key row"><li>employer read from the deposit text (employer names: Settings → Pipeline rules)</li><li>deposits it cannot place: Unknown</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Paycheck deposits by month, coloured by employer. A change of color is a job change; a taller month has three paychecks or a bonus paid through payroll. The dotted markers are life events of kind job, and events with no kind; hover one for its label.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Paycheck source, figures"><table><thead><tr><th scope="col">Month</th><th scope="col">Employer</th><th scope="col">Paid</th><th scope="col">Deposits</th></tr></thead><tbody data-draw="dt-employer" data-source="employer"></tbody></table></div></details>
+        <ul class="key row"><li>employer read from the deposit text (employer names: Settings → Pipeline rules)</li><li>deposits it cannot place: Unknown</li><li><span class="key-mark ln dot" aria-hidden="true"></span>dots along the top: job events, and events with no kind; tap, hover or tab to one for its label</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Paycheck deposits by month, coloured by employer. A change of colour is a change of employer; a taller month has three paychecks or a bonus paid through payroll.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Paycheck source, figures"><table><thead><tr><th scope="col">Month</th><th scope="col">Employer</th><th scope="col">Paid</th><th scope="col">Deposits</th></tr></thead><tbody data-draw="dt-employer" data-source="employer"></tbody></table></div></details>
         <div class="chart" data-draw="employer" data-source="employer events"></div>
         <div class="legend" data-draw="employer-legend" data-source="employer"></div>
       </div>
@@ -951,7 +951,7 @@ dash.draw('ev-filter', (box) => {
     }
     box.append(g);
   };
-  group('kind', 'Events', 'All', o.kind, (k) => HL.KIND_WORDS[k] || k);
+  group('kind', 'Kind', 'All', o.kind, (k) => HL.KIND_WORDS[k] || k);
   group('person', 'Person', 'Everyone', o.person, (p) => p);
 });
 // what is coming up after the last loaded month (#140, the coming_up dataset of #144), when the period reaches the last loaded month:

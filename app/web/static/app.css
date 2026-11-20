@@ -398,6 +398,7 @@ details[open]:not(#dash-root details) > summary::before { transform: translateY(
 .hl tbody tr:hover td { background: color-mix(in srgb, var(--ink) 6%, transparent); }
 .hl .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .hl .seg button[aria-pressed="true"], .hl .ev-chips button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 14%, var(--surface-200)); color: var(--ink); box-shadow: inset 0 0 0 2px var(--accent); }
+.hl .ev-chips button[aria-pressed="true"] { font-weight: var(--weight-strong); }   /* pressed reads by weight as well as tint (DS-COLOR-4) */
 .hl .review h3 { font-size: var(--text-heading); font-weight: var(--weight-strong); margin: var(--space-4) 0 var(--space-1); } .hl .review h3:first-child { margin-top: 0; } .hl .review p { margin: 0; line-height: 1.55; max-width: 70ch; }
 .hl .summary-list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-1); }
 .hl .summary-list li { padding: var(--space-1) var(--space-2); border-left: 3px solid var(--line); }
@@ -478,7 +479,7 @@ details[open]:not(#dash-root details) > summary::before { transform: translateY(
   radial-gradient(farthest-side at 50% 0, color-mix(in srgb, var(--ink) 18%, transparent), transparent) top / 100% .8rem no-repeat scroll,
   radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--ink) 18%, transparent), transparent) bottom / 100% .8rem no-repeat scroll; }
 .hl table[data-source="goals"] td:nth-child(3) { white-space: normal; min-width: 12rem; }
-.hl .key.events li { white-space: nowrap; }
+.hl .key.events li { white-space: normal; overflow-wrap: anywhere; min-width: 0; }   /* long labels wrap inside the sheet at 390 (DS-LAYOUT-1) */
 /* Headline summaries: one figure, one plain takeaway, then status chips; detail stays a click away. */
 .hl .headline { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: var(--space-1) var(--space-6); align-items: end; margin-bottom: var(--space-4); }
 .hl .headline .eyebrow { margin: 0; } .hl .headline .aside-note { grid-column: 1 / -1; color: var(--ink-muted); margin: 0; }

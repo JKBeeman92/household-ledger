@@ -168,7 +168,7 @@ CROWD = [("2025-09", f"September thing {i}") for i in range(5)] + [("2025-10", f
 def test_the_sample_draws_merged_focusable_markers_the_switch_and_the_strip(sample, width):
     set_table([])
     s = harness(sample, width=width)["before"]
-    assert not s["sideways"]
+    assert not s["sideways"] and not s["sidewaysOpen"]   # the event and Coming up lists wrap inside the sheet when opened
     m = s["charts"]["monthly"]
     apart(m["marks"], width)
     labels = [x["label"] for x in m["marks"] if not x["ahead"]]
