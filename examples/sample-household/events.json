@@ -6,6 +6,12 @@
   "person": "Sam"
  },
  {
+  "m": "2025-05",
+  "label": "Started budgeting by envelope",
+  "kind": "other",
+  "on_chart": false
+ },
+ {
   "m": "2025-07",
   "label": "Rosie promoted at Hobbiton Mill",
   "kind": "job",
@@ -15,6 +21,12 @@
   "m": "2025-10",
   "label": "Moved to a bigger hole, rent goes up",
   "kind": "move"
+ },
+ {
+  "m": "2025-11",
+  "label": "Sam's knee mended at the healer",
+  "kind": "health",
+  "person": "Sam"
  },
  {
   "m": "2026-02",

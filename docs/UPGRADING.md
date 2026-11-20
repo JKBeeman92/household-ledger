@@ -17,6 +17,11 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
   every chart draws as before. Settings gains a Chart appearance tab; `settings.zip` gains `appearance.json` (read back by the seed
   loader), the command line `set-appearance FILE` and `export appearance`. No rebuild is needed: the pipeline never reads it.
 
+- **Life events on the timeline** (#140, `0140_life_event_on_chart.sql`): one column on `life_events`, `on_chart`, NOT NULL with
+  default true, so every existing event stays on the charts exactly as before. Settings → Life events gains an **On the chart**
+  column; `events.json` (in `settings.zip`, a seed directory and `set-events`) carries `"on_chart": false` only for an event switched
+  off, so an older file still loads and puts every event on the chart. The Overview's markers merge within a month, take keyboard
+  focus, filter by kind and person, and end in a Coming up strip; rebuild once if you switch an event off before the next build.
 - **Two people at the table** (#156): no migration. Rebuild once after upgrading to emit `by_person` (in `datasets.zip`, the review
   and MCP). It is empty, and the Last month tab's By person card and the check-in's By person lines absent, unless the People rule
   names two or more people.
