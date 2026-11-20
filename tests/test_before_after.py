@@ -50,33 +50,9 @@ def test_figures_match_hand_sums_and_a_short_side_says_so():
     assert [(r["label"], r["n"]) for r in rows] == [("Moved to Bywater", 3), ("Moved to Bywater", 6), ("Moved to Bywater", 12)]
 
 
-def test_the_new_normal_cuts_a_trailing_window_once_it_has_three_months():
-    win = MONTHS   # 2025-01 .. 2025-08
-    assert ba.cut(win, [MOVE]) == (win, None)   # not marked: never automatic
-    marked = {**MOVE, "new_normal": True}
-    assert ba.cut(win, [marked]) == (MONTHS[4:], marked)
-    assert ba.cut(MONTHS[:6], [marked]) == (MONTHS[:6], None)   # two months since the move: the old window
-    early = {"m": "2025-02", "label": "New job", "new_normal": True}
-    assert ba.cut(MONTHS[:6], [marked, early]) == (MONTHS[1:6], early)   # the latest has too few, so the one before it
-    assert ba.cut(MONTHS[2:], [early]) == (MONTHS[2:], None)   # before the window: it is already all since
-    assert ba.cut(MONTHS[:3], [{"m": "2025-09", "label": "Later", "new_normal": True}]) == (MONTHS[:3], None)   # not happened yet
-    assert ba.cut([], [marked]) == ([], None)
-
-
-def test_the_look_ahead_and_the_suggested_plan_average_from_the_new_normal():
-    rows = la.look_ahead(MONTHLY, [], [], [], [], [], "2025-08")
-    assert rows[0]["pace_from"] == "2025-01" and rows[0]["pace_since"] is None and rows[0]["pace"] == round((350 * 4 + 250 * 4) / 8, 2)
-    rows = la.look_ahead(MONTHLY, [], [], [], [], [], "2025-08", baseline_from="2025-05", baseline_label="Moved to Bywater")
-    assert rows[0]["pace_from"] == "2025-05" and rows[0]["pace_months"] == 4 and rows[0]["pace"] == 250 and rows[0]["pace_since"] == "Moved to Bywater"
-    budget = [{"m": m, "category": "Food", "flow": "expense", "group": "Food", "planned": 400, "actual": (300 if m >= "2025-05" else 400)} for m in MONTHS]
-    plain = dec.plan_suggestions(budget, [])
-    assert plain[0]["avg_from"] == "2025-01" and plain[0]["avg_months"] == 7 and plain[0]["avg_since"] is None and plain[0]["suggest"] == 360   # (4×400 + 3×300) / 7, rounded up
-    cut = dec.plan_suggestions(budget, [], lambda w: ba.cut(w, [{**MOVE, "new_normal": True}]))
-    assert cut[0]["avg_from"] == "2025-05" and cut[0]["avg_months"] == 3 and cut[0]["avg12"] == 300 and cut[0]["suggest"] == 300 and cut[0]["avg_since"] == "Moved to Bywater"
-
-
 def test_marking_an_event_moves_each_window_in_the_standalone_scripts_and_each_says_so(tmp_path):
-    """The golden exports (four budget months) with one event: not marked, nothing moves; marked, the pace and the outgo start at it."""
+    """The golden exports (four budget months) with one event: not marked, nothing moves; marked, the comparison flags it, and with
+    two months after it loaded the averages keep the trailing months (test_averaging.py has the switch)."""
     wd = build(tmp_path / "plain", {})
     (wd / "events.json").write_text(json.dumps([{"m": "2025-02", "label": "Moved to Bywater", "kind": "move"}])); run_scripts(wd)
     la0, ef0 = ds(wd, "look_ahead")[0], ds(wd, "emergency_fund")[-1]
@@ -91,11 +67,9 @@ def test_marking_an_event_moves_each_window_in_the_standalone_scripts_and_each_s
     wd2 = tmp_path / "marked"; shutil.copytree(wd, wd2)
     (wd2 / "events.json").write_text(json.dumps([{"m": "2025-02", "label": "Moved to Bywater", "kind": "move", "new_normal": True}])); run_scripts(wd2)
     la1, ef1 = ds(wd2, "look_ahead")[0], ds(wd2, "emergency_fund")[-1]
-    assert la1["pace_from"] == "2025-02" and la1["pace_months"] == 3 and la1["pace_since"] == "Moved to Bywater"
-    assert la1["pace"] == round(sum(monthly[m]["net"] for m in ("2025-02", "2025-03", "2025-04")) / 3, 2)
-    assert ef1["outgo_from"] == "2025-02" and ef1["outgo_months"] == 3 and ef1["outgo_since"] == "Moved to Bywater"
-    assert ef1["outgo"] == round(sum(monthly[m]["spend"] + monthly[m]["debt"] for m in ("2025-02", "2025-03", "2025-04")) / 3, 2)
-    assert ds(wd2, "emergency_fund")[1]["outgo_since"] is None   # 2025-02 itself: one month since, the old window
+    assert la1["pace_from"] == "2025-01" and la1["pace_months"] == 4 and la1["pace_since"] is None and la1["pace_switch"] == "2025-08"   # #236: six months, not three
+    assert la1["pace"] == round(sum(monthly[m]["net"] for m in ("2025-01", "2025-02", "2025-03", "2025-04")) / 4, 2)
+    assert ef1["outgo_from"] == "2025-01" and ef1["outgo_months"] == 4 and ef1["outgo_since"] is None and ef1["outgo_switch"] == "2025-08"
     assert all(r["new_normal"] for r in ds(wd2, "before_after"))
 
 
@@ -189,7 +163,7 @@ def test_the_new_normal_and_the_on_the_chart_switch_travel_together(client, rese
     assert json.loads((wd / "events.json").read_text()) == body   # what the events dataset and before_after read
 
 
-def test_sample_household_marks_the_birth_and_every_window_says_so(client, reset_db):
+def test_sample_household_marks_the_birth_and_every_window_says_when_it_moves(client, reset_db):
     reset_db(SAMPLE)
     upload_files(client, SAMPLE)
     data = client.get("/api/datasets").json()
@@ -200,12 +174,16 @@ def test_sample_household_marks_the_birth_and_every_window_says_so(client, reset
     assert [c["category"] for c in six["new_categories"]] == ["Baby"]
     monthly = {r["m"]: r for r in data["monthly"]}
     assert six["before"]["spend"] == round(sum(monthly[m]["spend"] for m in ("2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01")) / 6, 2)
+    # #236: Feb to Jun 2026 is four budget months after the birth, so the averages keep the last twelve and move from Aug 2026
     la0 = data["look_ahead"][0]
-    assert la0["pace_from"] == "2026-02" and la0["pace_months"] == 5 and la0["pace_since"] == "Elanor is born"
+    assert la0["pace_from"] == "2025-07" and la0["pace_months"] == 12 and la0["pace_since"] is None
+    assert (la0["pace_switch"], la0["pace_switch_since"], la0["pace_switch_event"]) == ("2026-08", "Elanor is born", "2026-02")
     ef = data["emergency_fund"][-1]
-    assert ef["outgo_from"] == "2026-02" and ef["outgo_since"] == "Elanor is born"
+    assert ef["outgo_from"] == "2025-07" and ef["outgo_months"] == 12 and ef["outgo_since"] is None and ef["outgo_switch"] == "2026-08"
     ps = data["plan_suggestions"]
-    assert ps and all(r["avg_from"] == "2026-02" and r["avg_months"] == 4 and r["avg_since"] == "Elanor is born" for r in ps)
+    assert ps and all(r["avg_from"] == "2025-07" and r["avg_months"] == 12 and r["avg_since"] is None and r["avg_switch"] == "2026-08" for r in ps)
+    yr = data["year_review"][-1]["ahead"]
+    assert yr["pace_months"] == 12 and yr["pace_switch"] == "2026-08"
     page = client.get("/").text
     assert 'id="ba-card"' in page and 'data-draw="ba-compare"' in page and 'data-draw="ahead-since"' in page and 'data-draw="lm-since"' in page
 
@@ -225,8 +203,8 @@ def test_the_new_normal_off_the_chart_still_moves_every_window(client, reset_db)
     assert ev.get("on_chart") is False and ev.get("new_normal") is True
     birth = [r for r in data["before_after"] if r["label"] == "Elanor is born"]
     assert {r["n"] for r in birth} == {3, 6, 12} and all(r["new_normal"] for r in birth)
-    assert data["look_ahead"][0]["pace_since"] == "Elanor is born"
-    assert data["emergency_fund"][-1]["outgo_since"] == "Elanor is born"
+    assert data["look_ahead"][0]["pace_switch_since"] == "Elanor is born"
+    assert data["emergency_fund"][-1]["outgo_switch_since"] == "Elanor is born"
 
 
 def test_review_names_the_comparison_within_six_months_of_the_new_normal(client, reset_db):
@@ -239,6 +217,8 @@ def test_review_names_the_comparison_within_six_months_of_the_new_normal(client,
         assert nn_["after"]["months"] == 3 and nn_["after"]["to"] == "2026-07" and "Baby" in nn_["new_categories"]   # as of April: three months seen
         assert "merchant" not in json.dumps(nn_).lower() and "new_normal" in review.SYSTEM
         assert "new_normal" not in review.build_context(conn, "2026-01")   # before the event
+        aw = ctx["averaging_window"]   # #236: four months after the birth loaded by April's end? two: the last twelve, and when they move
+        assert (aw["months"], aw["since"], aw["switch"], aw["switch_since"], aw["switch_event"]) == (12, None, "2026-08", "Elanor is born", "2026-02")
         conn.execute("UPDATE life_events SET new_normal=false"); conn.commit()
     from pipeline.run_pipeline import rebuild
     with db.pool.connection() as conn:
@@ -278,9 +258,15 @@ def test_a_category_that_first_appears_late_in_the_after_side_is_not_new_since_t
     assert [c["category"] for c in ba.compare(ev, 3, monthly, cat_month)["new_categories"]] == ["Gym", "Streaming"]
 
 
-def test_the_check_in_says_since_the_new_normal_and_the_old_copy_returns_unmarked(client, reset_db):
-    """Each window that moves says so where it renders: the quarter step's pace, the next-month step's suggested plan and the year
-    review's pace; with nothing marked, the twelve-month wording is back."""
+SWITCH = "Averages move to the new normal from Aug 2026, six budget months after Elanor is born (Feb 2026)."
+MOVE_SINCE = "the 9 budget months since Moved to a bigger hole, rent goes up (Oct 2025), the household's new normal"
+
+
+def test_the_check_in_says_when_the_window_moves_then_since_the_new_normal_and_the_old_copy_returns_unmarked(client, reset_db):
+    """#236, one wording and one count: the quarter step's pace, the next-month step's suggested plan, the Where you stand step's
+    emergency fund and the year review's pace. The sample's birth has four months after it, so each says the last 12 and the month
+    they move; a household past the switch (the move of Oct 2025 marked too) says since the move, and still when the birth will
+    move them; with nothing marked, the plain last 12 and no note."""
     from pipeline.run_pipeline import rebuild
     reset_db(SAMPLE)
     upload_files(client, SAMPLE)
@@ -289,20 +275,57 @@ def test_the_check_in_says_since_the_new_normal_and_the_old_copy_returns_unmarke
         rebuild(conn)
     page = client.get("/checkin/2026-06").text
     assert "Mark Year in review as read" in page   # year mode
-    assert '>Add to the plan</button>' in page and 'aria-label="Add to the plan: Food at $940"' in page and "Add “Plan" not in page   # the figure once, the name in the button's
-    # one shape everywhere (the 0.9.0 release review): the N budget months since the event (its month), the household's new normal,
-    # and the pace said once as what it is
-    assert "keeps its pace, the average net kept a month, over the 5 budget months since Elanor is born (Feb 2026), the household's new normal: " in page   # the quarter step
-    assert "budget months since Elanor is born (Feb 2026), the household's new normal, rounded up" in page and "The average of the " in page   # the suggested plan
-    assert "at its pace, the average net kept a month, over the 5 budget months since Elanor is born (Feb 2026), the household's new normal," in page   # the year in review
-    assert "its new normal" not in page
-    assert "the last twelve months" not in page and "The twelve-month average," not in page
+    assert '>Add to the plan</button>' in page and "Add “Plan" not in page and 'aria-label="Add to the plan: ' in page   # the figure once, the name in the button's
+    assert "keeps its pace, the average net kept a month, over the last 12 budget months: " in page and f"). {SWITCH}</p>" in page   # the quarter step
+    assert f"The average of the last 12 budget months, rounded up to the next ten, where it differs from this month's plan. {SWITCH} Adding one" in page   # the plan
+    assert "at its pace, the average net kept a month, over the last 12 budget months, about " in page and f"(an estimate, not a plan). {SWITCH}</dd>" in page   # the year
+    assert "months of outgo, the average of the last 12 budget months." in page   # the emergency fund, in Where you stand
+    assert "since Elanor is born" not in page and "the last twelve months" not in page and "The twelve-month average," not in page
+    with db.pool.connection() as conn:   # past the switch: the move has eight months after it loaded
+        conn.execute("UPDATE life_events SET new_normal=true WHERE label LIKE 'Moved to a bigger hole%'"); conn.commit()
+        rebuild(conn)
+    page = client.get("/checkin/2026-06").text
+    assert f"keeps its pace, the average net kept a month, over {MOVE_SINCE}: " in page and f"The average of {MOVE_SINCE}, rounded up" in page
+    assert f"at its pace, the average net kept a month, over {MOVE_SINCE}, about " in page and f"months of outgo, the average of {MOVE_SINCE}." in page
+    assert page.count(SWITCH) == 4   # the birth, still to move them, once in each place
     with db.pool.connection() as conn:
         conn.execute("UPDATE life_events SET new_normal=false"); conn.commit()
         rebuild(conn)
     page = client.get("/checkin/2026-06").text
-    assert "since Elanor is born" not in page
-    assert "keeps its pace, the average net kept a month, over the last twelve months: " in page and "The twelve-month average, rounded up" in page and "at its pace, the average net kept a month, over the last twelve months," in page
+    assert "since Elanor is born" not in page and "Averages move" not in page and "new normal" not in page
+    assert "keeps its pace, the average net kept a month, over the last 12 budget months: " in page and "The average of the last 12 budget months, rounded up" in page
+    assert "at its pace, the average net kept a month, over the last 12 budget months," in page
+
+
+def test_a_household_past_the_switch_averages_since_the_event_with_one_count_everywhere(client, reset_db):
+    """The sample with its move (Oct 2025) marked too: eight months after it are loaded, so the pace, the outgo, the plan and the year
+    review average the nine months from it, and the review context says so; twelve months on (a month added in the context's eye)
+    nothing would move."""
+    from pipeline.run_pipeline import rebuild
+    reset_db(SAMPLE)
+    upload_files(client, SAMPLE)
+    with db.pool.connection() as conn:
+        conn.execute("UPDATE life_events SET new_normal=true WHERE label LIKE 'Moved to a bigger hole%'"); conn.commit()
+        rebuild(conn)
+    data = client.get("/api/datasets").json()
+    la0, ef, ps = data["look_ahead"][0], data["emergency_fund"][-1], data["plan_suggestions"]
+    move = "Moved to a bigger hole, rent goes up"
+    assert la0["pace_from"] == ef["outgo_from"] == "2025-10" and la0["pace_months"] == ef["outgo_months"] == 9 and la0["pace_since"] == ef["outgo_since"] == move
+    assert all((r["avg_from"], r["avg_months"], r["avg_since"]) == ("2025-10", 9, move) for r in ps)
+    assert la0["pace_switch"] == ef["outgo_switch"] == ps[0]["avg_switch"] == "2026-08"   # the birth, later, still to switch
+    monthly = {r["m"]: r for r in data["monthly"]}
+    since = [m for m in sorted(monthly) if "2025-10" <= m <= "2026-06"]
+    assert la0["pace"] == round(sum(monthly[m]["net"] for m in since) / 9, 2)
+    assert ef["outgo"] == round(sum(monthly[m]["spend"] + monthly[m]["debt"] for m in since) / 9, 2)
+    assert data["year_review"][-1]["ahead"]["pace_since"] == move
+    by_m = {r["m"]: r for r in data["emergency_fund"]}
+    assert by_m["2026-03"]["outgo_since"] is None and by_m["2026-03"]["outgo_switch"] == "2026-04"   # five months after the move: not yet
+    assert by_m["2026-04"]["outgo_since"] == move and by_m["2026-04"]["outgo_months"] == 7
+    with db.pool.connection() as conn:
+        aw = review.build_context(conn, "2026-06")["averaging_window"]
+        assert (aw["months"], aw["from"], aw["since"], aw["switch"], aw["switch_since"]) == (9, "2025-10", move, "2026-08", "Elanor is born")
+        assert "averaging_window" in review.SYSTEM and "six budget" in aw["note"]
+        assert "averaging_window" not in review.build_context(conn, "2025-09")   # before any marked event: the plain last twelve need no note
 
 
 def test_in_real_dollars_the_movers_are_ranked_in_real_dollars():
@@ -353,24 +376,25 @@ def test_the_change_column_is_in_view_on_a_phone_and_nothing_scrolls_the_page(sa
 def test_last_month_stamps_the_emergency_fund_and_keys_the_kept_rows(sample):
     s = ba_harness(sample, width=390, settings="Moved to a bigger hole")
     lm = s["lastmonth"]
-    ef = lm["ef"]   # DS-STATUS-1: 2.0 months against a target of 6 is a stamp, as the sibling rows are; the sentence stays plain
+    ef = lm["ef"]   # DS-STATUS-1: 2.1 months (over the last 12, #236) against a target of 6 is a stamp, as the sibling rows are; the sentence stays plain
     assert ef["stamps"] == ["Needs a look"] and ef["downs"] == 0
-    assert "(target 6 months)" in ef["text"] and "4.0 months short of the target." in ef["text"] and "emergency_months" not in ef["text"]
+    assert "(target 6 months)" in ef["text"] and "3.9 months short of the target." in ef["text"] and "emergency_months" not in ef["text"]
     assert ef["dts"][1] == "Emergency savings"
     key = lm["key"]   # built from the rule as built: the default keeps Housing, Debt and Insurance
     assert key[-1]["mark"] == "=" and "Housing, Debt and Insurance keep their plan" in key[-1]["text"] and not any(k["mark"] == "↑10" for k in key)
     kept = {c["category"] for c in lm["cats"] if c["mark"]}
     assert kept == {"Housing", "Debt", "Insurance"} and all(c["hidden"] == ", kept at its plan" for c in lm["cats"] if c["mark"])
     assert not any(c["hidden"] for c in lm["cats"] if not c["mark"])
-    assert lm["avgSince"] == "Averages use the 4 budget months since Elanor is born (Feb 2026), the household's new normal."   # its own, without the plan
-    assert "suggested plan" in lm["detailSince"]
-    # one shape for the since-note (the 0.9.0 release review): the count, the event and its month, then "not the last twelve"
-    assert lm["detailSince"] == "The averages and the suggested plan use the 4 budget months since Elanor is born (Feb 2026), the household's new normal, not the last twelve."
-    assert lm["aheadSince"].startswith("The pace is the average net kept a month over the 5 budget months since Elanor is born (Feb 2026), the household's new normal, not the last twelve.")
+    # #236: the birth has four months after it, so every window is the last 12 and says, one way, when it moves
+    assert lm["avgSince"] == SWITCH   # its own, without the plan
+    assert lm["detailSince"] == f"The averages and the suggested plan use the last 12 budget months. {SWITCH}"
+    assert lm["aheadSince"].startswith(f"The pace is the average net kept a month over the last 12 budget months. {SWITCH}")
+    assert lm["aheadHead"] == "Kept, at the pace\n(last 12 months)"   # the header names its window, on a line of its own
+    assert ef["text"].count("the average of the last 12 budget months") == 1 and SWITCH in ef["text"]
     # the Average card's key says what its colours mean, as the plan card's does (DS-CHART-5), and keeps the direction in words
     assert lm["avgKey"][:4] == ["worse than usual", "better than usual", "a bar to the right is above its average, to the left below it", "for savings, giving and debt, more is better"]
     st = s["settings"]   # the offer on an edited move row; heard when it appears, and gone once yes is chosen or the kind is not a move
-    assert st["opened"] == {"text": "If this month changed what a normal month costs, set New normal to yes: the pace, the emergency fund and the suggested plan will average from here once three months are loaded.", "role": "status", "live": "polite", "describedby": "new-normal-hint", "value": "no"}
+    assert st["opened"] == {"text": "If this month changed what a normal month costs, set New normal to yes: the pace, the emergency fund and the suggested plan will average from here once six budget months after it are loaded, until twelve months have passed.", "role": "status", "live": "polite", "describedby": "new-normal-hint", "value": "no"}
     assert st["yes"]["text"] == "" and st["yes"]["describedby"] == "new-normal-hint" and st["job"]["text"] == ""
 
 

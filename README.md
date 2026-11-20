@@ -476,8 +476,8 @@ figure applies to every month, as the stated gross does. The `monthly` and `year
 
 "If income stopped tomorrow, how many months could we cover?" Coverage is the month-end balance of the asset accounts marked
 **Emergency** (Settings → Accounts; on by default for cash and savings, so a holiday fund can be switched off) divided by the average
-monthly outgo, living spend plus debt payments, over the trailing twelve budget months (or since the household's new normal, and it
-says so: [Before and after a life event](#before-and-after-a-life-event)). Total outgo, not a bare-bones budget: it is the
+monthly outgo, living spend plus debt payments, over the last 12 budget months (or since the household's new normal, and it
+says so: the averaging window in [Before and after a life event](#before-and-after-a-life-event), the same months the pace uses). Total outgo, not a bare-bones budget: it is the
 honest figure. The Last month tab gives it with its change since last month ("4.2 months (target 6)"), the Goals tab draws it month
 by month, and `emergency_months` on Settings → Goals sets the target. With no emergency account it shows "—" and says where to mark
 one. The `emergency_fund` dataset reaches the review and MCP.
@@ -626,9 +626,10 @@ runs in year mode with two more steps, and that month's review gets one more sec
 month and Quarter tabs and in the check-in's quarter step, answers at 3, 12 and 36 months from what the app already knows. Every
 figure is an estimate at the current pace, and "How it is worked out" lists each input, so any figure can be redone by hand.
 
-- **The pace** is the monthly net (income less living spend and debt payments), averaged over the last twelve budget months (or since
-  the household's new normal: [Before and after a life event](#before-and-after-a-life-event)); the last three months sit beside it,
-  so a change of direction shows.
+- **The pace** is the monthly net (income less living spend and debt payments), averaged over the last 12 budget months, this one
+  included (or since the household's new normal: the averaging window in [Before and after a life event](#before-and-after-a-life-event));
+  the last three months sit beside it, so a change of direction shows. The *Kept, at the pace* header names its window:
+  "(last 12 months)" or "(since Feb 2026)".
 - **Kept** is the pace × the months, plus the payments each debt frees from the month after its payoff estimate (listed on their own).
 - **Net worth** is today's (Net worth) plus what is kept, plus what the debt payments take off the balances (each debt paid down month
   by month at its payment and APR). There is no investment return unless the `assumed_growth_pct` rule sets a yearly % for asset
@@ -651,10 +652,19 @@ event against the event's own month and the months after it: 6 on each side by d
   before), and the categories **new since** the event: nothing spent on them in any loaded month before it, and first spent in the
   event's month or the two after it (childcare, a new utility), so a category that starts a year later is not put down to the event.
 - **The new normal.** Any event can be marked as the new normal (Settings → Life events, *New normal*: yes). It is always the
-  household's choice: nothing is marked for you, and a new `move` or `family` event only offers it. Once a marked event has three
-  budget months loaded, the averages that look back start from it rather than from the old normal: the look ahead's pace, the
-  emergency fund's outgo, and the Last month tab's category averages and suggested plan (its headline net still sets the month against
-  the twelve before). Each says "since *the event*". With fewer than three months, the window before it is kept. A short window holds
+  household's choice: nothing is marked for you, and a new `move` or `family` event only offers it. It moves **the averaging
+  window**, one rule for every average that looks back: the look ahead's pace, the emergency fund's outgo, the Last month tab's
+  category averages and suggested plan (its headline net still sets the month against the twelve before), the year in review and the
+  review. The window is the last 12 budget months, the latest one included, so every figure counts the same months:
+  - **Before the switch**, until six budget months *after* the event's month are loaded, the window stays the last 12, and each
+    figure says when it will move: "Averages move to the new normal from Aug 2026, six budget months after Elanor is born (Feb 2026)".
+    A quarter right after a move or a birth is often full of one-off costs. A month not loaded does not count: it is still to come.
+  - **From the switch**, the window is the event's own month and every loaded month after it: "the 7 budget months since Elanor is
+    born (Feb 2026), the household's new normal". With two marked events, the latest that has switched starts the window.
+  - **Twelve months after the event**, everything is back to the plain last 12 budget months and the since-notes go: by then the last
+    12 are all after it, unless a month is missing.
+
+  The before-and-after card's own 3, 6 and 12 months are separate: they compare the two sides and do not move the window. A short window holds
   a yearly bill at its full size: a category paid once a year (insurance, a licence) reads high there until twelve months have passed,
   so check its suggested plan before taking it (the `plan_keep_categories` rule's categories, Insurance among them by default, keep
   their plan).

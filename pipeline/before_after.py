@@ -1,6 +1,7 @@
 """Before and after a life event (issue #159). Standalone, like quarters.py and payoff.py: the standard library only, no database.
-make_datasets.py emits the `before_after` dataset with it, and the windows of the averages used elsewhere (the look ahead's pace,
-#148; the emergency fund's outgo, #150; the suggested plan, #162) are cut at the household's "new normal" through `cut`.
+make_datasets.py emits the `before_after` dataset with it. The household's "new normal" (an event it marked) also moves the window
+of the averages used elsewhere (the look ahead's pace, the emergency fund's outgo, the suggested plan): that rule is averaging.py
+(#236), and this comparison's own 3/6/12 months are separate from it.
 
 Comparison. For an event in budget month M and a window of n months (6 by default; 3 and 12 offered):
   before   the n budget months before M (M-n .. M-1)
@@ -16,10 +17,8 @@ one month's prices (`*_real`, the CPI toggle). An event with no month loaded on 
                   the event's first MIN_MONTHS months (M .. M+2, or the whole after side when n is shorter): "new since <event>". A
                   category that first appears late in a long after side began with something else, not with the event
 
-The new normal. An event marked `new_normal` (the household ticks it; never automatic) moves the start of a trailing average: `cut`
-takes a trailing window of months and, when the latest such event at or before the window's end has at least MIN_MONTHS of the
-window from it on, drops the months before it. With fewer, the event before that is tried, and with none the window is unchanged
-(the old window). The event is returned with the window so each figure can say "since <event>".
+The new normal. An event marked `new_normal` (the household ticks it; never automatic) is flagged in its rows (`new_normal`); the
+windows it moves elsewhere are averaging.window's.
 """
 from __future__ import annotations
 
@@ -44,24 +43,6 @@ def add_months(m: str, k: int) -> str:
 
 def is_new_normal(e: dict) -> bool:
     return e.get("new_normal") is True
-
-
-def cut(window: list[str], events: list[dict] | None, min_months: int = MIN_MONTHS) -> tuple[list[str], dict | None]:
-    """(the window from the new normal on, the event) when a new-normal event cuts it; else (window, None). `window` is a sorted list
-    of budget months ending at the month the average is for. An event before the window's start does not cut it (the window is
-    already all after it) and one after its end has not happened yet."""
-    if not window:
-        return window, None
-    end = window[-1]
-    for e in sorted((e for e in events or [] if is_new_normal(e) and e.get("m") and e["m"] <= end), key=lambda e: (e["m"], e.get("label") or ""), reverse=True):
-        since = [m for m in window if m >= e["m"]]
-        if len(since) >= min_months:
-            return (since, e) if len(since) < len(window) else (window, None)
-    return window, None
-
-
-def since_label(e: dict | None) -> str | None:
-    return e.get("label") if e else None
 
 
 def _pct(a: float | None, b: float | None) -> float | None:

@@ -188,17 +188,17 @@
     </div>
     <div class="card" id="lm-ahead-card">
       <h2 id="lm-ahead">Where the current pace leads</h2>
-      <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the pace (the last twelve months, or since the new normal), with the 3-month pace beside it</li></ul>
-      <div class="tbl" role="region" tabindex="0" aria-labelledby="lm-ahead"><table><thead><tr><th scope="col">In</th><th scope="col" class="num">Kept, at the pace</th><th scope="col" class="num">Kept, 3-month pace</th><th scope="col" class="num">Net worth</th></tr></thead><tbody data-draw="ahead-rows" data-source="look_ahead"></tbody></table></div>
+      <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the pace (the last 12 budget months, or since the new normal), with the 3-month pace beside it</li></ul>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="lm-ahead"><table><thead><tr><th scope="col">In</th><th scope="col" class="num" data-draw="ahead-head" data-source="look_ahead">Kept, at the pace</th><th scope="col" class="num">Kept, 3-month pace</th><th scope="col" class="num">Net worth</th></tr></thead><tbody data-draw="ahead-rows" data-source="look_ahead"></tbody></table></div>
       <p class="note" data-draw="ahead-since" data-source="look_ahead"></p>
       <h3 class="sub" id="lm-ahead-dates">Dates at this pace, 12 months on</h3>
       <dl class="dti" data-draw="ahead-facts" data-source="look_ahead" aria-labelledby="lm-ahead-dates"></dl>
-      <details class="how"><summary>How it is worked out</summary><p>The pace is the monthly net (income less living spend and debt payments) averaged over the last twelve budget months, or over the months since a life event the household marked as its new normal (Settings → Life events). Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. No investment return is assumed unless a yearly growth is set (Settings → Pipeline rules → All rules as JSON: assumed_growth_pct), and no change in income or spending.</p><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
+      <details class="how"><summary>How it is worked out</summary><p>The pace is the monthly net (income less living spend and debt payments) averaged over the last 12 budget months, this one included, or over the months since a life event the household marked as its new normal (Settings → Life events), once six budget months after it are loaded and until twelve months have passed. The same months give the emergency fund’s outgo and the suggested plan. Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. No investment return is assumed unless a yearly growth is set (Settings → Pipeline rules → All rules as JSON: assumed_growth_pct), and no change in income or spending.</p><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
     </div>
     <div class="card" id="lm-ef-card">
       <h2 id="lm-ef">{{ glyph('emergency-fund') }} Emergency fund</h2>
       <ul class="key row"><li>if income stopped: months of outgo the emergency savings would cover</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Emergency money is the month-end balance of the asset accounts marked Emergency (Settings → Accounts; cash and savings accounts are, unless you switch one off, such as a holiday fund). Outgo is living spend plus debt payments, averaged over the last twelve budget months (or since the household's new normal, when it marked one), so one heavy month does not swing it. Total outgo is used, not a bare-bones budget: it is the honest figure. A target shows when you set one on Settings → Goals: a goal with the key emergency_months, in months.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Emergency money is the month-end balance of the asset accounts marked Emergency (Settings → Accounts; cash and savings accounts are, unless you switch one off, such as a holiday fund). Outgo is living spend plus debt payments, averaged over the last 12 budget months (or since the household's new normal, once six budget months after it are loaded and until twelve months have passed: the months the pace and the suggested plan use), so one heavy month does not swing it. Total outgo is used, not a bare-bones budget: it is the honest figure. A target shows when you set one on Settings → Goals: a goal with the key emergency_months, in months.</p></details>
       <dl class="dti" data-draw="lm-ef" data-source="emergency_fund goals"></dl>
     </div>
     <div class="card" id="lm-dti-card">
@@ -237,7 +237,7 @@
         <p class="finding" data-draw="fd-lm-avg" data-source="lm_cats"></p>
         <p class="note" data-draw="lm-avg-since" data-source="plan_suggestions"></p>
         <ul class="key row"><li><span class="bar" style="--k: var(--danger)"></span>worse than usual</li><li><span class="bar" style="--k: var(--success)"></span>better than usual</li><li>a bar to the right is above its average, to the left below it</li><li>for savings, giving and debt, more is better</li><li>a bar far from zero, either way, is a plan to look at again</li></ul>
-        <details class="how"><summary>How to read this</summary><p>Spent this month minus the average of the twelve months before it (or of the months since a life event the household marked as its new normal), by category. This compares the month with its own recent history rather than with the plan. A category that is over plan but at its average has a plan problem; one that is at plan but far above its average had an unusual month.</p></details>
+        <details class="how"><summary>How to read this</summary><p>Spent this month minus the average of the last 12 budget months, this one included (or of the months since a life event the household marked as its new normal, once six budget months after it are loaded: the months the pace and the suggested plan use), by category. This compares the month with its own recent history rather than with the plan. A category that is over plan but at its average has a plan problem; one that is at plan but far above its average had an unusual month.</p></details>
         <div class="chart" data-draw="lm-avg" data-source="lm_cats"></div>
         <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Against the recent average, figures"><table><thead><tr><th scope="col">Category</th><th scope="col">Average</th><th scope="col">Spent</th><th scope="col">vs average</th></tr></thead><tbody data-draw="dt-lm-avg" data-source="lm_cats"></tbody></table></div></details>
       </div>
@@ -423,12 +423,12 @@
     </div>
     <div class="card" id="q-ahead-card">
       <h2 id="q-ahead">Where the current pace leads</h2>
-      <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the pace (the last twelve months, or since the new normal), with the 3-month pace beside it</li></ul>
-      <div class="tbl" role="region" tabindex="0" aria-labelledby="q-ahead"><table><thead><tr><th scope="col">In</th><th scope="col" class="num">Kept, at the pace</th><th scope="col" class="num">Kept, 3-month pace</th><th scope="col" class="num">Net worth</th></tr></thead><tbody data-draw="ahead-rows" data-source="look_ahead"></tbody></table></div>
+      <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the pace (the last 12 budget months, or since the new normal), with the 3-month pace beside it</li></ul>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="q-ahead"><table><thead><tr><th scope="col">In</th><th scope="col" class="num" data-draw="ahead-head" data-source="look_ahead">Kept, at the pace</th><th scope="col" class="num">Kept, 3-month pace</th><th scope="col" class="num">Net worth</th></tr></thead><tbody data-draw="ahead-rows" data-source="look_ahead"></tbody></table></div>
       <p class="note" data-draw="ahead-since" data-source="look_ahead"></p>
       <h3 class="sub" id="q-ahead-dates">Dates at this pace, 12 months on</h3>
       <dl class="dti" data-draw="ahead-facts" data-source="look_ahead" aria-labelledby="q-ahead-dates"></dl>
-      <details class="how"><summary>How it is worked out</summary><p>The pace is the monthly net (income less living spend and debt payments) averaged over the last twelve budget months, or over the months since a life event the household marked as its new normal (Settings → Life events). Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. No investment return is assumed unless a yearly growth is set (Settings → Pipeline rules → All rules as JSON: assumed_growth_pct), and no change in income or spending.</p><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
+      <details class="how"><summary>How it is worked out</summary><p>The pace is the monthly net (income less living spend and debt payments) averaged over the last 12 budget months, this one included, or over the months since a life event the household marked as its new normal (Settings → Life events), once six budget months after it are loaded and until twelve months have passed. The same months give the emergency fund’s outgo and the suggested plan. Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. No investment return is assumed unless a yearly growth is set (Settings → Pipeline rules → All rules as JSON: assumed_growth_pct), and no change in income or spending.</p><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
     </div>
   </section>
   <section id="position" class="page" role="tabpanel" aria-labelledby="tab-position" tabindex="0" hidden>
@@ -841,14 +841,14 @@ dash.calc('lm_totals', { inputs: ['budget_items'], title: 'Last month totals vs 
   const net = inc - sp - db, anet = ainc - asp - adb;
   return [{ row: 'last', month: last, income_actual: inc, income_planned: incp, income_vs_plan: inc - incp, spend_actual: sp, spend_planned: spp, spend_vs_plan: sp - spp, debt_actual: db, debt_planned: dbp, debt_vs_plan: db - dbp, net_actual: net, net_avg: anet, net_vs_avg: net - anet, income_avg: ainc, spend_avg: asp, debt_avg: adb }];
 } });
-dash.calc('lm_cats', { inputs: ['budget_items', 'goal_config'], title: 'Last month by category vs plan and trailing average', description: 'For the latest budget month, per category: planned, spent, gap to plan, average of the twelve months before (from the household\u2019s new normal when it marked one, as plan_suggestions.avg_from says), gap to that average, and a suggested plan (that average rounded up to the nearest 10; the plan_keep_categories rule\u2019s categories keep the current plan, and kept is true for them).', fn: (budget_items, goal_config) => {
+dash.calc('lm_cats', { inputs: ['budget_items', 'goal_config'], title: 'Last month by category vs plan and trailing average', description: 'For the latest budget month, per category: planned, spent, gap to plan, average over the averaging window (the last 12 budget months up to and including the latest, or from the household\u2019s new normal once six budget months after it are loaded, as plan_suggestions.avg_from says: the months the look ahead\u2019s pace and the emergency fund use), gap to that average, and a suggested plan (that average rounded up to the nearest 10; the plan_keep_categories rule\u2019s categories keep the current plan, and kept is true for them).', fn: (budget_items, goal_config) => {
   const gc = (goal_config && goal_config[0]) || {}, saveGroups = new Set(gc.savings_groups || []), giveCats = new Set(gc.giving_categories || ['Giving']);   // role default
-  const months = [...new Set(budget_items.map((r) => r.m))].sort(); const last = months[months.length - 1]; const prev = months.slice(-13, -1);
+  const months = [...new Set(budget_items.map((r) => r.m))].sort(); const last = months[months.length - 1];
   const keep = gc.plan_keep_categories || ['Housing', 'Debt', 'Insurance'];   // role default, until a rebuild emits plan_keep_categories
   const cats = [...new Set(budget_items.map((r) => r.category))];
   const psd = dash.data('plan_suggestions'), ps = psd.status === 'ok' ? psd.data : [];   // read, not an input: an install not yet rebuilt still draws
-  const base = ps.find((r) => r.m === last && r.avg_from);   // the new normal (#159): the window the pipeline averaged, so the average and the suggestion agree
-  const win = base ? prev.filter((m) => m >= base.avg_from) : prev, nw = win.length || 1;
+  const base = ps.find((r) => r.m === last && r.avg_from);   // the averaging window (#236): the months the pipeline averaged, so the average and the suggestion agree
+  const win = base ? months.filter((m) => m >= base.avg_from && m <= last) : months.slice(-12), nw = win.length || 1;   // before a rebuild: the last 12, this one included
   return cats.map((c) => {
     const cur = budget_items.filter((r) => r.m === last && r.category === c); const flow = cur[0] ? cur[0].flow : (budget_items.find((r) => r.category === c) || {}).flow;
     const planned = d3.sum(cur, (r) => Number(r.planned)), actual = d3.sum(cur, (r) => Number(r.actual));
@@ -1458,7 +1458,8 @@ dash.draw('y-facts', (el) => { el.replaceChildren(); const r = yr(); if (!r) ret
   if (r.events.length) add('Life events', r.events.map((e) => `${m(e.m)}: ${e.label}`).join('; '));
   if (r.withholding) { const w = r.withholding; for (const o of w.outcomes.slice(-4)) add(`Tax year ${o.year}`, `${o.amount >= 0 ? 'a refund of' : 'a bill of'} ${HL.usd0(Math.abs(o.amount))}`);
     if (w.adjust) add('Withholding', `${w.adjust_kind === 'refund' ? 'A refund' : w.adjust_kind === 'owed' ? 'A bill' : 'A refund or a bill'} of ${HL.usd0(w.note_at)} or more two years running: consider adjusting withholding, the tax taken out of each paycheck`); }
-  if (r.ahead) add('Where next year leads', `at the pace ${r.ahead.pace_since ? `of the ${r.ahead.pace_months} months since ${r.ahead.pace_since}, the household's new normal` : "of the last twelve months"}, about ${ySigned(r.ahead.cash)} kept by ${m(r.ahead.until)}` + (r.ahead.net_worth != null ? `, net worth about ${HL.usd0(r.ahead.net_worth)}` : '') + ' (an estimate, not a plan)'); });
+  if (r.ahead) { const w = HL.window(r.ahead, 'pace');
+    add('Where next year leads', `at the pace of ${HL.windowMonths(w)}, about ${ySigned(r.ahead.cash)} kept by ${m(r.ahead.until)}` + (r.ahead.net_worth != null ? `, net worth about ${HL.usd0(r.ahead.net_worth)}` : '') + ' (an estimate, not a plan)' + (w.sw ? '. ' + HL.windowSwitch(w) : '')); } });
 dash.draw('y-movers', (tb) => { tb.replaceChildren(); const r = yr(), mv = r && r.movers;
   if (!mv) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = r ? 'The year before is not loaded.' : '—'; tr.append(td); tb.append(tr); return; }
   for (const x of (HL.basis() === 'real' ? mv.real : mv.nominal)) { const tr = document.createElement('tr');
@@ -1475,15 +1476,22 @@ dash.draw('ahead-rows', (tb) => { tb.replaceChildren(); const rows = ahead();
     [`${r.h} months, to ${aheadMonth(r.until)}`, aheadSigned(r.cash), aheadSigned(r.cash_3), r.net_worth == null ? '—' : HL.usd0(r.net_worth)].forEach((c, i) => {
       const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); });
     tb.append(tr); } });
-// the new normal (#159): a window cut at a life event the household marked says so where the figure is
-HL.sinceNote = (label, from, n, what) => label ? `${what} the ${n} budget month${n === 1 ? '' : 's'} since ${label} (${aheadMonth(from)}), the household's new normal, not the last twelve.` : '';
+// the averaging window (#236, pipeline/averaging.py): one rule for the pace, the emergency fund's outgo and the suggested plan, read from
+// the fields each row carries (<p>_from, _months, _since, _switch*), and one wording (DS-WORD-3), as the check-in's _window.html says it
+HL.window = (r, p) => ({ from: r[p + '_from'], n: r[p + '_months'], since: r[p + '_since'], sw: r[p + '_switch'], swSince: r[p + '_switch_since'], swEvent: r[p + '_switch_event'] });
+HL.windowMonths = (w) => w.since ? `the ${w.n} budget month${w.n === 1 ? '' : 's'} since ${w.since} (${aheadMonth(w.from)}), the household's new normal` : `the last ${w.n} budget month${w.n === 1 ? '' : 's'}`;
+HL.windowSwitch = (w) => w.sw ? `Averages move to the new normal from ${aheadMonth(w.sw)}, six budget months after ${w.swSince} (${aheadMonth(w.swEvent)}).` : '';
+// said only when a new normal moves the window or is about to; the plain last twelve need no note
+HL.windowNote = (w, what) => w && (w.since || w.sw) ? [`${what} ${HL.windowMonths(w)}${w.since ? ', not the last twelve' : ''}.`, HL.windowSwitch(w)].filter(Boolean).join(' ') : '';
+dash.draw('ahead-head', (el) => { const r = ahead()[0], w = r && HL.window(r, 'pace');   // the header names its window
+  el.replaceChildren('Kept, at the pace'); if (w && w.n) el.append(document.createElement('br'), w.since ? `(since ${aheadMonth(w.from)})` : `(last ${w.n} month${w.n === 1 ? '' : 's'})`); });   // on its own line, so the column stays narrow on a phone
 dash.draw('ahead-since', (el) => { const r = ahead()[0]; el.replaceChildren(); if (!r) return;   // and, under the table, what the Net worth column leaves out or assumes
-  const parts = [HL.sinceNote(r.pace_since, r.pace_from, r.pace_months, 'The pace is the average net kept a month over'), r.net_worth == null ? 'Net worth needs month-end balances:' : r.growth_pct ? `Net worth includes an assumed ${r.growth_pct}% a year growth on assets.` : ''].filter(Boolean);
+  const parts = [HL.windowNote(HL.window(r, 'pace'), 'The pace is the average net kept a month over'), r.net_worth == null ? 'Net worth needs month-end balances:' : r.growth_pct ? `Net worth includes an assumed ${r.growth_pct}% a year growth on assets.` : ''].filter(Boolean);
   el.append(parts.join(' ')); if (r.net_worth == null) el.append(' ', Object.assign(document.createElement('a'), { href: '/settings#accounts', textContent: 'add them on Settings → Accounts' }), '.'); });
-const lmSince = () => { const g = dash.data('plan_suggestions'); return g.status === 'ok' ? g.data.find((x) => x.avg_since) : null; };
-dash.draw('lm-since', (el) => { const r = lmSince(); el.textContent = r ? HL.sinceNote(r.avg_since, r.avg_from, r.avg_months, 'The averages and the suggested plan use') : ''; });
-dash.draw('lm-avg-since', (el) => { const r = lmSince();   // the Average card has no suggested plan: its own, shorter line
-  el.textContent = r ? `Averages use the ${r.avg_months} budget month${r.avg_months === 1 ? '' : 's'} since ${r.avg_since} (${aheadMonth(r.avg_from)}), the household's new normal.` : ''; });
+const lmWin = () => { const g = dash.data('plan_suggestions'), r = g.status === 'ok' ? g.data[0] : null; return r ? HL.window(r, 'avg') : null; };   // every row has the one window
+dash.draw('lm-since', (el) => { el.textContent = HL.windowNote(lmWin(), 'The averages and the suggested plan use'); });
+dash.draw('lm-avg-since', (el) => { const w = lmWin();   // the Average card has no suggested plan: its own, shorter line
+  el.textContent = w ? [w.since ? `Averages use ${HL.windowMonths(w)}.` : '', HL.windowSwitch(w)].filter(Boolean).join(' ') : ''; });
 dash.draw('ahead-facts', (el) => { el.replaceChildren(); const rows = ahead(); if (!rows.length) return; const r = rows.find((x) => x.h === 12) || rows[0];
   const add = (dt, dd) => { el.append(Object.assign(document.createElement('dt'), { textContent: dt }), Object.assign(document.createElement('dd'), { textContent: dd })); };
   add('Debt-free (mortgage excluded)', r.debt_free === r.m ? 'already' : r.debt_free ? aheadMonth(r.debt_free) : `no date yet: ${r.debt_free_open} ${r.debt_free_open === 1 ? 'debt has' : 'debts have'} no payoff date at the current payment`);
@@ -1988,7 +1996,7 @@ dash.draw('lm-ef', (el) => {
   add(`End of ${HL.fmtM(HL.parseM(r.m))}`, months1(r.months) + (target != null ? ` (target ${Number.isInteger(target) ? `${target} month${target === 1 ? '' : 's'}` : months1(target)})` : ''),
     (r.change != null ? (Math.abs(r.change) < 0.05 ? 'About the same as last month. ' : `${r.change >= 0 ? '+' : '−'}${months1(Math.abs(r.change))} since last month. `) : '') + (short ? `${months1(aim - shown)} short of the target.` : target == null ? 'No target set.' : 'At or above the target.'),
     target == null ? 'none' : r.months == null ? null : short ? 'off' : 'good', target == null ? ['Set one on Settings → Goals', '/settings#goals'] : null);
-  add('Emergency savings', HL.usd0(r.emergency), `in ${r.accounts} account${r.accounts === 1 ? '' : 's'}, over ${HL.usd0(r.outgo)} a month of outgo (the ${r.outgo_months}-month average${r.outgo_since ? `, since ${r.outgo_since}, the household's new normal` : ''})` + (r.unconfirmed ? `; ${r.unconfirmed} balance${r.unconfirmed === 1 ? '' : 's'} not yet confirmed` : ''));
+  add('Emergency savings', HL.usd0(r.emergency), `in ${r.accounts} account${r.accounts === 1 ? '' : 's'}, over ${HL.usd0(r.outgo)} a month of outgo (the average of ${HL.windowMonths(HL.window(r, 'outgo'))})` + (r.unconfirmed ? `; ${r.unconfirmed} balance${r.unconfirmed === 1 ? '' : 's'} not yet confirmed` : '') + (r.outgo_switch ? '. ' + HL.windowSwitch(HL.window(r, 'outgo')) : ''));
 });
 dash.draw('ef-lines', (el) => {   /* series 4: series 2 is Planned savings in the chart above (DS-CHART-4) */
   const g = HL.rd('emergency_fund'), G = dash.data('goals'); el.replaceChildren();

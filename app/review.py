@@ -32,7 +32,9 @@ SYSTEM = (
     "the year against the year before (totals, and a month at a time when either is partial), net worth and debts over the year, the "
     "decisions kept, the year's life events, the categories that moved most, and where next year leads at the current pace (an estimate). "
     "When the data carries `new_normal` (the month is within six months after a life event the household marked as its new normal), name "
-    "the event and its before-and-after comparison in the against-the-trailing-twelve section: the trailing averages elsewhere start from it. "
+    "the event and its before-and-after comparison in the against-the-trailing-twelve section. "
+    "When the data carries `averaging_window`, the pace, the emergency fund's outgo and the suggested plan average those months: say the "
+    "count it gives (the N budget months since the event), or, before the switch, the month the averages move to the new normal. "
     "Return only the JSON object."
 )
 
@@ -115,6 +117,7 @@ def build_context(conn, month: str) -> dict:
         **({"planned_purchases": pp} if (pp := purchases_context(ds.get("planned_purchases", []), month)) else {}),   # #158
         **({"look_ahead": la} if (la := look_ahead_context(ds.get("look_ahead", []), month)) else {}),   # #148
         **({"new_normal": nn} if (nn := new_normal_context(conn, ds, month)) else {}),   # #159
+        **({"averaging_window": aw} if (aw := window_context(ds.get("emergency_fund", []), month)) else {}),   # #236
         **({"by_person": bp} if (bp := by_person_context(ds.get("by_person", []), month)) else {}),   # #156: only with two or more people
         **({"quarter": qc} if (qc := quarter_context(conn, month)) else {}),
         **({"year": yc} if (yc := year_context(conn, month)) else {}),   # #157: the year's last month, one more section   # #147: one review a month, extended at a quarter's end
@@ -301,7 +304,7 @@ DTI_NOTE = ("Debt-to-income (#145): debt payments, and housing payments (the hou
 
 
 LOOK_AHEAD_NOTE = ("Where the current pace leads (#148): estimates, not a plan. pace is the average monthly net (income − living spend − debt "
-                   "payments) of the last pace_months budget months, pace_3 of the last three. cash = pace × months + freed (debt payments freed "
+                   "payments) of the pace_months budget months from pace_from (the averaging window: since pace_since when that is set), pace_3 of the last three. cash = pace × months + freed (debt payments freed "
                    "once a debt is paid off); net_worth = net worth now + cash + paid_down (what the payments take off the debts) + growth (only "
                    "with assumed_growth_pct, else 0). debt_free leaves a mortgage out. No investment return or planned change is assumed: do not "
                    "present these as forecasts.")
@@ -309,7 +312,7 @@ LOOK_AHEAD_NOTE = ("Where the current pace leads (#148): estimates, not a plan. 
 
 def look_ahead_context(rows: list[dict], month: str) -> dict | None:
     """The 3, 12 and 36-month look ahead as of `month`: derived figures only; a freed payment is named by its debt's type, never its account."""
-    keep = ("h", "until", "pace", "pace_3", "pace_months", "cash", "cash_3", "freed", "paid_down", "growth_pct", "growth", "net_worth_now", "net_worth", "debt_free")
+    keep = ("h", "until", "pace", "pace_3", "pace_months", "pace_from", "pace_since", "cash", "cash_3", "freed", "paid_down", "growth_pct", "growth", "net_worth_now", "net_worth", "debt_free")
     out = [{k: r.get(k) for k in keep} for r in rows if r.get("m") == month]
     return {"note": LOOK_AHEAD_NOTE, "horizons": out} if out else None
 
@@ -318,8 +321,26 @@ NEW_NORMAL_NOTE = ("The household marked a life event as its new normal (#159): 
                    "dependent, a new job). before is a month's average over the n budget months before the event, after over the event's month "
                    "and those after it, up to this month; months says how many are loaded on each side (fewer than n: say so). change is after "
                    "minus before (savings_rate in points of the rate); movers are living-spend categories by the change in a month's spend; "
-                   "new_categories have spending only since the event. The look ahead's pace, the emergency fund's outgo and the suggested plan "
-                   "average from the event once it has three months: say so rather than comparing with the old normal.")
+                   "new_categories have spending only since the event. Which months the pace, the emergency fund's outgo and the suggested plan "
+                   "average is averaging_window's to say, not this comparison's.")
+
+
+WINDOW_NOTE = ("The averaging window (#236): the budget months the look ahead's pace, the emergency fund's outgo and the suggested plan "
+               "all average, one rule for all three. It is the last twelve budget months, up to and including this one, until six budget "
+               "months after a life event the household marked as its new normal are loaded; from then until twelve months have passed "
+               "since the event, it is the months from the event's month on. months is how many are averaged and from the first of them; "
+               "since names the event when the window starts at it. switch, when given, is the budget month the averages move to the "
+               "new normal switch_since (marked in switch_event); until then they stay on the last twelve.")
+
+
+def window_context(ef_rows: list[dict], month: str) -> dict | None:
+    """The averaging window for `month` as the pipeline stated it in that month's emergency_fund row (averaging.py, the rule the pace and
+    the plan share), only when a new normal moves it or is about to: the plain last twelve need no note."""
+    r = next((x for x in ef_rows if x.get("m") == month), None)
+    if not r or not (r.get("outgo_since") or r.get("outgo_switch")):
+        return None
+    return {"note": WINDOW_NOTE, "months": r.get("outgo_months"), "from": r.get("outgo_from"), "since": r.get("outgo_since"),
+            **({"switch": r["outgo_switch"], "switch_since": r.get("outgo_switch_since"), "switch_event": r.get("outgo_switch_event")} if r.get("outgo_switch") else {})}
 
 
 def new_normal_context(conn, ds: dict, month: str, n: int = 6) -> dict | None:
@@ -391,14 +412,14 @@ def nw_context(rows: list[dict], month: str) -> dict:
     return {"note": NW_NOTE, **{k: r[k] for k in keep}}
 
 
-EF_NOTE = ("Emergency fund (#150): months of outgo (living spend plus debt payments, averaged over the trailing twelve months) that the "
-           "accounts marked emergency would cover. target is the household's own emergency_months, when set.")
+EF_NOTE = ("Emergency fund (#150): months of outgo (living spend plus debt payments, averaged over outgo_months budget months from outgo_from: "
+           "the trailing twelve, or since outgo_since, the household's new normal, as averaging_window says) that the accounts marked emergency would cover. target is the household's own emergency_months, when set.")
 
 
 def ef_context(rows: list[dict], goals: dict, month: str) -> dict:
     r = next(x for x in rows if x["m"] == month)
     t = goals.get("emergency_months", {}).get("value")
-    return {"note": EF_NOTE, **{k: r[k] for k in ("months", "change", "emergency", "outgo", "outgo_months")}, "target": t}
+    return {"note": EF_NOTE, **{k: r[k] for k in ("months", "change", "emergency", "outgo", "outgo_months")}, **{k: r.get(k) for k in ("outgo_from", "outgo_since")}, "target": t}
 
 
 def savings_rates(monthly: dict, month: str, window: list[str]) -> dict:

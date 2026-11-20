@@ -129,7 +129,7 @@ var FMT = (function () {   // the household's locale and currency, as the server
           var offer = el("div", { "class": "hint", id: "new-normal-hint", role: "status", "aria-live": "polite" }); nnSel.parentNode.insertBefore(offer, nnSel.nextSibling);
           nnSel.setAttribute("aria-describedby", "new-normal-hint");
           var offerNow = function () { var on = (kindSel.value === "family" || kindSel.value === "move") && nnSel.value !== "yes";
-            offer.textContent = on ? "If this month changed what a normal month costs, set New normal to yes: the pace, the emergency fund and the suggested plan will average from here once three months are loaded." : ""; };
+            offer.textContent = on ? "If this month changed what a normal month costs, set New normal to yes: the pace, the emergency fund and the suggested plan will average from here once six budget months after it are loaded, until twelve months have passed." : ""; };
           kindSel.onchange = offerNow; nnSel.onchange = offerNow; offerNow();
         }
       }
