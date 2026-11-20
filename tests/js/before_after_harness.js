@@ -41,6 +41,7 @@ function lastmonth() {
     avgSince: document.querySelector('[data-draw="lm-avg-since"]').textContent,
     detailSince: document.querySelector('#lm-t-cats [data-draw="lm-since"]').textContent,
     aheadSince: document.querySelector('[data-draw="ahead-since"]').textContent,
+    aheadHead: document.querySelector('#lm-ahead-card [data-draw="ahead-head"]').innerText,
     avgKey: [...document.querySelector('#lm-avg-chart').closest('.card').querySelectorAll('.key li')].map((li) => li.textContent),
   }
 }
@@ -63,16 +64,25 @@ function lastmonth() {
     out.overviewPct = await page.evaluate(overview)
     await page.click('#tab-lastmonth'); await page.waitForTimeout(150)
     out.lastmonth = await page.evaluate(lastmonth)
+    await page.click('#tab-goals'); await page.waitForTimeout(150)   // the emergency fund chart's window note (#236 review)
+    out.goals = await page.evaluate(() => { const n = document.querySelector('[data-draw="ef-since"]'); return { efSince: n.textContent, efSinceShown: getComputedStyle(n).display !== 'none',
+      pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth } })
     if (o.settings) {   // the offer on an existing move row, opened for editing (#159 review)
       await page.goto(base + '/settings#events', { waitUntil: 'load' })
       const row = page.locator('#sp-events tr', { hasText: o.settings })
       await row.locator('button', { hasText: 'Edit' }).click()
       const read = () => page.evaluate(() => { const h = document.getElementById('new-normal-hint'), s = document.querySelector('select[name="new_normal"]');
-        return h && { text: h.textContent, role: h.getAttribute('role'), live: h.getAttribute('aria-live'), describedby: s.getAttribute('aria-describedby'), value: s.value } })
+        if (!h) return null
+        const r = h.getBoundingClientRect(), box = h.closest('.tablewrap').getBoundingClientRect(), a = h.querySelector('a')   // in view where Kind is edited (#236 review)
+        return { text: h.textContent, role: h.getAttribute('role'), live: h.getAttribute('aria-live'), describedby: s.getAttribute('aria-describedby'), value: s.value,
+          inView: r.height > 0 && r.left >= Math.max(0, box.left) - 1 && r.right <= Math.min(innerWidth, box.right) + 1, underRow: h.closest('tr').previousElementSibling.classList.contains('editing'),
+          link: a && a.getAttribute('href'), pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth } })
       out.settings = { opened: await read() }
+      await page.locator('#new-normal-hint a').click(); out.settings.helpOpen = await page.evaluate(() => document.getElementById('events-columns').open)
       await page.selectOption('select[name="new_normal"]', 'yes'); out.settings.yes = await read()
       await page.selectOption('select[name="new_normal"]', 'no'); await page.selectOption('select[name="kind"]', 'job'); out.settings.job = await read()
       await page.locator('#sp-events button', { hasText: 'Cancel' }).first().click()
+      out.settings.offersAfterCancel = await page.evaluate(() => document.querySelectorAll('#sp-events tr.offer').length)   // Cancel takes the offer row with it
     }
     await ctx.close()
   } catch (e) {

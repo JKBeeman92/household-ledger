@@ -67,8 +67,8 @@ def test_plan_suggestions_match_the_last_month_tab_formula():
     budget = [{"m": f"2026-{i:02d}", "category": "Food", "flow": "expense", "planned": 700, "actual": 600 + i} for i in range(1, 8)] + \
              [{"m": "2026-07", "category": "Housing", "flow": "expense", "planned": 1500, "actual": 1500}]
     s = {r["category"]: r for r in rules.plan_suggestions(budget, ["Housing"])}
-    avg = sum(600 + i for i in range(1, 7)) / 6   # the six months before July, divided by the months present
-    assert s["Food"]["avg12"] == round(avg, 2) and s["Food"]["suggest"] == 610 and s["Food"]["m"] == "2026-07"   # 603.5 rounds up to 610
+    avg = sum(600 + i for i in range(1, 8)) / 7   # the averaging window (#236): the last twelve up to and including July, the months present
+    assert s["Food"]["avg12"] == round(avg, 2) == 604 and s["Food"]["suggest"] == 610 and s["Food"]["m"] == "2026-07" and s["Food"]["avg_months"] == 7
     assert s["Housing"]["suggest"] == 1500   # a keep category keeps its plan
 
 

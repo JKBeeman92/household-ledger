@@ -18,7 +18,8 @@ figure is the sum of its months (a total) with its per-month figure beside it; a
   events           the life events dated in the year.
   movers           the categories whose spending changed most against the previous year, per month, by dollars, nominal and real;
                    the categories in `set_apart` (debt and savings groups) are left out, as on the Quarter tab.
-  ahead            the look ahead's 12-month row (#148): "where next year leads".
+  ahead            the look ahead's 12-month row (#148): "where next year leads", with its averaging window (pace_from, pace_months,
+                   pace_since, and pace_switch* when a new normal is still to switch, #236).
   withholding      every recorded tax outcome (#153, a refund positive, a bill negative), oldest first, and `adjust`: true when the two
                    latest tax years are consecutive and each is a refund or a bill of at least `withholding_note_at` ("consider adjusting
                    withholding"); `adjust_kind` says which way the two went (refund, owed, or mixed)."""
@@ -153,5 +154,5 @@ def review(monthly: list[dict], cat_month: list[dict], net_worth: list[dict], ba
             "decisions": {"checked": len(mine), "kept": kept, "rate": round(kept / len(mine), 3) if mine else None, "biggest": biggest},
             "events": [{k: e.get(k) for k in ("m", "label", "kind", "person")} for e in events if months[0] <= e["m"] <= months[-1]],
             "movers": movers,
-            "ahead": {k: ahead[k] for k in ("until", "pace", "pace_3", "cash", "net_worth", "debt_free", "growth_pct")} | {k: ahead.get(k) for k in ("pace_since", "pace_months", "pace_from")} if ahead else None,
+            "ahead": {k: ahead[k] for k in ("until", "pace", "pace_3", "cash", "net_worth", "debt_free", "growth_pct")} | {k: ahead.get(k) for k in ("pace_since", "pace_months", "pace_from", "pace_switch", "pace_switch_since", "pace_switch_event")} if ahead else None,
             "withholding": withholding}

@@ -24,10 +24,11 @@ RU = json.load(open("rules.json")) if os.path.exists("rules.json") else {}
 def _rl(k, d): return RU.get(k) if RU.get(k) is not None else d
 def w(name, data):
     json.dump(data, open(f"dash_data/{name}.json", "w"), separators=(",", ":")); print(f"{name:16s} {len(data):>5} rows")
-# the household's new normal (#159): a life event it marked starts the suggested plan's and the look ahead's averages (before_after.py)
-import before_after as _ba   # noqa: E402
+# the averaging window (#236, averaging.py): the last twelve budget months, or since the household's new normal (#159) once six budget
+# months after it are loaded and until twelve have passed; one rule for the suggested plan, the look ahead's pace and the emergency fund
+import averaging as _avg   # noqa: E402
 _events = json.load(open("dash_data/events.json")) if os.path.exists("dash_data/events.json") else []
-w("plan_suggestions", _dec.plan_suggestions(rows, _rl("plan_keep_categories", ["Housing", "Debt", "Insurance"]), lambda win: _ba.cut(win, _events)))   # role default
+w("plan_suggestions", _dec.plan_suggestions(rows, _rl("plan_keep_categories", ["Housing", "Debt", "Insurance"]), lambda ms: _avg.window(ms, None, _events)))   # role default
 _D = json.load(open("decisions.json")) if os.path.exists("decisions.json") else {"decisions": [], "checks": []}
 _checks = {(c["decision_id"], c["month"]): c for c in _D["checks"]}
 _built = {r["m"] for r in rows} | {bm for bm, _ in filenames.exports("summaries", "budget_items")}
@@ -83,10 +84,8 @@ w("decision_summary", [{**_dec.keep_rate(_rows, _through), "in_force": len({r["i
 # a look ahead (#148): where the current pace leads in 3, 12 and 36 months. Last, so that coming_up and planned_purchases are final.
 import look_ahead as _la   # noqa: E402
 _g = _rl("assumed_growth_pct", None)
-_trail = sorted(r["m"] for r in _j("monthly") if _through and r["m"] <= _through)[-12:]
-_, _nn = _ba.cut(_trail, _events)   # the new normal cuts the 12-month pace once it has three months
 w("look_ahead", _la.look_ahead(_j("monthly"), _j("payoff"), _j("net_worth"), _j("balances"), _j("planned_purchases"), _j("coming_up"),
-                                _through, float(_g) if _g is not None else None, _nn["m"] if _nn else None, _nn["label"] if _nn else None))
+                                _through, float(_g) if _g is not None else None, _avg.window([r["m"] for r in _j("monthly")], _through, _events) if _through else None))
 # the year in review (#157): the budget year of the latest month against the year before, quoting the look ahead's twelve months
 import years as _yr   # noqa: E402
 _yrev = _yr.review(_j("monthly"), _j("cat_month"), _j("net_worth"), _j("balances"), _rows, _j("events"), _j("look_ahead"), _through,

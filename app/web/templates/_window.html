@@ -1,0 +1,5 @@
+{# The averaging window (#236, pipeline/averaging.py): one rule for the look ahead's pace, the emergency fund's outgo and the suggested
+plan, read from the fields a dataset row carries (p is its prefix: pace, outgo or avg), in one wording (DS-WORD-3), as the dashboard's
+HL.windowMonths and HL.windowSwitch say it. #}
+{% macro window_months(f, p) %}{% set n = f[p ~ '_months'] %}{% if f[p ~ '_since'] %}the {{ n }} budget month{{ '' if n == 1 else 's' }} since {{ f[p ~ '_since'] }} ({{ f[p ~ '_from']|month_short }}), the household's new normal{% else %}the last {{ n }} budget month{{ '' if n == 1 else 's' }}{% endif %}{% endmacro %}
+{% macro window_switch(f, p) %}{% if f[p ~ '_switch'] %}From {{ f[p ~ '_switch']|month_short }} averages move to the new normal: {{ f[p ~ '_switch_since'] }} ({{ f[p ~ '_switch_event']|month_short }}).{% endif %}{% endmacro %}

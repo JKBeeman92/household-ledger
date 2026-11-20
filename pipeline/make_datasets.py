@@ -115,15 +115,17 @@ _cpi = {r["month"]: float(r["cpi"]) for r in csv.DictReader(open("cpi_u.csv"))}
 w("net_worth", _bal.net_worth(_brows, _did, _cpi, D["meta"]["cpi_base"]))
 # emergency_fund (#150): emergency money (asset accounts marked emergency) over the average monthly outgo (living spend plus debt
 # payments) of the trailing twelve budget months, or as many as there are. null coverage: no emergency account, or no outgo yet.
-# A life event marked the new normal (#159) starts the window at it, once it has three months: outgo_from and outgo_since say so.
+# The window is the averaging window (#236, averaging.py), the one the look ahead's pace and the suggested plan use: a life event marked
+# the new normal (#159) starts it at the event once six budget months after it are loaded, until twelve have passed. outgo_* say which.
 import before_after as _ba   # noqa: E402  (beside this script)
+import averaging as _avg   # noqa: E402
 _ems, _efr = sorted(mn), []
 for i, m in enumerate(_ems):
     held = [r["amount"] for r in _brows if r["m"] == m and r["emergency"]]
-    win, _since = _ba.cut(_ems[max(0, i - 11):i + 1], D["events"]); outgo = sum(mn[x]["spend"] + mn[x]["debt"] for x in win) / len(win)
+    _w = _avg.window(_ems, m, D["events"]); win = _w["months"]; outgo = sum(mn[x]["spend"] + mn[x]["debt"] for x in win) / len(win)
     money = round(sum(held), 2) if held else None
     _efr.append({"m": m, "emergency": money, "accounts": len(held), "unconfirmed": sum(1 for r in _brows if r["m"] == m and r["emergency"] and not r["confirmed"]),
-                 "outgo": round(outgo, 2), "outgo_months": len(win), "outgo_from": win[0], "outgo_since": _ba.since_label(_since),
+                 "outgo": round(outgo, 2), **_avg.fields("outgo", _w),
                  "months": round(money / outgo, 2) if money is not None and outgo > 0 else None})
 for a, b in zip(_efr, _efr[1:]):
     b["change"] = round(b["months"] - a["months"], 2) if a["months"] is not None and b["months"] is not None else None

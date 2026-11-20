@@ -18,8 +18,10 @@ As of the closing (last loaded) budget month c, for each horizon h (months after
   goals       each open planned purchase (#158) with its reach month at its own pace, or "not at this pace" (reach_m None);
               those reached within h are marked.
   coming_up   the `coming_up` rows dated within the horizon.
-  baseline    `pace_from`, the first month averaged: the trailing window's first, or the household's "new normal" (#159), a life
-              event it marked, once that has three months loaded (before_after.cut); `pace_since` is then its label, else None."""
+  window      the months the pace averages: averaging.window (#236), the one rule the emergency fund, the suggested plan and the
+              review share. `pace_from`, `pace_months` and `pace_since` say which (pace_since: the new normal's label once the window
+              starts at it, else None); `pace_switch`, `pace_switch_since` and `pace_switch_event` say when a marked event not yet six
+              months on will move it. Without a window (a caller that passes none) the pace is the trailing twelve."""
 from __future__ import annotations
 
 HORIZONS = (3, 12, 36)
@@ -48,17 +50,17 @@ def amortize(balance: float, payment: float, apr: float | None, months: int) -> 
 
 
 def look_ahead(monthly: list[dict], payoffs: list[dict], net_worth: list[dict], balances: list[dict], goals: list[dict],
-               coming_up: list[dict], closing: str | None, growth_pct: float | None = None, baseline_from: str | None = None,
-               baseline_label: str | None = None, horizons: tuple[int, ...] = HORIZONS) -> list[dict]:
+               coming_up: list[dict], closing: str | None, growth_pct: float | None = None, window: dict | None = None,
+               horizons: tuple[int, ...] = HORIZONS) -> list[dict]:
     """The `look_ahead` dataset: one row per horizon (see the module docstring for each figure)."""
     if not closing:
         return []
     c = _idx(closing)
-    trailing = sorted(r["m"] for r in monthly if r["m"] <= closing)[-12:]
-    months = sorted(r["m"] for r in monthly if r["m"] <= closing and (not baseline_from or r["m"] >= baseline_from))
+    upto = sorted(r["m"] for r in monthly if r["m"] <= closing)
     net = {r["m"]: float(r["net"]) for r in monthly}
-    t12, t3 = months[-12:], months[-3:]
-    since = baseline_label if baseline_from and t12 != trailing else None   # said only when the new normal moved the window
+    t12 = [m for m in window["months"] if m in net] if window else upto[-12:]
+    t3 = upto[-3:]   # the last three, whatever the window
+    w = window or {}
     pace, pace_3 = _avg([net[m] for m in t12]), _avg([net[m] for m in t3])
     nw_row = next((r for r in net_worth if r["m"] == closing), None)
     nw_now = float(nw_row["net_worth"]) if nw_row and nw_row.get("net_worth") is not None else None
@@ -86,7 +88,8 @@ def look_ahead(monthly: list[dict], payoffs: list[dict], net_worth: list[dict], 
                "by_target": bool(g.get("reach_m")) and g["reach_m"] <= g["target_month"] or g.get("verdict") == "reached",
                "within": g.get("verdict") == "reached" or bool(g.get("reach_m") and g["reach_m"] <= until)}
               for g in goals if not g.get("done") and g.get("target_amount")]
-        out.append({"m": closing, "h": h, "until": until, "pace": pace, "pace_3": pace_3, "pace_months": len(t12), "pace_from": t12[0] if t12 else None, "pace_since": since,
+        out.append({"m": closing, "h": h, "until": until, "pace": pace, "pace_3": pace_3, "pace_months": len(t12), "pace_from": t12[0] if t12 else None, "pace_since": w.get("since"),
+                    "pace_switch": w.get("switch"), "pace_switch_since": w.get("switch_since"), "pace_switch_event": w.get("switch_event"),
                     "cash": cash, "cash_3": cash_3, "freed": freed, "freed_by": freed_by, "paid_down": paid_down,
                     "growth_pct": growth_pct or None, "assets": assets, "growth": growth, "net_worth_now": nw_now, "net_worth": nw, "net_worth_3": nw_3,
                     "debt_free": debt_free, "debt_free_open": len(open_), "debt_free_within": bool(debt_free and debt_free <= until),

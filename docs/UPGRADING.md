@@ -38,6 +38,14 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
   `pace_since`, `avg_from`, `avg_months`, `avg_since`); `events.json` in `settings.zip` carries `"new_normal": true` only where set,
   and an older `settings.zip` seeds as before. Agents reading the review context see a `new_normal` entry in the six months after a
   marked event.
+- **The averaging window** (#236): no migration. A marked new normal moves the pace, the emergency fund's outgo and the suggested plan
+  only once six budget months after it are loaded (it was three), and not after twelve months have passed. The window always
+  includes the latest month, so the suggested plan's average and the Last month tab's "Against the recent average" now count the
+  closing month too (they left it out) and say the same count as the pace. Rebuild once: `look_ahead` (`pace_switch`,
+  `pace_switch_since`, `pace_switch_event`), `emergency_fund` (`outgo_switch*`),
+  `plan_suggestions` (`avg_switch*`) and `year_review`'s `ahead` gain the month the averages will move; the review context gains
+  `averaging_window` while a new normal moves the window or is about to. A household that marked an event three to five months ago
+  sees its averages back on the last 12 until the sixth.
 - **Two people at the table** (#156): no migration. Rebuild once after upgrading to emit `by_person` (in `datasets.zip`, the review
   and MCP). It is empty, and the Last month tab's By person card and the check-in's By person lines absent, unless the People rule
   names two or more people.
