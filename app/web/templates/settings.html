@@ -29,7 +29,7 @@
   {% if kind == "mapping" %}<p class="filterbox"><label for="mapping-filter">Filter the {{ rows|length }} Item mapping rows</label><input type="search" id="mapping-filter" data-filter="mapping" placeholder="Part of an item, category or note"></p>{% endif %}
   <div class="tablewrap" role="region" tabindex="0" aria-label="{{ ed.title }} table"><table class="plain edit" data-list="unbounded" data-kind="{{ kind }}" data-fields="{{ cols|join(',') }}"{% if kind == "mapping" %} data-flows="{{ flows|join(',') }}"{% endif %}{% if choices %} data-choices="{{ choices|tojson|forceescape }}"{% endif %}>
     <thead><tr>{% for c in cols %}<th data-sort="{{ c }}" scope="col"{% if c in nums %} class="num"{% endif %}><button type="button" class="sortbtn">{{ heads[loop.index0] }}</button></th>{% endfor %}<th class="acts"><span class="sr">Actions</span></th></tr></thead>
-    <tbody>{% for r in rows %}{% set what = (r[cols[0]] ~ " " ~ r[cols[1]]) if kind == "events" else (r[cols[0]] if r[cols[0]] not in (none, "") else "this row") %}<tr>{% for c in cols %}{% set v = r[c] %}{% set has = v is not none and v != "" %}{% set unit = (r.unit or "") if kind == "goals" else "" %}{% set shown = "yes, hidden kind" if kind == "events" and c == "on_chart" and v == "yes" and r.kind in hidden_kinds else (v|share(2, trim=True)) if has and kind == "goals" and c == "value" and unit.startswith("share") else ((v|money) if has and kind == "goals" and c == "value" and unit.startswith("usd") else ((v|money(2)) if has and kind == "accounts" and c == "escrow" else ((v|month_short) if has and kind == "events" and c == "m" else none))) %}<td data-f="{{ c }}"{% if c in nums %} class="num"{% endif %}{% if not has %} data-v=""{% elif shown is not none %} data-v="{{ r[c] }}"{% endif %}>{{ "—" if not has else (shown if shown is not none else r[c]) }}</td>{% endfor %}
+    <tbody>{% for r in rows %}{% set what = (r[cols[0]] ~ " " ~ r[cols[1]]) if kind == "events" else (r[cols[0]] if r[cols[0]] not in (none, "") else "this row") %}<tr>{% for c in cols %}{% set v = r[c] %}{% set has = v is not none and v != "" %}{% set unit = (r.unit or "") if kind == "goals" else "" %}{% set shown = (v|share(2, trim=True)) if has and kind == "goals" and c == "value" and unit.startswith("share") else ((v|money) if has and kind == "goals" and c == "value" and unit.startswith("usd") else ((v|money(2)) if has and kind == "accounts" and c == "escrow" else ((v|month_short) if has and kind == "events" and c == "m" else none))) %}<td data-f="{{ c }}"{% if c in nums %} class="num"{% endif %}{% if not has %} data-v=""{% elif shown is not none %} data-v="{{ r[c] }}"{% endif %}>{{ "—" if not has else (shown if shown is not none else r[c]) }}</td>{% endfor %}
       <td class="acts"><button type="button" class="btn" data-act="edit" aria-label="Edit {{ what }}">Edit</button> <button type="button" class="btn" data-act="del" aria-label="Delete {{ what }}">Delete</button></td></tr>{% endfor %}</tbody>
   </table></div>
 </section>
@@ -139,13 +139,12 @@
 <div role="tabpanel" id="sp-events" aria-labelledby="st-events">
 <datalist id="settings-people">{% for p in people %}<option value="{{ p }}">{% endfor %}</datalist>
 {% call grid("events", by_key.events, ["m","label","kind","person","on_chart","new_normal"], ["Month","Label","Kind","Person","On the chart","New normal"], rows.events, event_choices) %}
-  <script type="application/json" id="hidden-kinds" nonce="{{ csp_nonce(request) }}">{{ hidden_kinds|sort|list|tojson }}</script>
-  <details class="keyhelp" id="events-columns"><summary>What On the chart, Hidden kind and New normal do</summary>
+  <details class="keyhelp" id="events-columns"><summary>What On the chart and New normal do</summary>
     <dl class="flowlist">
-      <dt>On the chart</dt><dd><b>yes</b> draws the event's marker on the timelines; <b>no</b> leaves the marker off, and the event stays in the life-event list (as "not on the chart"), the review and the check-in.</dd>
-      <dt>Hidden kind</dt><dd>Hiding a kind on <a href="/settings#appearance/event-kind">Chart appearance → Life-event kinds</a> takes all its markers off the chart, for everyone; On the chart switches one event. Such an event reads "yes, hidden kind" here and "hidden kind" under the chart, where anyone can show it again on their own screen.</dd>
-      <dt>New normal</dt><dd><b>yes</b> (never set for you) marks the month the household's pattern changed from, such as a move or a new family member. Once it has three months loaded, the look ahead's pace, the emergency fund's months of outgo and the suggested plan average from it, and say so.</dd>
-    </dl></details>
+      <dt>On the chart</dt><dd><b>yes</b>: the event's marker is drawn on the timelines.<br><b>no</b>: the marker is off the charts for everyone. The event stays in the life-event list (as "not on the chart"), the review and the check-in.<br>This is the one switch that takes an event off the charts.</dd>
+      <dt>New normal</dt><dd><b>yes</b> marks the month the household's pattern changed from, such as a move or a new family member. You set it yourself; nothing sets it automatically. Once it has three months loaded, the look ahead's pace, the emergency fund's months of outgo and the suggested plan average from it, and say so.</dd>
+    </dl>
+    <p class="muted">The Kind and Person chips above the timeline only narrow what one viewer sees, on their own screen. An event's Kind is its life-event kind; its colour is on <a href="/settings#appearance/event-kind">Chart appearance → Life-event kinds</a>.</p></details>
 {% endcall %}
 </div>
 <div role="tabpanel" id="sp-yearly-bills" aria-labelledby="st-yearly-bills">{% include "_yearly_bills.html" %}</div>
@@ -245,23 +244,24 @@
 <details class="how" id="appearance-how"><summary>How colours and hiding work</summary>
   <p>Leave a colour blank and the name takes the next free theme colour. Type <code>series-1</code> to <code>series-8</code> to follow day and night, or a hex colour code to keep one colour in both. A name with a colour keeps it on every chart and period.</p>
   <p>Hide takes a name off the chart for everyone. Totals and tables still count it, and anyone can show it again on their own screen from the chart. Changes show on the dashboard at once.</p>
-  <p>For life events, hiding a kind takes all its markers off the chart; <a href="/settings#events">Life events</a> has an On the chart switch for one event.</p>
+  <p>Life-event kinds have a colour only, and no hide switch. A kind left blank keeps the markers' usual colour.</p>
 </details>
 <div class="subtabs" role="tablist" aria-label="Chart appearance" data-subtabs="appearance">{% for d, lab in look_labels.items() %}{% set slug = d|replace('_', '-') %}<button type="button" role="tab" id="st-appearance-{{ slug }}" aria-controls="sp-appearance-{{ slug }}" aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ 0 if loop.first else -1 }}">{{ lab[0] }} <span class="count">{{ look.dimensions[d]|length }}</span></button>{% endfor %}{% if look.orphans %}<button type="button" role="tab" id="st-appearance-orphans" aria-controls="sp-appearance-orphans" aria-selected="false" tabindex="-1">Not in the data <span class="count">{{ look.orphans|length }}</span></button>{% endif %}</div>
 {% for d, lab in look_labels.items() %}{% set slug = d|replace('_', '-') %}{% set items = look.dimensions[d] %}{% set lf = look_form if look_form and look_form.dimension == d else none %}
 <div role="tabpanel" id="sp-appearance-{{ slug }}" aria-labelledby="st-appearance-{{ slug }}">
 <section class="panel" id="appearance-{{ slug }}">
   <h2>{{ lab[0] }}</h2>
-  <p class="muted">The colour of each {{ lab[1] }} on {{ lab[2] }}, and whether it is hidden there.</p>
+  {% set hides = d not in look_colour_only %}
+  <p class="muted">The colour of each {{ lab[1] }} on {{ lab[2] }}{% if hides %}, and whether it is hidden there.{% else %}. To take an event off the charts, set On the chart to no on <a href="/settings#events">Life events</a>.{% endif %}</p>
   {% if items %}
   <form method="post" action="/settings/appearance/save"{% if lf %} data-unsaved{% endif %}>{{ csrf_field(request) }}<input type="hidden" name="dimension" value="{{ d }}">
     {% if items|length > look_filter_from %}<p class="filterbox"><label for="appearance-{{ slug }}-filter">Filter the {{ items|length }} {{ lab[0]|lower }}</label><input type="search" id="appearance-{{ slug }}-filter" data-filter-table="appearance-{{ slug }}-table" placeholder="Part of a name"></p>{% endif %}
-    <div class="tablewrap" role="region" tabindex="0" aria-label="{{ lab[0] }}: chart colours table"><table class="plain" id="appearance-{{ slug }}-table" data-list="unbounded"><thead><tr><th scope="col">{{ lab[1][:1]|upper ~ lab[1][1:] }}</th><th scope="col">Colour</th><th scope="col">Hidden</th></tr></thead><tbody>
+    <div class="tablewrap" role="region" tabindex="0" aria-label="{{ lab[0] }}: chart colours table"><table class="plain" id="appearance-{{ slug }}-table" data-list="unbounded"><thead><tr><th scope="col">{{ lab[1][:1]|upper ~ lab[1][1:] }}</th><th scope="col">Colour</th>{% if hides %}<th scope="col">Hidden</th>{% endif %}</tr></thead><tbody>
     {% for r in items %}{% set typed = lf["values"].get(r.name) if lf else none %}{% set err = lf.errors.get(r.name) if lf else none %}{% set rid = "ap-" ~ slug ~ "-" ~ loop.index %}
-    <tr><td>{% if r.color %}<span class="swatch" style="--sw: {{ ('var(--' ~ r.color ~ ')') if r.color in look_slots else r.color }}" aria-hidden="true"></span> {% endif %}{{ r.name }}<input type="hidden" name="name" value="{{ r.name }}"></td>
+    <tr><td>{% if r.color %}<span class="swatch" style="--sw: {{ ('var(--' ~ r.color ~ ')') if r.color in look_slots else r.color }}" aria-hidden="true"></span> {% elif not hides %}<span class="swatch" style="--sw: var(--chart-reference)" aria-hidden="true"></span> {% endif %}{{ r.name }}<input type="hidden" name="name" value="{{ r.name }}"></td>
       <td><input type="text" name="color" value="{{ typed.color if typed else (r.color or '') }}" list="appearance-slots" size="16" placeholder="automatic" aria-label="Colour for {{ r.name }}"{% if err %} aria-invalid="true" aria-describedby="{{ rid }}-err"{% endif %}>{% if err %}<span class="err" id="{{ rid }}-err" role="alert">{{ err[:1]|upper ~ err[1:] }}.</span>{% endif %}
         {% for w in r.warnings %}<div class="muted">{{ w[:1]|upper ~ w[1:] }}.</div>{% endfor %}</td>
-      <td><label class="hidebox"><input type="checkbox" name="hidden" value="{{ r.name }}"{% if (typed.hidden if typed else r.hidden) %} checked{% endif %} aria-label="Hide {{ r.name }} on the chart"> hide</label></td></tr>{% endfor %}
+      {% if hides %}<td><label class="hidebox"><input type="checkbox" name="hidden" value="{{ r.name }}"{% if (typed.hidden if typed else r.hidden) %} checked{% endif %} aria-label="Hide {{ r.name }} on the chart"> hide</label></td>{% endif %}</tr>{% endfor %}
     </tbody></table></div>
     <p class="mt-3"><button class="btn primary" type="submit">Save colours for {{ lab[0]|lower }}</button> <span class="muted">Saves this tab only.</span></p>
   </form>
@@ -271,10 +271,10 @@
 {% if look.orphans %}<div role="tabpanel" id="sp-appearance-orphans" aria-labelledby="st-appearance-orphans">
 <section class="panel" id="appearance-orphans">
   <h2>Not in the data</h2>
-  <p class="muted">A colour or hide switch kept for a name the current data no longer has: a category merged away, an employer renamed in Pipeline rules, a debt paid off before the first month loaded. It does nothing until the name comes back, but a theme colour it holds stays reserved: delete it to free the colour.</p>
+  <p class="muted">Each row is a colour or hide switch kept for a name the current data no longer has. A category merged away, an employer renamed in Pipeline rules or a debt paid off before the first month loaded leaves one. It does nothing until the name comes back. A theme colour it holds stays reserved: delete the row to free the colour.</p>
   <div class="tablewrap" role="region" tabindex="0" aria-label="Chart colours not in the data table"><table class="plain" id="appearance-orphans-table" data-list="unbounded"><thead><tr><th scope="col">Name</th><th scope="col">Kind of name</th><th scope="col">Colour</th><th scope="col">Hidden</th><th class="acts"><span class="sr">Actions</span></th></tr></thead><tbody>
-    {% for o in look.orphans %}<tr><td>{{ o.name }}</td><td>{{ o.noun }}</td><td class="mono">{{ o.color or "automatic" }}</td><td>{{ "yes" if o.hidden else "no" }}</td>
-      <td class="acts"><form method="post" action="/settings/appearance/delete" class="inline">{{ csrf_field(request) }}<input type="hidden" name="dimension" value="{{ o.dimension }}"><input type="hidden" name="name" value="{{ o.name }}"><button class="btn" type="submit" aria-label="Delete the colour and hide switch kept for the {{ o.noun }} {{ o.name }}">Delete</button></form></td></tr>{% endfor %}
+    {% for o in look.orphans %}<tr><td>{{ o.name }}</td><td>{{ o.noun }}</td><td class="mono">{% if o.color %}<span class="swatch" style="--sw: {{ ('var(--' ~ o.color ~ ')') if o.color in look_slots else o.color }}" aria-hidden="true"></span> {% endif %}{{ o.color or "automatic" }}</td><td>{{ "No hide switch" if o.dimension in look_colour_only else ("yes" if o.hidden else "no") }}</td>
+      <td class="acts"><form method="post" action="/settings/appearance/delete" class="inline">{{ csrf_field(request) }}<input type="hidden" name="dimension" value="{{ o.dimension }}"><input type="hidden" name="name" value="{{ o.name }}"><button class="btn" type="submit" aria-label="Delete the colour{{ '' if o.dimension in look_colour_only else ' and hide switch' }} kept for the {{ o.noun }} {{ o.name }}">Delete</button></form></td></tr>{% endfor %}
   </tbody></table></div>
 </section>
 </div>{% endif %}
@@ -296,9 +296,10 @@
     const sub = document.querySelector(`[data-subtabs="${key}"] > [aria-selected="true"]`); return '#' + key + (sub && sub !== tabsOf(sub.parentNode)[0] ? '/' + sub.id.slice(4 + key.length) : ''); };
   const pick = (list, t, focus) => { show(list, t, focus); history.replaceState(null, '', hashOf()); };
   for (const list of lists) {
-    const tabs = tabsOf(list); show(list, tabs[0]);
+    show(list, tabsOf(list)[0]);
     list.addEventListener('click', (e) => { const t = e.target.closest('[role=tab]'); if (t && t.parentNode === list) pick(list, t); });
     list.addEventListener('keydown', (e) => {
+      const tabs = tabsOf(list);   // read each time: a tab can go (Not in the data, once its last row is deleted)
       const i = tabs.indexOf(document.activeElement); if (i < 0) return;
       const j = {ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1}[e.key]; if (j === undefined) return;
       e.preventDefault(); pick(list, tabs[(j + tabs.length) % tabs.length], true);

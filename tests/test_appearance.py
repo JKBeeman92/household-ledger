@@ -85,7 +85,9 @@ def test_settings_lists_the_names_the_data_has_and_saves_a_dimension(client, res
     for word in ("palette slot", "rank", "rebuild", "palette order"):
         assert word not in section, word
     for d, (_, noun, chart) in appearance.LABELS.items():
-        assert f'<p class="muted">The colour of each {noun} on {chart}, and whether it is hidden there.</p>' in html
+        tail = (". To take an event off the charts, set On the chart to no on <a href=\"/settings#events\">Life events</a>." if d in appearance.COLOUR_ONLY
+                else ", and whether it is hidden there.")   # a kind has a colour only (#235)
+        assert f'<p class="muted">The colour of each {noun} on {chart}{tail}</p>' in html
     assert "Saves this tab only." in html
     assert 'id="st-appearance-orphans"' not in html and 'id="sp-appearance-orphans"' not in html   # no leftovers, no tab
     r = client.post("/settings/appearance/save", data={"dimension": "category", "name": ["Housing", "Food"], "color": ["series-2", "#2f7f9a"], "hidden": ["Food"]})
@@ -127,16 +129,22 @@ def test_orphans_are_listed_with_delete(client, reset_db):
     upload_files(client, GOLDEN / "exports")
     with db.pool.connection() as conn:
         appearance.set_one(conn, "category", "Housing", "series-1", False)
-        appearance.set_one(conn, "employer", "Old Mill", "series-4", True); conn.commit()
-        assert [o["name"] for o in appearance.page(conn)["orphans"]] == ["Old Mill"]
+        appearance.set_one(conn, "employer", "Old Mill", "series-4", True)
+        appearance.set_one(conn, "employer", "Older Mill", None, True); conn.commit()
+        assert [o["name"] for o in appearance.page(conn)["orphans"]] == ["Old Mill", "Older Mill"]
     html = client.get("/settings").text
     assert 'id="appearance-orphans-table" data-list="unbounded"' in html and "Delete the colour and hide switch kept for the employer Old Mill" in html
-    assert 'id="st-appearance-orphans"' in html and "Not in the data <span class=\"count\">1</span>" in html
+    assert 'id="st-appearance-orphans"' in html and "Not in the data <span class=\"count\">2</span>" in html
     r = client.post("/settings/appearance/delete", data={"dimension": "employer", "name": "Old Mill"})
-    assert r.headers["location"] == "/settings#appearance/orphans"
+    assert r.headers["location"] == "/settings#appearance/orphans"   # without JavaScript: back on the tab while rows are left
+    r = client.post("/settings/appearance/delete", data={"dimension": "employer", "name": "Older Mill"}, headers={"Accept": "application/json"})
+    assert r.json() == {"ok": True, "deleted": 1, "left": 0, "message": "Deleted the colour and hide switch kept for Older Mill; if Older Mill comes back, it is automatic again."}
     with db.pool.connection() as conn:
         assert [r["name"] for r in rows(conn)] == ["Housing"]
-    assert 'id="st-appearance-orphans"' not in client.get("/settings").text   # the last one deleted: the tab goes, the hash falls back
+    html = client.get("/settings").text
+    assert 'id="st-appearance-orphans"' not in html and "Older Mill" not in html   # the last one deleted: the tab goes; settings.js sent no flash
+    r = client.post("/settings/appearance/delete", data={"dimension": "employer", "name": "Older Mill"})
+    assert r.headers["location"] == "/settings#appearance"   # none left: no tab to come back to
 
 
 def test_a_rename_keeps_colour_and_hidden(client, reset_db):
@@ -182,7 +190,7 @@ def test_cli_set_and_export_round_trip(client, reset_db, tmp_path, capsys):
 
 def test_settings_zip_and_a_seed_dir_round_trip(client, reset_db, tmp_path):
     with db.pool.connection() as conn:
-        appearance.set_one(conn, "category", "Food", "series-3", False); appearance.set_one(conn, "event_kind", "move", "#2f7f9a", True); conn.commit()
+        appearance.set_one(conn, "category", "Food", "series-3", False); appearance.set_one(conn, "event_kind", "move", "#2f7f9a", False); conn.commit()
         files = settings_export.settings_files(conn)
         before = rows(conn)
     assert "appearance.json" in files
@@ -371,7 +379,7 @@ def test_hiding_changes_no_total_and_show_is_for_this_viewer_only(sample):
     set_table([])
     plain = harness(sample)["before"]
     set_table([{"dimension": "category", "name": "Housing", "hidden": True}, {"dimension": "item", "name": "Generosity", "hidden": True},
-               {"dimension": "account_type", "name": "savings", "hidden": True}, {"dimension": "event_kind", "name": "job", "hidden": True},
+               {"dimension": "account_type", "name": "savings", "hidden": True}, {"dimension": "event_kind", "name": "job", "color": "series-4"},
                {"dimension": "debt", "name": "Student Loan", "hidden": True}])
     r = harness(sample, press="cat-stack", reload=True, fresh=True)
     s = r["before"]
@@ -384,14 +392,14 @@ def test_hiding_changes_no_total_and_show_is_for_this_viewer_only(sample):
     assert {n: t["total"] for n, t in s["tips"]["cat-stack"].items()} == {n: t["total"] for n, t in plain["tips"]["cat-stack"].items() if n != "Housing"}
     assert "Generosity" not in dict(s["charts"]["slush"]["series"]) and s["charts"]["slush"]["note"] == "1 hidden · show"
     assert "asset:savings" not in dict(s["charts"]["nw-chart"]["series"]) and "savings" not in dict(s["legends"]["nw-legend"])
-    assert [k for _, k, _ in plain["charts"]["employer"]["markers"]] == ["job", "job"] and s["charts"]["employer"]["note"] == "1 hidden · show"
-    assert not [k for _, k, _ in s["charts"]["employer"]["markers"] if k == "job"] and not [k for _, k, _ in s["charts"]["monthly"]["markers"] if k == "job"]
-    assert s["charts"]["monthly"]["note"] == "1 hidden · show"
+    # an event kind has a colour only (#235): its markers stay, coloured, and neither timeline's note counts it
+    assert [k for _, k, _ in plain["charts"]["employer"]["markers"]] == ["job", "job"] == [k for _, k, _ in s["charts"]["employer"]["markers"]]
+    assert {f for *_, f in s["charts"]["employer"]["markers"]} == {s["colors"][3]} and s["charts"]["employer"]["note"] is None
+    assert s["charts"]["monthly"]["note"] is None
     assert "Student Loan" not in dict(s["charts"]["debts"]["bars"]) and s["charts"]["debts"]["note"] == "1 hidden · show"
     # the button's name is its visible words (WCAG 2.5.3, the 0.9.0 release review); what it hides, and for whom, is its title
     assert all(c["noteLabel"] is None for c in s["charts"].values() if c["note"])
     assert s["charts"]["cat-stack"]["noteTitle"] == "Hidden in Settings → Chart appearance: Housing. Show brings them back on this chart, for you only."
-    assert s["charts"]["employer"]["noteTitle"].startswith("Hidden in Settings → Chart appearance: Job (event kind).")
     assert s["charts"]["debts"]["noteTitle"].startswith("Hidden in Settings → Chart appearance: Student Loan.")
     # a debt group whose every debt is hidden leaves no empty heading; the others keep theirs
     assert len(plain["charts"]["debts"]["heads"]) == len(s["charts"]["debts"]["heads"]) + 1, (plain["charts"]["debts"]["heads"], s["charts"]["debts"]["heads"])
@@ -434,3 +442,54 @@ def test_each_chart_states_its_finding_from_the_data_and_hiding_changes_none(sam
     ly = harness(sample, params={"range": "ly"})["before"]["findings"]
     assert ly["fd-cat"]["text"].startswith("2025: ") and ly["fd-monthly"]["text"].startswith("Jan 2025 to Dec 2025: ")
     set_table([])
+
+
+def orphans(url: str, **opts) -> dict:
+    p = subprocess.run(["node", str(ROOT / "tests" / "js" / "orphans_harness.js"), url, json.dumps(opts)], capture_output=True, text=True, timeout=120)
+    assert p.returncode == 0, p.stderr
+    out = json.loads(p.stdout)
+    assert out["errors"] == [], out["errors"]
+    return out
+
+
+@browser
+def test_deleting_an_orphan_keeps_focus_with_the_list_and_the_empty_list_hands_it_to_the_tabs(sample):
+    """DS-A11Y-5, as del() in settings.js keeps it for the other lists: no reload; focus on the next row's Delete, else the one before;
+    the last row deleted takes the Not in the data tab with it and focus goes to the first Chart appearance tab."""
+    set_table([{"dimension": "category", "name": "Gone A", "color": "series-2"}, {"dimension": "category", "name": "Gone B", "hidden": True},
+               {"dimension": "event_kind", "name": "Gone kind", "color": "series-3"}])
+    out = orphans(sample, order=[0, -1, 0]); s = out["steps"]
+    assert out["end"] == "st-appearance-event-kind"   # the strip's arrow keys skip the tab that went
+    assert all(x["same"] for x in s)   # never reloaded
+    assert s[0]["focus"] == "Delete the colour and hide switch kept for the category Gone B" and s[0]["count"] == "2"
+    assert s[0]["status"] == "Deleted the colour and hide switch kept for Gone A; if Gone A comes back, it is automatic again."
+    assert s[1]["focus"] == "Delete the colour and hide switch kept for the category Gone B" and s[1]["count"] == "1"   # the row before
+    assert s[1]["status"].startswith("Deleted the colour kept for Gone kind;")
+    last = s[2]
+    assert not last["tab"] and not last["panel"] and last["focus"] == "st-appearance-category" and last["selected"] == "true" and last["shown"]
+    assert last["hash"] == "#appearance" and "Gone B" in last["status"]
+    with db.pool.connection() as conn:
+        assert appearance.page(conn)["orphans"] == []
+
+
+@browser
+def test_a_slow_or_refused_orphan_delete_keeps_focus_on_the_button(sample):
+    """DS-A11Y-5: while the request is in flight the button stays focused (aria-disabled, not disabled, which drops focus to <body>)
+    and a second Enter sends nothing more; a refusal leaves the row, focus on its Delete, and one period at the end of the status."""
+    set_table([{"dimension": "category", "name": "Gone A", "color": "series-2"}, {"dimension": "category", "name": "Gone B", "hidden": True},
+               {"dimension": "category", "name": "Gone C", "color": "series-3"}])
+    s = orphans(sample, order=[0], slow=600)["steps"][0]
+    assert s["during"] == {"tag": "BUTTON", "ariaDisabled": "true"}
+    assert s["focus"] == "Delete the colour and hide switch kept for the category Gone B" and s["count"] == "2"
+    f = orphans(sample, fail=True)
+    assert f["status"] == "Not deleted: Your form expired. Reload the page." and "bad" in f["cls"]
+    assert f["focus"] == "Delete the colour and hide switch kept for the category Gone B" and f["ariaDisabled"] is None and f["rows"] == 2
+    set_table([])
+
+
+@browser
+def test_deleting_an_orphan_without_javascript_posts_and_comes_back_on_the_tab(sample):
+    set_table([{"dimension": "category", "name": "Gone A", "color": "series-2"}, {"dimension": "category", "name": "Gone B", "hidden": True}])
+    out = orphans(sample, nojs=True)
+    assert out["url"].endswith("/settings#appearance/orphans") and out["rows"] == 1
+    assert "Deleted the colour and hide switch kept for Gone A" in out["flash"]

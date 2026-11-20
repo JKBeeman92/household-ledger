@@ -97,25 +97,27 @@ def test_the_batch_review_marks_files_that_replace_a_stored_month_and_says_how_t
 
 
 # ---------------------------------------------------------------- Settings → Life events and Chart appearance
-def test_life_events_say_when_a_hidden_kind_keeps_an_event_off_the_chart(client, reset_db):
-    from app import db
+def test_life_events_name_one_switch_and_event_kinds_have_a_colour_only(client, reset_db):
+    """#235: On the chart is the household's one way off the charts; Chart appearance's Life-event kinds tab has colours and no Hidden
+    column, and says where to switch an event off; the old "hidden kind" words are gone from both pages and settings.js."""
     reset_db(SAMPLE)
     upload_files(client, SAMPLE)
-    with db.pool.connection() as conn:
-        kind = conn.execute("SELECT kind FROM life_events WHERE kind IS NOT NULL AND on_chart ORDER BY month LIMIT 1").fetchone()["kind"]
-        n = conn.execute("SELECT count(*) n FROM life_events WHERE kind=%s AND on_chart", (kind,)).fetchone()["n"]
-        conn.execute("INSERT INTO appearance (dimension, name, hidden) VALUES ('event_kind', %s, true)", (kind,)); conn.commit()
     page = client.get("/settings").text
     grid = page[page.index('id="events-editor"'):]
     grid = grid[:grid.index("</section>")]
-    assert grid.count('<td data-f="on_chart" data-v="yes">yes, hidden kind</td>') == n   # the stored value stays in data-v for the editor
-    assert f'id="hidden-kinds" nonce=' in grid and json.dumps([kind]) in grid   # settings.js says it the same way after a row save
+    assert "hidden kind" not in grid.lower() and 'id="hidden-kinds"' not in grid
     help_ = grid[grid.index('id="events-columns"'):]
-    assert "takes all its markers off the chart, for everyone; On the chart switches one event" in help_
-    assert 'href="/settings#appearance/event-kind"' in help_ and "Drawn as markers" not in grid   # the long help moved into the details
-    assert "hiding a kind takes all its markers off the chart" in page[page.index('id="appearance-how"'):]
+    assert "What On the chart and New normal do" in help_ and "the one switch that takes an event off the charts" in help_
+    assert "only narrow what one viewer sees" in help_ and 'href="/settings#appearance/event-kind"' in help_ and "Drawn as markers" not in grid
+    assert "Life-event kinds have a colour only" in page[page.index('id="appearance-how"'):]
+    kinds = page[page.index('id="appearance-event-kind"'):]
+    kinds = kinds[:kinds.index("</section>")]
+    assert 'name="hidden"' not in kinds and '<th scope="col">Hidden</th>' not in kinds and 'name="color"' in kinds
+    assert 'set On the chart to no on <a href="/settings#events">Life events</a>' in kinds
+    other = page[page.index('id="appearance-category"'):]
+    assert 'name="hidden"' in other[:other.index("</section>")]   # every other dimension keeps its hide box
     js = (ROOT / "app" / "web" / "static" / "settings.js").read_text(encoding="utf-8")
-    assert 'return "yes, hidden kind"' in js
+    assert "hidden kind" not in js and "hiddenKinds" not in js
 
 
 def test_the_not_saved_marker_takes_the_tab_colour_and_is_announced():
