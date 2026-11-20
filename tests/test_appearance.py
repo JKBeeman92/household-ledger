@@ -129,16 +129,22 @@ def test_orphans_are_listed_with_delete(client, reset_db):
     upload_files(client, GOLDEN / "exports")
     with db.pool.connection() as conn:
         appearance.set_one(conn, "category", "Housing", "series-1", False)
-        appearance.set_one(conn, "employer", "Old Mill", "series-4", True); conn.commit()
-        assert [o["name"] for o in appearance.page(conn)["orphans"]] == ["Old Mill"]
+        appearance.set_one(conn, "employer", "Old Mill", "series-4", True)
+        appearance.set_one(conn, "employer", "Older Mill", None, True); conn.commit()
+        assert [o["name"] for o in appearance.page(conn)["orphans"]] == ["Old Mill", "Older Mill"]
     html = client.get("/settings").text
     assert 'id="appearance-orphans-table" data-list="unbounded"' in html and "Delete the colour and hide switch kept for the employer Old Mill" in html
-    assert 'id="st-appearance-orphans"' in html and "Not in the data <span class=\"count\">1</span>" in html
+    assert 'id="st-appearance-orphans"' in html and "Not in the data <span class=\"count\">2</span>" in html
     r = client.post("/settings/appearance/delete", data={"dimension": "employer", "name": "Old Mill"})
-    assert r.headers["location"] == "/settings#appearance/orphans"
+    assert r.headers["location"] == "/settings#appearance/orphans"   # without JavaScript: back on the tab while rows are left
+    r = client.post("/settings/appearance/delete", data={"dimension": "employer", "name": "Older Mill"}, headers={"Accept": "application/json"})
+    assert r.json() == {"ok": True, "deleted": 1, "left": 0, "message": "Deleted the colour and hide switch kept for Older Mill; if Older Mill comes back, it is automatic again."}
     with db.pool.connection() as conn:
         assert [r["name"] for r in rows(conn)] == ["Housing"]
-    assert 'id="st-appearance-orphans"' not in client.get("/settings").text   # the last one deleted: the tab goes, the hash falls back
+    html = client.get("/settings").text
+    assert 'id="st-appearance-orphans"' not in html and "Older Mill" not in html   # the last one deleted: the tab goes; settings.js sent no flash
+    r = client.post("/settings/appearance/delete", data={"dimension": "employer", "name": "Older Mill"})
+    assert r.headers["location"] == "/settings#appearance"   # none left: no tab to come back to
 
 
 def test_a_rename_keeps_colour_and_hidden(client, reset_db):
@@ -436,3 +442,39 @@ def test_each_chart_states_its_finding_from_the_data_and_hiding_changes_none(sam
     ly = harness(sample, params={"range": "ly"})["before"]["findings"]
     assert ly["fd-cat"]["text"].startswith("2025: ") and ly["fd-monthly"]["text"].startswith("Jan 2025 to Dec 2025: ")
     set_table([])
+
+
+def orphans(url: str, **opts) -> dict:
+    p = subprocess.run(["node", str(ROOT / "tests" / "js" / "orphans_harness.js"), url, json.dumps(opts)], capture_output=True, text=True, timeout=120)
+    assert p.returncode == 0, p.stderr
+    out = json.loads(p.stdout)
+    assert out["errors"] == [], out["errors"]
+    return out
+
+
+@browser
+def test_deleting_an_orphan_keeps_focus_with_the_list_and_the_empty_list_hands_it_to_the_tabs(sample):
+    """DS-A11Y-5, as del() in settings.js keeps it for the other lists: no reload; focus on the next row's Delete, else the one before;
+    the last row deleted takes the Not in the data tab with it and focus goes to the first Chart appearance tab."""
+    set_table([{"dimension": "category", "name": "Gone A", "color": "series-2"}, {"dimension": "category", "name": "Gone B", "hidden": True},
+               {"dimension": "event_kind", "name": "Gone kind", "color": "series-3"}])
+    out = orphans(sample, order=[0, -1, 0]); s = out["steps"]
+    assert out["end"] == "st-appearance-event-kind"   # the strip's arrow keys skip the tab that went
+    assert all(x["same"] for x in s)   # never reloaded
+    assert s[0]["focus"] == "Delete the colour and hide switch kept for the category Gone B" and s[0]["count"] == "2"
+    assert s[0]["status"] == "Deleted the colour and hide switch kept for Gone A; if Gone A comes back, it is automatic again."
+    assert s[1]["focus"] == "Delete the colour and hide switch kept for the category Gone B" and s[1]["count"] == "1"   # the row before
+    assert s[1]["status"].startswith("Deleted the colour kept for Gone kind;")
+    last = s[2]
+    assert not last["tab"] and not last["panel"] and last["focus"] == "st-appearance-category" and last["selected"] == "true" and last["shown"]
+    assert last["hash"] == "#appearance" and "Gone B" in last["status"]
+    with db.pool.connection() as conn:
+        assert appearance.page(conn)["orphans"] == []
+
+
+@browser
+def test_deleting_an_orphan_without_javascript_posts_and_comes_back_on_the_tab(sample):
+    set_table([{"dimension": "category", "name": "Gone A", "color": "series-2"}, {"dimension": "category", "name": "Gone B", "hidden": True}])
+    out = orphans(sample, nojs=True)
+    assert out["url"].endswith("/settings#appearance/orphans") and out["rows"] == 1
+    assert "Deleted the colour and hide switch kept for Gone A" in out["flash"]

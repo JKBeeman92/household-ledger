@@ -189,7 +189,7 @@ out falls back. Ids: `dashboard check-in close-month reviews settings day night 
 - **DS-CHART-2** What has not happened is a dotted course.
 - **DS-CHART-3** A goal is a filled waypoint in `--accent-2`, with its name and amount beside it.
 - **DS-CHART-4** Series take `--series-1` to `--series-8` in order, on every chart. A chart coloured by a name (a category, an
-  employer, a person, a debt, an account type, a catch-all item, an event kind) asks `dash.colorFor(dimension, name, i)`, never the
+  employer, a person, a debt, an account type, a catch-all item, a life-event kind) asks `dash.colorFor(dimension, name, i)`, never the
   palette by position: a name the household gave a colour (Settings → Chart appearance) keeps it on every chart, period and mode,
   and the rest take the palette in order, passing over the slots claimed in that dimension. A name's place counts hidden names, so
   hiding one recolours none.

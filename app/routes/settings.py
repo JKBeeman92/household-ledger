@@ -824,12 +824,18 @@ async def appearance_save(request: Request, user=Depends(auth.require_editor)):
 
 @router.post("/settings/appearance/delete")
 async def appearance_delete(request: Request, user=Depends(auth.require_editor)):
-    """Delete an orphan: a colour or hide switch kept for a name the data no longer has."""
+    """Delete an orphan: a colour or hide switch kept for a name the data no longer has. settings.js sends it with Accept:
+    application/json and gets the message and how many orphans are left, so the page keeps its place and focus stays with the list
+    (DS-A11Y-5); without JavaScript the form posts and the page comes back on the tab, or on Chart appearance once none are left."""
     from .. import appearance
     f = await request.form()
     dim, name = str(f.get("dimension", "")), str(f.get("name", ""))
     with db.pool.connection() as conn:
         n = appearance.delete(conn, dim, name); conn.commit()
+        left = len(appearance.page(conn)["orphans"])
     what = "colour" if dim in appearance.COLOUR_ONLY else "colour and hide switch"
-    flash(request, f"Deleted the {what} kept for {name}; if {name} comes back, it is automatic again." if n else f"Nothing was kept for {name}; it was already gone.", "ok" if n else "bad")
-    return RedirectResponse("/settings#appearance/orphans", status_code=303)
+    msg = f"Deleted the {what} kept for {name}; if {name} comes back, it is automatic again." if n else f"Nothing was kept for {name}; it was already gone."
+    if "application/json" in request.headers.get("accept", ""):
+        return JSONResponse({"ok": True, "deleted": n, "message": msg, "left": left})   # gone either way: the row leaves the list
+    flash(request, msg, "ok" if n else "bad")
+    return RedirectResponse("/settings#appearance/orphans" if left else "/settings#appearance", status_code=303)

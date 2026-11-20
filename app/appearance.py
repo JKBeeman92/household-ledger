@@ -28,7 +28,7 @@ LABELS = {
     "person": ("People", "person", "People: the earner and payer stacks"),
     "debt": ("Debts", "debt", "Position: the Debts timeline"),
     "account_type": ("Account types", "account type", "Position: the stacks under net worth"),
-    "event_kind": ("Life-event kinds", "event kind", "the life-event markers on the timelines"),
+    "event_kind": ("Life-event kinds", "life-event kind", "the life-event markers on the timelines"),
 }
 COLOUR_ONLY = ("event_kind",)   # dimensions with a colour and no hide switch (#235); the table's CHECK says the same
 HIDE_REFUSED = ("{name}: a life-event kind has no hide switch; switch its events off the chart with On the chart in "

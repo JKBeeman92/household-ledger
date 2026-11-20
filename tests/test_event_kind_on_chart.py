@@ -143,7 +143,9 @@ def test_a_kind_kept_for_a_name_the_data_lost_is_listed_as_a_colour_only(client,
         assert [o["name"] for o in appearance.page(conn)["orphans"]] == ["Gone kind"]
     html = client.get("/settings").text
     table = html[html.index('id="appearance-orphans-table"'):]; table = table[:table.index("</table>")]
-    assert "<td>—</td>" in table and "<td>no</td>" not in table   # no hide switch to report
-    assert 'aria-label="Delete the colour kept for the event kind Gone kind"' in table and "hide switch" not in table
-    r = client.post("/settings/appearance/delete", data={"dimension": "event_kind", "name": "Gone kind"}, follow_redirects=True)
-    assert "Deleted the colour kept for Gone kind; if Gone kind comes back, it is automatic again." in r.text
+    assert "<td>No hide switch</td>" in table and "<td>no</td>" not in table and "<td>—</td>" not in table   # said in words, not a bare dash
+    assert 'aria-label="Delete the colour kept for the life-event kind Gone kind"' in table and "and hide switch" not in table
+    assert '<span class="swatch" style="--sw: var(--series-3)" aria-hidden="true"></span> series-3' in table   # the colour it holds, seen
+    r = client.post("/settings/appearance/delete", data={"dimension": "event_kind", "name": "Gone kind"})
+    assert r.status_code == 303 and r.headers["location"] == "/settings#appearance"   # none left: no Not in the data tab to land on
+    assert "Deleted the colour kept for Gone kind; if Gone kind comes back, it is automatic again." in client.get("/settings").text
