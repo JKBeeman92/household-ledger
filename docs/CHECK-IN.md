@@ -27,6 +27,9 @@ Set aside half an hour, with last month's statements to hand (or your bank's app
 6. **Where we stand.** The month in a few lines: what was kept, net worth and how it moved (what you did, what happened to you), the
    emergency fund, debt-to-income, and each planned purchase: saved so far, what it takes a month from here, and whether the last
    three months' pace gets there. Once one is reached it asks whether you bought it (and, for a loan, offers to set up the debt).
+   With two or more people in the People rule, **By person**: what each earned and its part of the month's income, what their own
+   envelopes spent, each with its change since last month, their accounts and the decisions that name them, and the joint part last.
+   Figures only, never over or under (README, "Two people at the table").
    Read it together; opening it marks it read. The Last month tab has the detail.
 7. **Coming up.** What falls in the next three months: estimated payoffs, yearly bills (with what is set aside for each, and
    what a month would cover the rest), life events already dated, tax deadlines, and planned purchases at their target month. Read it together; opening it marks it read.
@@ -37,7 +40,8 @@ Then **Done**. The Last month tab says "October check-in: done 2 Nov", or how ma
 9. **Next month.** Write down what to do differently next month: up to three is usually enough (a fourth is allowed, with a note).
    A decision can name a category, a budget item or a debt and an amount, so the next check-in can check it: a spend cap, a save,
    an extra payment (until a date, or until the debt is paid off), or a plan change, checked against next month's planned figure.
-   A row of the Suggested plan can be taken in one press. Saying there are no changes this month completes the step too (and can be undone).
+   A row of the Suggested plan can be taken in one press. The plan averages the last twelve months, or the months since a life event
+   the household marked as its new normal (Settings → Life events), and says so (README, "Before and after a life event"). Saying there are no changes this month completes the step too (and can be undone).
 
 ## Catching up
 

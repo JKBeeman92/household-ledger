@@ -153,7 +153,7 @@ def test_mapped_pair_builds_the_same_ledger_as_the_everydollar_pair(client, rese
     reset_db()
     batch = upload_pair(client, TXN.read_bytes(), BUD.read_bytes())
     page = client.get(f"/upload/map/{batch}").text
-    assert "Map your columns" in page and 'value="2025-01"' in page and "<option value=\"Posted\" selected>" in page
+    assert "Set up a source profile" in page and 'value="2025-01"' in page and "<option value=\"Posted\" selected>" in page
     r = client.post(f"/upload/map/{batch}", data=form_for(bree_profile(), pending_of(batch)))
     assert r.status_code == 303 and r.headers["location"] == "/upload", r.text[:500]
     assert ledger_rows() == want

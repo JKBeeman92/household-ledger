@@ -91,7 +91,7 @@ at once as `settings.zip` ([Backups](#backups)), so moving to a new box is: unzi
 | `item_mapping.csv` | columns `Item,CanonicalItem,Category,Flow,Note`, and optionally `DebtType` ([Roles](#roles)) |
 | `cpi_u.csv` | columns `month,cpi,source` (`month` is `YYYY-MM`) |
 | `goals.json` | list of `{"key", "label", "value", "unit", "note"}`; `value` may be `null` |
-| `events.json` | list of `{"m": "YYYY-MM", "label": "…", "kind": "…", "person": "…"}` (the key is `m`, not `month`); `kind` (one of `job`, `move`, `family`, `health`, `purchase`, `debt`, `other`) and `person` (best one of the `people` rule) are optional |
+| `events.json` | list of `{"m": "YYYY-MM", "label": "…", "kind": "…", "person": "…", "new_normal": true}` (the key is `m`, not `month`); `kind` (one of `job`, `move`, `family`, `health`, `purchase`, `debt`, `other`), `person` (best one of the `people` rule) and `new_normal` (`true` or `false`, default `false`: [Before and after a life event](#before-and-after-a-life-event)) are optional; `"on_chart": false` keeps an event off the timelines ([Life events on the timeline](#life-events-on-the-timeline)) |
 | `rules.json` | object; keys and types in [`app/schemas/rules.schema.json`](app/schemas/rules.schema.json) |
 | `household.json` | object; [`app/schemas/household.schema.json`](app/schemas/household.schema.json) |
 | `review.json` | list of `{"m", "order", "heading", "text"}`, one row per review section |
@@ -274,15 +274,15 @@ The month in the file name is the budget month every row counts in. Files named 
 they are, on upload, from a `.zip`, from the import directory, by `python -m pipeline.import_exports` and by the standalone scripts,
 so a back catalogue converted to this format by any means loads in one go. The app stages every rebuild in this format, and
 `python -m pipeline.sources normalize` writes it. **EveryDollar's** exports are this format with `MM/DD/YYYY` dates and their own
-names (`<id>-MM-YYYY-EveryDollar-Transactions.csv`, `…-BudgetItems.csv`); they are the built-in profile, read without a mapping
+names (`<id>-MM-YYYY-EveryDollar-Transactions.csv`, `…-BudgetItems.csv`); they are the built-in profile, read without setting up a source profile
 step, and always will be. `pipeline/filenames.py` recognises both.
 
 ## Other budget tools
 
 A file in the internal format, or EveryDollar's, needs no setup. Any other tool works too, as long as it exports the same
 pair each month: **a transactions CSV and a budget CSV**. Upload both on **Close a month**. Files not named like exports go to
-a mapping page that shows their first rows, guesses which column is which, which file is which and the budget month, and asks
-you to confirm. The confirmed mapping is saved as a *source profile* under a name you choose and is offered again automatically
+a **Set up a source profile** page that shows their first rows, guesses which column is which, which file is which and the budget month, and asks
+you to confirm. What you confirm is saved as a *source profile* under a name you choose and is offered again automatically
 for next month's files with the same columns. Profiles can be edited, exported and imported as JSON on **Settings → Sources**.
 
 | File | Required columns | Optional |
@@ -418,7 +418,7 @@ Set them in the rules JSON (Settings → Pipeline rules) or with `python -m app.
 empty value (`null`) keeps the default, an empty value in any of these three turns the check off. The defaults are a first guess:
 on a long back catalogue, check what it lists and move them.
 
-**A first mapping for a back catalogue.** Settings → Item mapping offers **Draft a mapping from my budget groups** whenever the stored
+**A first mapping for a back catalogue.** Settings → Item mapping offers **Draft Item mapping rows from my budget groups** whenever the stored
 exports carry items with no mapping row. The draft fills only those items and never changes an existing row: Category is the budget
 group; CanonicalItem is the item name without a year's suffix (` 2`, ` Fund`, ` Goal`); Flow is `income` for the `income_groups` (default `Income`), `debt`
 for the `debt_groups` (default `Debt`), `transfer` for names such as `Fund Transfer`, `Transfer Funds`, `… Rebalance` or `Transfer to …`, and `expense` otherwise.
@@ -504,7 +504,8 @@ figure applies to every month, as the stated gross does. The `monthly` and `year
 
 "If income stopped tomorrow, how many months could we cover?" Coverage is the month-end balance of the asset accounts marked
 **Emergency** (Settings → Accounts; on by default for cash and savings, so a holiday fund can be switched off) divided by the average
-monthly outgo, living spend plus debt payments, over the trailing twelve budget months. Total outgo, not a bare-bones budget: it is the
+monthly outgo, living spend plus debt payments, over the trailing twelve budget months (or since the household's new normal, and it
+says so: [Before and after a life event](#before-and-after-a-life-event)). Total outgo, not a bare-bones budget: it is the
 honest figure. The Last month tab gives it with its change since last month ("4.2 months (target 6)"), the Goals tab draws it month
 by month, and `emergency_months` on Settings → Goals sets the target. With no emergency account it shows "—" and says where to mark
 one. The `emergency_fund` dataset reaches the review and MCP.
@@ -653,8 +654,9 @@ runs in year mode with two more steps, and that month's review gets one more sec
 month and Quarter tabs and in the check-in's quarter step, answers at 3, 12 and 36 months from what the app already knows. Every
 figure is an estimate at the current pace, and "How it is worked out" lists each input, so any figure can be redone by hand.
 
-- **The pace** is the monthly net (income less living spend and debt payments), averaged over the last twelve budget months; the last
-  three months sit beside it, so a change of direction shows.
+- **The pace** is the monthly net (income less living spend and debt payments), averaged over the last twelve budget months (or since
+  the household's new normal: [Before and after a life event](#before-and-after-a-life-event)); the last three months sit beside it,
+  so a change of direction shows.
 - **Kept** is the pace × the months, plus the payments each debt frees from the month after its payoff estimate (listed on their own).
 - **Net worth** is today's (Net worth) plus what is kept, plus what the debt payments take off the balances (each debt paid down month
   by month at its payment and APR). There is no investment return unless the `assumed_growth_pct` rule sets a yearly % for asset
@@ -663,6 +665,30 @@ figure is an estimate at the current pace, and "How it is worked out" lists each
   shows the month it is reached at its own pace, or "not at this pace". The `coming_up` rows in each horizon are in the dataset.
 - Not a retirement planner, a simulation or a tax projection: no planned change in income or spending is assumed. The `look_ahead`
   dataset reaches the review and MCP (a freed payment is named by its debt's type, never its account).
+
+## Before and after a life event
+
+"What did our spending look like before the baby arrived, and after? Before the move, and after?" A new dependent, a move or a job
+change resets what a normal month is. **Before and after a life event**, on the Overview tab, sets the budget months before any life
+event against the event's own month and the months after it: 6 on each side by default, 3 and 12 offered.
+
+- Each figure is **a month's average** over the months loaded on that side, so a side with fewer months still compares fairly, and the
+  line above the table says when one is short ("only 5 of 6 months loaded"). Income, living spend, debt payments, net kept and the
+  savings rate, nominal or in one month's prices (the Dollars switch), so inflation is not read as a change of life.
+- **The categories that moved most** in living spend, by dollars and by percent (a percent only where at least $25 a month was spent
+  before), and the categories **new since** the event: nothing spent on them in any loaded month before it, and first spent in the
+  event's month or the two after it (childcare, a new utility), so a category that starts a year later is not put down to the event.
+- **The new normal.** Any event can be marked as the new normal (Settings → Life events, *New normal*: yes). It is always the
+  household's choice: nothing is marked for you, and a new `move` or `family` event only offers it. Once a marked event has three
+  budget months loaded, the averages that look back start from it rather than from the old normal: the look ahead's pace, the
+  emergency fund's outgo, and the Last month tab's category averages and suggested plan (its headline net still sets the month against
+  the twelve before). Each says "since *the event*". With fewer than three months, the window before it is kept. A short window holds
+  a yearly bill at its full size: a category paid once a year (insurance, a licence) reads high there until twelve months have passed,
+  so check its suggested plan before taking it (the `plan_keep_categories` rule's categories, Insurance among them by default, keep
+  their plan).
+- **The review** of a month within six months after an event marked as the new normal names it and its before-and-after comparison.
+- The `before_after` dataset (a row per event and window) reaches MCP and `datasets.zip`; the period filter does not apply to it.
+  `new_normal` travels in `settings.zip`'s `events.json`, and `python -m app.admin set-events FILE` sets it.
 
 ## Decisions
 
@@ -688,6 +714,24 @@ as `decisions.json`. The review reads the decisions and verdicts (the household'
 them in place of its own earlier suggestion; a decision's note never leaves the install. The Suggested plan the Last month tab shows
 is now worked out in the pipeline (`plan_suggestions`), so the tab and the check-in cannot disagree. Renaming a category, an item or
 an account updates the decisions that name it.
+
+## Two people at the table
+
+"Between the two of us, who earned what, and who spent what on themselves?" When the People rule (Settings → Pipeline rules → People
+and employers) names two or more people, the Last month tab has a **By person** card, and the check-in's **Where we stand** step the
+same figures. For each person, and for the joint part last:
+
+- **Earned**: the income `income_by_person` gives them, its part of the month's income, and its change since last month. It is the
+  People tab's Income by earner chart, a month at a time.
+- **Own envelopes**: what the envelopes `payer_prefix_by_person` and `payer_items_by_person` give them spent, and its change: the
+  Spend by payer chart's figure, so envelope ownership, not who tapped the card. Joint is what no rule gives one person.
+- **Accounts and decisions**: the accounts Settings → Accounts names them on, and the decisions in force this month that name them.
+  Names match ignoring case and spacing; an account or decision that names no one, or a name the People rule no longer has, is listed
+  once, under Joint, so nothing drops out. A change that rounds to nothing reads *no change*.
+
+These are figures only, never "over" or "under": the check-in is done together, and there is no fair-share view. With one person, or
+none, the card is absent and the `by_person` dataset is empty. It is in `datasets.zip`, the month-close review (per-person totals only,
+no accounts) and MCP; `python -m app.admin by-person [YYYY-MM]` prints it. No migration: rebuild once after upgrading to emit it.
 
 ## Chart colours and hidden names
 
@@ -718,10 +762,38 @@ coloured by, holding only the names your data has:
 - Command line: `python -m app.admin set-appearance FILE` replaces the table from an `appearance.json`, `export appearance` prints it.
   It travels in `settings.zip` as `appearance.json`. Which colours the slots *are* is the brand kit's ([docs/BRANDING.md](docs/BRANDING.md)).
 
+## Life events on the timeline
+
+"What happened around this change?" A job change, a move or a birth is a **life event** (Settings → Life events: month, label,
+and optionally its kind and person). Each is a dotted marker on **Income against outgo** (and, for jobs and events with no kind, on
+**Paycheck source**), and a line in the list under the chart, closed behind its count.
+
+- **Merged markers.** Events within one month of each other draw as one marker with a count: a crowded season is at most one marker a
+  month. Hover one, tab to it or tap it to list every event it holds; each marker is a button a keyboard reaches and a screen reader
+  names ("Oct 2025 to Nov 2025, 2 life events: …"). Markers closer than a 24 px target merge too, so on a dense axis (years at phone width) no two overlap.
+- **Colour by kind** comes from Settings → Chart appearance, Life-event kinds ([Chart colours and hidden names](#chart-colours-and-hidden-names)).
+  A marker holding events of different colours takes the reference colour.
+- **Chips above the chart** filter the markers and the list by kind ("All · Job · Move · Family …") and by person, offering only the
+  kinds and people your events on the chart have. The choice is remembered in this browser, like the period filter. The Employer chart
+  keeps its own rule (job events and events with no kind).
+- **On the chart, per event.** Settings → Life events has an **On the chart** column: *no* keeps an event in the list (marked "not
+  on the chart"), the review, the check-in and MCP, with no marker; for example "Started a new budget method". It is display only and
+  travels with the event (`"on_chart": false` in `events.json`, `settings.zip`, a seed directory and `set-events`); the pipeline passes
+  it through to the `events` dataset. It is a pipeline input like the rest of the event, so the dashboard shows a change after a rebuild.
+- **How the switches combine.** An event is drawn only when it is on the chart *and* its kind is not hidden in Chart appearance (or you
+  pressed that chart's "show"). "show" reveals hidden kinds, never an event switched off the chart, and the "N hidden" note counts
+  hidden kinds only. No total, table or reconciliation changes either way. Settings → Life events marks an event of a hidden kind
+  "yes, hidden kind" in its On the chart column, and the list under the chart says "hidden kind": the same words on both pages.
+- **Coming up.** When the period reaches the last loaded month, the chart ends in a **Coming up** strip: the next 12 months of the
+  `coming_up` dataset (payoffs, yearly bills, tax deadlines, planned purchases and life events dated later), drawn dotted because they
+  have not happened, never as markers off the end of the axis. A life event in it follows the same switches and chips. The **Coming
+  up** list under the chart says the same in words and keeps everything later too (a payoff years out, an event in two years),
+  marked "after the chart's 12 months", so nothing dated after the last month drops off the Overview.
+
 ## Try it with the sample household
 
 `examples/sample-household/` is a synthetic household (two earners, 18 budget months, a student loan, a transfer pair, three-paycheck
-months, life events, six accounts with two years of month-end balances) that reconciles clean, so you can see every tab before loading your own exports. The seed files go in `SEED_DIR`
+months, life events (the baby's birth marked as the new normal), six accounts with two years of month-end balances) that reconciles clean, so you can see every tab before loading your own exports. The seed files go in `SEED_DIR`
 (first boot only) and the exports in `IMPORT_DIR`.
 
 Compose, from a checkout of this repo (`LEDGER_DATA` defaults to `./data`, which git ignores):

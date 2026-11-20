@@ -51,7 +51,11 @@ reaching a waypoint, and a chart border.
 - **DS-WORD-3** The same thing has the same name on every page. *Budget month*, *check-in*, *close a month*, *review*,
   *rebuild* and *reconciled* are fixed terms. The act of having the model read a month back is **Write review** (a second
   time, **Write review again**), and the page that chooses the model is **Review provider**, everywhere: never "generate",
-  "provider settings" or "write one".
+  "provider settings" or "write one". How another budget tool's columns are read is its **source profile** (Settings → Sources),
+  set up on upload; **Item mapping** is only the rows that give each item a canonical name, a category and a flow (Settings →
+  Item mapping). Neither is called a "mapping" alone. The row of per-person figures that no rule gives one person is **Joint** (DS-WORD-7)
+  in its heading and in the words under it; a window cut at a life event is written *the N budget months since {label} ({Nov 2026}), the household's new
+  normal*, on the dashboard and in the check-in alike.
 - **DS-WORD-4** Sentences are short and say what happened and what to do next. An error names the cause and the remedy; it
   does not apologise. No exclamation marks.
 - **DS-WORD-5** Sentence case everywhere. Capitals with letter-spacing are for eyebrows and stamps only.
@@ -61,6 +65,9 @@ reaching a waypoint, and a chart border.
   On the server the filters do it (`app/formatting.py`): `|money` (`money(2)` for cents, `money(signed=True)` for a change),
   `|date`, `|datetime`, `|month`, `|month_short`, `|share`, `|number`, and `|plain` for a field's value; a flash uses
   `month_text()`. In script, `dash.fmt` and `HL.mo`. Both read the same CLDR data, so a figure reads alike on either side.
+- **DS-WORD-7** Between people in the household, figures only. A per-person figure (the By person card, the check-in's By person
+  lines) has no verdict, stamp or verdict colour, and no word that ranks one person against another: never *over*, *under*, *more
+  than their share*. The shared part is *Joint*, listed last.
 
 ## 3. Foundations (the kit contract)
 
@@ -190,6 +197,14 @@ out falls back. Ids: `dashboard check-in close-month reviews settings day night 
 - **DS-CHART-6** A chart that leaves out names the household hid says how many, under its plot: a plain button, *2 hidden · show*,
   which shows them on that chart for that viewer only (remembered like the period filter) and reads *2 hidden, shown here · hide*
   while they show. Hiding is display only: a total, a tooltip's total, a net line or a table never leaves a hidden name out.
+- **DS-CHART-7** A life event is a marker at the top of a timeline: a dashed line down the plot and a dot in its kind's colour.
+  Events within one month of each other are one marker, a ring round their count, so a crowded season is at most one marker a
+  month. Every marker is a button over its dot (a keyboard reaches it, a tap opens it, its name lists every event it holds), 44 px
+  tall and 24 px wide (DS-LAYOUT-2, WCAG 2.5.8); markers closer than 24 px merge, so no two buttons overlap at any width. An event
+  switched off the chart (Settings → Life events) is drawn nowhere and listed under the chart as *not on the chart*; it is not a
+  hidden name, so *show* (DS-CHART-6) never brings it back. The list says why any event has no marker (*not on the chart*, *hidden
+  kind*, *before the chart's first month*). What is still to come sits in a *Coming up* strip after the last month, dotted
+  (DS-CHART-2), never as a marker off the end of the axis; the strip draws 12 months, and its list keeps every later row too.
 
 ## 5. Patterns
 

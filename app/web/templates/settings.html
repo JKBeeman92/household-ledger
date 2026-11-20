@@ -26,10 +26,10 @@
   <script type="application/json" id="flow-help" nonce="{{ csp_nonce(request) }}">{{ flow_help|tojson }}</script>{% endif %}
   {{ caller() if caller else "" }}
   <p class="tools"><button class="btn" type="button" data-add="{{ kind }}">Add row</button></p>
-  {% if kind == "mapping" %}<p class="filterbox"><label for="mapping-filter">Filter the {{ rows|length }} mapping rows</label><input type="search" id="mapping-filter" data-filter="mapping" placeholder="Part of an item, category or note"></p>{% endif %}
+  {% if kind == "mapping" %}<p class="filterbox"><label for="mapping-filter">Filter the {{ rows|length }} Item mapping rows</label><input type="search" id="mapping-filter" data-filter="mapping" placeholder="Part of an item, category or note"></p>{% endif %}
   <div class="tablewrap" role="region" tabindex="0" aria-label="{{ ed.title }} table"><table class="plain edit" data-list="unbounded" data-kind="{{ kind }}" data-fields="{{ cols|join(',') }}"{% if kind == "mapping" %} data-flows="{{ flows|join(',') }}"{% endif %}{% if choices %} data-choices="{{ choices|tojson|forceescape }}"{% endif %}>
     <thead><tr>{% for c in cols %}<th data-sort="{{ c }}" scope="col"{% if c in nums %} class="num"{% endif %}><button type="button" class="sortbtn">{{ heads[loop.index0] }}</button></th>{% endfor %}<th class="acts"><span class="sr">Actions</span></th></tr></thead>
-    <tbody>{% for r in rows %}{% set what = (r[cols[0]] ~ " " ~ r[cols[1]]) if kind == "events" else (r[cols[0]] if r[cols[0]] not in (none, "") else "this row") %}<tr>{% for c in cols %}{% set v = r[c] %}{% set has = v is not none and v != "" %}{% set unit = (r.unit or "") if kind == "goals" else "" %}{% set shown = (v|share(2, trim=True)) if has and kind == "goals" and c == "value" and unit.startswith("share") else ((v|money) if has and kind == "goals" and c == "value" and unit.startswith("usd") else ((v|money(2)) if has and kind == "accounts" and c == "escrow" else ((v|month_short) if has and kind == "events" and c == "m" else none))) %}<td data-f="{{ c }}"{% if c in nums %} class="num"{% endif %}{% if not has %} data-v=""{% elif shown is not none %} data-v="{{ r[c] }}"{% endif %}>{{ "—" if not has else (shown if shown is not none else r[c]) }}</td>{% endfor %}
+    <tbody>{% for r in rows %}{% set what = (r[cols[0]] ~ " " ~ r[cols[1]]) if kind == "events" else (r[cols[0]] if r[cols[0]] not in (none, "") else "this row") %}<tr>{% for c in cols %}{% set v = r[c] %}{% set has = v is not none and v != "" %}{% set unit = (r.unit or "") if kind == "goals" else "" %}{% set shown = "yes, hidden kind" if kind == "events" and c == "on_chart" and v == "yes" and r.kind in hidden_kinds else (v|share(2, trim=True)) if has and kind == "goals" and c == "value" and unit.startswith("share") else ((v|money) if has and kind == "goals" and c == "value" and unit.startswith("usd") else ((v|money(2)) if has and kind == "accounts" and c == "escrow" else ((v|month_short) if has and kind == "events" and c == "m" else none))) %}<td data-f="{{ c }}"{% if c in nums %} class="num"{% endif %}{% if not has %} data-v=""{% elif shown is not none %} data-v="{{ r[c] }}"{% endif %}>{{ "—" if not has else (shown if shown is not none else r[c]) }}</td>{% endfor %}
       <td class="acts"><button type="button" class="btn" data-act="edit" aria-label="Edit {{ what }}">Edit</button> <button type="button" class="btn" data-act="del" aria-label="Delete {{ what }}">Delete</button></td></tr>{% endfor %}</tbody>
   </table></div>
 </section>
@@ -43,14 +43,14 @@
 <script type="application/json" id="canonical-category" nonce="{{ csp_nonce(request) }}">{{ canonical_category|tojson }}</script>
 <div role="tabpanel" id="sp-mapping-items" aria-labelledby="st-mapping-items">
 {% if mapping_notes %}<section class="panel edge warn" id="mapping-notes">
-  <h2>What the 0.5.0 upgrade changed in your mapping</h2>
-  <p class="muted">A canonical item now has one category. Where yours had more than one, the category most of its rows used was kept; an item whose category was the placeholder UNMAPPED left the mapping. The settings.zip you downloaded before upgrading holds the old mapping.</p>
+  <h2>What the 0.5.0 upgrade changed in your Item mapping</h2>
+  <p class="muted">A canonical item now has one category. Where yours had more than one, the category most of its rows used was kept; an item whose category was the placeholder UNMAPPED left Item mapping. The settings.zip you downloaded before upgrading holds the old Item mapping.</p>
   <ul>{% for n in mapping_notes %}<li>{{ n.note }}</li>{% endfor %}</ul>
   <form method="post" action="/settings/mapping/notes/dismiss">{{ csrf_field(request) }}<button class="btn" type="submit" aria-label="Dismiss the notes on the 0.5.0 upgrade">Dismiss</button></form>
 </section>{% endif %}
 {% call grid("mapping", by_key.mapping, ["item","canonical_item","category","flow","note"], ["Item","Canonical item","Category","Flow","Note"], rows.mapping) %}
-  {% if unmapped %}<p class="muted edge warn edge-note" id="draft-offer">{{ unmapped }} item{{ '' if unmapped == 1 else 's' }} in your exports {{ 'has' if unmapped == 1 else 'have' }} no mapping row yet.
-    <a class="btn" href="/settings/mapping/draft">Draft a mapping from my budget groups</a> You review the draft before anything is saved, and no existing row changes.</p>{% endif %}
+  {% if unmapped %}<p class="muted edge warn edge-note" id="draft-offer">{{ unmapped }} item{{ '' if unmapped == 1 else 's' }} in your exports {{ 'has' if unmapped == 1 else 'have' }} no Item mapping row yet.
+    <a class="btn" href="/settings/mapping/draft">Draft Item mapping rows from my budget groups</a> You review the draft before anything is saved, and no existing row changes.</p>{% endif %}
   {% if name_families %}<details class="keyhelp" id="name-families"><summary>{{ name_families|length }} name{{ ' that looks' if name_families|length == 1 else 's that look' }} like one envelope under different canonical names</summary>
     <p class="muted">These items have the same name once a year's suffix (" 2", " Fund", " Goal") is removed, but map to different canonical names, so their charts show separate lines. If they are one envelope, give them one name; if you keep them apart on purpose, leave them. Only the canonical name changes, and with it the category: a canonical item has one, so rows in another category move to it (the message after saving says which).</p>
     {% for fam in name_families %}<form method="post" action="/settings/mapping/family" class="family">{{ csrf_field(request) }}<input type="hidden" name="base" value="{{ fam.base }}">
@@ -59,11 +59,11 @@
         <button class="btn" type="submit" aria-label="Use it: one canonical name for {{ fam.base }}">Use it</button></p></form>{% endfor %}
   </details>{% endif %}
   <details class="keyhelp"><summary>Bulk paste or export as CSV</summary>
-    <p class="muted">Paste the whole mapping as CSV to replace it. Every row is checked first and errors name the line; if any row is bad, nothing is saved. Items missing from the CSV are removed.</p>
+    <p class="muted">Paste the whole of Item mapping as CSV to replace it. Every row is checked first and errors name the line; if any row is bad, nothing is saved. Items missing from the CSV are removed.</p>
     <form method="post" action="/settings/mapping">{{ csrf_field(request) }}
-      <label for="mapping-csv">Mapping as CSV</label>
+      <label for="mapping-csv">Item mapping as CSV</label>
       <textarea class="json" id="mapping-csv" name="body" spellcheck="false">{{ by_key.mapping.body }}</textarea>
-      <p class="mt-3"><button class="btn" type="submit">Replace mapping from CSV</button> <a class="btn" href="/settings/mapping.csv" download>Download CSV</a></p>
+      <p class="mt-3"><button class="btn" type="submit">Replace Item mapping from CSV</button> <a class="btn" href="/settings/mapping.csv" download>Download CSV</a></p>
     </form>
   </details>
 {% endcall %}
@@ -71,7 +71,7 @@
 <div role="tabpanel" id="sp-mapping-categories" aria-labelledby="st-mapping-categories">
 <section class="panel defs" id="definitions">
   <h2>Categories</h2>
-  <p class="muted">Each canonical item belongs to one category, and each mapping row's category follows from its canonical item. A rename here is one edit: every row, and every rule that names it (Pipeline rules), follows. Renaming to a name that already exists merges the two.</p>
+  <p class="muted">Each canonical item belongs to one category, and each Item mapping row's category follows from its canonical item. A rename here is one edit: every row, and every rule that names it (Pipeline rules), follows. Renaming to a name that already exists merges the two.</p>
   <p class="filterbox"><label for="categories-filter">Filter the {{ defs.categories|length }} categories</label><input type="search" id="categories-filter" data-filter-table="categories-table" placeholder="Part of a name"></p>
   <div class="tablewrap" role="region" tabindex="0" aria-label="Categories table"><table class="plain" id="categories-table" data-list="unbounded"><thead><tr><th scope="col">Category</th><th scope="col">Canonical items</th><th scope="col" class="num">Rows</th><th scope="col">Rename to</th></tr></thead><tbody>
   {% for g in defs.categories %}<tr><td>{{ g.name }}</td><td>{{ g.canonical }}</td><td class="num">{{ g.rows }}</td>
@@ -138,7 +138,15 @@
 </div>
 <div role="tabpanel" id="sp-events" aria-labelledby="st-events">
 <datalist id="settings-people">{% for p in people %}<option value="{{ p }}">{% endfor %}</datalist>
-{% call grid("events", by_key.events, ["m","label","kind","person"], ["Month","Label","Kind","Person"], rows.events, event_choices) %}{% endcall %}
+{% call grid("events", by_key.events, ["m","label","kind","person","on_chart","new_normal"], ["Month","Label","Kind","Person","On the chart","New normal"], rows.events, event_choices) %}
+  <script type="application/json" id="hidden-kinds" nonce="{{ csp_nonce(request) }}">{{ hidden_kinds|sort|list|tojson }}</script>
+  <details class="keyhelp" id="events-columns"><summary>What On the chart, Hidden kind and New normal do</summary>
+    <dl class="flowlist">
+      <dt>On the chart</dt><dd><b>yes</b> draws the event's marker on the timelines; <b>no</b> leaves the marker off, and the event stays in the life-event list (as "not on the chart"), the review and the check-in.</dd>
+      <dt>Hidden kind</dt><dd>Hiding a kind on <a href="/settings#appearance/event-kind">Chart appearance → Life-event kinds</a> takes all its markers off the chart, for everyone; On the chart switches one event. Such an event reads "yes, hidden kind" here and "hidden kind" under the chart, where anyone can show it again on their own screen.</dd>
+      <dt>New normal</dt><dd><b>yes</b> (never set for you) marks the month the household's pattern changed from, such as a move or a new family member. Once it has three months loaded, the look ahead's pace, the emergency fund's months of outgo and the suggested plan average from it, and say so.</dd>
+    </dl></details>
+{% endcall %}
 </div>
 <div role="tabpanel" id="sp-yearly-bills" aria-labelledby="st-yearly-bills">{% include "_yearly_bills.html" %}</div>
 <div role="tabpanel" id="sp-yearly-checklist" aria-labelledby="st-yearly-checklist">{% include "_yearly_checklist.html" %}</div>
@@ -235,8 +243,9 @@
 <div role="tabpanel" id="sp-appearance" aria-labelledby="st-appearance">
 <datalist id="appearance-slots">{% for s in look_slots %}<option value="{{ s }}">{% endfor %}</datalist>
 <details class="how" id="appearance-how"><summary>How colours and hiding work</summary>
-  <p>Leave a colour blank and the name takes the next free theme colour. To fix one, type a theme colour, <code>series-1</code> to <code>series-8</code>, which changes with day and night, or a colour code (hex, rgb, hsl or oklch), which stays the same in both. A name with a colour keeps it on every chart and period.</p>
+  <p>Leave a colour blank and the name takes the next free theme colour. Type <code>series-1</code> to <code>series-8</code> to follow day and night, or a hex colour code to keep one colour in both. A name with a colour keeps it on every chart and period.</p>
   <p>Hide takes a name off the chart for everyone. Totals and tables still count it, and anyone can show it again on their own screen from the chart. Changes show on the dashboard at once.</p>
+  <p>For life events, hiding a kind takes all its markers off the chart; <a href="/settings#events">Life events</a> has an On the chart switch for one event.</p>
 </details>
 <div class="subtabs" role="tablist" aria-label="Chart appearance" data-subtabs="appearance">{% for d, lab in look_labels.items() %}{% set slug = d|replace('_', '-') %}<button type="button" role="tab" id="st-appearance-{{ slug }}" aria-controls="sp-appearance-{{ slug }}" aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ 0 if loop.first else -1 }}">{{ lab[0] }} <span class="count">{{ look.dimensions[d]|length }}</span></button>{% endfor %}{% if look.orphans %}<button type="button" role="tab" id="st-appearance-orphans" aria-controls="sp-appearance-orphans" aria-selected="false" tabindex="-1">Not in the data <span class="count">{{ look.orphans|length }}</span></button>{% endif %}</div>
 {% for d, lab in look_labels.items() %}{% set slug = d|replace('_', '-') %}{% set items = look.dimensions[d] %}{% set lf = look_form if look_form and look_form.dimension == d else none %}
@@ -265,7 +274,7 @@
   <p class="muted">A colour or hide switch kept for a name the current data no longer has: a category merged away, an employer renamed in Pipeline rules, a debt paid off before the first month loaded. It does nothing until the name comes back, but a theme colour it holds stays reserved: delete it to free the colour.</p>
   <div class="tablewrap" role="region" tabindex="0" aria-label="Chart colours not in the data table"><table class="plain" id="appearance-orphans-table" data-list="unbounded"><thead><tr><th scope="col">Name</th><th scope="col">Kind of name</th><th scope="col">Colour</th><th scope="col">Hidden</th><th class="acts"><span class="sr">Actions</span></th></tr></thead><tbody>
     {% for o in look.orphans %}<tr><td>{{ o.name }}</td><td>{{ o.noun }}</td><td class="mono">{{ o.color or "automatic" }}</td><td>{{ "yes" if o.hidden else "no" }}</td>
-      <td class="acts"><form method="post" action="/settings/appearance/delete" class="inline">{{ csrf_field(request) }}<input type="hidden" name="dimension" value="{{ o.dimension }}"><input type="hidden" name="name" value="{{ o.name }}"><button class="btn" type="submit" aria-label="Delete the colour kept for the {{ o.noun }} {{ o.name }}">Delete</button></form></td></tr>{% endfor %}
+      <td class="acts"><form method="post" action="/settings/appearance/delete" class="inline">{{ csrf_field(request) }}<input type="hidden" name="dimension" value="{{ o.dimension }}"><input type="hidden" name="name" value="{{ o.name }}"><button class="btn" type="submit" aria-label="Delete the colour and hide switch kept for the {{ o.noun }} {{ o.name }}">Delete</button></form></td></tr>{% endfor %}
   </tbody></table></div>
 </section>
 </div>{% endif %}
@@ -313,7 +322,9 @@
   document.querySelectorAll('form[action="/settings/appearance/save"]').forEach((f) => {
     const tab = document.getElementById('st-' + f.closest('[role=tabpanel]').id.slice(3));
     const mark = (e) => { if ((e && e.target.dataset.filterTable) || dirty.has(f)) return; dirty.add(f);
-      const s = document.createElement('span'); s.className = 'muted'; s.textContent = ' · not saved'; tab.append(s); };
+      const name = tab.firstChild.textContent.trim();   // the tab's own words, before its count
+      const s = document.createElement('span'); s.className = 'unsaved'; s.textContent = ' · not saved'; tab.append(s);
+      const say = document.getElementById('rowstatus'); if (say) { say.className = 'rowstatus'; say.textContent = `${name}: changes not saved yet.`; } };
     if (f.hasAttribute('data-unsaved')) mark();
     f.addEventListener('input', mark); f.addEventListener('change', mark);
     f.addEventListener('submit', () => { saving = f; });

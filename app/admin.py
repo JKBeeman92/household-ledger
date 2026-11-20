@@ -281,6 +281,33 @@ def yearly_bills_cmd(a) -> int:
             conn.rollback(); print(f"yearly-bills {a.ycmd}: {e}", file=sys.stderr); return 2
 
 
+def by_person_cmd(month: str | None) -> int:
+    """`python -m app.admin by-person [YYYY-MM]` (#156): read only. Each person's month from the last build's by_person dataset (the
+    Last month tab's By person block): earned, part of income, own envelopes, each with the change since last month. Nothing is
+    printed with fewer than two people in the People rule, as the block is absent then."""
+    import re
+    with _connect() as conn:
+        conn.execute("SET TRANSACTION READ ONLY")
+        r = conn.execute("SELECT rows FROM datasets WHERE name='by_person'").fetchone()
+        conn.rollback()
+    rows = (r or {}).get("rows") or []
+    if month is not None and not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", month):
+        print("by-person: give the month as YYYY-MM, such as 2026-06", file=sys.stderr); return 2
+    if not rows:
+        print("No per-person figures: the People rule names fewer than two people, or the install has not been rebuilt since 0.9.0.", file=sys.stderr)
+        return 1
+    month = month or max(x["m"] for x in rows)
+    mine = [x for x in rows if x["m"] == month]
+    if not mine:
+        print(f"by-person: {month} is not a built month", file=sys.stderr); return 1
+    f = lambda v, signed=False: "-" if v is None else (f"{v:+,.2f}" if signed else f"{v:,.2f}")
+    print("month\tperson\tearned\tpart of income\tsince last month\town envelopes\tsince last month")
+    for x in mine:
+        print("\t".join([month, "Joint" if x["who"] == "Household" else x["who"], f(x["earned"]), "-" if x["earned_share"] is None else f"{x['earned_share']:.1%}",
+                         f(x["earned_change"], True), f(x["spent"]), f(x["spent_change"], True)]))
+    return 0
+
+
 def quarter_cmd(which: str | None) -> int:
     """`python -m app.admin quarter [YYYY-Qn]` (#147): read only, safe against a live install. On an install not yet built with
     quarters it works them out from the last build's monthly datasets; nothing is saved."""
@@ -420,6 +447,8 @@ def main(argv: list[str] | None = None) -> int:
     x = csub.add_parser("untick", help="undo a tick"); x.add_argument("year"); x.add_argument("key")
     sp = sub.add_parser("quarter", help="the quarter (#147): a read-only report of a quarter against the one before and a year before, and the next")
     sp.add_argument("which", nargs="?", help="YYYY-Qn (default: the quarter of the latest loaded month)")
+    sp = sub.add_parser("by-person", help="each person's month (#156): earned, part of income and own envelopes, read only")
+    sp.add_argument("month", nargs="?", help="YYYY-MM (default: the latest built month)")
     sp = sub.add_parser("tax", help="estimated tax (#153): mark a quarter's estimate paid at its check-in month, or unmark it")
     tsub = sp.add_subparsers(dest="tcmd", required=True, metavar="action")
     x = tsub.add_parser("paid", help="the quarter ending MONTH: its estimated tax is paid"); x.add_argument("month"); x.add_argument("--amount")
@@ -464,6 +493,8 @@ def main(argv: list[str] | None = None) -> int:
         return yearly_checklist_cmd(a)
     if a.cmd == "quarter":
         return quarter_cmd(a.which)
+    if a.cmd == "by-person":
+        return by_person_cmd(a.month)
     if a.cmd == "tax":
         from app import tax
         with _connect() as conn:
@@ -486,7 +517,7 @@ def main(argv: list[str] | None = None) -> int:
         if a.cmd == "draft-mapping":
             rows = s.draft_mapping(conn)
             if not rows:
-                print("Every item in the stored exports already has a mapping row.", file=sys.stderr)
+                print("Every item in the stored exports already has an Item mapping row.", file=sys.stderr)
                 return 0
             sys.stdout.write(s.draft_csv(rows))
             print(f"{len(rows)} drafted rows; review them, then: python -m app.admin add-mapping FILE", file=sys.stderr)
