@@ -16,6 +16,9 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
 - **Money held for someone else** (#107): no migration. Three new rules, `pass_through_multiple` (5), `pass_through_floor` (250) and
   `pass_through_window` (3), have defaults; an empty value turns the check off. After the first rebuild, Close a month may list
   months where an item that is not excluded took in many times its usual amount and paid it back out; nothing else changes.
+- **Chart colours and hidden names** (#132, `0132_appearance.sql`): a new table only; no existing data is touched, and with no rows
+  every chart draws as before. Settings gains a Chart appearance tab; `settings.zip` gains `appearance.json` (read back by the seed
+  loader), the command line `set-appearance FILE` and `export appearance`. No rebuild is needed: the pipeline never reads it.
 
 ## 0.8.0
 

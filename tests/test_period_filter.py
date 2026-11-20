@@ -49,4 +49,6 @@ def test_more_is_better_for_income_savings_giving_and_debt():
 
 def test_people_charts_avoid_the_good_and_bad_hues_and_shared_spend_is_a_caption():
     assert "r.role === 'payer' && r.who !== 'Household'" in SRC and 'data-draw="payer-shared"' in SRC
-    assert SRC.count("skip: 2 }") == 2 and "HL.legend(el, payerOrder, 2)" in SRC and "HL.legend(el, earnerOrder, 2)" in SRC
+    # the people stacks and their legends start at slot 3; a person given a colour keeps it instead (#132, dash.colorFor's skip)
+    assert SRC.count("skip: 2, dimension: 'person' }") == 2
+    assert "HL.legend(el, payerOrder, { skip: 2, dimension: 'person', chart: 'payer' })" in SRC and "HL.legend(el, earnerOrder, { skip: 2, dimension: 'person', chart: 'earner' })" in SRC

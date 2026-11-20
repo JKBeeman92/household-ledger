@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio, dataclasses, json
 from contextlib import asynccontextmanager
 
-import httpx
+import httpx2   # mcp 2.x takes an httpx2 client (#88); a plain httpx one is not what its transport is written for
 import pytest
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
@@ -39,8 +39,8 @@ def mcp_session(token: str | None, fn):
     async def go():
         ep = mcp_endpoint.McpEndpoint()
         async with ep.run():
-            http = httpx.AsyncClient(transport=httpx.ASGITransport(app=Starlette(routes=[Route("/mcp", ep)])), headers=bearer(token) if token else {})
-            async with http, streamable_http_client(URL, http_client=http) as (r, w, _), ClientSession(r, w) as s:
+            http = httpx2.AsyncClient(transport=httpx2.ASGITransport(app=Starlette(routes=[Route("/mcp", ep)])), headers=bearer(token) if token else {})
+            async with http, streamable_http_client(URL, http_client=http) as (r, w), ClientSession(r, w) as s:
                 await s.initialize()
                 return await fn(s)
     return asyncio.run(go())
@@ -49,9 +49,9 @@ def mcp_session(token: str | None, fn):
 def call(token, name, args=None):
     async def fn(s):
         res = await s.call_tool(name, args or {})
-        if res.isError:
+        if res.is_error:   # 2.x names the result fields in snake_case; the wire is still camelCase (isError below)
             return True, res.content[0].text
-        sc = res.structuredContent
+        sc = res.structured_content
         if sc is None:
             try:
                 return False, json.loads(res.content[0].text)
@@ -140,11 +140,20 @@ def test_save_review_needs_the_review_scope_and_stores_like_any_review(loaded):
     assert call(tok, "list_months")[1][0]["has_review"] is True
 
 
-@pytest.mark.parametrize("sections", [[], "text", [{"heading": "x"}], [{"heading": " ", "text": "y"}], [{"heading": "h", "text": "t" * 5001}], [{"heading": "h", "text": "t"}] * 13])
-def test_save_review_rejects_malformed_sections(loaded, sections):
+@pytest.mark.parametrize("sections, why", [
+    ([], "1 to 12"),
+    ("text", "valid list"),
+    ([{"heading": "x"}], "missing its heading or text"),
+    ([{"heading": " ", "text": "y"}], "every section needs a heading"),
+    ([{"heading": "h", "text": "t" * 5001}], "every section needs a heading"),
+    ([{"heading": "h", "text": "t"}] * 13, "1 to 12"),
+])
+def test_save_review_rejects_malformed_sections(loaded, sections, why):
     m = call(make_token(), "list_months")[1][0]["month"]
-    err, _ = call(make_token("read+review"), "save_review", {"m": m, "sections": sections})
-    assert err and sql("SELECT count(*) n FROM reviews")[0]["n"] == 0
+    err, text = call(make_token("read+review"), "save_review", {"m": m, "sections": sections})
+    # the agent is told what was wrong: a refusal is a ToolError, not a crash whose text 2.x keeps in the server log (#88)
+    assert err and text.startswith("Error executing tool save_review: ") and why in text
+    assert sql("SELECT count(*) n FROM reviews")[0]["n"] == 0
 
 
 def test_save_review_refuses_an_unbuilt_month(loaded):

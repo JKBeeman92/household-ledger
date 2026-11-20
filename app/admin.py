@@ -17,8 +17,8 @@ from psycopg.rows import dict_row
 EX_TEMPFAIL = 75
 log = logging.getLogger("ledger.admin")
 SETTERS = {"import-mapping": "mapping", "set-rules": "rules", "set-events": "events", "set-goals": "goals", "set-cpi": "cpi", "set-household": "household",
-           "set-accounts": "accounts", "set-balances": "balances"}   # set-balances adds or corrects month-ends (account,YYYY-MM,amount); it never deletes
-EXPORTABLE = ("mapping", "rules", "events", "goals", "cpi", "household", "accounts", "balances", "decisions", "yearly_bills", "tax_payments", "tax_outcomes", "yearly_checklist")
+           "set-accounts": "accounts", "set-balances": "balances", "set-appearance": "appearance"}   # set-appearance: chart colours and hidden names (#132)   # set-balances adds or corrects month-ends (account,YYYY-MM,amount); it never deletes
+EXPORTABLE = ("mapping", "rules", "events", "goals", "cpi", "household", "accounts", "balances", "decisions", "yearly_bills", "tax_payments", "tax_outcomes", "yearly_checklist", "appearance")
 
 
 def _read(path: str) -> str:
@@ -117,6 +117,24 @@ def rebuild_cmd() -> int:
     for line in describe_pass_through(res.get("pass_through") or []):   # a hint, not a failure (#107): the exit code stays reconciliation's
         print("PASS-THROUGH?", line)
     return 0 if res["reconciliation"]["clean"] else 1
+
+
+def import_cmd(a) -> int:
+    """`import DIR [--profile NAME] [--dry-run]` (#165): pipeline.import_exports on this connection, with this command's exit codes."""
+    from pipeline import import_exports
+    from pipeline.run_pipeline import BuildBusy
+    with _connect() as conn:
+        try:
+            code = import_exports.run(conn, a.paths, profile=a.profile, dry_run=a.dry_run, uploaded_by=f"{_who()} (cli)")
+        except BuildBusy as e:
+            print(f"Files stored; the rebuild was not started — {e}. Run `python -m app.admin rebuild` when it finishes.", file=sys.stderr)
+            return EX_TEMPFAIL
+        except Exception as e:  # noqa: BLE001  (an unmapped item, a script error): the build log has the detail too
+            print(f"Import failed — {e}", file=sys.stderr)
+            return 1
+    if not a.dry_run:
+        log.info("import by %s (cli): %s%s, exit %s", _who(), " ".join(a.paths), f" with profile {a.profile}" if a.profile else "", code)
+    return code
 
 
 def decisions_cmd(a) -> int:
@@ -345,6 +363,9 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("add-mapping", help="add the rows of a mapping CSV (e.g. a reviewed draft); refuses items already mapped").add_argument("file")
     sub.add_parser("export-settings", help="write every setting into DIR in the seed-directory shape (as /export/settings.zip)").add_argument("dir")
     sub.add_parser("rebuild", help="rebuild the ledger and datasets (exit 75 if one is already running, 1 if it does not reconcile)")
+    sp = sub.add_parser("import", help="store a back catalogue from DIR, then rebuild once: exports by their names, other CSVs through --profile (#165)")
+    sp.add_argument("paths", nargs="+", metavar="DIR"); sp.add_argument("--profile", metavar="NAME", help="a saved source profile to read the other CSVs with")
+    sp.add_argument("--dry-run", action="store_true", help="print each file's profile, kind and month and how it was found; store nothing")
     for cmd, what in (("rename-category", "a category"), ("rename-canonical", "a canonical item")):
         sp = sub.add_parser(cmd, help=f"rename {what} everywhere, rules included (renaming to an existing name merges them)")
         sp.add_argument("old"); sp.add_argument("new")
@@ -418,6 +439,8 @@ def main(argv: list[str] | None = None) -> int:
         return _write(a.cmd, s._mapping_add, _read(a.file))
     if a.cmd == "rebuild":
         return rebuild_cmd()
+    if a.cmd == "import":
+        return import_cmd(a)
     if a.cmd == "set-debt-type":
         from pipeline import mapping_store
         return _write(a.cmd, lambda conn: (mapping_store.set_debt_type(conn, a.name, a.debt_type), f"{a.name}'s debt type ({a.debt_type or 'cleared'})")[1])
