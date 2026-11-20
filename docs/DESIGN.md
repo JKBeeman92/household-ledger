@@ -190,6 +190,12 @@ out falls back. Ids: `dashboard check-in close-month reviews settings day night 
 - **DS-CHART-6** A chart that leaves out names the household hid says how many, under its plot: a plain button, *2 hidden · show*,
   which shows them on that chart for that viewer only (remembered like the period filter) and reads *2 hidden, shown here · hide*
   while they show. Hiding is display only: a total, a tooltip's total, a net line or a table never leaves a hidden name out.
+- **DS-CHART-7** A life event is a marker at the top of a timeline: a dashed line down the plot and a dot in its kind's colour.
+  Events within one month of each other are one marker, a ring round their count, so a crowded season is at most one marker a
+  month. Every marker is a button over its dot (a keyboard reaches it, a tap opens it, its name lists every event it holds), at
+  least 44 px on a phone. An event switched off the chart (Settings → Life events) is drawn nowhere and listed under the chart as
+  *not on the chart*; it is not a hidden name, so *show* (DS-CHART-6) never brings it back. What is still to come sits in a
+  *Coming up* strip after the last month, dotted (DS-CHART-2), never as a marker off the end of the axis.
 
 ## 5. Patterns
 
