@@ -180,14 +180,16 @@ with open("ledger.csv","w",newline="") as f:
 # envelope sees one month of large negative spend, then inflated spending in the months it is paid out, or none at all when it is
 # handed over by a transfer, which the ledger leaves out. Flow exclude on the item fixes the charts (its rows stay in the exports and
 # in reconciliation, and leave the ledger above); this finding points at where it is needed.
-# Per (budget month, canonical item) over expense and debt rows that are real money (not transfers or plugs), both must hold:
+# Per (budget month, canonical item) over expense and debt rows that are real money (not transfers or plugs, and not in a
+# loan_categories category: a loan from family comes in and is paid back by design, and the Method tab counts it), both must hold:
 #   1. the item is usually quiet: the month's net inflow is more than pass_through_multiple times the item's usual month, the median
 #      absolute monthly net over the trailing 12 budget months (a month with no rows counts as 0; months before the first export
 #      are not counted, and the first export month, with none before it, is not judged);
 #   2. the inflow is large for this household: more than pass_through_income_share times its usual monthly income (the median, over
 #      the same months, of income as the ledger counts it: Flow income, not transfers or plugs), and more than pass_through_floor.
-# A refund stays out because it lands on an item the household spends from, whose usual month is not small; a large refund on an
-# item that is usually empty is listed (the known trade-off). The sinking-fund kind of inflow (a few hundred dollars back into a
+# A refund stays out when it is small beside the item's usual month; a refund more than pass_through_multiple usual months and over
+# the floor is listed (the known trade-off), on an item spent every month (a returned appliance on Household Supplies) as on one
+# that is usually empty (a yearly bill refunded). The sinking-fund kind of inflow (a few hundred dollars back into a
 # fund) stays out because it is small beside the household's income.
 # What went back out is evidence, shown with the finding and never a condition: the item's outflows in the pass_through_window budget
 # months after, counting in each only what is above the usual month. Money handed over by a transfer never shows there.
@@ -197,15 +199,15 @@ def add_months(m, n):
     k = int(m[:4]) * 12 + int(m[5:7]) - 1 + n
     return f"{k // 12}-{k % 12 + 1:02d}"
 
-def pass_through(out, first_month, multiple, income_share, floor, window):
+def pass_through(out, first_month, multiple, income_share, floor, window, loan_categories=()):
     if multiple is None or income_share is None or floor is None: return []
     multiple, income_share, floor = float(multiple), float(income_share), float(floor)
-    window = None if window is None else int(window)
+    window, loans = None if window is None else int(window), set(loan_categories or ())
     net, spent, raw, income = collections.defaultdict(float), collections.defaultdict(float), collections.defaultdict(set), collections.defaultdict(float)
     for o in out:
         if o["IsTransfer"] or o["IsPlug"]: continue
         if o["Flow"] == "income": income[o["BudgetMonth"]] += float(o["Amount"]); continue
-        if o["Flow"] not in ("expense", "debt"): continue
+        if o["Flow"] not in ("expense", "debt") or o["Category"] in loans: continue
         k, a = (o["BudgetMonth"], o["CanonicalItem"]), float(o["Amount"])
         net[k] += a; raw[k].add(o["Item"])
         if a < 0: spent[k] -= a
@@ -229,14 +231,9 @@ def pass_through(out, first_month, multiple, income_share, floor, window):
     return hits
 
 _pt = pass_through(out, min((r["BudgetMonth"] for r in rows), default="0000-01"), RULES["pass_through_multiple"],
-                   RULES["pass_through_income_share"], RULES["pass_through_floor"], RULES["pass_through_window"])
+                   RULES["pass_through_income_share"], RULES["pass_through_floor"], RULES["pass_through_window"], RULES["loan_categories"])
 json.dump(_pt, open("pass_through.json", "w"))   # read back by run_pipeline into the build's findings, beside UNMAPPED and reconciliation
-for h in _pt:
-    after = "" if h["later_outflows"] is None else ", no months after it yet" if not h["months_after"] else \
-            f", {h['later_outflows']:.2f} out over usual in the {h['months_after']} month(s) after" if h["later_outflows"] else \
-            f", none out through this item in the {h['months_after']} month(s) after (a transfer may have carried it)"
-    print(f"pass-through? {h['m']} {', '.join(h['items'])}: {h['inflow']:.2f} in (usually {h['median']:.2f} a month; "
-          f"over {h['floor']:.2f}, the floor for this household){after}")
+print(f"pass-through findings: {len(_pt)}")   # worded once, by run_pipeline.describe_pass_through, in the build log and the CLI
 
 json.dump(dict(excluded), open("excluded.json", "w"))
 json.dump({k: round(v, 2) for k, v in excluded_amt.items()}, open("excluded_amounts.json", "w"))   # gross dollars moved per excluded item (pass-through money nets to about zero)

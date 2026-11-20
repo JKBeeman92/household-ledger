@@ -77,6 +77,17 @@ def test_a_refund_on_an_item_spent_every_month_is_not_flagged(tmp_path):
     assert hits(build(tmp_path / "m2", {"pass_through_income_share": 0, "pass_through_multiple": 2}, venmo="exclude", extra=extra)) == [("2025-06", "Eating Out")]
 
 
+def test_a_large_refund_on_an_item_spent_every_month_is_flagged(tmp_path):
+    """The known trade-off (README), kept as the earlier test's case: a 1,200 refund on Eating Out (usual month about 140) or on
+    Household Supplies (about 93) is more than five usual months and over the household's floor, so it is listed; leave it."""
+    supplies = ["Household", "Household Supplies", "Income", "06/16/2025", "Bywater Hardware", "Bywater Checking", "1200.00", ""]
+    found = build(tmp_path / "eat", venmo="exclude", extra={JUNE: [eating_out("06/16/2025", "1200.00")]})
+    assert hits(found) == [("2025-06", "Eating Out")] and 5 * found[0]["median"] < found[0]["inflow"] < 10 * found[0]["median"]
+    assert hits(build(tmp_path / "eat10", {"pass_through_multiple": 10}, venmo="exclude",
+                      extra={JUNE: [eating_out("06/16/2025", "1200.00")]})) == []   # a household that minds raises the multiple
+    assert hits(build(tmp_path / "sup", venmo="exclude", extra={JUNE: [supplies]})) == [("2025-06", "Household Supplies")]
+
+
 REFUND = ["Vehicle", "Cart Registration", "Income", "06/16/2025", "Hobbiton Cart Office", "Bywater Checking", "1200.00", "refund"]
 
 
@@ -171,6 +182,22 @@ def test_the_quiet_items_are_kept_out_by_the_income_floor_alone(tmp_path):
     """Every one of the five passes the usual-month test and the dollar floor: only the income floor keeps them out."""
     found = run_build(quiet_household(tmp_path, {"pass_through_income_share": 0}))
     assert sorted(hits(found)) == sorted([DONATION[::-1]] + [(at, item) for item, (_, at, _, _) in QUIET.items()])
+
+
+def test_a_loan_from_family_is_not_flagged(tmp_path):
+    """A debt item in a loan_categories category (Family Loan by default) takes in the loan and repays it by design; the Method tab
+    counts it, so it is never money held for someone else. With the category taken out of the rule it would be listed."""
+    wd = quiet_household(tmp_path / "loan")
+    with open(wd / "item_mapping.csv", "a", newline="") as f:
+        csv.writer(f, lineterminator="\n").writerow(["Loan From Parents", "Loan From Parents", "Family Loan", "debt", ""])
+    for k, m in enumerate(MONTHS[12:16]):
+        row = ["Debt", "Loan From Parents", "Income", f"{m}-07", "Parents", "Checking", "15000.00", ""] if not k else \
+              ["Debt", "Loan From Parents", "Expense", f"{m}-07", "Parents", "Checking", "-500.00", ""]
+        with open(wd / "txns" / f"{m}-transactions.csv", "a", newline="") as f:
+            csv.writer(f, lineterminator="\n").writerow(row)
+    assert hits(run_build(wd)) == [DONATION[::-1]]
+    (wd / "rules.json").write_text(json.dumps({"loan_categories": ["None Here"]}))
+    assert sorted(hits(run_build(wd))) == sorted([DONATION[::-1], (MONTHS[12], "Loan From Parents")])
 
 
 def test_the_first_export_month_is_not_judged(tmp_path):

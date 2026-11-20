@@ -17,7 +17,11 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
   `pass_through_income_share` (0.10), `pass_through_floor` (250) and `pass_through_window` (3); an empty value turns the check off
   (the window: only its evidence). After the first rebuild, Close a month may list months where an item that is usually quiet and
   not excluded took in more than a tenth of the household's usual monthly income, with what went back out through it after as
-  evidence; nothing else changes. A large refund on an item that is usually empty is listed too: leave it as it is.
+  evidence; nothing else changes. Items in a `loan_categories` category are left out. A refund more than five times the item's
+  usual month and over the floor is listed too, on an item spent every month as on one usually empty: leave it as it is.
+- **Pipeline rules check their maximums**: a rule saved above the maximum the rules schema states for it (`yearly_bill_tolerance`,
+  `yearly_bill_min_years`, `decision_partly_over`, `decision_partly_share`, `assumed_growth_pct`, `year_start_month`, and the new
+  `pass_through_income_share` and `pass_through_window`) is now rejected on the next Pipeline rules save; lower it to save.
 - **Chart colours and hidden names** (#132, `0132_appearance.sql`): a new table only; no existing data is touched, and with no rows
   every chart draws as before. Settings gains a Chart appearance tab; `settings.zip` gains `appearance.json` (read back by the seed
   loader), the command line `set-appearance FILE` and `export appearance`. No rebuild is needed: the pipeline never reads it.

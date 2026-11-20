@@ -393,8 +393,9 @@ September 2025 and bought in October, and a cabin weekend collected in March 202
 
 Every build looks for the pattern in items that are not excluded yet (#107), and Close a month lists what it finds under **Money
 held for someone else?**, beside Reconciliation, with the same lines in the build log and after `rebuild` or `import_exports` on
-the command line. A budget month is listed for an item, its canonical item, in an `expense` or `debt` envelope (transfers and plugs
-left out) when both hold:
+the command line. A budget month is listed for an item, its canonical item, in an `expense` or `debt` envelope (transfers, plugs
+and the `loan_categories` categories left out: a loan from family comes in and is repaid by design, and the Method tab counts it)
+when both hold:
 
 1. **the item is usually quiet**: its net inflow that month is more than `pass_through_multiple` times its usual month, the median
    absolute monthly amount over the trailing 12 budget months (a month with no rows counts as 0, so on an item that is usually
@@ -404,10 +405,11 @@ left out) when both hold:
    dollars.
 
 The second keeps out what a household moves through its own sinking funds and giving envelopes: a few hundred dollars back into
-an emergency or vacation fund, or a tax refund on the tax envelope, is small beside a month's income. Refunds stay out by the
-first: a refund lands on an item the household spends from, so its usual month is not small (a refund of a few hundred dollars on
-Eating Out is not listed). **The known trade-off**: a large refund on an item that is usually empty (a yearly bill refunded in
-another month) is listed; leave it as it is.
+an emergency or vacation fund, or a tax refund on the tax envelope, is small beside a month's income. Most refunds stay out by
+the first: a refund lands on an item the household spends from, so its usual month is not small (a refund of a few hundred dollars
+on Eating Out is not listed). **The known trade-off**: any refund more than `pass_through_multiple` times the item's usual month
+and over the household's floor is listed, on an item spent every month (a returned appliance on Household Supplies, a large
+refund on Eating Out) as on one that is usually empty (a yearly bill refunded in another month); leave it as it is.
 
 What went back out is shown as evidence and is never a condition: each entry says how much more than its usual month left through
 the item in the `pass_through_window` budget months after ("$X more than usual went back out"), or that none did. Money collected
