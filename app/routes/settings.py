@@ -417,7 +417,7 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         from .. import appearance
         look = appearance.page(conn)   # Settings → Chart appearance (#132): the names the data has, and the orphans
     return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP, bills=bills, purchases=purchases, pp_form=request.session.pop("pp_form", None), pp_bought=request.session.pop("pp_bought", None), debt_category=debt_cat, hh_form=request.session.pop("hh_form", None), yc_items=yc_items, yc_form=request.session.pop("yc_form", None), loan_categories=categories, fund_accounts=fund_choices,
-                  look=look, look_labels=appearance.LABELS, look_slots=appearance.SLOTS, look_form=request.session.pop("appearance_form", None),
+                  look=look, look_labels=appearance.LABELS, look_slots=appearance.SLOTS, look_filter_from=appearance.FILTER_FROM, look_form=request.session.pop("appearance_form", None),
                   yb_form=request.session.pop("yb_form", None), tax_form=request.session.pop("tax_form", None), bal_hist=request.session.pop("bh_form", None), yb_slug=_yb_slug, tax_cfg=_tax_cfg(),
                   categories=categories, rules={**rules, **(request.session.pop("people_typed", None) or {})}, hh=household, name_families=name_families, unmapped=unmapped,
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS,

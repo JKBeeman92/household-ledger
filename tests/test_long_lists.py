@@ -114,7 +114,7 @@ def test_the_mapping_draft_list_ends_its_panel(client, reset_db):
 
 
 def test_chart_appearance_lists_each_end_a_sub_tab_of_their_own_with_a_filter(client, reset_db):
-    """#132: one list per dimension, each the last thing in its own sub-tab with a filter box above it, and the orphans in another."""
+    """#132: one list per dimension, each the last thing in its own sub-tab (a filter box above a long one), and the orphans in another."""
     upload_files(client, GOLDEN / "exports")
     from app import appearance, db
     with db.pool.connection() as conn:
@@ -129,8 +129,9 @@ def test_chart_appearance_lists_each_end_a_sub_tab_of_their_own_with_a_filter(cl
         panel = panels[f"sp-appearance-{d.replace('_', '-')}"]
         lists = [n for n in walk(panel) if n.attrs.get("data-list") == "unbounded"]
         assert len(lists) == (1 if have[d] else 0), d   # a tab never holds two
-        if have[d]:
-            assert any(n.tag == "input" and n.attrs.get("data-filter-table") == lists[0].attrs["id"] for n in walk(panel)), d
+        if have[d]:   # a filter box only over a list long enough to scan (AGENTS.md, "Long lists")
+            filtered = any(n.tag == "input" and n.attrs.get("data-filter-table") == lists[0].attrs["id"] for n in walk(panel))
+            assert filtered == (len(have[d]) > appearance.FILTER_FROM), d
     assert sum(1 for d in appearance.DIMENSIONS if have[d]) >= 4   # the golden household draws most of them
     orphans = [n for n in walk(panels["sp-appearance-orphans"]) if n.attrs.get("data-list") == "unbounded"]
     assert len(orphans) == 1 and "A Mill Long Gone" in text(orphans[0])

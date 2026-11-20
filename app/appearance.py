@@ -28,6 +28,7 @@ LABELS = {
     "account_type": ("Account types", "account type", "Position: the stacks under net worth"),
     "event_kind": ("Life-event kinds", "event kind", "the life-event markers on the timelines"),
 }
+FILTER_FROM = 8   # Settings shows a filter box over a list longer than this (AGENTS.md, "Long lists": one long enough to scan)
 SLOTS = tuple(f"series-{i}" for i in range(1, 9))
 CONTRAST = brand_check.GRAPHIC   # a chart mark against the sheet it sits on (DS-COLOR-3)
 NEAR = 10.0                      # ΔE (OKLab ×100) under which a colour reads as a verdict

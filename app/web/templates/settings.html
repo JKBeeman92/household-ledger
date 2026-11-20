@@ -234,37 +234,41 @@
 {# Chart appearance (#132): a colour and a hide box per name the data has, one sub-tab per dimension, so each list ends its panel (AGENTS.md, "Long lists") #}
 <div role="tabpanel" id="sp-appearance" aria-labelledby="st-appearance">
 <datalist id="appearance-slots">{% for s in look_slots %}<option value="{{ s }}">{% endfor %}</datalist>
-<div class="subtabs" role="tablist" aria-label="Chart appearance" data-subtabs="appearance">{% for d, lab in look_labels.items() %}{% set slug = d|replace('_', '-') %}<button type="button" role="tab" id="st-appearance-{{ slug }}" aria-controls="sp-appearance-{{ slug }}" aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ 0 if loop.first else -1 }}">{{ lab[0] }} <span class="count">{{ look.dimensions[d]|length }}</span></button>{% endfor %}<button type="button" role="tab" id="st-appearance-orphans" aria-controls="sp-appearance-orphans" aria-selected="false" tabindex="-1">Not in the data <span class="count">{{ look.orphans|length }}</span></button></div>
+<details class="how" id="appearance-how"><summary>How colours and hiding work</summary>
+  <p>Leave a colour blank and the name takes the next free theme colour. To fix one, type a theme colour, <code>series-1</code> to <code>series-8</code>, which changes with day and night, or a colour code (hex, rgb, hsl or oklch), which stays the same in both. A name with a colour keeps it on every chart and period.</p>
+  <p>Hide takes a name off the chart for everyone. Totals and tables still count it, and anyone can show it again from the chart. Changes show on the dashboard at once.</p>
+</details>
+<div class="subtabs" role="tablist" aria-label="Chart appearance" data-subtabs="appearance">{% for d, lab in look_labels.items() %}{% set slug = d|replace('_', '-') %}<button type="button" role="tab" id="st-appearance-{{ slug }}" aria-controls="sp-appearance-{{ slug }}" aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ 0 if loop.first else -1 }}">{{ lab[0] }} <span class="count">{{ look.dimensions[d]|length }}</span></button>{% endfor %}{% if look.orphans %}<button type="button" role="tab" id="st-appearance-orphans" aria-controls="sp-appearance-orphans" aria-selected="false" tabindex="-1">Not in the data <span class="count">{{ look.orphans|length }}</span></button>{% endif %}</div>
 {% for d, lab in look_labels.items() %}{% set slug = d|replace('_', '-') %}{% set items = look.dimensions[d] %}{% set lf = look_form if look_form and look_form.dimension == d else none %}
 <div role="tabpanel" id="sp-appearance-{{ slug }}" aria-labelledby="st-appearance-{{ slug }}">
 <section class="panel" id="appearance-{{ slug }}">
   <h2>{{ lab[0] }}</h2>
-  <p class="muted">The colour each {{ lab[1] }} keeps on {{ lab[2] }}, whatever its rank, and whether it is hidden there. A colour is a palette slot (<code>series-1</code> to <code>series-8</code>, which follows the theme by day and by night) or a fixed colour, written as hex, rgb, hsl or oklch, the same by day and by night; blank keeps palette order, skipping the slots chosen here. Hidden takes the name out of the chart's bars, lines and legend for everyone; totals and tables still count it, and a viewer can show it again from the chart. Takes effect at once, with no rebuild.</p>
+  <p class="muted">The colour of each {{ lab[1] }} on {{ lab[2] }}, and whether it is hidden there.</p>
   {% if items %}
   <form method="post" action="/settings/appearance/save">{{ csrf_field(request) }}<input type="hidden" name="dimension" value="{{ d }}">
-    <p class="filterbox"><label for="appearance-{{ slug }}-filter">Filter the {{ items|length }} {{ lab[0]|lower }}</label><input type="search" id="appearance-{{ slug }}-filter" data-filter-table="appearance-{{ slug }}-table" placeholder="Part of a name"></p>
+    {% if items|length > look_filter_from %}<p class="filterbox"><label for="appearance-{{ slug }}-filter">Filter the {{ items|length }} {{ lab[0]|lower }}</label><input type="search" id="appearance-{{ slug }}-filter" data-filter-table="appearance-{{ slug }}-table" placeholder="Part of a name"></p>{% endif %}
     <div class="tablewrap" role="region" tabindex="0" aria-label="{{ lab[0] }}: chart colours table"><table class="plain" id="appearance-{{ slug }}-table" data-list="unbounded"><thead><tr><th scope="col">{{ lab[1][:1]|upper ~ lab[1][1:] }}</th><th scope="col">Colour</th><th scope="col">Hidden</th></tr></thead><tbody>
     {% for r in items %}{% set typed = lf["values"].get(r.name) if lf else none %}{% set err = lf.errors.get(r.name) if lf else none %}{% set rid = "ap-" ~ slug ~ "-" ~ loop.index %}
     <tr><td>{% if r.color %}<span class="swatch" style="--sw: {{ ('var(--' ~ r.color ~ ')') if r.color in look_slots else r.color }}" aria-hidden="true"></span> {% endif %}{{ r.name }}<input type="hidden" name="name" value="{{ r.name }}"></td>
-      <td><input type="text" name="color" value="{{ typed.color if typed else (r.color or '') }}" list="appearance-slots" size="16" placeholder="palette order" aria-label="Colour for {{ r.name }}"{% if err %} aria-invalid="true" aria-describedby="{{ rid }}-err"{% endif %}>{% if err %}<span class="err" id="{{ rid }}-err" role="alert">{{ err[:1]|upper ~ err[1:] }}.</span>{% endif %}
+      <td><input type="text" name="color" value="{{ typed.color if typed else (r.color or '') }}" list="appearance-slots" size="16" placeholder="automatic" aria-label="Colour for {{ r.name }}"{% if err %} aria-invalid="true" aria-describedby="{{ rid }}-err"{% endif %}>{% if err %}<span class="err" id="{{ rid }}-err" role="alert">{{ err[:1]|upper ~ err[1:] }}.</span>{% endif %}
         {% for w in r.warnings %}<div class="muted">{{ w[:1]|upper ~ w[1:] }}.</div>{% endfor %}</td>
       <td><label class="hidebox"><input type="checkbox" name="hidden" value="{{ r.name }}"{% if (typed.hidden if typed else r.hidden) %} checked{% endif %} aria-label="Hide {{ r.name }} on the chart"> hide</label></td></tr>{% endfor %}
     </tbody></table></div>
-    <p class="mt-3"><button class="btn primary" type="submit">Save colours for {{ lab[0]|lower }}</button></p>
+    <p class="mt-3"><button class="btn primary" type="submit">Save colours for {{ lab[0]|lower }}</button> <span class="muted">Saves this tab only.</span></p>
   </form>
   {% else %}<p class="muted">No {{ lab[0]|lower }} in the data yet. They are listed here once a build has drawn them.</p><p><a class="btn" href="/upload">Close a month</a></p>{% endif %}
 </section>
 </div>{% endfor %}
-<div role="tabpanel" id="sp-appearance-orphans" aria-labelledby="st-appearance-orphans">
+{% if look.orphans %}<div role="tabpanel" id="sp-appearance-orphans" aria-labelledby="st-appearance-orphans">
 <section class="panel" id="appearance-orphans">
   <h2>Not in the data</h2>
-  <p class="muted">A colour or hide switch kept for a name the current data no longer has: a category merged away, an employer renamed in Pipeline rules, a debt paid off before the first month loaded. It does nothing until the name comes back. Its palette slot stays claimed, so delete it to free the slot.</p>
-  {% if look.orphans %}<div class="tablewrap" role="region" tabindex="0" aria-label="Chart colours not in the data table"><table class="plain" id="appearance-orphans-table" data-list="unbounded"><thead><tr><th scope="col">Name</th><th scope="col">Kind of name</th><th scope="col">Colour</th><th scope="col">Hidden</th><th class="acts"><span class="sr">Actions</span></th></tr></thead><tbody>
-    {% for o in look.orphans %}<tr><td>{{ o.name }}</td><td>{{ o.noun }}</td><td class="mono">{{ o.color or "palette order" }}</td><td>{{ "yes" if o.hidden else "no" }}</td>
+  <p class="muted">A colour or hide switch kept for a name the current data no longer has: a category merged away, an employer renamed in Pipeline rules, a debt paid off before the first month loaded. It does nothing until the name comes back, but a theme colour it holds stays reserved: delete it to free the colour.</p>
+  <div class="tablewrap" role="region" tabindex="0" aria-label="Chart colours not in the data table"><table class="plain" id="appearance-orphans-table" data-list="unbounded"><thead><tr><th scope="col">Name</th><th scope="col">Kind of name</th><th scope="col">Colour</th><th scope="col">Hidden</th><th class="acts"><span class="sr">Actions</span></th></tr></thead><tbody>
+    {% for o in look.orphans %}<tr><td>{{ o.name }}</td><td>{{ o.noun }}</td><td class="mono">{{ o.color or "automatic" }}</td><td>{{ "yes" if o.hidden else "no" }}</td>
       <td class="acts"><form method="post" action="/settings/appearance/delete" class="inline">{{ csrf_field(request) }}<input type="hidden" name="dimension" value="{{ o.dimension }}"><input type="hidden" name="name" value="{{ o.name }}"><button class="btn" type="submit" aria-label="Delete the colour kept for the {{ o.noun }} {{ o.name }}">Delete</button></form></td></tr>{% endfor %}
-  </tbody></table></div>{% else %}<p class="muted">None: every colour and hide switch names something in the data.</p>{% endif %}
+  </tbody></table></div>
 </section>
-</div>
+</div>{% endif %}
 </div>
 </div>
 <script src="/static/settings.js" defer></script>
@@ -302,6 +306,17 @@
   // a filter box for a long read-only list: hides rows that do not contain the text
   document.querySelectorAll('[data-filter-table]').forEach((inp) => { const tb = document.getElementById(inp.dataset.filterTable).tBodies[0];
     inp.addEventListener('input', () => { const q = inp.value.toLowerCase(); for (const tr of tb.rows) tr.hidden = !!q && !tr.textContent.toLowerCase().includes(q); }); });
+  // Chart appearance: each sub-tab's Save saves that tab only. A tab with changes not yet saved says so in its name, and leaving the
+  // page with any (another tab's Save included) asks first, so an edit is never lost without a word.
+  const dirty = new Set(); let saving = null;
+  document.querySelectorAll('form[action="/settings/appearance/save"]').forEach((f) => {
+    const tab = document.getElementById('st-' + f.closest('[role=tabpanel]').id.slice(3));
+    const mark = (e) => { if (e.target.dataset.filterTable || dirty.has(f)) return; dirty.add(f);
+      const s = document.createElement('span'); s.className = 'unsaved'; s.textContent = ' · not saved'; tab.append(s); };
+    f.addEventListener('input', mark); f.addEventListener('change', mark);
+    f.addEventListener('submit', () => { saving = f; });
+  });
+  addEventListener('beforeunload', (e) => { const left = [...dirty].filter((f) => f !== saving); saving = null; if (left.length) { e.preventDefault(); e.returnValue = ''; } });
 })();
 </script>
 {% endblock %}
