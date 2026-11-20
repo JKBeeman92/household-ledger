@@ -82,6 +82,7 @@ function lastmonth() {
       await page.selectOption('select[name="new_normal"]', 'yes'); out.settings.yes = await read()
       await page.selectOption('select[name="new_normal"]', 'no'); await page.selectOption('select[name="kind"]', 'job'); out.settings.job = await read()
       await page.locator('#sp-events button', { hasText: 'Cancel' }).first().click()
+      out.settings.offersAfterCancel = await page.evaluate(() => document.querySelectorAll('#sp-events tr.offer').length)   // Cancel takes the offer row with it
     }
     await ctx.close()
   } catch (e) {

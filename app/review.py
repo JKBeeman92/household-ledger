@@ -33,8 +33,10 @@ SYSTEM = (
     "decisions kept, the year's life events, the categories that moved most, and where next year leads at the current pace (an estimate). "
     "When the data carries `new_normal` (the month is within six months after a life event the household marked as its new normal), name "
     "the event and its before-and-after comparison in the against-the-trailing-twelve section. "
-    "When the data carries `averaging_window`, the pace, the emergency fund's outgo and the suggested plan average those months: say the "
-    "count it gives (the N budget months since the event), or, before the switch, the month the averages move to the new normal. "
+    "When the data carries `averaging_window`, the pace, the emergency fund's outgo and the suggested plan average those months: word it as "
+    "the dashboard does, the window in use first: \"the {months} budget months since {since} ({from}), the household's new normal\" "
+    "or \"the last {months} budget months\", a month written as Oct 2025, then, when switch is given, \"From {switch} averages "
+    "move to the new normal: {switch_since} ({switch_event})\". "
     "Return only the JSON object."
 )
 
@@ -326,11 +328,11 @@ NEW_NORMAL_NOTE = ("The household marked a life event as its new normal (#159): 
 
 
 WINDOW_NOTE = ("The averaging window (#236): the budget months the look ahead's pace, the emergency fund's outgo and the suggested plan "
-               "all average, one rule for all three. It is the last twelve budget months, up to and including this one, until six budget "
+               "all average, one rule for all three. It is the last 12 budget months, up to and including this one, until six budget "
                "months after a life event the household marked as its new normal are loaded; from then until twelve months have passed "
                "since the event, it is the months from the event's month on. months is how many are averaged and from the first of them; "
                "since names the event when the window starts at it. switch, when given, is the budget month the averages move to the "
-               "new normal switch_since (marked in switch_event); until then they stay on the last twelve.")
+               "new normal switch_since (marked in switch_event); until then they stay on the last 12 budget months.")
 
 
 def window_context(ef_rows: list[dict], month: str) -> dict | None:

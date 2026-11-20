@@ -1483,7 +1483,7 @@ HL.window = (r, p) => ({ from: r[p + '_from'], n: r[p + '_months'], since: r[p +
 HL.windowMonths = (w) => w.since ? `the ${w.n} budget month${w.n === 1 ? '' : 's'} since ${w.since} (${aheadMonth(w.from)}), the household's new normal` : `the last ${w.n} budget month${w.n === 1 ? '' : 's'}`;
 HL.windowSwitch = (w) => w.sw ? `From ${aheadMonth(w.sw)} averages move to the new normal: ${w.swSince} (${aheadMonth(w.swEvent)}).` : '';
 // said only when a new normal moves the window or is about to; the plain last twelve need no note
-HL.windowNote = (w, what) => w && (w.since || w.sw) ? [`${what} ${HL.windowMonths(w)}${w.since ? ', not the last twelve' : ''}.`, HL.windowSwitch(w)].filter(Boolean).join(' ') : '';
+HL.windowNote = (w, what) => w && (w.since || w.sw) ? [`${what} ${HL.windowMonths(w)}.`, HL.windowSwitch(w)].filter(Boolean).join(' ') : '';
 dash.draw('ahead-head', (el) => { const r = ahead()[0], w = r && HL.window(r, 'pace');   // the header names its window
   el.replaceChildren('Kept, at the pace'); if (w && w.n) el.append(document.createElement('br'), w.since ? `(since ${aheadMonth(w.from)})` : `(last ${w.n} budget month${w.n === 1 ? '' : 's'})`); });   // on its own line, so the column stays narrow on a phone
 dash.draw('ahead-since', (el) => { const r = ahead()[0]; el.replaceChildren(); if (!r) return;   // and, under the table, what the Net worth column leaves out or assumes
@@ -1502,7 +1502,7 @@ dash.draw('ahead-facts', (el) => { el.replaceChildren(); const rows = ahead(); i
   if (r.growth_pct) add('Growth assumed', `${r.growth_pct}% a year on assets, in the net worth above`); });
 dash.draw('ahead-inputs', (el) => { el.replaceChildren(); const rows = ahead(); if (!rows.length) return; const r0 = rows[0];
   const add = (dt, dd) => { el.append(Object.assign(document.createElement('dt'), { textContent: dt }), Object.assign(document.createElement('dd'), { textContent: dd })); };
-  add('The pace', `${aheadSigned(r0.pace)} a month, the average net of ${r0.pace_months} budget month${r0.pace_months === 1 ? '' : 's'} from ${aheadMonth(r0.pace_from)}`);   // the line under the table says when that is the new normal
+  add('The pace', `${aheadSigned(r0.pace)} a month, the average net of ${HL.windowMonths(HL.window(r0, 'pace'))}`);   // DS-WORD-3, as the line under the table says it
   add('3-month pace', `${aheadSigned(r0.pace_3)} a month`);
   add('Net worth now', r0.net_worth_now == null ? 'needs month-end balances (Settings → Accounts)' : HL.usd0(r0.net_worth_now));
   for (const r of rows) {

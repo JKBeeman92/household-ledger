@@ -402,6 +402,7 @@ def test_last_month_stamps_the_emergency_fund_and_keys_the_kept_rows(sample):
     assert st["opened"]["inView"] and st["opened"]["underRow"] and st["opened"]["pageOverflow"] <= 0, st["opened"]   # at 390, in a row of its own under the edit row
     assert st["helpOpen"] is True   # its link opens the full explanation
     assert st["yes"]["text"] == "" and st["yes"]["describedby"] == "new-normal-hint" and st["job"]["text"] == ""
+    assert st["offersAfterCancel"] == 0   # Cancel removes the offer row with its edit row
 
 
 @browser
