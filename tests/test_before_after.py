@@ -127,7 +127,7 @@ def test_existing_events_are_not_marked_and_the_row_editor_marks_one(client, res
     with db.pool.connection() as conn:
         assert nn(conn)["Elanor is born"] is False
     page = client.get("/settings").text
-    assert 'data-fields="m,label,kind,person,new_normal"' in page and "New normal" in page
+    assert 'data-fields="m,label,kind,person,on_chart,new_normal"' in page and "New normal" in page
 
 
 def test_json_editor_settings_zip_cli_and_seeds_round_trip_the_mark(client, reset_db, tmp_path):
@@ -157,6 +157,31 @@ def test_json_editor_settings_zip_cli_and_seeds_round_trip_the_mark(client, rese
         with pytest.raises(ValueError, match=r"event 2025-01 'x': new_normal must be true or false"):
             seed_reference_tables(conn, tmp_path)
         conn.rollback()
+
+
+def test_the_new_normal_and_the_on_the_chart_switch_travel_together(client, reset_db, tmp_path):
+    # #159 with #140: an event switched off the chart can still be the new normal; each flag is written only when it differs from its
+    # default, and neither overwrites the other on any way in or out
+    body = [{"m": "2025-03", "label": "Envelopes", "kind": "other", "on_chart": False, "new_normal": True}, {"m": "2025-04", "label": "Plain"}]
+    r = client.post("/settings/events", data={"body": json.dumps(body)})
+    assert "Not saved" not in client.get(r.headers["location"]).text
+    from app.routes.settings import _editor_body
+    with db.pool.connection() as conn:
+        assert json.loads(_editor_body(conn, "events")) == body
+        assert [tuple(x.values()) for x in conn.execute("SELECT label, on_chart, new_normal FROM life_events ORDER BY month").fetchall()] == [("Envelopes", False, True), ("Plain", True, False)]
+    r = client.post("/settings/events/row", data={"m": "2025-03", "label": "Envelopes", "kind": "other", "on_chart": "yes", "new_normal": "yes",
+                                                  "original_m": "2025-03", "original_label": "Envelopes"}).json()
+    assert r["ok"] and (r["row"]["on_chart"], r["row"]["new_normal"]) == ("yes", "yes")
+    import io, zipfile
+    z = zipfile.ZipFile(io.BytesIO(client.get("/export/settings.zip").content))
+    assert json.loads(z.read("events.json"))[0] == {"m": "2025-03", "label": "Envelopes", "kind": "other", "new_normal": True}
+    (tmp_path / "events.json").write_text(json.dumps(body))
+    from pipeline.run_pipeline import seed_reference_tables, export_for_pipeline
+    with db.pool.connection() as conn:
+        conn.execute("DELETE FROM life_events"); seed_reference_tables(conn, tmp_path); conn.commit()
+        assert [tuple(x.values()) for x in conn.execute("SELECT label, on_chart, new_normal FROM life_events ORDER BY month").fetchall()] == [("Envelopes", False, True), ("Plain", True, False)]
+        wd = tmp_path / "wd"; wd.mkdir(); export_for_pipeline(conn, wd)
+    assert json.loads((wd / "events.json").read_text()) == body   # what the events dataset and before_after read
 
 
 def test_sample_household_marks_the_birth_and_every_window_says_so(client, reset_db):

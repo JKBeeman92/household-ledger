@@ -79,7 +79,7 @@ PAYCHECK_ITEMS_DEFAULT = ["Paycheck"]   # role default: build_ledger.RULES["payc
 
 
 def build_context(conn, month: str) -> dict:
-    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals','debt_to_income','net_worth','emergency_fund','coming_up','tax','planned_purchases','look_ahead','events')").fetchall()}
+    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals','debt_to_income','net_worth','emergency_fund','coming_up','tax','planned_purchases','look_ahead','events','by_person')").fetchall()}
     monthly = {r["m"]: r for r in ds.get("monthly", [])}
     months = sorted(monthly)
     if month not in monthly:
@@ -115,6 +115,7 @@ def build_context(conn, month: str) -> dict:
         **({"planned_purchases": pp} if (pp := purchases_context(ds.get("planned_purchases", []), month)) else {}),   # #158
         **({"look_ahead": la} if (la := look_ahead_context(ds.get("look_ahead", []), month)) else {}),   # #148
         **({"new_normal": nn} if (nn := new_normal_context(conn, ds, month)) else {}),   # #159
+        **({"by_person": bp} if (bp := by_person_context(ds.get("by_person", []), month)) else {}),   # #156: only with two or more people
         **({"quarter": qc} if (qc := quarter_context(conn, month)) else {}),
         **({"year": yc} if (yc := year_context(conn, month)) else {}),   # #157: the year's last month, one more section   # #147: one review a month, extended at a quarter's end
         **({"coming_up": coming_up_context(ds.get("coming_up", []), month)} if coming_up_context(ds.get("coming_up", []), month) else {}),
@@ -345,6 +346,19 @@ PURCHASES_NOTE = ("Planned purchases the household is saving for by a date (#158
                   "spent since saving began, or the account's balance; needed is a month from here to the target month; pace is the average put "
                   "aside over the last three months. verdict: ahead, on_pace, short (short_by a month), past (the month has gone; remaining is "
                   "what is missing), reached, or no_pace. reach_m is when the target is reached at the pace. An account is never named.")
+
+
+BY_PERSON_NOTE = ("Each person's month (the household names two or more people): earned is the income the household's rules give that "
+                  "person, earned_share its part of the month's income, spent the spending in that person's own envelopes; Household is "
+                  "shared income and shared spending. *_change is against the month before, null when it is not loaded. The check-in is "
+                  "done together: state each person's figures neutrally, never as over or under, and never as a fair share.")
+
+
+def by_person_context(rows: list[dict], month: str) -> dict | None:
+    """by_person (#156) for the month: per-person totals only, and only when the dataset has them (two or more people configured)."""
+    keep = ("who", "earned", "earned_share", "earned_change", "spent", "spent_change")
+    out = [{k: r.get(k) for k in keep} for r in rows if r.get("m") == month]
+    return {"note": BY_PERSON_NOTE, "people": out} if out else None
 
 
 def purchases_context(rows: list[dict], month: str) -> dict | None:

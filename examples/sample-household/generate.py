@@ -66,9 +66,13 @@ NET_PAY = 1880
 
 MAPPING_NOTES = {"Paycheck": "Rosie, paid every two weeks", "Contract Income": "Sam, garden contracts",
                  "Venmo Pass-Through": "money moved for friends, not part of the household budget"}
-EVENTS = [("2025-03", "Sam takes on garden contracts", "job", "Sam"), ("2025-07", "Rosie promoted at Hobbiton Mill", "job", "Rosie"),
-          ("2025-10", "Moved to a bigger hole, rent goes up", "move", None), ("2026-02", "Elanor is born", "family", None),
-          ("2026-09", "Elanor starts at the Bywater nursery", "family", None)]   # (m, label, kind, person); the last is still to come (#144, coming_up)
+EVENTS = [("2025-03", "Sam takes on garden contracts", "job", "Sam"), ("2025-05", "Started budgeting by envelope", "other", None, False),
+          ("2025-07", "Rosie promoted at Hobbiton Mill", "job", "Rosie"),
+          ("2025-10", "Moved to a bigger hole, rent goes up", "move", None), ("2025-11", "Sam's knee mended at the healer", "health", "Sam"),
+          ("2026-02", "Elanor is born", "family", None),
+          ("2026-09", "Elanor starts at the Bywater nursery", "family", None)]
+# (m, label, kind, person[, on_chart]); the last is still to come (#144, coming_up). The timeline (#140): the move and Sam's knee, a
+# month apart, draw as one marker with a count; "Started budgeting by envelope" is switched off the chart and stays in the list.
 NEW_NORMAL = {("2026-02", "Elanor is born")}   # #159: the household marked the birth as its new normal; nothing is ever marked for it
 RULES = {
     "people": ["Rosie", "Sam"],
@@ -286,7 +290,7 @@ def main(out: Path):
         for g, item, canon, cat, flow, *_ in ITEMS: w.writerow([item, canon, cat, flow, MAPPING_NOTES.get(canon, ""), DEBT_TYPES.get(canon, "")])
     write_balances(out, [f"{y}-{m:02d}" for y, m in months], kept)
     write_decisions(out, months_rows)
-    for name, obj in [("tax_outcomes.json", TAX_OUTCOMES), ("goals.json", GOALS), ("events.json", [{"m": m, "label": l, "kind": k, **({"person": p} if p else {}), **({"new_normal": True} if (m, l) in NEW_NORMAL else {})} for m, l, k, p in EVENTS]), ("rules.json", RULES), ("household.json", HOUSEHOLD), ("appearance.json", APPEARANCE)]:
+    for name, obj in [("tax_outcomes.json", TAX_OUTCOMES), ("goals.json", GOALS), ("events.json", [{"m": e[0], "label": e[1], "kind": e[2], **({"person": e[3]} if e[3] else {}), **({"on_chart": False} if len(e) > 4 and not e[4] else {}), **({"new_normal": True} if (e[0], e[1]) in NEW_NORMAL else {})} for e in EVENTS]), ("rules.json", RULES), ("household.json", HOUSEHOLD), ("appearance.json", APPEARANCE)]:
         (out / name).write_text(json.dumps(obj, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 
 

@@ -185,3 +185,31 @@ for i, m in enumerate(_ms):
                  "months_12": len(win), "dti_12": _share(t["debt"], _gross * len(win) if _gross else None), "housing_dti_12": _share(t["housing"], _gross * len(win) if _gross else None),
                  "dti_takehome_12": _share(t["debt"], t["takehome"]), "housing_takehome_12": _share(t["housing"], t["takehome"])})
 w("debt_to_income", _dti)
+
+# by_person (#156): each person's month, for the Last month tab's By person block, the check-in's Where we stand and the review. earned is
+# what the income_by_person rule gives them (the earner chart's figure, a month at a time) and earned_share its part of the month's
+# income; spent is the envelopes the payer rules give them (the payer chart's). Household is what no rule gives a person: shared income
+# and shared spending. *_change is against the budget month before, null when that month is not loaded. Figures only, no verdict: the
+# check-in is done together. Empty when the people rule names fewer than two: one person's "share" says nothing.
+_people = list(dict.fromkeys(p.strip() for p in (RU.get("people") or []) if isinstance(p, str) and p.strip() and p.strip() != "Household"))
+_bp = []
+if len(_people) >= 2:
+    _earn, _pay = collections.defaultdict(float), collections.defaultdict(float)
+    for r in L:
+        if r["InTotals"] != "1":
+            continue
+        if r["Flow"] == "income": _earn[(r["BudgetMonth"], r["Earner"])] += float(r["Amount"])
+        if r["Flow"] in ("expense", "debt"): _pay[(r["BudgetMonth"], r["Payer"])] += -float(r["Amount"])
+    _who = _people + sorted({w for (_, w) in [*_earn, *_pay]} - set(_people) - {"Household"}) + ["Household"]   # a rule's name the people list leaves out still shows, as on the charts
+    _bms = sorted({r["BudgetMonth"] for r in L})
+    _inc = collections.defaultdict(float)
+    for (m, _), v in _earn.items(): _inc[m] += v
+    _r2 = lambda x: round(x, 2) + 0.0   # never -0.0
+    for m in _bms:
+        p = _bal.prev_month(m)
+        for who in _who:
+            e, s = _earn.get((m, who), 0.0), _pay.get((m, who), 0.0)
+            _bp.append({"m": m, "who": who, "earned": _r2(e), "earned_share": round(e / _inc[m], 4) if _inc[m] else None,
+                        "earned_change": _r2(e - _earn.get((p, who), 0.0)) if p in _loaded else None,
+                        "spent": _r2(s), "spent_change": _r2(s - _pay.get((p, who), 0.0)) if p in _loaded else None})
+w("by_person", _bp)

@@ -16,7 +16,7 @@ EDITORS = {
     "mapping": {"title": "Item mapping", "help": "Each item from your budget tool gets a canonical name and a flow; its category is its canonical item's. Every item must be here, or the build lists it as unmapped.", "help_long": "One row per item in your exports: Item, CanonicalItem, Category, Flow, Note, and optionally DebtType (mortgage, student, auto, card, medical, personal, other; a five-column CSV leaves types as they are). A canonical item has one category, so every row of it gives the same Category (in the row editor, leave Category blank to use the one it has); use Categories and canonical items to rename or move one. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every item name in the exports must appear here or the build reports it UNMAPPED. Fund moves kept as income items (Fund Transfer, End of Year Rebalance) need Flow transfer, or they count as income; money held for someone else and paid out needs exclude. No name is read literally: the parts names play (which items are paychecks, which categories are recurring bills, and so on) are set under Pipeline rules, Roles (README, \"Roles\"); rules name canonical items, not raw ones."},
     "goals": {"title": "Goals", "help": "One row per goal: key, label, value, unit, note. The dashboard's Goals tab and the month's review read these; values are also confirmed each month in the checklist on Close a month. A share is a fraction (0.07) or a percentage (7%)."},
     "accounts": {"title": "Accounts", "help": "What the household owes and owns, for month-end balances (entered on Close a month). Kind is debt or asset. A debt's type is a debt type (empty: its linked item's); an asset's is cash, savings, retirement, brokerage, home, vehicle or other. Linked item is the canonical item a debt's payments go to, so the suggested balance can subtract last month's payment; APR adds a month's interest; escrow is the part of each payment that is not the loan. Person is one of the people, or empty for joint. Emergency marks an asset that counts toward the emergency fund (cash and savings by default). An account with balances is retired (Active no), not deleted: its balances are kept."},
-    "events": {"title": "Life events", "help": "One row per event: month (YYYY-MM), label, and optionally its kind (job, move, family, health, purchase, debt, other) and the person it concerns (one of the people in Pipeline rules). Drawn as markers on the timeline charts; the Employer chart shows job events and events with no kind. New normal (yes, never set for you) marks a month the household's pattern changed from, such as a move or a new family member: once it has three months, the look ahead's pace, the emergency fund's outgo and the suggested plan average from it, and say so."},
+    "events": {"title": "Life events", "help": "One row per event: month (YYYY-MM), label, and optionally its kind (job, move, family, health, purchase, debt, other) and the person it concerns (one of the people in Pipeline rules). Drawn as markers on the timeline charts; the Employer chart shows job events and events with no kind. On the chart: yes draws its marker; no leaves the marker off, and the event stays in the life-event list, the review and the check-in. New normal (yes, never set for you) marks a month the household's pattern changed from, such as a move or a new family member: once it has three months, the look ahead's pace, the emergency fund's outgo and the suggested plan average from it, and say so."},
     "cpi": {"title": "CPI", "save": "CPI", "help": "CSV: month, cpi, source. The consumer price index (any base) behind the real-dollars toggle. US households: CPI-U, appending the newest month from FRED CPIAUCSL; mark estimates in source."},
     "rules": {"title": "Pipeline rules", "help": "JSON object of household-specific classification rules. Unknown keys and invalid regular expressions are rejected on save."},
     "household": {"title": "Household", "help": "JSON object: name, title, currency, theme. Shown in the header and page titles."},
@@ -105,6 +105,20 @@ def check_goal_row(r: dict) -> tuple[dict, dict]:
 EVENT_KINDS = ("job", "move", "family", "health", "purchase", "debt", "other")   # db/migrations/0109_life_event_kind.sql; a fixed list (#109)
 
 
+def check_on_chart(raw) -> bool | None:
+    """The per-event "on the chart" switch (#140): true, false, or yes/no as the row editor's select sends it; missing or blank is on
+    (every event drew before the switch existed). None when the value cannot be read."""
+    if raw is None or isinstance(raw, bool):
+        return True if raw is None else raw
+    if isinstance(raw, str):
+        s = raw.strip().lower()
+        if s in ("", "yes", "true", "1", "on", "y"):
+            return True
+        if s in ("no", "false", "0", "off", "n"):
+            return False
+    return None
+
+
 def new_normal_value(v) -> bool | None:
     """A life event's new_normal (#159) as JSON, a form or a seed gives it: true/false, or yes/no (the row editor's select, as the
     Accounts grid's booleans). Empty or absent is false: the household ticks it, nothing else does. None when it is neither."""
@@ -115,14 +129,18 @@ def new_normal_value(v) -> bool | None:
 
 
 def check_event_row(r: dict) -> tuple[dict, dict]:
-    """{m, label, kind?, person?, new_normal?}: kind is one of EVENT_KINDS or empty, person is free text (checked against the people
-    rule by person_warning, which warns but never refuses). Empty kind and person are None; new_normal is a bool (false unless given)."""
+    """{m, label, kind?, person?, on_chart?, new_normal?}: kind is one of EVENT_KINDS or empty, person is free text (checked against the
+    people rule by person_warning, which warns but never refuses). Empty kind and person are None; on_chart is a bool, true unless
+    switched off (#140); new_normal is a bool, false unless given (#159)."""
     err = {f: "must be text" for f in ("m", "label", "kind", "person") if r.get(f) is not None and not isinstance(r.get(f), str)}
     txt = lambda f: "" if f in err else (r.get(f) or "").strip()
     nn = new_normal_value(r.get("new_normal"))
     if nn is None:
         err["new_normal"] = "yes or no"
-    c = {"m": txt("m"), "label": txt("label"), "kind": txt("kind").lower() or None, "person": txt("person") or None, "new_normal": bool(nn)}
+    c = {"m": txt("m"), "label": txt("label"), "kind": txt("kind").lower() or None, "person": txt("person") or None, "on_chart": check_on_chart(r.get("on_chart")),
+         "new_normal": bool(nn)}
+    if c["on_chart"] is None:
+        err["on_chart"] = "yes or no"; c["on_chart"] = True
     if "m" not in err and not MONTH_RE.match(c["m"]):
         err["m"] = "month must look like YYYY-MM"
     if "label" not in err and not c["label"]:
@@ -133,8 +151,10 @@ def check_event_row(r: dict) -> tuple[dict, dict]:
 
 
 def event_out(r: dict) -> dict:
-    """An event as the JSON editor, settings.zip, seeds and events.json carry it: kind, person and new_normal (#159) only when set."""
-    return {"m": r["m"], "label": r["label"], **{k: r[k] for k in ("kind", "person") if r.get(k)}, **({"new_normal": True} if r.get("new_normal") is True else {})}
+    """An event as the JSON editor, settings.zip, seeds and events.json carry it: kind and person only when set, on_chart only when
+    switched off (#140) and new_normal only when set (#159), so a file from before either still reads the same."""
+    return {"m": r["m"], "label": r["label"], **{k: r[k] for k in ("kind", "person") if r.get(k)}, **({"on_chart": False} if r.get("on_chart") is False else {}),
+            **({"new_normal": True} if r.get("new_normal") is True else {})}
 
 
 def person_warning(conn, people: list) -> str:
@@ -188,10 +208,10 @@ def _row_save(conn, kind: str, f: dict) -> tuple[dict, dict]:
         if not err:
             if om or ol:
                 conn.execute("DELETE FROM life_events WHERE month=%s AND label=%s", (om, ol))
-            conn.execute("INSERT INTO life_events (month,label,kind,person,new_normal) VALUES (%s,%s,%s,%s,%s) "
-                         "ON CONFLICT (month,label) DO UPDATE SET kind=EXCLUDED.kind, person=EXCLUDED.person, new_normal=EXCLUDED.new_normal",
-                         (c["m"], c["label"], c["kind"], c["person"], c["new_normal"]))
-        c = {**c, "new_normal": "yes" if c["new_normal"] else "no"}   # as the grid shows it, like the Accounts grid's yes/no columns
+            conn.execute("INSERT INTO life_events (month,label,kind,person,on_chart,new_normal) VALUES (%s,%s,%s,%s,%s,%s) "
+                         "ON CONFLICT (month,label) DO UPDATE SET kind=EXCLUDED.kind, person=EXCLUDED.person, on_chart=EXCLUDED.on_chart, new_normal=EXCLUDED.new_normal",
+                         (c["m"], c["label"], c["kind"], c["person"], c["on_chart"], c["new_normal"]))
+        c = {**c, "on_chart": "yes" if c["on_chart"] else "no", "new_normal": "yes" if c["new_normal"] else "no"}   # as the grid shows them, like an account's switches
     return c, err
 
 
@@ -338,7 +358,7 @@ def _editor_body(conn, key: str) -> str:
                             **({"target_amount": float(r["target_amount"]), **{k: (r[k].isoformat() if k == "done_at" and r[k] else r[k]) for k in dated[1:] if r[k] is not None}}
                                if r["target_amount"] is not None else {})} for r in rows], indent=1)
     if key == "events":
-        return json.dumps([event_out(r) for r in conn.execute("SELECT month AS m, label, kind, person, new_normal FROM life_events ORDER BY month, label").fetchall()], indent=1)
+        return json.dumps([event_out(r) for r in conn.execute("SELECT month AS m, label, kind, person, on_chart, new_normal FROM life_events ORDER BY month, label").fetchall()], indent=1)
     return json.dumps(db.get_setting(conn, key, {}), indent=1)
 
 
@@ -378,8 +398,8 @@ def _save_editor(conn, key: str, body: str, by: str = "") -> str:
                                         c["funded_kind"] or ("envelope" if c["funded_by"] else None), c["since_month"], c["done_at"], c["done_month"]) for c, _ in checked])
         else:
             conn.execute("DELETE FROM life_events")
-            conn.cursor().executemany("INSERT INTO life_events (month,label,kind,person,new_normal) VALUES (%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
-                                      [(c["m"], c["label"], c["kind"], c["person"], c["new_normal"]) for c, _ in checked])
+            conn.cursor().executemany("INSERT INTO life_events (month,label,kind,person,on_chart,new_normal) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+                                      [(c["m"], c["label"], c["kind"], c["person"], c["on_chart"], c["new_normal"]) for c, _ in checked])
             warn = person_warning(conn, [c["person"] for c, _ in checked])
             return f"{len(data)} {key}" + (f" ({warn})" if warn else "")
         return f"{len(data)} {key}"
@@ -408,7 +428,8 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         editors = [{"key": k, "body": _editor_body(conn, k), "fields": schema.help_fields(k) if k in schema.NAMES else [], **v} for k, v in EDITORS.items()]
         rows = {"mapping": mapping_store.rows(conn),
                 "goals": [{**r, "value": (f"{r['value']:f}".rstrip("0").rstrip(".") if r["value"] is not None else None)} for r in conn.execute("SELECT key, value, unit, label, note FROM goals WHERE target_amount IS NULL ORDER BY key").fetchall()],   # planned purchases have their own sub-tab (#158)
-                "events": conn.execute("SELECT month AS m, label, kind, person, CASE WHEN new_normal THEN 'yes' ELSE 'no' END AS new_normal FROM life_events ORDER BY month, label").fetchall(),
+                "events": [{**r, "on_chart": "yes" if r["on_chart"] else "no", "new_normal": "yes" if r["new_normal"] else "no"}
+                           for r in conn.execute("SELECT month AS m, label, kind, person, on_chart, new_normal FROM life_events ORDER BY month, label").fetchall()],
                 "accounts": [accounts_store.out(a) for a in accounts_store.list_accounts(conn)]}
         balance_counts = {r["account"]: r for r in conn.execute("SELECT account, count(*) n, min(budget_month) first, max(budget_month) last FROM balances GROUP BY account").fetchall()}
         categories = sorted({r["category"] for r in rows["mapping"] if r["category"]})
@@ -435,7 +456,7 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
                   yb_form=request.session.pop("yb_form", None), tax_form=request.session.pop("tax_form", None), bal_hist=request.session.pop("bh_form", None), yb_slug=_yb_slug, tax_cfg=_tax_cfg(),
                   categories=categories, rules={**rules, **(request.session.pop("people_typed", None) or {})}, hh=household, name_families=name_families, unmapped=unmapped,
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS,
-                  event_choices={"kind": [""] + list(EVENT_KINDS), "new_normal": ["no", "yes"]}, people=list(rules.get("people") or []),
+                  event_choices={"kind": [""] + list(EVENT_KINDS), "on_chart": ["yes", "no"], "new_normal": ["no", "yes"]}, people=list(rules.get("people") or []),
                   defs=defs, mapping_notes=mapping_notes, canonical_category={c["name"]: c["category"] for c in defs["canonical"]},
                   debt_types=mapping_store.DEBT_TYPES, balance_counts=balance_counts, pretax=pretax,
                   account_choices={"kind": list(accounts_store.KINDS), "type": [""] + sorted(set(accounts_store.bal.DEBT_TYPES + accounts_store.bal.ASSET_TYPES)),
