@@ -631,9 +631,10 @@ def _seed_event_fields(e: dict, path) -> tuple[str | None, str | None, bool]:
     kind = (e.get("kind") or "").strip().lower() or None
     if kind and kind not in EVENT_KINDS:
         raise ValueError(f"{where}: kind {kind!r} is not one of {', '.join(EVENT_KINDS)} (or leave it out)")
-    on_chart = e.get("on_chart", True)
-    if not isinstance(on_chart, bool):
-        raise ValueError(f"{where}: on_chart must be true or false (or leave it out)")
+    from app.routes.settings import check_on_chart   # one rule with Settings, the JSON editor and set-events: missing or null is on
+    on_chart = check_on_chart(e.get("on_chart"))
+    if on_chart is None:
+        raise ValueError(f"{where}: on_chart must be yes or no, true or false (or leave it out)")
     return kind, (e.get("person") or "").strip() or None, on_chart
 
 

@@ -698,7 +698,7 @@ and optionally its kind and person). Each is a dotted marker on **Income against
 
 - **Merged markers.** Events within one month of each other draw as one marker with a count: a crowded season is at most one marker a
   month. Hover one, tab to it or tap it to list every event it holds; each marker is a button a keyboard reaches and a screen reader
-  names ("Oct 2025 to Nov 2025, 2 life events: …"). On a dense axis (years at phone width) markers that would overprint merge too.
+  names ("Oct 2025 to Nov 2025, 2 life events: …"). Markers closer than a 24 px target merge too, so on a dense axis (years at phone width) no two overlap.
 - **Colour by kind** comes from Settings → Chart appearance, Life-event kinds ([Chart colours and hidden names](#chart-colours-and-hidden-names)).
   A marker holding events of different colours takes the reference colour.
 - **Chips above the chart** filter the markers and the list by kind ("All · Job · Move · Family …") and by person, offering only the
@@ -713,8 +713,9 @@ and optionally its kind and person). Each is a dotted marker on **Income against
   hidden kinds only. No total, table or reconciliation changes either way.
 - **Coming up.** When the period reaches the last loaded month, the chart ends in a **Coming up** strip: the next 12 months of the
   `coming_up` dataset (payoffs, yearly bills, tax deadlines, planned purchases and life events dated later), drawn dotted because they
-  have not happened, never as markers off the end of the axis. A life event in it follows the same switches and chips. The list
-  "Coming up in the next 12 months" under the chart says the same in words.
+  have not happened, never as markers off the end of the axis. A life event in it follows the same switches and chips. The **Coming
+  up** list under the chart says the same in words and keeps everything later too (a payoff years out, an event in two years),
+  marked "after the chart's 12 months", so nothing dated after the last month drops off the Overview.
 
 ## Try it with the sample household
 

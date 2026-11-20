@@ -29,7 +29,7 @@ function probe() {
     const note = el.querySelector('.hidden-note button')
     const ahead = [...el.querySelectorAll('circle.ev-ahead')].map((m) => [key(m.__data__), m.__data__.kind ?? null, m.__data__.color ?? null])
     // the buttons over the markers (#140): what each says to the keyboard and a screen reader, and whether it can take focus
-    const marks = [...el.querySelectorAll('.ev-mark')].map((b) => ({ label: b.getAttribute('aria-label'), focusable: b.tagName === 'BUTTON' && b.tabIndex === 0 && !b.disabled, ahead: !!b.closest('.ahead') }))
+    const marks = [...el.querySelectorAll('.ev-mark')].map((b) => ({ label: b.getAttribute('aria-label'), focusable: b.tagName === 'BUTTON' && b.tabIndex === 0 && !b.disabled, ahead: !!b.closest('.ahead'), box: (({ left, right, height }) => [left, right, height])(b.getBoundingClientRect()) }))
     out.charts[el.dataset.draw] = { series, bars, markers, ahead, marks, lines, note: note ? note.textContent : null }
     // the tooltip over the first bar of each series: its swatch and its total
     const tips = {}

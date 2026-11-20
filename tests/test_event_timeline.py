@@ -85,11 +85,17 @@ def test_json_editor_cli_and_settings_zip_carry_the_switch_only_when_off(client,
         assert [(e["label"], e["on_chart"]) for e in events(conn)] == [("Moved", False), ("On", True)]
 
 
-def test_a_bad_seed_switch_names_the_event(tmp_path, client, reset_db):
-    (tmp_path / "events.json").write_text(json.dumps([{"m": "2025-01", "label": "Shire moot", "on_chart": "no"}]))
+def test_the_seed_loader_reads_the_switch_as_settings_does_and_names_a_bad_one(tmp_path, client, reset_db):
+    # one rule with the JSON editor and set-events (check_on_chart): yes/no text is read, and null is on, like a missing switch
+    (tmp_path / "events.json").write_text(json.dumps([{"m": "2025-01", "label": "Shire moot", "on_chart": "no"}, {"m": "2025-02", "label": "Feast", "on_chart": None}]))
     with db.pool.connection() as conn:
         conn.execute("DELETE FROM life_events")
-        with pytest.raises(ValueError, match=r"event 2025-01 'Shire moot': on_chart must be true or false"):
+        seed_reference_tables(conn, tmp_path); conn.commit()
+        assert [(e["label"], e["on_chart"]) for e in events(conn)] == [("Shire moot", False), ("Feast", True)]
+    (tmp_path / "events.json").write_text(json.dumps([{"m": "2025-01", "label": "Shire moot", "on_chart": "sometimes"}]))
+    with db.pool.connection() as conn:
+        conn.execute("DELETE FROM life_events")
+        with pytest.raises(ValueError, match=r"event 2025-01 'Shire moot': on_chart must be yes or no, true or false"):
             seed_reference_tables(conn, tmp_path)
         conn.rollback()
 
@@ -144,6 +150,15 @@ def test_the_page_reads_events_and_coming_up_through_dash_only():
 
 # ------------------------------------------------------------------ the page in a browser
 
+def apart(marks, width):
+    """The markers' buttons, plot and strip together, sit side by side: none overlaps the next, and each is a whole target wide
+    (24 px, WCAG 2.5.8; 44 px tall, DS-LAYOUT-2), at any width."""
+    boxes = sorted(x["box"] for x in marks)
+    assert all(h >= 44 - 0.5 for *_, h in boxes), (width, boxes)
+    assert all(r - l >= 24 - 0.5 for l, r, _ in boxes), (width, boxes)
+    assert all(b[0] >= a[1] - 0.5 for a, b in zip(boxes, boxes[1:])), (width, boxes)
+
+
 CROWD = [("2025-09", f"September thing {i}") for i in range(5)] + [("2025-10", f"October thing {i}") for i in range(5)] + \
         [("2025-11", f"November thing {i}") for i in range(5)]   # 15 events in one season (the issue's "done when")
 
@@ -155,6 +170,7 @@ def test_the_sample_draws_merged_focusable_markers_the_switch_and_the_strip(samp
     s = harness(sample, width=width)["before"]
     assert not s["sideways"]
     m = s["charts"]["monthly"]
+    apart(m["marks"], width)
     labels = [x["label"] for x in m["marks"] if not x["ahead"]]
     assert all(x["focusable"] for x in m["marks"])
     assert "Oct 2025 to Nov 2025, 2 life events: Moved to a bigger hole, rent goes up (move); Sam's knee mended at the healer (health · Sam)" in labels
@@ -167,7 +183,11 @@ def test_the_sample_draws_merged_focusable_markers_the_switch_and_the_strip(samp
     assert ahead and all(x.startswith("Coming up, ") for x in ahead) and any("Elanor starts at the Bywater nursery (family)" in x for x in ahead)
     assert m["ahead"]
     cl = s["lists"]["coming-list"]
-    assert cl["summary"] == "Coming up in the next 12 months (6)" and "Sep 2026: Elanor starts at the Bywater nursery (family)" in cl["items"]
+    assert cl["summary"] == "Coming up (8)" and "Sep 2026: Elanor starts at the Bywater nursery (family)" in cl["items"]
+    # what the strip's 12 months do not reach stays in the list, said so, however far ahead (the student loan's payoff is years out)
+    assert [i for i in cl["items"] if "after the chart" in i] == ["Sep 2027: A new cart target (planned purchase, $30,000) · after the chart’s 12 months",
+                                                                  "May 2032: Lembas Student Loan paid off (est.) (payoff) · after the chart’s 12 months"]
+    assert len(ahead) <= 6 and not [x for x in ahead if "new cart" in x or "paid off" in x]
     assert "Sep 2026: Q3 federal estimate (tax deadline, $1,636)" in cl["items"]
     # the chips name only the kinds and people of events on the chart (the envelope event's "other" is not one)
     assert s["chips"] == [["All", "true"], ["Job", "false"], ["Move", "false"], ["Family", "false"], ["Health", "false"],
@@ -200,7 +220,7 @@ def test_a_hidden_kind_and_the_switch_combine_and_show_reveals_only_the_kind(sam
     labels = [x["label"] for x in s["charts"]["monthly"]["marks"] if not x["ahead"]]
     assert "Oct 2025, 1 life event: Moved to a bigger hole, rent goes up (move)" in labels and not [x for x in labels if "knee" in x]
     assert s["charts"]["monthly"]["note"] == "1 hidden · show"
-    assert "Nov 2025: Sam's knee mended at the healer (health · Sam)" in s["lists"]["event-list"]["items"]   # hidden from the chart, not the list
+    assert "Nov 2025: Sam's knee mended at the healer (health · Sam) · hidden kind" in s["lists"]["event-list"]["items"]   # hidden from the chart, not the list
     after = [x["label"] for x in r["after"]["charts"]["monthly"]["marks"] if not x["ahead"]]
     assert any("Sam's knee mended" in x for x in after) and not [x for x in after if "envelope" in x]
     assert s["tables"] == r["after"]["tables"]   # display only
@@ -217,12 +237,34 @@ def test_fifteen_events_in_one_season_draw_at_most_one_marker_a_month_each_listi
         for width in (1280, 390):
             s = harness(sample, width=width)["before"]
             marks = [x for x in s["charts"]["monthly"]["marks"] if not x["ahead"]]
-            season = [x for x in marks if re.match(r"(Sep|Oct|Nov) 2025", x["label"])]
+            # the markers holding the season (at phone width a marker may start a month or two before it, taking a nearer event)
+            season = [x for x in marks if " thing " in x["label"]]
             assert 1 <= len(season) <= 3, [x["label"] for x in season]   # three months: at most one marker each
+            starts = [re.match(r"[A-Z][a-z]{2} \d{4}", x["label"]).group(0) for x in marks]
+            assert len(starts) == len(set(starts)), starts   # no two markers in one month
             for month, label in CROWD:
                 assert sum(label + " (other)" in x["label"] for x in season) == 1, label   # every event is named by exactly one marker
             assert all(x["focusable"] for x in marks)
+            apart(s["charts"]["monthly"]["marks"], width)
             assert not s["sideways"]
     finally:
         with db.pool.connection() as conn:
             conn.execute("DELETE FROM life_events WHERE label LIKE '% thing %'"); conn.commit(); rebuild(conn)
+
+
+@browser
+def test_an_event_later_than_the_strip_stays_in_the_coming_up_list(sample):
+    """The strip draws the next 12 months; an event further ahead is in no marker, so the Coming up list keeps it, said so."""
+    with db.pool.connection() as conn:
+        conn.execute("INSERT INTO life_events (month, label, kind) VALUES ('2028-05', 'Sam retires from gardening', 'job')"); conn.commit()
+        rebuild(conn)
+    try:
+        set_table([])
+        s = harness(sample)["before"]
+        assert not [x for x in s["charts"]["monthly"]["marks"] if "retires" in x["label"]]
+        cl = s["lists"]["coming-list"]
+        assert "May 2028: Sam retires from gardening (job) · after the chart’s 12 months" in cl["items"] and cl["summary"] == "Coming up (9)"
+        assert not [i for i in s["lists"]["event-list"]["items"] if "retires" in i]   # in one list, not both
+    finally:
+        with db.pool.connection() as conn:
+            conn.execute("DELETE FROM life_events WHERE label = 'Sam retires from gardening'"); conn.commit(); rebuild(conn)

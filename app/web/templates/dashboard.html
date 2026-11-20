@@ -74,7 +74,7 @@
       <details class="how"><summary>How to read this</summary><p>Each ring is a month. The gap between income and spend plus debt is the month’s net. A month where spend plus debt sits above income was funded from savings or a one-off inflow. Spikes in income are bonuses, tax refunds, stimulus or severance; spikes in spend are usually a tax bill, a trip or a project.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Income against outgo, figures"><table><thead><tr><th scope="col">Month</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Spend + debt</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-monthly" data-source="monthly events"></tbody></table></div></details>
       <div class="ev-filter" data-draw="ev-filter" data-source="events"></div>
       <div class="chart" data-draw="monthly" data-source="monthly events coming_up"></div>
-      <details class="how evlist"><summary>Life events in this period</summary><ul class="key row events" data-draw="event-list" data-source="events" aria-label="Life events"></ul></details>
+      <details class="how evlist"><summary>Life events in this period</summary><ul class="key row events" data-draw="event-list" data-source="events monthly coming_up" aria-label="Life events"></ul></details>
       <details class="how evlist"><summary>Coming up</summary><ul class="key row events" data-draw="coming-list" data-source="coming_up events" aria-label="Coming up"></ul></details>
       <div class="legend"><span data-c="0">Income</span><span data-c="1">Living spend</span><span data-c="2">Spend + debt</span></div>
     </div>
@@ -585,22 +585,25 @@ window.HL = (() => {
   const evHidden = (evs) => new Set(evs.filter((e) => onChart(e) && e.kind && dash.hidden('event_kind', e.kind)).map((e) => e.kind)).size;   // kinds, not events; shown or not
   const KIND_WORDS = { job: 'Job', move: 'Move', family: 'Family', health: 'Health', purchase: 'Purchase', debt: 'Debt', other: 'Other' };   // event kinds as chips name them (db/migrations/0109): a label, not a role
   const mIdx = (m) => { const [y, mo] = String(m).split('-').map(Number); return y * 12 + mo - 1; };
+  // A marker's button is the tap and pointer target: 44 px tall (DS-LAYOUT-2) and EV_TARGET wide, WCAG 2.5.8's 24 px, so a phone's
+  // narrow months keep their own markers; app.css's .ev-mark has the same width.
+  const EV_TARGET = 24;
+  const evFinish = (g) => {
+    const kinds = new Set(g.events.map((e) => e.kind || null)), cols = new Set(g.events.map((e) => e.color || evColor(e)));
+    Object.assign(g, { n: g.events.length, kind: kinds.size === 1 ? [...kinds][0] : null, color: cols.size === 1 ? [...cols][0] : REF,
+                       last: g.events[g.events.length - 1].m, text: g.events.map((e) => e.text || evText(e)).join('; ') });
+    return g;
+  };
   // Events within one month of each other are one marker with a count (#140): a marker holds the events from its first month to
-  // the month after, so a crowded season draws at most one marker per month. On a dense axis (years at phone width) a marker also
-  // takes the events closer than `gap` pixels to it, so no two overprint. xOf: month -> pixel.
-  const evGroups = (evs, xOf, gap = 20) => {
+  // the month after, so a crowded season draws at most one marker per month. A marker also takes the events closer than `gap`
+  // pixels to it (the target size), so no two buttons overlap and no two dots overprint. xOf: month -> pixel.
+  const evGroups = (evs, xOf, gap = EV_TARGET) => {
     const out = [];
     for (const e of [...evs].sort((a, b) => a.m < b.m ? -1 : a.m > b.m ? 1 : String(a.label).localeCompare(String(b.label)))) {
       const g = out[out.length - 1];
       if (g && (mIdx(e.m) - mIdx(g.m) <= 1 || xOf(e.m) - xOf(g.m) < gap)) g.events.push(e); else out.push({ m: e.m, events: [e] });
     }
-    for (const g of out) {
-      const kinds = new Set(g.events.map((e) => e.kind || null)), cols = new Set(g.events.map((e) => e.color || evColor(e)));
-      Object.assign(g, { n: g.events.length, kind: kinds.size === 1 ? [...kinds][0] : null, color: cols.size === 1 ? [...cols][0] : REF,
-                         last: g.events[g.events.length - 1].m });
-      g.text = g.events.map((e) => e.text || evText(e)).join('; ');
-    }
-    return out;
+    return out.map(evFinish);
   };
   const evText = (e) => e.label + ([e.kind, e.person].filter(Boolean).length ? ` (${[e.kind, e.person].filter(Boolean).join(' · ')})` : '');   // its label, then its kind and person when set (#109)
   const span2 = (g) => g.last !== g.m ? `${fmtM(parseM(g.m))} to ${fmtM(parseM(g.last))}` : fmtM(parseM(g.m));
@@ -611,6 +614,11 @@ window.HL = (() => {
   const eventMarks = (el, svg, groups, t, opts) => {
     if (!groups.length) return;
     const { cx, top, bottom } = opts, dot = top + 4, r = (g) => g.n > 1 ? 8 : 4;
+    // a button is centred on its dot but kept inside the chart's box; a marker whose kept-in button would overlap the one before
+    // takes its events, so the targets never overlap, even at the edges
+    const T = EV_TARGET, W = el.clientWidth || 600, left = (g) => Math.max(0, Math.min(W - T, cx(g) - T / 2));
+    groups = groups.reduce((acc, g) => { const p = acc[acc.length - 1];
+      if (p && left(g) - left(p) < T) { p.events.push(...g.events); evFinish(p); } else acc.push(g); return acc; }, []);
     const lines = svg.append('g').attr('class', 'ev-lines');
     lines.selectAll('line').data(groups).join('line').attr('x1', cx).attr('x2', cx).attr('y1', top).attr('y2', bottom).attr('stroke', (g) => g.color)
       .attr('stroke-dasharray', opts.dotted ? '1 5' : '2 3').attr('stroke-linecap', opts.dotted ? 'round' : null).style('pointer-events', 'none');
@@ -624,12 +632,11 @@ window.HL = (() => {
     marks.selectAll('text').data(groups.filter((g) => g.n > 1)).join('text').attr('class', 'ev-n').attr('x', cx).attr('y', dot + 4).attr('dy', '0.35em')
       .attr('text-anchor', 'middle').attr('fill', 'var(--ink)').text((g) => g.n);
     const box = Object.assign(document.createElement('div'), { className: 'ev-marks' + (opts.dotted ? ' ahead' : '') });
-    const W = el.clientWidth || 600;
     for (const g of groups) {
       const b = Object.assign(document.createElement('button'), { type: 'button', className: 'ev-mark' });
       const noun = opts.noun || ['life event', 'life events'], where = span2(g), what = `${opts.what || ''}${where}, ${g.n} ${g.n === 1 ? noun[0] : noun[1]}`;
       b.setAttribute('aria-label', `${what}: ${g.text}`);
-      b.style.setProperty('--x', Math.max(0, Math.min(W - 44, cx(g) - 22)) + 'px');   // data: where the marker is (DS-SPACE-1)
+      b.style.setProperty('--x', left(g) + 'px');   // data: where the marker is (DS-SPACE-1)
       const html = `<div class="tip-ev"><div class="t">${esc((opts.what || '') + where)}</div>` + g.events.map((e) => { const c = e.color || evColor(e); return `<div>${c !== REF ? `<span class="sw" style="--sw:${c}"></span>` : '┊ '}${esc(e.text || evText(e))}</div>`; }).join('') + '</div>';
       const open = () => t.show(cx(g), dot + 14, html), close = () => t.hide();
       b.addEventListener('focus', open); b.addEventListener('blur', close); b.addEventListener('click', open);
@@ -717,7 +724,7 @@ window.HL = (() => {
     const list = items.filter((w) => w && Number.isFinite(w.y)).sort((a, b) => a.y - b.y); let last = -Infinity;
     for (const w of list) { const ty = Math.max(w.y - 7, last + 15); last = ty; waypoint(svg, x1, x2, w.y, w.label, ty); } };
   return { money, pct, basis, fld, parseM, fmtM, mo, day, empty, fixes, waypoint, waypoints, WP_ROOM, colors, tip, esc, margins, stackChart, legend, fillTable, usd0, edgeTicks,
-           revealed, shown, hiddenNote, evColor, evShown, evHidden, evGroups, evText, eventMarks, onChart, KIND_WORDS, mIdx, REF };
+           revealed, shown, hiddenNote, evColor, evShown, evHidden, evGroups, EV_TARGET, evText, eventMarks, onChart, KIND_WORDS, mIdx, REF };
 })();
 // ---- period filter (issue #116): one range for every timeline, resolved against the LOADED months, not today's date ----
 (() => {
@@ -947,8 +954,8 @@ dash.draw('ev-filter', (box) => {
   group('kind', 'Events', 'All', o.kind, (k) => HL.KIND_WORDS[k] || k);
   group('person', 'Person', 'Everyone', o.person, (p) => p);
 });
-// what is coming up after the last loaded month (#140, the coming_up dataset of #144): the next AHEAD months, when the period reaches
-// the last loaded month. A life event in it is drawn by the same switches and chips as the markers; the rest (payoffs, yearly bills,
+// what is coming up after the last loaded month (#140, the coming_up dataset of #144), when the period reaches the last loaded month:
+// every row after it, however far; the strip draws the next AHEAD months of them and the Coming up list keeps them all. A life event in it is drawn by the same switches and chips as the markers; the rest (payoffs, yearly bills,
 // tax deadlines, dated goals) always are. Each row: {m, kind, label, amount, event?}
 HL.AHEAD = 12;
 HL.comingUp = () => {
@@ -956,7 +963,7 @@ HL.comingUp = () => {
   if (cu.status !== 'ok' || g.status !== 'ok' || !g.data.length || (R.to && R.to !== R.last)) return null;
   const last = g.data.map((r) => r.m).sort().pop(), until = mAdd(last, HL.AHEAD);
   const byKey = new Map((ev.status === 'ok' ? ev.data : []).map((e) => [e.m + '|' + e.label, e]));
-  return { last, until, rows: cu.data.filter((c) => c.m > last && c.m <= until).map((c) => ({ ...c, event: c.kind === 'event' ? (byKey.get(c.m + '|' + c.ref) || { m: c.m, label: c.label }) : null })) };
+  return { last, until, rows: cu.data.filter((c) => c.m > last).map((c) => ({ ...c, event: c.kind === 'event' ? (byKey.get(c.m + '|' + c.ref) || { m: c.m, label: c.label }) : null })) };
 };
 const mAdd = (m, n) => { const t = HL.mIdx(m) + n; return `${Math.floor(t / 12)}-${String(t % 12 + 1).padStart(2, '0')}`; };
 const CU_WORDS = { payoff: 'payoff', yearly_bill: 'yearly bill', tax_deadline: 'tax deadline', goal: 'planned purchase', event: 'life event' };
@@ -970,8 +977,9 @@ dash.draw('monthly', (el) => {
   const f = HL.fld; const rows = [...g.data].sort((a, b) => a.m < b.m ? -1 : 1).map((r) => ({ d: HL.parseM(r.m), m: r.m, income: Number(r[f('income')]), spend: Number(r[f('spend')]), outgo: Number(r[f('spend')]) + Number(r[f('debt')]) }));
   const W = el.clientWidth || 600, H = 300, mt = 10, mb = 28;
   // the Coming up strip (#140) takes the right of the plot, after the last loaded month: never markers off the end of the axis
-  const cu = HL.comingUp(), ahead = cu ? cu.rows.filter(HL.cuDrawn('monthly')) : [];
-  const stripW = ahead.length ? Math.round(Math.max(84, Math.min(200, W * 0.2))) : 0, gapW = ahead.length ? 14 : 0, xEnd = W - 8 - stripW - gapW;
+  const cu = HL.comingUp(), ahead = cu ? cu.rows.filter((c) => c.m <= cu.until).filter(HL.cuDrawn('monthly')) : [];
+  // the gap keeps the plot's last marker and the strip's first a whole target apart, so their buttons never overlap
+  const stripW = ahead.length ? Math.round(Math.max(84, Math.min(200, W * 0.2))) : 0, gapW = ahead.length ? Math.max(14, HL.EV_TARGET - 10) : 0, xEnd = W - 8 - stripW - gapW;
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
   const y = d3.scaleLinear([0, d3.max(rows, (r) => Math.max(r.income, r.outgo))], [H - mb, mt]).nice();
   const ml = HL.margins(svg, y.ticks(5), HL.money);
@@ -1008,7 +1016,7 @@ dash.draw('monthly', (el) => {
     strip.append('text').attr('x', x0 + stripW / 2).attr('y', H - mb + 16).attr('text-anchor', 'middle').text('Coming up');
     const items = ahead.map((cr) => ({ m: cr.m, label: cr.label, kind: cr.event ? cr.event.kind : null, color: cr.event ? HL.evColor(cr.event) : HL.REF, text: HL.cuText(cr) }));
     const sx = (m) => xs(HL.mIdx(m));
-    HL.eventMarks(el, svg, HL.evGroups(items, sx, 22), t, { cx: (gr) => sx(gr.m), top: mt, bottom: H - mb, dotted: true, what: 'Coming up, ', noun: ['item', 'items'] });
+    HL.eventMarks(el, svg, HL.evGroups(items, sx), t, { cx: (gr) => sx(gr.m), top: mt, bottom: H - mb, dotted: true, what: 'Coming up, ', noun: ['item', 'items'] });
   }
   HL.hiddenNote(el, 'monthly', ev.status === 'ok' ? HL.evHidden(ev.data) : 0);
 });
@@ -1020,25 +1028,30 @@ dash.draw('monthly', (el) => {
 // ---- annual grouped bars, net bars, employer stack ----
 dash.draw('event-list', (ul) => {
   // closed by default: a dozen events would otherwise push the next chart off the screen (#139); hover a marker for its label. It
-  // follows the period filter and the chips (#140), and keeps the events no marker shows: switched off the chart, or of a hidden kind.
-  // An event after the last loaded month is in the Coming up list instead.
-  const box = ul.closest('details'), g = HL.rd('events'), mm = dash.data('monthly'); ul.replaceChildren();
-  const lastM = mm.status === 'ok' && mm.data.length ? mm.data.map((r) => r.m).sort().pop() : null;
-  const evs = g.status === 'ok' ? g.data.filter(HL.evPicked()).filter((e) => !lastM || e.m <= lastM) : [];
+  // follows the period filter and the chips (#140), and keeps the events no marker shows, each said why as the Coming up list says
+  // it: switched off the chart, of a hidden kind, or before the first month the chart draws. An event after the last loaded month
+  // is in the Coming up list instead, when that list is there; otherwise it stays here, so no event drops out of both.
+  const box = ul.closest('details'), g = HL.rd('events'), mm = HL.rd('monthly'), cu = HL.comingUp(); ul.replaceChildren();
+  const ms = mm.status === 'ok' ? mm.data.map((r) => r.m).sort() : [], firstM = ms[0], lastM = ms[ms.length - 1], seen = HL.evShown('monthly');
+  const evs = g.status === 'ok' ? g.data.filter(HL.evPicked()).filter((e) => !cu || e.m <= cu.last) : [];
+  const why = (e) => !HL.onChart(e) ? ' · not on the chart' : !seen(e) ? ' · hidden kind' : firstM && e.m < firstM ? ' · before the chart’s first month'
+    : lastM && e.m > lastM ? ' · after the chart’s last month' : '';
   const n = evs.length;
   // display, not the hidden attribute: dash-shim skips draws inside [hidden], so a hidden box could never show itself again
   if (box) { box.style.display = n ? '' : 'none'; box.querySelector('summary').textContent = `Life events in this period (${n})`; }
   if (!n) return;
   for (const e of [...evs].sort((a, b) => a.m < b.m ? -1 : 1)) { const li = document.createElement('li'); const gl = document.createElement('span'); gl.className = 'key-mark'; gl.setAttribute('aria-hidden', 'true'); gl.textContent = '┊';
-    li.append(gl, `${HL.fmtM(HL.parseM(e.m))}: ${HL.evText(e)}${HL.onChart(e) ? '' : ' · not on the chart'}`); ul.append(li); }
+    li.append(gl, `${HL.fmtM(HL.parseM(e.m))}: ${HL.evText(e)}${why(e)}`); ul.append(li); }
 });
-// the Coming up strip's items as words (DS-CHART-5), with the life events it leaves out (switched off, or a hidden kind) said so
+// the Coming up strip's items as words (DS-CHART-5), and every later one the strip's AHEAD months do not reach; the ones it leaves
+// out (switched off, a hidden kind, or later than the strip) are said so
 dash.draw('coming-list', (ul) => {
   const box = ul.closest('details'), cu = HL.comingUp(); ul.replaceChildren();
   const picked = HL.evPicked(), rows = cu ? cu.rows.filter((c) => !c.event || picked(c.event)) : [], drawn = HL.cuDrawn('monthly');
-  if (box) { box.style.display = rows.length ? '' : 'none'; box.querySelector('summary').textContent = `Coming up in the next ${HL.AHEAD} months (${rows.length})`; }
+  const why = (c) => c.m > cu.until ? ` · after the chart’s ${HL.AHEAD} months` : drawn(c) ? '' : c.event && !HL.onChart(c.event) ? ' · not on the chart' : ' · hidden kind';
+  if (box) { box.style.display = rows.length ? '' : 'none'; box.querySelector('summary').textContent = `Coming up (${rows.length})`; }
   for (const c of rows) { const li = document.createElement('li'); const gl = document.createElement('span'); gl.className = 'key-mark'; gl.setAttribute('aria-hidden', 'true'); gl.textContent = '┊';
-    li.append(gl, `${HL.fmtM(HL.parseM(c.m))}: ${HL.cuText(c)}${drawn(c) ? '' : c.event && !HL.onChart(c.event) ? ' · not on the chart' : ' · hidden kind'}`); ul.append(li); }
+    li.append(gl, `${HL.fmtM(HL.parseM(c.m))}: ${HL.cuText(c)}${why(c)}`); ul.append(li); }
 });
 dash.draw('annual', (el) => {
   const g = HL.rd('yearly'); el.replaceChildren();
