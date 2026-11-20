@@ -41,6 +41,7 @@ DATASETS = ("monthly", "yearly", "cat_month", "cat_year", "item_year", "budget_i
             "year_review",   # #157: derived figures; a debt paid off is named by its type
             "look_ahead",   # #148: a debt's freed payment is named by its type, never its account (PUBLIC)
             "planned_purchases",   # #158: served without an account name where a purchase is saved for in an account (PUBLIC)
+            "before_after",   # #159: a month's averages either side of a life event; the event's own label, as `events` carries it
             "by_person",   # #156: per-person figures (earned, own spending), empty with fewer than two people; no accounts, no decisions
             "quarterly", "cat_quarter", "quarter_review")   # #147: derived figures only; the look ahead names no account (PUBLIC): the year's contract income, expected and set-aside figures; an account in it is not named: served without an account name where a bill is saved for in an account (PUBLIC)   # #155: read only; a decision's private note is never in the dataset
 MAX_SECTIONS, MAX_HEADING, MAX_TEXT = 12, 200, 5000

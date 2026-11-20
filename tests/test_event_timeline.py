@@ -58,7 +58,7 @@ def test_the_row_editor_switches_an_event_off_the_chart_and_back(client, reset_d
         got = {e["label"]: e["on_chart"] for e in events(conn)}
     assert got["Started a new budget method"] is True and got["Moved"] is True and "x" not in got
     page = client.get("/settings").text
-    assert 'data-fields="m,label,kind,person,on_chart"' in page and "On the chart" in page and "&#34;on_chart&#34;: [&#34;yes&#34;, &#34;no&#34;]" in page
+    assert 'data-fields="m,label,kind,person,on_chart,new_normal"' in page and "On the chart" in page and "&#34;on_chart&#34;: [&#34;yes&#34;, &#34;no&#34;]" in page
 
 
 def test_json_editor_cli_and_settings_zip_carry_the_switch_only_when_off(client, reset_db, tmp_path, capsys):

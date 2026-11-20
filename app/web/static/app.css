@@ -126,6 +126,11 @@ table.edit [aria-invalid=true] { border-color: var(--danger); }
   #dash-root.hl .legend.years { gap: 0 var(--space-2); }
   #dash-root.hl .lede a, #dash-root.hl .note a { display: inline-block; min-height: 44px; line-height: 44px; }
   #dash-root.hl .card { padding: var(--space-3); }
+  #dash-root.hl .ba-field { width: 100%; } #dash-root.hl .ba-field select { flex: 1 1 0; min-width: 0; }   /* before and after (issue 159): the event picker takes the row */
+  /* before and after: four columns fit at 390 px without a sideways swipe; the percent goes under the change, a long name wraps */
+  #dash-root.hl #ba-card .tbl th, #dash-root.hl #ba-card .tbl td { padding-inline: var(--space-1); }
+  #dash-root.hl #ba-card .tbl tbody th, #dash-root.hl #ba-card .tbl tbody td:first-child { white-space: normal; overflow-wrap: anywhere; }
+  #dash-root.hl #ba-card .ba-pct { display: block; }
   #dash-root.hl .tbl { max-width: 100%; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
   /* year tables: the first column (year / category / item) stays put while the numbers scroll under it */
   #dash-root.hl .tbl th:first-child, #dash-root.hl .tbl td:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface-200); border-right: 1px solid var(--line); }
@@ -324,6 +329,7 @@ details[open]:not(#dash-root details) > summary::before { transform: translateY(
 .hl .seg button, .hl .tabs button { font: inherit; background: var(--surface-200); color: var(--ink-muted); border: 0; padding: var(--space-1) var(--space-2); cursor: pointer; }
 .hl .seg button + button { border-left: 1px solid var(--line); }
 .hl .seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface-100); }
+.hl .seg button[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }   /* a window with no row: looks as .btn:disabled, still in the tab order */
 .hl .tabs { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .hl .tabs button { border: 1px solid var(--line); border-radius: var(--radius-md); }
 .hl .tabs button[aria-selected="true"] { background: var(--ink); color: var(--surface-100); border-color: var(--ink); }
@@ -377,6 +383,7 @@ details[open]:not(#dash-root details) > summary::before { transform: translateY(
 .hl th { position: sticky; top: 0; background: var(--surface-200); font-weight: var(--weight-strong); color: var(--ink-muted); }
 .hl tr.filled td { color: var(--warning); }
 .hl td.neg { color: var(--danger); }
+.hl td.kept { position: relative; }   /* holds its visually hidden "kept at its plan" inside the table's scroll box, not the page's */
 .hl .prose { max-width: 70ch; }
 .hl .prose p, .hl .prose li { line-height: 1.5; }
 .hl .prose h3 { font-size: var(--text-heading); font-weight: var(--weight-strong); margin: var(--space-4) 0 var(--space-1); }
@@ -432,6 +439,7 @@ details[open]:not(#dash-root details) > summary::before { transform: translateY(
 .hl .review .more { margin-top: var(--space-1); color: var(--ink-muted); }
 .hl .review details[open] { grid-column: span 2; }
 .hl .summary-list.two { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
+.hl .ba-field { display: inline-flex; align-items: center; gap: var(--space-1); max-width: 100%; } .hl .ba-field label { margin: 0; font-weight: var(--weight-strong); white-space: nowrap; } .hl .ba-field select { max-width: 100%; margin: 0; }
 .hl .card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .hl .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .hl .topics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: var(--space-2) var(--space-4); margin-top: var(--space-2); }

@@ -115,17 +115,24 @@ _cpi = {r["month"]: float(r["cpi"]) for r in csv.DictReader(open("cpi_u.csv"))}
 w("net_worth", _bal.net_worth(_brows, _did, _cpi, D["meta"]["cpi_base"]))
 # emergency_fund (#150): emergency money (asset accounts marked emergency) over the average monthly outgo (living spend plus debt
 # payments) of the trailing twelve budget months, or as many as there are. null coverage: no emergency account, or no outgo yet.
+# A life event marked the new normal (#159) starts the window at it, once it has three months: outgo_from and outgo_since say so.
+import before_after as _ba   # noqa: E402  (beside this script)
 _ems, _efr = sorted(mn), []
 for i, m in enumerate(_ems):
     held = [r["amount"] for r in _brows if r["m"] == m and r["emergency"]]
-    win = _ems[max(0, i - 11):i + 1]; outgo = sum(mn[x]["spend"] + mn[x]["debt"] for x in win) / len(win)
+    win, _since = _ba.cut(_ems[max(0, i - 11):i + 1], D["events"]); outgo = sum(mn[x]["spend"] + mn[x]["debt"] for x in win) / len(win)
     money = round(sum(held), 2) if held else None
     _efr.append({"m": m, "emergency": money, "accounts": len(held), "unconfirmed": sum(1 for r in _brows if r["m"] == m and r["emergency"] and not r["confirmed"]),
-                 "outgo": round(outgo, 2), "outgo_months": len(win), "months": round(money / outgo, 2) if money is not None and outgo > 0 else None})
+                 "outgo": round(outgo, 2), "outgo_months": len(win), "outgo_from": win[0], "outgo_since": _ba.since_label(_since),
+                 "months": round(money / outgo, 2) if money is not None and outgo > 0 else None})
 for a, b in zip(_efr, _efr[1:]):
     b["change"] = round(b["months"] - a["months"], 2) if a["months"] is not None and b["months"] is not None else None
 if _efr: _efr[0]["change"] = None
 w("emergency_fund", _efr)
+# before_after (#159): each life event against the months before and after it (3, 6 and 12), a month's average on each side, nominal
+# and real, with the categories that moved and those new since it. Movers are living spend; the debt and savings groups are set apart.
+w("before_after", _ba.before_after(D["events"], json.load(open("dash_data/monthly.json")), json.load(open("dash_data/cat_month.json")), None,
+                                   set(RU["debt_groups"] if RU.get("debt_groups") is not None else ["Debt"]) | set(RU.get("goal_savings_groups") or [])))   # role default
 
 
 # what the Goals tab counts as giving, housing and savings (defaults as in build_ledger.RULES), and the catch-all list for its copy

@@ -79,6 +79,29 @@
       <div class="legend"><span data-c="0">Income</span><span data-c="1">Living spend</span><span data-c="2">Spend + debt</span></div>
     </div>
 
+    <div class="card" id="ba-card">
+      <h2 id="ba">Before and after a life event</h2>
+      <p class="finding" data-draw="fd-ba" data-source="before_after"></p>
+      <ul class="key row"><li>every figure is a month's average: the months before the event against its month and the months after</li><li>the Dollars switch applies, so inflation is not read as a change of life</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Before is the budget months before the event; after is the event's own month and the months after it, as many on each side as you choose. Each figure is a month's average over the months loaded on that side, so a side with fewer months still compares fairly, and the line above the table says when a side is short. Savings rate is net kept over income. The categories are living spend: debt payments and the savings groups are in the rows above. A category is new when nothing was spent on it in any loaded month before the event and its first spending falls in the event's month or the two after it, so one that starts much later is not put down to the event. In real dollars the categories are ranked by their change in real dollars. The period filter does not apply here: the event sets the months. On Settings → Life events, an event marked as the new normal also starts the averages the look ahead, the emergency fund and the suggested plan use.</p></details>
+      <div data-draw="ba-empty" data-source="before_after events"></div>
+      <div id="ba-body">
+        <div class="tools ba-tools" data-draw="ba-pick" data-source="before_after">
+          <span class="ba-field"><label for="ba-event">Life event</label> <select id="ba-event"></select></span>
+          <span class="seg" role="group" aria-label="Months on each side" id="ba-n"><button type="button" data-n="3" aria-pressed="false">3 months</button><button type="button" data-n="6" aria-pressed="true">6 months</button><button type="button" data-n="12" aria-pressed="false">12 months</button></span>
+        </div>
+        <p class="note" data-draw="ba-span" data-source="before_after"></p>
+        <div class="tbl" role="region" tabindex="0" aria-labelledby="ba"><table><thead><tr><th scope="col">Figure</th><th scope="col" class="num">Before</th><th scope="col" class="num">After</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="ba-compare" data-source="before_after"></tbody></table></div>
+        <div class="card-head">
+          <h3 class="sub" id="ba-movers">The categories that moved most</h3>
+          <div class="seg" role="group" aria-label="Rank the categories" data-switch="ba-movers"><button type="button" aria-pressed="true" data-show="ba-t-dollars">By dollars</button><button type="button" aria-pressed="false" data-show="ba-t-pct">By percent</button></div>
+        </div>
+        <div id="ba-t-dollars"><div class="tbl short" role="region" tabindex="0" aria-labelledby="ba-movers"><table><thead><tr><th scope="col">Category</th><th scope="col" class="num">Before</th><th scope="col" class="num">After</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="ba-movers-dollars" data-source="before_after"></tbody></table></div></div>
+        <div id="ba-t-pct" hidden><div class="tbl short" role="region" tabindex="0" aria-labelledby="ba-movers"><table><thead><tr><th scope="col">Category</th><th scope="col" class="num">Before</th><th scope="col" class="num">After</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="ba-movers-pct" data-source="before_after"></tbody></table></div></div>
+        <p class="note" data-draw="ba-new" data-source="before_after"></p>
+      </div>
+    </div>
+
 
     <div class="card">
       <h2 id="radar-chart">Category shape, year over year</h2>
@@ -165,16 +188,17 @@
     </div>
     <div class="card" id="lm-ahead-card">
       <h2 id="lm-ahead">Where the current pace leads</h2>
-      <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the 12-month pace, with the 3-month pace beside it</li></ul>
-      <div class="tbl" role="region" tabindex="0" aria-labelledby="lm-ahead"><table><thead><tr><th scope="col">In</th><th scope="col" class="num">Kept, 12-month pace</th><th scope="col" class="num">Kept, 3-month pace</th><th scope="col" class="num">Net worth</th></tr></thead><tbody data-draw="ahead-rows" data-source="look_ahead"></tbody></table></div>
+      <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the pace (the last twelve months, or since the new normal), with the 3-month pace beside it</li></ul>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="lm-ahead"><table><thead><tr><th scope="col">In</th><th scope="col" class="num">Kept, at the pace</th><th scope="col" class="num">Kept, 3-month pace</th><th scope="col" class="num">Net worth</th></tr></thead><tbody data-draw="ahead-rows" data-source="look_ahead"></tbody></table></div>
+      <p class="note" data-draw="ahead-since" data-source="look_ahead"></p>
       <h3 class="sub" id="lm-ahead-dates">Dates at this pace, 12 months on</h3>
       <dl class="dti" data-draw="ahead-facts" data-source="look_ahead" aria-labelledby="lm-ahead-dates"></dl>
-      <details class="how"><summary>How it is worked out</summary><p>The pace is the monthly net (income less living spend and debt payments) averaged over the last twelve budget months. Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. No investment return is assumed unless a yearly growth is set (Settings → Pipeline rules → All rules as JSON: assumed_growth_pct), and no change in income or spending.</p><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
+      <details class="how"><summary>How it is worked out</summary><p>The pace is the monthly net (income less living spend and debt payments) averaged over the last twelve budget months, or over the months since a life event the household marked as its new normal (Settings → Life events). Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. No investment return is assumed unless a yearly growth is set (Settings → Pipeline rules → All rules as JSON: assumed_growth_pct), and no change in income or spending.</p><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
     </div>
     <div class="card" id="lm-ef-card">
       <h2 id="lm-ef">{{ glyph('emergency-fund') }} Emergency fund</h2>
       <ul class="key row"><li>if income stopped: months of outgo the emergency savings would cover</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Emergency money is the month-end balance of the asset accounts marked Emergency (Settings → Accounts; cash and savings accounts are, unless you switch one off, such as a holiday fund). Outgo is living spend plus debt payments, averaged over the last twelve budget months, so one heavy month does not swing it. Total outgo is used, not a bare-bones budget: it is the honest figure. A target shows when you set emergency_months on Settings → Goals.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Emergency money is the month-end balance of the asset accounts marked Emergency (Settings → Accounts; cash and savings accounts are, unless you switch one off, such as a holiday fund). Outgo is living spend plus debt payments, averaged over the last twelve budget months (or since the household's new normal, when it marked one), so one heavy month does not swing it. Total outgo is used, not a bare-bones budget: it is the honest figure. A target shows when you set one on Settings → Goals: a goal with the key emergency_months, in months.</p></details>
       <dl class="dti" data-draw="lm-ef" data-source="emergency_fund goals"></dl>
     </div>
     <div class="card" id="lm-dti-card">
@@ -209,12 +233,13 @@
         <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Over and under plan, figures"><table><thead><tr><th scope="col">Category</th><th scope="col">Planned</th><th scope="col">Spent</th><th scope="col">vs plan</th></tr></thead><tbody data-draw="dt-lm-var" data-source="lm_cats"></tbody></table></div></details>
       </div>
       <div class="card">
-        <h2 id="lm-avg-chart">Against the trailing twelve months</h2>
+        <h2 id="lm-avg-chart">Against the recent average</h2>
         <p class="finding" data-draw="fd-lm-avg" data-source="lm_cats"></p>
-        <ul class="key row"><li><span class="bar r" style="--k: var(--danger)"></span>above its average</li><li><span class="bar l" style="--k: var(--success)"></span>below it</li><li>should the plan move?</li></ul>
-        <details class="how"><summary>How to read this</summary><p>Spent this month minus the average of the twelve months before it, by category. This compares the month with its own recent history rather than with the plan. A category that is over plan but at its twelve-month average has a plan problem; one that is at plan but far above its average had an unusual month.</p></details>
+        <p class="note" data-draw="lm-avg-since" data-source="plan_suggestions"></p>
+        <ul class="key row"><li><span class="bar r" style="--k: var(--danger)"></span>above its average</li><li><span class="bar l" style="--k: var(--success)"></span>below it</li><li>a bar far from zero, either way, is a plan to look at again</li></ul>
+        <details class="how"><summary>How to read this</summary><p>Spent this month minus the average of the twelve months before it (or of the months since a life event the household marked as its new normal), by category. This compares the month with its own recent history rather than with the plan. A category that is over plan but at its average has a plan problem; one that is at plan but far above its average had an unusual month.</p></details>
         <div class="chart" data-draw="lm-avg" data-source="lm_cats"></div>
-        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Against the trailing twelve months, figures"><table><thead><tr><th scope="col">Category</th><th scope="col">12-month average</th><th scope="col">Spent</th><th scope="col">vs average</th></tr></thead><tbody data-draw="dt-lm-avg" data-source="lm_cats"></tbody></table></div></details>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Against the recent average, figures"><table><thead><tr><th scope="col">Category</th><th scope="col">Average</th><th scope="col">Spent</th><th scope="col">vs average</th></tr></thead><tbody data-draw="dt-lm-avg" data-source="lm_cats"></tbody></table></div></details>
       </div>
     </div>
     <div class="card">
@@ -223,9 +248,10 @@
         <div class="seg" role="group" aria-label="Which table" data-switch="lm-tables"><button type="button" aria-pressed="true" data-show="lm-t-cats">By category</button><button type="button" aria-pressed="false" data-show="lm-t-items">Envelopes that missed most</button></div>
       </div>
       <div id="lm-t-cats">
-        <ul class="key row"><li><span class="key-mark" aria-hidden="true">Σ</span>Planned, spent, 12-month average</li><li><span class="key-mark" aria-hidden="true">↑10</span>Suggested plan: the average rounded up to the next $10</li><li><span class="key-mark" aria-hidden="true">=</span>Housing, Debt, Insurance keep their plan</li></ul>
+        <p class="note" data-draw="lm-since" data-source="plan_suggestions"></p>
+        <ul class="key row" data-draw="lm-cats-key" data-source="lm_cats goal_config"></ul>
         <div class="tbl short" role="region" tabindex="0" aria-labelledby="lm-table"><table data-source="lm_cats" data-row-key="category"><thead><tr>
-          <th data-field="category">Category</th><th data-field="planned">Planned</th><th data-field="actual">Spent</th><th data-field="vs_plan">vs plan</th><th data-field="avg12">12-mo avg</th><th data-field="vs_avg">vs avg</th><th data-field="suggest">Suggested plan</th>
+          <th data-field="category">Category</th><th data-field="planned">Planned</th><th data-field="actual">Spent</th><th data-field="vs_plan">vs plan</th><th data-field="avg12">Average</th><th data-field="vs_avg">vs avg</th><th data-field="suggest">Suggested plan</th>
         </tr></thead><tbody data-draw="lm-cats"></tbody></table></div>
       </div>
       <div id="lm-t-items" hidden>
@@ -397,11 +423,12 @@
     </div>
     <div class="card" id="q-ahead-card">
       <h2 id="q-ahead">Where the current pace leads</h2>
-      <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the 12-month pace, with the 3-month pace beside it</li></ul>
-      <div class="tbl" role="region" tabindex="0" aria-labelledby="q-ahead"><table><thead><tr><th scope="col">In</th><th scope="col" class="num">Kept, 12-month pace</th><th scope="col" class="num">Kept, 3-month pace</th><th scope="col" class="num">Net worth</th></tr></thead><tbody data-draw="ahead-rows" data-source="look_ahead"></tbody></table></div>
+      <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the pace (the last twelve months, or since the new normal), with the 3-month pace beside it</li></ul>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="q-ahead"><table><thead><tr><th scope="col">In</th><th scope="col" class="num">Kept, at the pace</th><th scope="col" class="num">Kept, 3-month pace</th><th scope="col" class="num">Net worth</th></tr></thead><tbody data-draw="ahead-rows" data-source="look_ahead"></tbody></table></div>
+      <p class="note" data-draw="ahead-since" data-source="look_ahead"></p>
       <h3 class="sub" id="q-ahead-dates">Dates at this pace, 12 months on</h3>
       <dl class="dti" data-draw="ahead-facts" data-source="look_ahead" aria-labelledby="q-ahead-dates"></dl>
-      <details class="how"><summary>How it is worked out</summary><p>The pace is the monthly net (income less living spend and debt payments) averaged over the last twelve budget months. Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. No investment return is assumed unless a yearly growth is set (Settings → Pipeline rules → All rules as JSON: assumed_growth_pct), and no change in income or spending.</p><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
+      <details class="how"><summary>How it is worked out</summary><p>The pace is the monthly net (income less living spend and debt payments) averaged over the last twelve budget months, or over the months since a life event the household marked as its new normal (Settings → Life events). Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. No investment return is assumed unless a yearly growth is set (Settings → Pipeline rules → All rules as JSON: assumed_growth_pct), and no change in income or spending.</p><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
     </div>
   </section>
   <section id="position" class="page" role="tabpanel" aria-labelledby="tab-position" tabindex="0" hidden>
@@ -811,20 +838,22 @@ dash.calc('lm_totals', { inputs: ['budget_items'], title: 'Last month totals vs 
   const net = inc - sp - db, anet = ainc - asp - adb;
   return [{ row: 'last', month: last, income_actual: inc, income_planned: incp, income_vs_plan: inc - incp, spend_actual: sp, spend_planned: spp, spend_vs_plan: sp - spp, debt_actual: db, debt_planned: dbp, debt_vs_plan: db - dbp, net_actual: net, net_avg: anet, net_vs_avg: net - anet, income_avg: ainc, spend_avg: asp, debt_avg: adb }];
 } });
-dash.calc('lm_cats', { inputs: ['budget_items', 'goal_config'], title: 'Last month by category vs plan and trailing average', description: 'For the latest budget month, per category: planned, spent, gap to plan, average of the twelve months before, gap to that average, and a suggested plan (12-month average rounded up to the nearest 10; the plan_keep_categories rule\u2019s categories keep the current plan).', fn: (budget_items, goal_config) => {
+dash.calc('lm_cats', { inputs: ['budget_items', 'goal_config'], title: 'Last month by category vs plan and trailing average', description: 'For the latest budget month, per category: planned, spent, gap to plan, average of the twelve months before (from the household\u2019s new normal when it marked one, as plan_suggestions.avg_from says), gap to that average, and a suggested plan (that average rounded up to the nearest 10; the plan_keep_categories rule\u2019s categories keep the current plan, and kept is true for them).', fn: (budget_items, goal_config) => {
   const gc = (goal_config && goal_config[0]) || {}, saveGroups = new Set(gc.savings_groups || []), giveCats = new Set(gc.giving_categories || ['Giving']);   // role default
-  const months = [...new Set(budget_items.map((r) => r.m))].sort(); const last = months[months.length - 1]; const prev = months.slice(-13, -1); const n = prev.length || 1;
+  const months = [...new Set(budget_items.map((r) => r.m))].sort(); const last = months[months.length - 1]; const prev = months.slice(-13, -1);
   const keep = gc.plan_keep_categories || ['Housing', 'Debt', 'Insurance'];   // role default, until a rebuild emits plan_keep_categories
   const cats = [...new Set(budget_items.map((r) => r.category))];
   const psd = dash.data('plan_suggestions'), ps = psd.status === 'ok' ? psd.data : [];   // read, not an input: an install not yet rebuilt still draws
+  const base = ps.find((r) => r.m === last && r.avg_from);   // the new normal (#159): the window the pipeline averaged, so the average and the suggestion agree
+  const win = base ? prev.filter((m) => m >= base.avg_from) : prev, nw = win.length || 1;
   return cats.map((c) => {
     const cur = budget_items.filter((r) => r.m === last && r.category === c); const flow = cur[0] ? cur[0].flow : (budget_items.find((r) => r.category === c) || {}).flow;
     const planned = d3.sum(cur, (r) => Number(r.planned)), actual = d3.sum(cur, (r) => Number(r.actual));
-    const avg12 = d3.sum(budget_items.filter((r) => prev.includes(r.m) && r.category === c), (r) => Number(r.actual)) / n;
+    const avg12 = d3.sum(budget_items.filter((r) => win.includes(r.m) && r.category === c), (r) => Number(r.actual)) / nw;
     const built = ps.find((r) => r.m === last && r.category === c);   // the pipeline's figure (pipeline/decisions.py), which the check-in reads too
-    const suggest = built ? Number(built.suggest) : keep.includes(c) ? planned : Math.ceil(avg12 / 10) * 10;
+    const kept = keep.includes(c), suggest = built ? Number(built.suggest) : kept ? planned : Math.ceil(avg12 / 10) * 10;
     const want_more = flow === 'income' || flow === 'debt' || giveCats.has(c) || cur.some((r) => saveGroups.has(r.group));   // more than planned is good
-    return { category: c, flow, planned, actual, vs_plan: actual - planned, avg12, vs_avg: actual - avg12, suggest, want_more };
+    return { category: c, flow, planned, actual, vs_plan: actual - planned, avg12, vs_avg: actual - avg12, suggest, kept, want_more };
   }).filter((r) => r.planned || r.actual || r.avg12).sort((a, b) => Math.abs(b.vs_plan) - Math.abs(a.vs_plan));
 } });
 dash.calc('lm_items', { inputs: ['budget_items'], title: 'Last month envelopes by gap to plan', description: 'For the latest budget month, every budget item with planned, spent and the gap (spent minus planned), largest absolute gap first.', fn: (budget_items) => {
@@ -1062,6 +1091,58 @@ dash.draw('coming-list', (ul) => {
   for (const c of rows) { const li = document.createElement('li'); const gl = document.createElement('span'); gl.className = 'key-mark'; gl.setAttribute('aria-hidden', 'true'); gl.textContent = '┊';
     li.append(gl, `${HL.fmtM(HL.parseM(c.m))}: ${HL.cuText(c)}${why(c)}`); ul.append(li); }
 });
+// ---- before and after a life event (#159): the before_after dataset, a row per event and window length (pipeline/before_after.py) ----
+const baRows = () => { const g = dash.data('before_after'); return g.status === 'ok' ? g.data : []; };
+const baKey = (r) => r.m + '|' + r.label;
+const baEvents = () => { const seen = new Map(); for (const r of baRows()) if (!seen.has(baKey(r))) seen.set(baKey(r), r); return [...seen.values()]; };
+const baEvent = () => { const evs = baEvents(), p = dash.params().ba_event; if (!evs.length) return null;
+  return evs.find((e) => baKey(e) === p) || [...evs].reverse().find((e) => e.new_normal) || evs[evs.length - 1]; };   // the newest new normal, else the newest event
+const baRow = () => { const e = baEvent(); if (!e) return null; const rs = baRows().filter((r) => baKey(r) === baKey(e)), n = Number(dash.params().ba_n) || 6;
+  return rs.find((r) => r.n === n) || rs.find((r) => r.n === 6) || rs[0]; };
+const baM = (m) => HL.fmtM(HL.parseM(m));
+const BA_PCT_FLOOR = 25;   // PCT_FLOOR in pipeline/before_after.py: a month's spend before, below which a change in percent is not ranked
+const baSigned = (v) => (v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + HL.usd0(Math.abs(v)));
+const baPct = (v) => (v == null ? '' : `(${v > 0 ? '+' : v < 0 ? '−' : ''}${dash.fmt.pct(0)(Math.abs(v))})`);
+const baChange = (v, pct) => { const p = baPct(pct); return p ? [baSigned(v), p] : baSigned(v); };   // the percent goes under the amount on a phone, so Change stays in view
+const baName = (e) => HL.evText ? HL.evText(e) : e.label;
+dash.draw('ba-empty', (el) => { el.replaceChildren(); const body = document.getElementById('ba-body'), g = dash.data('before_after'), ev = dash.data('events');
+  if (g.status === 'ok' && g.data.length) { if (body) body.hidden = false; return; }
+  if (body) body.hidden = true;
+  if (g.status === 'missing') { el.append(Object.assign(document.createElement('p'), { className: 'muted', textContent: 'Rebuild the ledger to compare before and after a life event (Close a month).' })); return; }
+  if (g.status !== 'ok') return;
+  if (ev.status === 'ok' && ev.data.length) { el.append(Object.assign(document.createElement('p'), { className: 'muted', textContent: 'No life event has a budget month loaded both before it and since it yet. The comparison shows here once one does.' })); return; }
+  HL.empty(el, 'Add a life event, such as a move or a new job, and the months before it are set against the months since.', '/settings#events', 'Add a life event'); });
+dash.draw('ba-pick', (box) => { const sel = box.querySelector('#ba-event'), seg = box.querySelector('#ba-n'), evs = baEvents(), cur = baEvent(), r = baRow(); if (!cur || !sel) return;
+  sel.replaceChildren(...evs.map((e) => new Option(`${baM(e.m)}${e.new_normal ? ', new normal' : ''}: ${baName(e)}`, baKey(e))));   // the marker ahead of the label, so a narrow field keeps it
+  sel.value = baKey(cur); sel.onchange = () => dash.setParams({ ba_event: sel.value });
+  const have = new Set(baRows().filter((x) => baKey(x) === baKey(cur)).map((x) => x.n));
+  for (const b of seg.querySelectorAll('button[data-n]')) { const n = Number(b.dataset.n), off = !have.has(n); b.setAttribute('aria-pressed', String(r && r.n === n));
+    if (off) b.setAttribute('aria-disabled', 'true'); else b.removeAttribute('aria-disabled');   // still reached by the keyboard; the line under the field says why (baGone)
+    b.onclick = () => { if (!off) dash.setParams({ ba_n: n === 6 ? null : n }); }; } });
+const baGone = () => { const e = baEvent(); if (!e) return []; const have = new Set(baRows().filter((x) => baKey(x) === baKey(e)).map((x) => x.n)); return [3, 6, 12].filter((n) => !have.has(n)); };
+dash.draw('ba-span', (el) => { const r = baRow(); el.textContent = ''; if (!r) return; const b = r.before, a = r.after;
+  const side = (s, what) => `${what} ${baM(s.from)} to ${baM(s.to)}` + (s.months < r.n ? `, only ${s.months} of ${r.n} months loaded` : '');
+  const gone = baGone();
+  el.textContent = side(b, `Before: ${r.n} budget months,`) + '. ' + side(a, 'After: the event’s month and the months after,') + '.' + (HL.basis() === 'real' ? ' In {{ span.cpi_base_short }} prices.' : '')
+    + (gone.length ? ` No ${gone.join(' or ')}-month comparison: no budget month is loaded in that many months before the event.` : ''); });
+const baCells = (tb, rows) => { for (const cells of rows) { const tr = document.createElement('tr'); cells.forEach((c, i) => { const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num';
+  if (Array.isArray(c)) td.append(c[0], ' ', Object.assign(document.createElement('span'), { className: 'ba-pct', textContent: c[1] })); else td.textContent = c; tr.append(td); }); tb.append(tr); } };
+dash.draw('ba-compare', (tb) => { tb.replaceChildren(); const r = baRow(); if (!r) return; const f = HL.fld, ch = r.change;
+  baCells(tb, [['Income', 'income'], ['Living spend', 'spend'], ['Debt payments', 'debt'], ['Net kept', 'net']].map(([lab, k]) =>   /* label, not a role */
+    [lab, HL.usd0(r.before[f(k)]), HL.usd0(r.after[f(k)]), baChange(ch[f(k)], ch[f(k) + '_pct'])]));
+  const sr = (v) => (v == null ? '—' : dash.fmt.pct(1)(v)), d = ch[f('savings_rate')];
+  baCells(tb, [['Savings rate', sr(r.before[f('savings_rate')]), sr(r.after[f('savings_rate')]), d == null ? '—' : [(d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(d * 100).toFixed(1), 'points']]]); });
+const baMovers = (key) => (tb) => { tb.replaceChildren(); const r = baRow(); if (!r) return; const real = HL.basis() === 'real', list = (real && r.movers[key + '_real']) || r.movers[key];   // ranked in the active basis
+  if (!list.length) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = key === 'by_pct' ? `No category to rank by percent. A category is ranked here when it averaged ${HL.usd0(BA_PCT_FLOOR)} or more a month before the event and changed after it.` : 'No living-spend category moved.'; tr.append(td); tb.append(tr); return; }
+  baCells(tb, list.map((x) => [x.category + (x.new ? ' (new)' : ''), HL.usd0(real ? x.before_real : x.before), HL.usd0(real ? x.after_real : x.after),
+    baChange(real ? x.change_real : x.change, real ? x.pct_real : x.pct)])); };
+dash.draw('ba-movers-dollars', baMovers('by_dollars')); dash.draw('ba-movers-pct', baMovers('by_pct'));
+dash.draw('ba-new', (el) => { const r = baRow(); el.textContent = ''; if (!r) return; const real = HL.basis() === 'real';
+  el.textContent = r.new_categories.length ? `New since ${r.label}: ` + r.new_categories.map((c) => `${c.category} (${HL.usd0(real ? c.after_real : c.after)} a month)`).join(', ') + '.'
+    : `No category is new since ${r.label}.`; });
+dash.draw('fd-ba', (el) => { const r = baRow(); el.textContent = ''; if (!r) return; const f = HL.fld, ch = r.change;
+  const way = (v, up, down) => (v > 0 ? `${up} ${HL.usd0(v)}` : v < 0 ? `${down} ${HL.usd0(-v)}` : 'stayed level');
+  el.textContent = `Since ${r.label} (${baM(r.m)}), living spend ${way(ch[f('spend')], 'rose', 'fell')} a month and the household kept ${ch[f('net')] > 0 ? HL.usd0(ch[f('net')]) + ' more' : ch[f('net')] < 0 ? HL.usd0(-ch[f('net')]) + ' less' : 'the same'} a month, against the ${r.before.months} months before.`; });
 dash.draw('annual', (el) => {
   const g = HL.rd('yearly'); el.replaceChildren();
   if (g.status !== 'ok') { el.textContent = '—'; return; }
@@ -1374,7 +1455,7 @@ dash.draw('y-facts', (el) => { el.replaceChildren(); const r = yr(); if (!r) ret
   if (r.events.length) add('Life events', r.events.map((e) => `${m(e.m)}: ${e.label}`).join('; '));
   if (r.withholding) { const w = r.withholding; for (const o of w.outcomes.slice(-4)) add(`Tax year ${o.year}`, `${o.amount >= 0 ? 'a refund of' : 'a bill of'} ${HL.usd0(Math.abs(o.amount))}`);
     if (w.adjust) add('Withholding', `${w.adjust_kind === 'refund' ? 'A refund' : w.adjust_kind === 'owed' ? 'A bill' : 'A refund or a bill'} of ${HL.usd0(w.note_at)} or more two years running: consider adjusting withholding, the tax taken out of each paycheck`); }
-  if (r.ahead) add('Where next year leads', `at the last twelve months' pace, about ${ySigned(r.ahead.cash)} kept by ${m(r.ahead.until)}` + (r.ahead.net_worth != null ? `, net worth about ${HL.usd0(r.ahead.net_worth)}` : '') + ' (an estimate, not a plan)'); });
+  if (r.ahead) add('Where next year leads', `at the pace ${r.ahead.pace_since ? `of the ${r.ahead.pace_months} months since ${r.ahead.pace_since}, the household's new normal` : "of the last twelve months"}, about ${ySigned(r.ahead.cash)} kept by ${m(r.ahead.until)}` + (r.ahead.net_worth != null ? `, net worth about ${HL.usd0(r.ahead.net_worth)}` : '') + ' (an estimate, not a plan)'); });
 dash.draw('y-movers', (tb) => { tb.replaceChildren(); const r = yr(), mv = r && r.movers;
   if (!mv) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = r ? 'The year before is not loaded.' : '—'; tr.append(td); tb.append(tr); return; }
   for (const x of (HL.basis() === 'real' ? mv.real : mv.nominal)) { const tr = document.createElement('tr');
@@ -1388,17 +1469,26 @@ const aheadMonth = (m) => HL.fmtM(HL.parseM(m));
 dash.draw('ahead-rows', (tb) => { tb.replaceChildren(); const rows = ahead();
   if (!rows.length) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = dash.data('look_ahead').status === 'missing' ? 'Rebuild the ledger to see where the pace leads (Close a month).' : 'Load a month to see where the pace leads.'; tr.append(td); tb.append(tr); return; }
   for (const r of rows) { const tr = document.createElement('tr');
-    [`${r.h} months, to ${aheadMonth(r.until)}`, aheadSigned(r.cash), aheadSigned(r.cash_3), r.net_worth == null ? 'add balances (Settings → Accounts)' : HL.usd0(r.net_worth) + (r.growth_pct ? ' *' : '')].forEach((c, i) => {
+    [`${r.h} months, to ${aheadMonth(r.until)}`, aheadSigned(r.cash), aheadSigned(r.cash_3), r.net_worth == null ? '—' : HL.usd0(r.net_worth)].forEach((c, i) => {
       const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); });
     tb.append(tr); } });
+// the new normal (#159): a window cut at a life event the household marked says so where the figure is
+HL.sinceNote = (label, from, n, what) => label ? `${what} since ${label} (${aheadMonth(from)}), the household's new normal: ${n} budget month${n === 1 ? '' : 's'}, not the last twelve.` : '';
+dash.draw('ahead-since', (el) => { const r = ahead()[0]; el.replaceChildren(); if (!r) return;   // and, under the table, what the Net worth column leaves out or assumes
+  const parts = [HL.sinceNote(r.pace_since, r.pace_from, r.pace_months, 'The pace averages the months'), r.net_worth == null ? 'Net worth needs month-end balances:' : r.growth_pct ? `Net worth includes an assumed ${r.growth_pct}% a year growth on assets.` : ''].filter(Boolean);
+  el.append(parts.join(' ')); if (r.net_worth == null) el.append(' ', Object.assign(document.createElement('a'), { href: '/settings#accounts', textContent: 'add them on Settings → Accounts' }), '.'); });
+const lmSince = () => { const g = dash.data('plan_suggestions'); return g.status === 'ok' ? g.data.find((x) => x.avg_since) : null; };
+dash.draw('lm-since', (el) => { const r = lmSince(); el.textContent = r ? HL.sinceNote(r.avg_since, r.avg_from, r.avg_months, 'The averages and the suggested plan use the months') : ''; });
+dash.draw('lm-avg-since', (el) => { const r = lmSince();   // the Average card has no suggested plan: its own, shorter line
+  el.textContent = r ? `Averages use the ${r.avg_months} budget month${r.avg_months === 1 ? '' : 's'} since ${r.avg_since} (${aheadMonth(r.avg_from)}), the new normal.` : ''; });
 dash.draw('ahead-facts', (el) => { el.replaceChildren(); const rows = ahead(); if (!rows.length) return; const r = rows.find((x) => x.h === 12) || rows[0];
   const add = (dt, dd) => { el.append(Object.assign(document.createElement('dt'), { textContent: dt }), Object.assign(document.createElement('dd'), { textContent: dd })); };
   add('Debt-free (mortgage excluded)', r.debt_free === r.m ? 'already' : r.debt_free ? aheadMonth(r.debt_free) : `no date yet: ${r.debt_free_open} ${r.debt_free_open === 1 ? 'debt has' : 'debts have'} no payoff date at the current payment`);
   for (const g of r.goals) add(g.label, g.reach_m ? `${aheadMonth(g.reach_m)} at its pace (wanted by ${aheadMonth(g.target_month)})` : (g.within ? 'reached' : 'not at this pace'));
-  if (r.growth_pct) add('*', `includes an assumed ${r.growth_pct}% a year growth on assets`); });
+  if (r.growth_pct) add('Growth assumed', `${r.growth_pct}% a year on assets, in the net worth above`); });
 dash.draw('ahead-inputs', (el) => { el.replaceChildren(); const rows = ahead(); if (!rows.length) return; const r0 = rows[0];
   const add = (dt, dd) => { el.append(Object.assign(document.createElement('dt'), { textContent: dt }), Object.assign(document.createElement('dd'), { textContent: dd })); };
-  add('12-month pace', `${aheadSigned(r0.pace)} a month, the average net of ${r0.pace_months} budget month${r0.pace_months === 1 ? '' : 's'} from ${aheadMonth(r0.pace_from)}`);
+  add('The pace', `${aheadSigned(r0.pace)} a month, the average net of ${r0.pace_months} budget month${r0.pace_months === 1 ? '' : 's'} from ${aheadMonth(r0.pace_from)}`);   // the line under the table says when that is the new normal
   add('3-month pace', `${aheadSigned(r0.pace_3)} a month`);
   add('Net worth now', r0.net_worth_now == null ? 'needs month-end balances (Settings → Accounts)' : HL.usd0(r0.net_worth_now));
   for (const r of rows) {
@@ -1739,7 +1829,17 @@ const signed = (v, td, badWhenPositive) => { if (badWhenPositive ? v > 0.5 : v <
 dash.draw('lm-cats', (tb) => {
   const g = dash.data('lm_cats'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   HL.fillTable(tb, g.data, [(r) => r.category, (r) => HL.usd0(r.planned), (r) => HL.usd0(r.actual), (r, td) => signed(r.vs_plan, td, !r.want_more), (r) => HL.usd0(r.avg12), (r, td) => signed(r.vs_avg, td, !r.want_more), (r) => HL.usd0(r.suggest)]);
+  g.data.forEach((r, i) => { if (!r.kept) return; const td = tb.rows[i] && tb.rows[i].cells[6]; if (!td) return;   // the key's "=" mark, on the rows the rule keeps
+    const m = Object.assign(document.createElement('span'), { className: 'key-mark', textContent: '= ' }); m.setAttribute('aria-hidden', 'true'); td.prepend(m); td.classList.add('kept');
+    td.append(Object.assign(document.createElement('span'), { className: 'visually-hidden', textContent: ', kept at its plan' })); });
 });
+// the Detail key, from the plan_keep_categories rule as built, so it names the household's own kept categories (and none when the rule is empty)
+dash.draw('lm-cats-key', (ul) => { const gc = dash.data('goal_config'), c = gc.status === 'ok' && gc.data[0] ? gc.data[0] : {};
+  const keep = c.plan_keep_categories || ['Housing', 'Debt', 'Insurance'];   // role default, until a rebuild emits plan_keep_categories
+  const li = (mark, text) => { const l = document.createElement('li'); if (mark) { const m = Object.assign(document.createElement('span'), { className: 'key-mark', textContent: mark }); m.setAttribute('aria-hidden', 'true'); l.append(m); } l.append(text); return l; };
+  const list = keep.length < 2 ? keep.join('') : keep.slice(0, -1).join(', ') + ' and ' + keep[keep.length - 1];
+  ul.replaceChildren(li('', 'Planned and spent are this budget month; the average is the months before it'), li('', `Suggested plan: the average rounded up to the next ${HL.usd0(10)}`),
+    ...(keep.length ? [li('=', `${list} keep${keep.length === 1 ? 's' : ''} ${keep.length === 1 ? 'its' : 'their'} plan (Settings → Pipeline rules, Roles)`)] : [])); });
 
 
 dash.draw('lm-review', (el) => {
@@ -1872,14 +1972,17 @@ dash.draw('lm-dti', (el) => {
 const months1 = (v) => v == null ? '—' : `${Number(v).toFixed(1)} month${Number(v).toFixed(1) === '1.0' ? '' : 's'}`;
 dash.draw('lm-ef', (el) => {
   const g = dash.data('emergency_fund'), G = dash.data('goals'); el.replaceChildren();
-  const add = (label, main, sub, bad, link) => { const dt = document.createElement('dt'), dd = document.createElement('dd'), v = document.createElement('span'); dt.textContent = label; v.className = 'v'; v.textContent = main; dd.append(v);
-    if (sub) { const d = document.createElement('div'); d.className = 'muted' + (bad ? ' down' : ''); d.textContent = sub; if (link) { const a = document.createElement('a'); a.href = link[1]; a.textContent = link[0]; d.append(' ', a); } dd.append(d); } el.append(dt, dd); };
+  const add = (label, main, sub, tone, link) => { const dt = document.createElement('dt'), dd = document.createElement('dd'), v = document.createElement('span'); dt.textContent = label; v.className = 'v'; v.textContent = main; dd.append(v);
+    if (tone) dd.append(' ', HL.stamp(tone));   // DS-STATUS-1: the verdict is a stamp, as on the rows above; the sentence under it stays plain
+    if (sub) { const d = document.createElement('div'); d.className = 'muted'; d.textContent = sub; if (link) { const a = document.createElement('a'); a.href = link[1]; a.textContent = link[0]; d.append(' ', a); } dd.append(d); } el.append(dt, dd); };
   const r = g.status === 'ok' && g.data.length ? g.data[g.data.length - 1] : null, target = goalValue(G, 'emergency_months');
-  if (!r || r.emergency == null) { add('Coverage', '—', 'No account counts toward the emergency fund yet.', false, ['Mark one on Settings → Accounts', '/settings#accounts']); return; }
-  add(`End of ${HL.fmtM(HL.parseM(r.m))}`, months1(r.months) + (target != null ? ` (target ${target})` : ''),
-    (r.change != null ? (Math.abs(r.change) < 0.05 ? 'About the same as last month. ' : `${r.change >= 0 ? '+' : '−'}${Math.abs(r.change).toFixed(1)} since last month. `) : '') + (target != null && r.months != null && r.months < target ? `${(target - r.months).toFixed(1)} short of the target.` : target == null ? 'No target set (emergency_months on Settings → Goals).' : 'At or above the target.'),
-    target != null && r.months != null && r.months < target);
-  add('From', HL.usd0(r.emergency), `in ${r.accounts} account${r.accounts === 1 ? '' : 's'}, over ${HL.usd0(r.outgo)} a month of outgo (the ${r.outgo_months}-month average)` + (r.unconfirmed ? `; ${r.unconfirmed} balance${r.unconfirmed === 1 ? '' : 's'} not yet confirmed` : ''));
+  if (!r || r.emergency == null) { add('Coverage', '—', 'No account counts toward the emergency fund yet.', null, ['Mark one on Settings → Accounts', '/settings#accounts']); return; }
+  const r1 = (v) => v == null ? null : Number(Number(v).toFixed(1)), shown = r1(r.months), aim = r1(target);   // both as months1 shows them, so the stamp agrees with the figures: 5.97 reads 6.0, on track
+  const short = aim != null && shown != null && shown < aim;
+  add(`End of ${HL.fmtM(HL.parseM(r.m))}`, months1(r.months) + (target != null ? ` (target ${Number.isInteger(target) ? `${target} month${target === 1 ? '' : 's'}` : months1(target)})` : ''),
+    (r.change != null ? (Math.abs(r.change) < 0.05 ? 'About the same as last month. ' : `${r.change >= 0 ? '+' : '−'}${months1(Math.abs(r.change))} since last month. `) : '') + (short ? `${months1(aim - shown)} short of the target.` : target == null ? 'No target set.' : 'At or above the target.'),
+    target == null ? 'none' : r.months == null ? null : short ? 'off' : 'good', target == null ? ['Set one on Settings → Goals', '/settings#goals'] : null);
+  add('Emergency savings', HL.usd0(r.emergency), `in ${r.accounts} account${r.accounts === 1 ? '' : 's'}, over ${HL.usd0(r.outgo)} a month of outgo (the ${r.outgo_months}-month average${r.outgo_since ? `, since ${r.outgo_since}, the household's new normal` : ''})` + (r.unconfirmed ? `; ${r.unconfirmed} balance${r.unconfirmed === 1 ? '' : 's'} not yet confirmed` : ''));
 });
 dash.draw('ef-lines', (el) => {   /* series 4: series 2 is Planned savings in the chart above (DS-CHART-4) */
   const g = HL.rd('emergency_fund'), G = dash.data('goals'); el.replaceChildren();
