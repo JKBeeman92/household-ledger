@@ -76,8 +76,10 @@ def test_builtin_everydollar_profile_reads_its_files_as_the_no_mapping_path_does
 def test_bad_months_and_dates_are_refused_not_misread():
     assert filenames.parse("c0ffee-13-2025-EveryDollar-Transactions.csv") is None and filenames.parse("c0ffee-00-2025-EveryDollar-Transactions.csv") is None
     for bad in ("03-02-2025", "2025-03-02T10:00", "2025/03/02", "2025-02-30", "", "Feb 3 2025"):
-        with pytest.raises(ValueError, match="not a date|day is out of range"):
+        with pytest.raises(ValueError, match="is not a date"):   # one message on every Python, quoting the value (#218)
             filenames.iso_date(bad)
+    with pytest.raises(ValueError, match=r"'2025-02-30' is not a date \(no such day\)"):
+        filenames.iso_date("2025-02-30")
     assert filenames.iso_date(" 3/2/2025 ") == ("2025", "03", "02")
 
 
