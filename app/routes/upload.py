@@ -80,7 +80,7 @@ async def upload(request: Request, background: BackgroundTasks, files: list[Uplo
         if bulk and not any(_recognised(it.data, specs) for it in bulk):
             # nothing in it is another tool's file the ledger knows yet: the mapping is set up on one month's pair first
             items += [Item(it.name, error="not named like a monthly export, and no saved source profile recognises its columns: upload one month's "
-                                          "pair (transactions and budget) on its own first to set up its mapping, then the rest together", source=it.source) for it in bulk]
+                                          "pair (transactions and budget) on its own first to set up its source profile, then the rest together", source=it.source) for it in bulk]
             other = bulk = []
         # a back catalogue's files named like exports wait with it, so the dry run sees them (the batch's own export wins its month
         # over a profiled file) and the whole lot is one confirmation and one rebuild (#165 review); a mapping pair leaves them alone

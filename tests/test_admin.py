@@ -26,7 +26,7 @@ def test_export_then_import_mapping_round_trips(client, reset_db, capsys, tmp_pa
         before = mapping(conn)
     f = tmp_path / "m.csv"; f.write_text(csv_text.replace("Rent,Rent,Housing,expense,", "Rent,Bag End Rent,Housing,expense,"))
     code, out, _ = run(capsys, "import-mapping", str(f))
-    assert code == 0 and f"Saved {len(before)} mapping rows." in out and "rebuild" in out
+    assert code == 0 and f"Saved {len(before)} Item mapping rows." in out and "rebuild" in out
     with db.pool.connection() as conn:
         assert mapping(conn)["Rent"]["canonical_item"] == "Bag End Rent"
     assert _banner_shown(client.get("/settings").text)   # marked as changed, like a Settings save: the Rebuild now banner shows
@@ -77,10 +77,10 @@ def test_draft_then_add_mapping(client, reset_db, capsys, tmp_path):
     assert code == 0 and "Groceries,Groceries,Food,expense,drafted from group Food" in draft and "add-mapping" in err
     f = tmp_path / "d.csv"; f.write_text(draft)
     code, out, _ = run(capsys, "add-mapping", str(f))
-    assert code == 0 and "Saved 1 drafted mapping row." in out
+    assert code == 0 and "Saved 1 drafted Item mapping row." in out
     assert run(capsys, "add-mapping", str(f))[0] == 1   # a second time: already mapped, refused
     code, _, err = run(capsys, "draft-mapping")
-    assert code == 0 and "already has a mapping row" in err
+    assert code == 0 and "already has an Item mapping row" in err
 
 
 def test_rebuild_exit_codes(client, reset_db, capsys, monkeypatch):

@@ -9,7 +9,7 @@
 {% if c.people %}{% macro since(v) %}{% if v is not none %}, {% if v|money == 0|money %}no change{% else %}{{ v|money(signed=True) }}{% endif %} since last month{% endif %}{% endmacro %}
 <h3 class="sub" id="standing-people">By person</h3>
 <dl class="dti" aria-labelledby="standing-people">{% for r in c.people %}
-  <dt>{{ r.label }}</dt><dd>{% if r.joint %}{% if r.earned or r.earned_change %}Shared income {{ r.earned|money }}{{ since(r.earned_change) }}; shared{% else %}Shared{% endif %} spending {{ r.spent|money }}{{ since(r.spent_change) }}.{% else %}Earned {{ r.earned|money }}{% if r.earned_share is not none %} ({{ r.earned_share|share }} of the month's income){% endif %}{{ since(r.earned_change) }}; own envelopes {{ r.spent|money }}{{ since(r.spent_change) }}.{% endif %}
+  <dt>{{ r.label }}</dt><dd>{% if r.joint %}{% if r.earned or r.earned_change %}Joint income {{ r.earned|money }}{{ since(r.earned_change) }}.<br>Joint{% else %}Joint{% endif %} spending {{ r.spent|money }}{{ since(r.spent_change) }}.{% else %}Earned {{ r.earned|money }}{% if r.earned_share is not none %} ({{ r.earned_share|share }} of the month's income){% endif %}{{ since(r.earned_change) }}.<br>Own envelopes {{ r.spent|money }}{{ since(r.spent_change) }}.{% endif %}
     {% if r.accounts %}<br><span class="muted">Accounts: {{ r.accounts|join(', ') }}.</span>{% endif %}{% if r.decisions %}<br><span class="muted">Decisions: {{ r.decisions|join('; ') }}.</span>{% endif %}</dd>{% endfor %}
 </dl>
 <p class="muted">Earned and own envelopes come from the earner and payer rules (income_by_person, payer_prefix_by_person and payer_items_by_person on <a href="/settings#rules/json">Settings → Pipeline rules → All rules as JSON</a>); joint is what no rule gives one person.</p>{% endif %}

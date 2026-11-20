@@ -290,16 +290,19 @@ def test_the_check_in_says_since_the_new_normal_and_the_old_copy_returns_unmarke
     page = client.get("/checkin/2026-06").text
     assert "Mark Year in review as read" in page   # year mode
     assert '>Add to the plan</button>' in page and 'aria-label="Add to the plan: Food at $940"' in page and "Add “Plan" not in page   # the figure once, the name in the button's
-    assert "keeps the pace of the 5 months since Elanor is born, its new normal" in page   # the quarter step
-    assert "The average since Elanor is born (Feb 2026), the household's new normal," in page   # the suggested plan
-    assert "at the pace of the 5 months since Elanor is born, the household's new normal" in page   # the year in review
+    # one shape everywhere (the 0.9.0 release review): the N budget months since the event (its month), the household's new normal,
+    # and the pace said once as what it is
+    assert "keeps its pace, the average net kept a month, over the 5 budget months since Elanor is born (Feb 2026), the household's new normal: " in page   # the quarter step
+    assert "budget months since Elanor is born (Feb 2026), the household's new normal, rounded up" in page and "The average of the " in page   # the suggested plan
+    assert "at its pace, the average net kept a month, over the 5 budget months since Elanor is born (Feb 2026), the household's new normal," in page   # the year in review
+    assert "its new normal" not in page
     assert "the last twelve months" not in page and "The twelve-month average," not in page
     with db.pool.connection() as conn:
         conn.execute("UPDATE life_events SET new_normal=false"); conn.commit()
         rebuild(conn)
     page = client.get("/checkin/2026-06").text
     assert "since Elanor is born" not in page
-    assert "keeps the pace of the last twelve months" in page and "The twelve-month average, rounded up" in page and "at the pace of the last twelve months" in page
+    assert "keeps its pace, the average net kept a month, over the last twelve months: " in page and "The twelve-month average, rounded up" in page and "at its pace, the average net kept a month, over the last twelve months," in page
 
 
 def test_in_real_dollars_the_movers_are_ranked_in_real_dollars():
@@ -342,7 +345,8 @@ def test_the_change_column_is_in_view_on_a_phone_and_nothing_scrolls_the_page(sa
             assert t["overflow"] <= 0 and t["changeOut"] == 0, (view, width, t)
             assert t["rows"] and all(r[3] for r in t["rows"])
     assert s["lastmonth"]["pageOverflow"] <= 0
-    assert s["overview"]["options"][-1] == "Feb 2026, new normal: Elanor is born (family)"   # the marker ahead of the label, which a narrow field cuts
+    assert s["overview"]["options"][-1] == "Feb 2026: Elanor is born (family)"   # short enough for a phone's field; the note names the new normal
+    assert s["overview"]["span"].startswith("Elanor is born (family) is the household's new normal (Settings → Life events). Before: ")
 
 
 @browser
@@ -358,8 +362,13 @@ def test_last_month_stamps_the_emergency_fund_and_keys_the_kept_rows(sample):
     kept = {c["category"] for c in lm["cats"] if c["mark"]}
     assert kept == {"Housing", "Debt", "Insurance"} and all(c["hidden"] == ", kept at its plan" for c in lm["cats"] if c["mark"])
     assert not any(c["hidden"] for c in lm["cats"] if not c["mark"])
-    assert lm["avgSince"] == "Averages use the 4 budget months since Elanor is born (Feb 2026), the new normal."   # its own, without the plan
+    assert lm["avgSince"] == "Averages use the 4 budget months since Elanor is born (Feb 2026), the household's new normal."   # its own, without the plan
     assert "suggested plan" in lm["detailSince"]
+    # one shape for the since-note (the 0.9.0 release review): the count, the event and its month, then "not the last twelve"
+    assert lm["detailSince"] == "The averages and the suggested plan use the 4 budget months since Elanor is born (Feb 2026), the household's new normal, not the last twelve."
+    assert lm["aheadSince"].startswith("The pace is the average net kept a month over the 5 budget months since Elanor is born (Feb 2026), the household's new normal, not the last twelve.")
+    # the Average card's key says what its colours mean, as the plan card's does (DS-CHART-5), and keeps the direction in words
+    assert lm["avgKey"][:4] == ["worse than usual", "better than usual", "a bar to the right is above its average, to the left below it", "for savings, giving and debt, more is better"]
     st = s["settings"]   # the offer on an edited move row; heard when it appears, and gone once yes is chosen or the kind is not a move
     assert st["opened"] == {"text": "If this month changed what a normal month costs, set New normal to yes: the pace, the emergency fund and the suggested plan will average from here once three months are loaded.", "role": "status", "live": "polite", "describedby": "new-normal-hint", "value": "no"}
     assert st["yes"]["text"] == "" and st["yes"]["describedby"] == "new-normal-hint" and st["job"]["text"] == ""

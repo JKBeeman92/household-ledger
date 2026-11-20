@@ -274,15 +274,15 @@ The month in the file name is the budget month every row counts in. Files named 
 they are, on upload, from a `.zip`, from the import directory, by `python -m pipeline.import_exports` and by the standalone scripts,
 so a back catalogue converted to this format by any means loads in one go. The app stages every rebuild in this format, and
 `python -m pipeline.sources normalize` writes it. **EveryDollar's** exports are this format with `MM/DD/YYYY` dates and their own
-names (`<id>-MM-YYYY-EveryDollar-Transactions.csv`, `…-BudgetItems.csv`); they are the built-in profile, read without a mapping
+names (`<id>-MM-YYYY-EveryDollar-Transactions.csv`, `…-BudgetItems.csv`); they are the built-in profile, read without setting up a source profile
 step, and always will be. `pipeline/filenames.py` recognises both.
 
 ## Other budget tools
 
 A file in the internal format, or EveryDollar's, needs no setup. Any other tool works too, as long as it exports the same
 pair each month: **a transactions CSV and a budget CSV**. Upload both on **Close a month**. Files not named like exports go to
-a mapping page that shows their first rows, guesses which column is which, which file is which and the budget month, and asks
-you to confirm. The confirmed mapping is saved as a *source profile* under a name you choose and is offered again automatically
+a **Set up a source profile** page that shows their first rows, guesses which column is which, which file is which and the budget month, and asks
+you to confirm. What you confirm is saved as a *source profile* under a name you choose and is offered again automatically
 for next month's files with the same columns. Profiles can be edited, exported and imported as JSON on **Settings → Sources**.
 
 | File | Required columns | Optional |
@@ -390,7 +390,7 @@ a group gift, a shared bill paid back by friends) shows as one month of large ne
 spending. Give those items Flow `exclude`: their rows stay in the stored exports and in reconciliation, but leave the ledger and
 every chart. The sample household's `Venmo Pass-Through` item shows the pattern.
 
-**A first mapping for a back catalogue.** Settings → Item mapping offers **Draft a mapping from my budget groups** whenever the stored
+**A first mapping for a back catalogue.** Settings → Item mapping offers **Draft Item mapping rows from my budget groups** whenever the stored
 exports carry items with no mapping row. The draft fills only those items and never changes an existing row: Category is the budget
 group; CanonicalItem is the item name without a year's suffix (` 2`, ` Fund`, ` Goal`); Flow is `income` for the `income_groups` (default `Income`), `debt`
 for the `debt_groups` (default `Debt`), `transfer` for names such as `Fund Transfer`, `Transfer Funds`, `… Rebalance` or `Transfer to …`, and `expense` otherwise.
@@ -754,7 +754,8 @@ and optionally its kind and person). Each is a dotted marker on **Income against
   it through to the `events` dataset. It is a pipeline input like the rest of the event, so the dashboard shows a change after a rebuild.
 - **How the switches combine.** An event is drawn only when it is on the chart *and* its kind is not hidden in Chart appearance (or you
   pressed that chart's "show"). "show" reveals hidden kinds, never an event switched off the chart, and the "N hidden" note counts
-  hidden kinds only. No total, table or reconciliation changes either way.
+  hidden kinds only. No total, table or reconciliation changes either way. Settings → Life events marks an event of a hidden kind
+  "yes, hidden kind" in its On the chart column, and the list under the chart says "hidden kind": the same words on both pages.
 - **Coming up.** When the period reaches the last loaded month, the chart ends in a **Coming up** strip: the next 12 months of the
   `coming_up` dataset (payoffs, yearly bills, tax deadlines, planned purchases and life events dated later), drawn dotted because they
   have not happened, never as markers off the end of the axis. A life event in it follows the same switches and chips. The **Coming

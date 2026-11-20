@@ -515,7 +515,7 @@ def main(argv: list[str] | None = None) -> int:
         if a.cmd == "draft-mapping":
             rows = s.draft_mapping(conn)
             if not rows:
-                print("Every item in the stored exports already has a mapping row.", file=sys.stderr)
+                print("Every item in the stored exports already has an Item mapping row.", file=sys.stderr)
                 return 0
             sys.stdout.write(s.draft_csv(rows))
             print(f"{len(rows)} drafted rows; review them, then: python -m app.admin add-mapping FILE", file=sys.stderr)

@@ -16,7 +16,7 @@ EDITORS = {
     "mapping": {"title": "Item mapping", "help": "Each item from your budget tool gets a canonical name and a flow; its category is its canonical item's. Every item must be here, or the build lists it as unmapped.", "help_long": "One row per item in your exports: Item, CanonicalItem, Category, Flow, Note, and optionally DebtType (mortgage, student, auto, card, medical, personal, other; a five-column CSV leaves types as they are). A canonical item has one category, so every row of it gives the same Category (in the row editor, leave Category blank to use the one it has); use Categories and canonical items to rename or move one. Flow is one of income, expense, debt, transfer, plug, zero, exclude, verify. Every item name in the exports must appear here or the build reports it UNMAPPED. Fund moves kept as income items (Fund Transfer, End of Year Rebalance) need Flow transfer, or they count as income; money held for someone else and paid out needs exclude. No name is read literally: the parts names play (which items are paychecks, which categories are recurring bills, and so on) are set under Pipeline rules, Roles (README, \"Roles\"); rules name canonical items, not raw ones."},
     "goals": {"title": "Goals", "help": "One row per goal: key, label, value, unit, note. The dashboard's Goals tab and the month's review read these; values are also confirmed each month in the checklist on Close a month. A share is a fraction (0.07) or a percentage (7%)."},
     "accounts": {"title": "Accounts", "help": "What the household owes and owns, for month-end balances (entered on Close a month). Kind is debt or asset. A debt's type is a debt type (empty: its linked item's); an asset's is cash, savings, retirement, brokerage, home, vehicle or other. Linked item is the canonical item a debt's payments go to, so the suggested balance can subtract last month's payment; APR adds a month's interest; escrow is the part of each payment that is not the loan. Person is one of the people, or empty for joint. Emergency marks an asset that counts toward the emergency fund (cash and savings by default). An account with balances is retired (Active no), not deleted: its balances are kept."},
-    "events": {"title": "Life events", "help": "One row per event: month (YYYY-MM), label, and optionally its kind (job, move, family, health, purchase, debt, other) and the person it concerns (one of the people in Pipeline rules). Drawn as markers on the timeline charts; the Employer chart shows job events and events with no kind. On the chart: yes draws its marker; no leaves the marker off, and the event stays in the life-event list, the review and the check-in. New normal (yes, never set for you) marks a month the household's pattern changed from, such as a move or a new family member: once it has three months, the look ahead's pace, the emergency fund's outgo and the suggested plan average from it, and say so."},
+    "events": {"title": "Life events", "help": "One row per event: month (YYYY-MM), label, and optionally its kind (job, move, family, health, purchase, debt, other) and the person it concerns (one of the people in Pipeline rules). Each is a marker on the timeline charts; the Employer chart shows job events and events with no kind."},
     "cpi": {"title": "CPI", "save": "CPI", "help": "CSV: month, cpi, source. The consumer price index (any base) behind the real-dollars toggle. US households: CPI-U, appending the newest month from FRED CPIAUCSL; mark estimates in source."},
     "rules": {"title": "Pipeline rules", "help": "JSON object of household-specific classification rules. Unknown keys and invalid regular expressions are rejected on save."},
     "household": {"title": "Household", "help": "JSON object: name, title, currency, theme. Shown in the header and page titles."},
@@ -176,7 +176,7 @@ def _row_save(conn, kind: str, f: dict) -> tuple[dict, dict]:
         if not c["category"] and c["canonical_item"] and c["canonical_item"] not in mapping_store.categories_of(conn):
             err["category"] = f"required: {c['canonical_item']} is a new canonical item"
         if not err and c["item"] != orig:
-            _unique_err(conn, "SELECT 1 FROM item_mapping WHERE item=%s", (c["item"],), err, "item", "already in the mapping")
+            _unique_err(conn, "SELECT 1 FROM item_mapping WHERE item=%s", (c["item"],), err, "item", "already in Item mapping")
         if not err:
             try:   # the new row first, then the renamed one goes: its canonical item stays in use throughout
                 mapping_store.write_rows(conn, [c])
@@ -249,7 +249,7 @@ def _mapping_rows(body: str, existing: set[str] | None = None) -> tuple[list[dic
         if not err and c["item"] in seen:
             err["item"] = f"duplicate of line {seen[c['item']]}"
         if not err and existing is not None and c["item"] in existing:
-            err["item"] = "already in the mapping"
+            err["item"] = "already in Item mapping"
         for f, m in err.items():
             problems.append(f"line {n}: " + (f"bad Flow on: {c['item'] or '(blank)'} ({m})" if f == "flow" else f"{f} {m}" + (f" on: {c['item']}" if c["item"] else "")))
         if not err:
@@ -264,7 +264,7 @@ def _mapping_add(conn, body: str) -> str:
     existing = {r["item"] for r in conn.execute("SELECT item FROM item_mapping").fetchall()}
     clean, lines = _mapping_rows(body, existing)
     mapping_store.write_rows(conn, clean, lines=lines)
-    return f"{len(clean)} drafted mapping row{'s' * (len(clean) != 1)}"
+    return f"{len(clean)} drafted Item mapping row{'s' * (len(clean) != 1)}"
 
 
 def _mapping_list(conn) -> list[dict]:
@@ -288,7 +288,7 @@ def _mapping_import(conn, body: str) -> str:
     items absent from the CSV deleted, in one transaction, so the table is never emptied and refilled."""
     clean, lines = _mapping_rows(body)
     mapping_store.write_rows(conn, clean, replace=True, lines=lines)   # one canonical item with two categories is refused, by line
-    return f"{len(clean)} mapping rows"
+    return f"{len(clean)} Item mapping rows"
 
 
 def _cpi_rows(body: str) -> list[tuple[str, str, str]]:
@@ -451,8 +451,9 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         fund_choices = sorted({r["name"] for r in conn.execute("SELECT name FROM accounts WHERE active ORDER BY name").fetchall()})
         from .. import appearance
         look = appearance.page(conn)   # Settings → Chart appearance (#132): the names the data has, and the orphans
+    hidden_kinds = {r["name"] for r in look["dimensions"]["event_kind"] if r["hidden"]}   # Life events says which events a hidden kind keeps off the chart
     return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP, bills=bills, purchases=purchases, pp_form=request.session.pop("pp_form", None), pp_bought=request.session.pop("pp_bought", None), debt_category=debt_cat, hh_form=request.session.pop("hh_form", None), yc_items=yc_items, yc_form=request.session.pop("yc_form", None), loan_categories=categories, fund_accounts=fund_choices,
-                  look=look, look_labels=appearance.LABELS, look_slots=appearance.SLOTS, look_filter_from=appearance.FILTER_FROM, look_form=request.session.pop("appearance_form", None),
+                  look=look, hidden_kinds=hidden_kinds, look_labels=appearance.LABELS, look_slots=appearance.SLOTS, look_filter_from=appearance.FILTER_FROM, look_form=request.session.pop("appearance_form", None),
                   yb_form=request.session.pop("yb_form", None), tax_form=request.session.pop("tax_form", None), bal_hist=request.session.pop("bh_form", None), yb_slug=_yb_slug, tax_cfg=_tax_cfg(),
                   categories=categories, rules={**rules, **(request.session.pop("people_typed", None) or {})}, hh=household, name_families=name_families, unmapped=unmapped,
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS,
@@ -727,7 +728,7 @@ ROLE_FIELDS = [   # (rules key, plain label, what it changes) for the Roles form
     ("paycheck_items", "Items that are paychecks", "Canonical items. The Employer chart, the dashboard's Goals tab take-home and the review's paycheck count read them."),
     ("recurring_categories", "Categories of recurring bills", "The Recurring tab lists their spending."),
     ("plan_keep_categories", "Categories whose plan is kept", "On the Last month tab, their suggested plan stays the current plan instead of the twelve-month average."),
-    ("income_groups", "Budget groups that hold income", "As named in the export. New source profiles and the mapping draft start from these."),
+    ("income_groups", "Budget groups that hold income", "As named in the export. New source profiles and the Item mapping draft start from these."),
     ("debt_groups", "Budget groups that hold debt payments", "As named in the export. The debt-plug rule and the off-budget count read them."),
     ("loan_categories", "Categories of loans between family", "The Method tab counts their inflows and repayments."),
 ]
@@ -827,5 +828,5 @@ async def appearance_delete(request: Request, user=Depends(auth.require_editor))
     dim, name = str(f.get("dimension", "")), str(f.get("name", ""))
     with db.pool.connection() as conn:
         n = appearance.delete(conn, dim, name); conn.commit()
-    flash(request, f"Deleted the chart appearance kept for {name}." if n else f"Nothing was kept for {name}; it was already gone.", "ok" if n else "bad")
+    flash(request, f"Deleted the colour and hide switch kept for {name}; if {name} comes back, it is automatic again." if n else f"Nothing was kept for {name}; it was already gone.", "ok" if n else "bad")
     return RedirectResponse("/settings#appearance/orphans", status_code=303)

@@ -189,6 +189,7 @@ table.edit [aria-invalid=true] { border-color: var(--danger); }
 @media (max-width: 820px) { .subtabs [role=tab] { min-height: 44px; } }
 .subtabs [role=tab][aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .subtabs [role=tab]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.subtabs [role=tab] .unsaved { color: inherit; font-weight: var(--weight-strong); }   /* "· not saved" on the tab being edited, which is the selected one: its own colour, never muted (DS-COLOR-3) */
 .linkrow { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; }
 /* Motion on the other pages: panels and settings tabs rise in; nothing moves with reduced motion. */
 @keyframes app-in { from { opacity: 0; transform: translateY(4px); } }
@@ -427,8 +428,6 @@ details[open]:not(#dash-root details) > summary::before { transform: translateY(
 .hl .key .key-mark.wp { min-width: 0; width: .7rem; height: .7rem; align-self: center; border-radius: 50%; background: var(--accent-2); }
 .hl .key .key-mark.fade { min-width: 1.4rem; height: .7rem; align-self: center; border-radius: 2px; background: linear-gradient(90deg, currentColor 50%, color-mix(in srgb, currentColor 30%, transparent) 50%); }
 .hl .key .bar { flex: none; width: 1.6rem; height: .6rem; border-radius: 2px; background: var(--k); }
-.hl .key .bar.r { clip-path: polygon(0 0, 80% 0, 100% 50%, 80% 100%, 0 100%); }
-.hl .key .bar.l { clip-path: polygon(20% 0, 100% 0, 100% 100%, 20% 100%, 0 50%); }
 .hl .review { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--space-4); }
 .hl .review .rv { border-top: 2px solid var(--line-strong); padding-top: var(--space-1); }
 .hl .review { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); align-items: start; }
