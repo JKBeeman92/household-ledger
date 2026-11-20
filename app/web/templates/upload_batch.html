@@ -6,7 +6,8 @@
 <h1 class="page-title">Check the months before storing</h1>
 <section class="panel mt-4" id="batch-summary">
   <h2>{% if ready %}{{ ready|length }} file{{ '' if ready|length == 1 else 's' }} ready to store, {{ months|length }} budget month{{ '' if months|length == 1 else 's' }}{% else %}Nothing here can be stored yet{% endif %}</h2>
-  {% if ready %}<p class="measure">{{ months|first|month }} to {{ months|last|month }}, read with {{ profiles|join(', ') }}. Check the months found from the dates: they are guesses. Nothing is
+  {% if ready %}<p class="measure">{{ months|first|month }} to {{ months|last|month }}{% if profiles %}, read with {{ profiles|join(', ') }}{% endif %}{% if named %}; {{ named }} file{{ ' is' if named == 1 else 's are' }} named like exports and read as {{ 'it is' if named == 1 else 'they are' }}{% endif %}.
+  {% if profiles %}Check the months found from the dates: they are guesses. {% endif %}Nothing is
   stored until you confirm, once for the whole batch; then the ledger rebuilds once.</p>{% endif %}
   {% if refused %}<p class="measure"><strong>{{ refused|length }} file{{ '' if refused|length == 1 else 's' }} will not be stored</strong>, listed first with the reason. To store them,
   fix the files or the profile's month rule on <a href="/settings/sources">Settings → Sources</a>, and upload them again.</p>{% endif %}
@@ -20,7 +21,8 @@
 <section class="panel mt-4" id="batch-files">
   <h2>The {{ plan|length }} file{{ '' if plan|length == 1 else 's' }}</h2>
   <p class="muted measure">Each file was matched to a saved source profile by its column names, which also say whether it is the transactions file or the budget file.
-  A month comes from the file name when the profile has a pattern for it, or else from the most common month of the transaction dates; a budget file with no month in its name is paired with the transactions file whose sums give its spent figures.</p>
+  A month comes from the file name when the profile has a pattern for it, or else from the most common month of the transaction dates; a budget file with no month in its name is paired with the transactions file whose sums give its spent figures.
+  A file named like an export (EveryDollar's names, or the internal format) is read by its name, and wins its month over another tool's file.</p>
   {% if plan|length > 8 %}<p class="filterbox"><label for="batch-filter">Filter the {{ plan|length }} files</label><input type="search" id="batch-filter" data-filter-table="batch-table" placeholder="Part of a name, month or reason"></p>{% endif %}
   <div class="tablewrap" role="region" tabindex="0" aria-label="What would be stored, file by file"><table class="plain" id="batch-table" data-list="unbounded">
     <thead><tr><th scope="col">Result</th><th scope="col">File</th><th scope="col">Profile</th><th scope="col">Kind</th><th scope="col">Budget month</th><th scope="col">How it was found, or why not</th></tr></thead>

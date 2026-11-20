@@ -17,7 +17,9 @@ from .. import auth, db
 from ..builds import run_background
 from ..web_helpers import flash, render, month_text
 from pipeline import sources as src
-from pipeline.run_pipeline import build_running, ingest, load_profiles, plan_files, reapply_profile, save_profile, store_planned
+from pipeline import filenames
+from pipeline.run_pipeline import (FN_RX, build_running, ingest, load_profiles, plan_files, plan_named, reapply_profile, save_profile,
+                                   store_planned, stored_files)
 from psycopg.types.json import Jsonb
 
 router = APIRouter()
@@ -182,7 +184,18 @@ def _batch_plan(conn, batch: str) -> tuple[list[tuple[str, bytes]], list[dict]]:
     profiles as saved, so what is stored is what the table showed (or newer, if a profile was edited in between)."""
     pending = _pending(conn, batch)
     files = [(f["filename"], f["data"]) for f in pending]
-    plan = plan_files(conn, files, default_mode=True) if files else []
+    # A zip's files named like exports wait here with the rest (upload()), so the batch's own export wins its month and kind over a
+    # profiled file (as on the command line), and the whole zip is one confirmation and one rebuild (#165 review)
+    named = [i for i, (n, _) in enumerate(files) if FN_RX.match(n)]
+    other = [i for i in range(len(files)) if i not in set(named)]
+    plan = plan_named([files[i] for i in named], stored_files(conn))
+    for e in plan:
+        e["i"] = named[e["i"]]
+    if other:
+        present = {filenames.parse(files[i][0]) for i in named} - {None}
+        for e in plan_files(conn, [files[i] for i in other], default_mode=True, present=present):
+            plan.append(dict(e, i=other[e["i"]]))
+    conn.commit()   # read only
     # problems first, then by month and kind: a long table is read for what will not be stored
     order = {"refused": 0, "ready": 1, "unchanged": 2}
     plan.sort(key=lambda e: (order[e["state"]], e["month"] or "", e["kind"] or "", e["name"]))
@@ -198,7 +211,8 @@ def batch_page(request: Request, batch: str, user=Depends(auth.require_editor)):
         return RedirectResponse("/upload", status_code=303)
     ready = [e for e in plan if e["state"] == "ready"]
     return render(request, "upload_batch.html", user, active="upload", batch=batch, plan=plan, state_label=STATE_LABEL, ready=ready,
-                  months=sorted({e["month"] for e in ready}), profiles=sorted({e["profile"] for e in ready}),
+                  months=sorted({e["month"] for e in ready}), profiles=sorted({e["profile"] for e in ready if e["profile"]}),
+                  named=sum(1 for e in ready if e.get("named")),
                   refused=[e for e in plan if e["state"] == "refused"], unchanged=[e for e in plan if e["state"] == "unchanged"])
 
 

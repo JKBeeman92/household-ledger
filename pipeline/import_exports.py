@@ -11,26 +11,28 @@ import argparse, os, sys
 from pathlib import Path
 import psycopg
 from . import filenames
-from .run_pipeline import ingest, rebuild, plan_files, store_planned, SEED_CSVS, FN_RX
+from .run_pipeline import ingest, rebuild, plan_files, store_planned, other_csv, FN_RX
 
 
-def _collect(paths: list[str]) -> list[Path]:
+def _collect(paths: list[str]) -> list[tuple[Path, Path]]:
+    """(file, the directory it was found under) for every CSV given or found; a file given by name is its own root."""
     out = []
     for p in paths:
         P = Path(p)
-        out += sorted(P.rglob("*.csv") if P.is_dir() else [P])
+        out += [(x, P if P.is_dir() else P.parent) for x in sorted(P.rglob("*.csv") if P.is_dir() else [P])]
     return out
 
 
-def describe(plan: list[dict]) -> list[str]:
-    """One line per planned file: what the dry run says about it, as the zip upload's table does."""
+def describe(plan: list[dict], verb: str = "would store") -> list[str]:
+    """One line per planned file: what the dry run says about it, as the zip upload's table does (verb "store" in a real run,
+    where the lines are printed before anything is stored, so a month guessed from the dates is shown before it is stored)."""
     lines = []
     for e in plan:
         head = f"{e['month'] or '-------'} {(e['kind'] or '?'):12s} {e['name']}"
         if e["state"] == "refused":
             lines.append(f"REFUSED {head}: {e['detail']}")
         else:
-            lines.append(f"{'would store' if e['state'] == 'ready' else 'unchanged  '} {head} (“{e['profile']}”, {e['rows']} rows; month {e['how']})"
+            lines.append(f"{verb if e['state'] == 'ready' else 'unchanged'} {head} (“{e['profile']}”, {e['rows']} rows; month {e['how']})"
                          + (f"; {e['detail']}" if e["detail"] and e["state"] == "ready" else ""))
     return lines
 
@@ -39,8 +41,8 @@ def run(conn, paths: list[str], *, profile: str | None = None, dry_run: bool = F
     """The import on an open connection; app.admin's `import` calls it too. Returns the exit code."""
     err = err or (lambda s: print(s, file=sys.stderr))
     found = _collect(paths)
-    named = [f for f in found if FN_RX.match(f.name)]
-    other = [f for f in found if not FN_RX.match(f.name) and f.name not in SEED_CSVS] if profile else []
+    named = [f for f, _ in found if FN_RX.match(f.name)]
+    other = [f for f, root in found if other_csv(f, root)] if profile else []   # not seed files, nothing under a dot-folder
     if not named and not other:
         err("no monthly export files found (internal format or EveryDollar's names" + (", or CSVs to read with a profile)" if profile else
             "; pass --profile NAME to read another tool's files)")); return 2
@@ -57,12 +59,11 @@ def run(conn, paths: list[str], *, profile: str | None = None, dry_run: bool = F
             out(line)
         out(f"dry run: nothing stored; {len(named) + sum(1 for e in plan if e['state'] == 'ready')} file(s) would be stored, {len(refused)} refused")
         return 1 if refused else 0
+    for line in describe(plan, verb="store"):   # the whole table first: every month, and how it was found, before anything is stored
+        out(line)
     for f in named:
         info = ingest(conn, f.name, f.read_bytes(), uploaded_by=uploaded_by)
         out(f"stored {info['budget_month']} {info['kind']:12s} {info['rows']:5d} rows")
-    for line in describe(plan):
-        if not line.startswith("would store"):
-            out(line)
     for r in store_planned(conn, plan, files, uploaded_by, atomic=True):
         out(f"stored {r['name']}: {r['detail']}")
     conn.commit()

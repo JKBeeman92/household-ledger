@@ -127,15 +127,42 @@ def plan_files(conn: psycopg.Connection, files: list[tuple[str, bytes]], *, defa
     return plan
 
 
+def plan_named(files: list[tuple[str, bytes]], stored: dict[tuple[str, str], str]) -> list[dict]:
+    """The dry run of files named like exports (the internal format, EveryDollar's) that a zip holds with another tool's files
+    (#165): read as ingest reads them, in plan_batch's shape (profile None, "named": True), so the whole zip waits for the one
+    confirmation and is stored in one transaction, and plan_batch can refuse a profiled file for the same month and kind (the
+    batch's own export wins, as on the command line). Stores nothing."""
+    out = []
+    for i, (name, data) in enumerate(files):
+        e = {"i": i, "name": name, "profile": None, "profile_id": None, "kind": None, "month": None, "how": "named like an export",
+             "rows": 0, "state": "refused", "detail": "", "named": True}
+        out.append(e)
+        try:
+            kind, bm, rows = parse_export(os.path.basename(name), data)
+        except Exception as ex:  # noqa: BLE001  a bad file is named in the table, not stored
+            e["detail"] = str(ex)[:300]; continue
+        e.update(kind=kind, month=bm, rows=len(rows), state="ready")
+        if stored.get((kind, bm)) == hashlib.sha256(data).hexdigest():
+            e.update(state="unchanged", detail="already stored, unchanged")
+        elif (kind, bm) in stored:
+            e["detail"] = f"replaces the stored {bm} file"
+    return out
+
+
 def store_planned(conn: psycopg.Connection, plan: list[dict], files: list[tuple[str, bytes]], uploaded_by: str = "", *,
                   atomic: bool = True) -> list[dict]:
-    """Store the files of a plan that are ready, each through its profile, for the month and kind the plan found. atomic: all of
-    them in one transaction, or none (a zip's batch, confirmed once); otherwise each on its own, and one that fails is reported
-    and the rest go on (the import directory). Returns [{"name", "ok", "detail"}] for the ready files."""
+    """Store the files of a plan that are ready, each through its profile (or by its name, for plan_named's entries), for the
+    month and kind the plan found. atomic: all of them in one transaction, or none (a zip's batch, confirmed once); otherwise each
+    on its own, and one that fails is reported and the rest go on (the import directory). Returns [{"name", "ok", "detail"}] for
+    the ready files."""
     specs = {p["id"]: p["spec"] for p in load_profiles(conn)}
     out = []
     for e in (x for x in plan if x["state"] == "ready"):
         try:
+            if e.get("named"):
+                info = ingest(conn, files[e["i"]][0], files[e["i"]][1], uploaded_by=uploaded_by, commit=not atomic)
+                out.append({"name": e["name"], "ok": True, "detail": f"{info['budget_month']}, {info['kind'].replace('_', ' ')}, {info['rows']} rows, named like an export"})
+                continue
             info = ingest(conn, files[e["i"]][0], files[e["i"]][1], uploaded_by=uploaded_by, profile={"id": e["profile_id"], "spec": specs[e["profile_id"]]},
                           kind=e["kind"], budget_month=e["month"], commit=not atomic)
             out.append({"name": e["name"], "ok": True, "detail": f"{info['budget_month']}, {info['kind'].replace('_', ' ')}, {info['rows']} rows, read with “{e['profile']}”"})
@@ -527,6 +554,14 @@ def _rebuild(conn: psycopg.Connection) -> dict:
 SEED_CSVS = {"item_mapping.csv", "cpi_u.csv", "accounts.csv", "balances.csv", "yearly_bills.csv"}   # seed_reference_tables' files, not exports
 
 
+def other_csv(path: Path, root: Path) -> bool:
+    """Whether a CSV under root that is not named like an export is offered to the source profiles (#165): not a seed file, and not
+    under a dot-folder or dot-named, the way to keep an unrelated CSV (a bank statement, notes) in the import directory without
+    it being named as a failure in the build log at every start."""
+    rel = path.relative_to(root) if path.is_relative_to(root) else Path(path.name)
+    return not filenames.is_export(path.name) and path.name not in SEED_CSVS and not any(part.startswith(".") for part in rel.parts)
+
+
 def import_dir(conn: psycopg.Connection, import_dir: Path, uploaded_by: str = "import") -> dict:
     """Load every export under import_dir that is new or changed (by sha256), then rebuild once if anything loaded.
     Safe to run at every start: already-loaded files are skipped, so the directory can stay in place.
@@ -544,7 +579,7 @@ def import_dir(conn: psycopg.Connection, import_dir: Path, uploaded_by: str = "i
     failed: list[dict] = []
     csvs = sorted(import_dir.rglob("*.csv"))
     named = [x for x in csvs if filenames.is_export(x.name)]
-    other = [x for x in csvs if not filenames.is_export(x.name) and x.name not in SEED_CSVS]
+    other = [x for x in csvs if other_csv(x, import_dir)]
     if other and load_profiles(conn):
         files = [(str(x.relative_to(import_dir)), x.read_bytes()) for x in other]
         plan = plan_files(conn, files, default_mode=False, present={filenames.parse(x.name) for x in named})

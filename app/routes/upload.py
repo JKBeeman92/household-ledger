@@ -82,7 +82,11 @@ async def upload(request: Request, background: BackgroundTasks, files: list[Uplo
             items += [Item(it.name, error="not named like a monthly export, and no saved source profile recognises its columns: upload one month's "
                                           "pair (transactions and budget) on its own first to set up its mapping, then the rest together", source=it.source) for it in bulk]
             other = bulk = []
-        batch = stash(conn, [(it.name, it.data) for it in other], user.get("email", "")) if other else None
+        # a back catalogue's files named like exports wait with it, so the dry run sees them (the batch's own export wins its month
+        # over a profiled file) and the whole lot is one confirmation and one rebuild (#165 review); a mapping pair leaves them alone
+        held = [it for it in items if it.data is not None and FN_RX.match(it.name)] if bulk else []
+        items = [it for it in items if all(it is not h for h in held)]
+        batch = stash(conn, [(it.name, it.data) for it in held + other], user.get("email", "")) if other else None
         for it in items:
             res = {"name": it.name, "source": it.source, "ok": False, "detail": it.error}
             if it.data is not None:

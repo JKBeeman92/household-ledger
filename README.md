@@ -304,11 +304,15 @@ through the saved profiles:
 
 - **A `.zip` upload** (or more than two files at once) opens a dry run: a table of every file with the profile that recognises
   its columns, whether it is the transactions or the budget file, its budget month and how that month was found. Confirm once
-  for the whole batch; the files are stored in one go and the ledger rebuilds once. Nothing is stored before that.
+  for the whole batch; the files are stored in one go and the ledger rebuilds once. Nothing is stored before that, not even the
+  files in the zip named like exports, which wait in the same table (and win their month over another tool's file for it).
 - **The import directory** (`IMPORT_DIR`) matches files with no export name against the saved profiles by their headers (until a
   profile is saved it reads named exports only, as before; the seed files such as `item_mapping.csv` are never read as exports).
+  A CSV that is not an export at all (a bank statement, notes) is named in the build log at every start; keep it under a folder
+  whose name starts with a dot (`.other/`), or name it starting with a dot, and the import leaves it alone.
 - **The command line**: `python -m pipeline.import_exports --profile NAME [--dry-run] DIR`, or `python -m app.admin import DIR
-  [--profile NAME] [--dry-run]`. `--dry-run` prints the table and stores nothing.
+  [--profile NAME] [--dry-run]`. Both print the table (each file's month and how it was found) before storing anything;
+  `--dry-run` prints it and stores nothing.
 
 A file is recognised by its exact set of column names, which also says which file of the pair it is. Its budget month comes from the
 profile's optional **month rule**, `month_from`, set in the profile's JSON on **Settings → Sources**:
@@ -324,7 +328,7 @@ between two months, or no readable date, gives no month. A budget file has no da
 with the transactions file of the batch whose sums give its spent figures, the reconciliation check itself. Files are paired by
 month and kind, and none is guessed past that: a file no profile recognises, a second file for the same month and kind, or half a
 month whose other file is neither in the batch nor stored, is listed with the reason and not stored. A profile with no month rule
-falls back to the dates in a zip and on the command line, where the months are shown before or as they are stored; the import
+falls back to the dates in a zip and on the command line, where the months are shown before they are stored; the import
 directory, which no one watches, uses only a profile's own rule, and names in the build log every file it did not store. Ready-made
 profiles for other tools are welcome in [`examples/source-profiles/`](examples/source-profiles/), each with a sample pair to test it.
 Outside the app, `python -m pipeline.sources propose …` prints a starting profile for a pair of files and

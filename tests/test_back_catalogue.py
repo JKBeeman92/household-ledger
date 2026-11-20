@@ -260,6 +260,8 @@ def test_import_dir_loads_everydollar_and_profiled_files_and_names_an_unmatched_
     for n, d in tally_files(household24, ["2025-03", "2026-01"]).items():
         (sub / n).write_bytes(d)
     (sub / "stranger.csv").write_bytes(b"When,What,How much\n2025-03-01,Tea,2\n")
+    (tmp_path / ".other").mkdir(); (tmp_path / ".other" / "statement.csv").write_bytes(b"When,What\n1,2\n")   # under a dot-folder: left alone
+    (sub / ".notes.csv").write_bytes(b"When,What\n1,2\n")
     (tmp_path / "item_mapping.csv").write_bytes((household24 / "item_mapping.csv").read_bytes())   # a seed file: not an export, not named
     with db.pool.connection() as conn:
         res = import_dir(conn, tmp_path)
@@ -289,3 +291,59 @@ def test_import_dir_without_profiles_ignores_other_csvs_as_before(client, reset_
     with db.pool.connection() as conn:
         res = import_dir(conn, tmp_path)
     assert res["loaded"] == 8 and res["failed"] == []
+
+
+# ---------------------------------------------------------------- review follow-ups
+def test_a_mixed_zip_waits_whole_and_its_own_export_wins_the_month(client, reset_db, household24):
+    """A zip with EveryDollar's files and another tool's: nothing is stored before the one confirmation, the named export wins its
+    month over the profiled file for it (as on the command line), and the whole zip is one rebuild."""
+    from app import db
+    reset_db(household24)
+    save_tally()
+    entries = {p.name: p.read_bytes() for p in household24.glob("*-01-2025-EveryDollar-*.csv")}
+    assert len(entries) == 2
+    entries.update(tally_files(household24, ["2025-01", "2025-02"]))
+    r = client.post("/upload", files=[("files", ("mixed.zip", make_zip(entries), "application/zip"))])
+    assert r.headers["location"].startswith("/upload/batch/")
+    assert count("SELECT count(*) n FROM source_files") == 0 and count("SELECT count(*) n FROM build_log") == 0
+    page = client.get(r.headers["location"]).text
+    assert "4 files ready to store, 2 budget months" in page and "2 files are named like exports" in page
+    assert page.count("the batch also has a") == 2 and "replaces the stored" not in page
+    client.post(r.headers["location"])
+    with db.pool.connection() as conn:
+        assert conn.execute("SELECT count(*) n FROM build_log").fetchone()["n"] == 1
+        got = conn.execute("SELECT budget_month, profile_id IS NOT NULL p FROM source_files ORDER BY 1, 2").fetchall()
+    assert [(g["budget_month"], g["p"]) for g in got] == [("2025-01", False), ("2025-01", False), ("2025-02", True), ("2025-02", True)]
+
+
+def test_a_real_command_line_import_shows_each_guessed_month_before_storing(client, reset_db, household24, tmp_path):
+    from app import db
+    from pipeline import import_exports
+    reset_db(household24)
+    save_tally()
+    for n, d in tally_files(household24, ["2026-01"]).items():
+        (tmp_path / n).write_bytes(d)
+    lines = []
+    with db.pool.connection() as conn:
+        assert import_exports.run(conn, [str(tmp_path)], profile="Tally", out=lines.append) == 0
+    first_stored = next(i for i, x in enumerate(lines) if x.startswith("stored "))
+    shown = [x for x in lines[:first_stored] if x.startswith("store ")]
+    assert len(shown) == 2 and any("the most common month of its dates" in x for x in shown) and all("2026-01" in x for x in shown)
+
+
+def test_two_profiled_files_of_one_name_both_reach_sources_zip(client, reset_db, household24, tmp_path):
+    """transactions/2025-01.csv and budget/2025-01.csv are stored as two files named 2025-01.csv; the archive keeps both."""
+    from pipeline import import_exports
+    from app import db
+    reset_db(household24)
+    spec = json.loads(json.dumps(TALLY)); spec["month_from"] = {"filename": r"(?P<yyyy>\d{4})-(?P<mm>\d{2})"}
+    save_tally(spec)
+    t, b = to_tally(household24, "2025-01")
+    for d, data in (("transactions", t), ("budget", b)):
+        (tmp_path / d).mkdir(); (tmp_path / d / "2025-01.csv").write_bytes(data)
+    with db.pool.connection() as conn:
+        assert import_exports.run(conn, [str(tmp_path)], profile="Tally", out=lambda s: None) == 0
+    z = zipfile.ZipFile(io.BytesIO(client.get("/export/sources.zip").content))
+    names = sorted(n for n in z.namelist() if n.startswith("2025-01/"))
+    assert names == ["2025-01/2025-01.csv", "2025-01/transactions-2025-01.csv"]
+    assert z.read("2025-01/2025-01.csv") == b and z.read("2025-01/transactions-2025-01.csv") == t
