@@ -621,9 +621,10 @@ def import_dir(conn: psycopg.Connection, import_dir: Path, uploaded_by: str = "i
 EVENT_KINDS = ("job", "move", "family", "health", "purchase", "debt", "other")   # the CHECK in db/migrations/0109_life_event_kind.sql
 
 
-def _seed_event_fields(e: dict, path) -> tuple[str | None, str | None, bool]:
-    """A seed event's kind, person and on_chart switch (#140), checked as the Settings editor checks them; a bad one stops seeding with
-    a message naming it, rather than a bare constraint error. A file without on_chart (every file before 0.9.0) puts every event on the chart."""
+def _seed_event_fields(e: dict, path) -> tuple[str | None, str | None, bool, bool]:
+    """A seed event's kind, person, on_chart switch (#140) and new_normal mark (#159), checked as the Settings editor and set-events
+    check them; a bad one stops seeding with a message naming it, rather than a bare constraint error. A file without on_chart (every
+    file before 0.9.0) puts every event on the chart; one without new_normal marks none."""
     where = f"{path}: event {e.get('m')} {e.get('label')!r}"
     for f in ("kind", "person"):
         if e.get(f) is not None and not isinstance(e.get(f), str):
@@ -631,11 +632,14 @@ def _seed_event_fields(e: dict, path) -> tuple[str | None, str | None, bool]:
     kind = (e.get("kind") or "").strip().lower() or None
     if kind and kind not in EVENT_KINDS:
         raise ValueError(f"{where}: kind {kind!r} is not one of {', '.join(EVENT_KINDS)} (or leave it out)")
-    from app.routes.settings import check_on_chart   # one rule with Settings, the JSON editor and set-events: missing or null is on
+    from app.routes.settings import check_on_chart, new_normal_value   # one rule with Settings, the JSON editor and set-events: missing or null is on
     on_chart = check_on_chart(e.get("on_chart"))
     if on_chart is None:
         raise ValueError(f"{where}: on_chart must be yes or no, true or false (or leave it out)")
-    return kind, (e.get("person") or "").strip() or None, on_chart
+    new_normal = new_normal_value(e.get("new_normal"))   # the same rule: missing, null or empty is false
+    if new_normal is None:
+        raise ValueError(f"{where}: new_normal must be yes or no, true or false (or leave it out)")
+    return kind, (e.get("person") or "").strip() or None, on_chart, new_normal
 
 
 # the yearly checklist's seven defaults as db/migrations/0157_yearly_checklist.sql ships them (#157): a seed file replaces the list only
@@ -690,11 +694,9 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
             with open(seed_dir / "events.json") as f:
                 events_seed = json.load(f)
             for e in events_seed:
-                kind, person, on_chart = _seed_event_fields(e, seed_dir / "events.json")
-                if not isinstance(e.get("new_normal", False), bool):   # #159: true or false, as settings.zip writes it
-                    raise ValueError(f"{seed_dir / 'events.json'}: event {e.get('m')} {e.get('label')!r}: new_normal must be true or false")
+                kind, person, on_chart, new_normal = _seed_event_fields(e, seed_dir / "events.json")
                 cur.execute("INSERT INTO life_events (month,label,kind,person,on_chart,new_normal) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
-                            (e["m"], e["label"], kind, person, on_chart, e.get("new_normal", False)))
+                            (e["m"], e["label"], kind, person, on_chart, new_normal))
         cur.execute("SELECT count(*) FROM settings WHERE key='rules'")
         if cur.fetchone()[0] == 0 and (seed_dir / "rules.json").exists():
             cur.execute("INSERT INTO settings (key, value) VALUES ('rules', %s)", (_read(seed_dir / "rules.json"),))

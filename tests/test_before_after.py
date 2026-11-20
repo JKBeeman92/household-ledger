@@ -151,10 +151,15 @@ def test_json_editor_settings_zip_cli_and_seeds_round_trip_the_mark(client, rese
     with db.pool.connection() as conn:
         conn.execute("DELETE FROM life_events"); seed_reference_tables(conn, tmp_path); conn.commit()
         assert nn(conn) == {"Moved": True}
-    (tmp_path / "events.json").write_text(json.dumps([{"m": "2025-01", "label": "x", "new_normal": "yes"}]))
+    # a seed takes what set-events and the JSON editor take: yes/no and null as well as true/false, and refuses the rest
+    (tmp_path / "events.json").write_text(json.dumps([{"m": "2025-01", "label": "a", "new_normal": "yes"}, {"m": "2025-02", "label": "b", "new_normal": None}]))
+    with db.pool.connection() as conn:
+        conn.execute("DELETE FROM life_events"); seed_reference_tables(conn, tmp_path); conn.commit()
+        assert nn(conn) == {"a": True, "b": False}
+    (tmp_path / "events.json").write_text(json.dumps([{"m": "2025-01", "label": "x", "new_normal": "sometimes"}]))
     with db.pool.connection() as conn:
         conn.execute("DELETE FROM life_events")
-        with pytest.raises(ValueError, match=r"event 2025-01 'x': new_normal must be true or false"):
+        with pytest.raises(ValueError, match=r"event 2025-01 'x': new_normal must be yes or no, true or false"):
             seed_reference_tables(conn, tmp_path)
         conn.rollback()
 
@@ -203,6 +208,25 @@ def test_sample_household_marks_the_birth_and_every_window_says_so(client, reset
     assert ps and all(r["avg_from"] == "2026-02" and r["avg_months"] == 4 and r["avg_since"] == "Elanor is born" for r in ps)
     page = client.get("/").text
     assert 'id="ba-card"' in page and 'data-draw="ba-compare"' in page and 'data-draw="ahead-since"' in page and 'data-draw="lm-since"' in page
+
+
+def test_the_new_normal_off_the_chart_still_moves_every_window(client, reset_db):
+    # #159 with #140: switching the birth off the chart hides its marker but it is still the new normal for the comparison, the look
+    # ahead's pace and the emergency fund's outgo
+    reset_db(SAMPLE)
+    upload_files(client, SAMPLE)
+    with db.pool.connection() as conn:
+        conn.execute("UPDATE life_events SET on_chart=false WHERE label='Elanor is born'"); conn.commit()
+    from pipeline.run_pipeline import rebuild
+    with db.pool.connection() as conn:
+        rebuild(conn)
+    data = client.get("/api/datasets").json()
+    ev = next(r for r in data["events"] if r["label"] == "Elanor is born")
+    assert ev.get("on_chart") is False and ev.get("new_normal") is True
+    birth = [r for r in data["before_after"] if r["label"] == "Elanor is born"]
+    assert {r["n"] for r in birth} == {3, 6, 12} and all(r["new_normal"] for r in birth)
+    assert data["look_ahead"][0]["pace_since"] == "Elanor is born"
+    assert data["emergency_fund"][-1]["outgo_since"] == "Elanor is born"
 
 
 def test_review_names_the_comparison_within_six_months_of_the_new_normal(client, reset_db):
