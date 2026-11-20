@@ -126,6 +126,10 @@ table.edit [aria-invalid=true] { border-color: var(--danger); }
   #dash-root.hl .lede a, #dash-root.hl .note a { display: inline-block; min-height: 44px; line-height: 44px; }
   #dash-root.hl .card { padding: var(--space-3); }
   #dash-root.hl .ba-field { width: 100%; } #dash-root.hl .ba-field select { flex: 1 1 0; min-width: 0; }   /* before and after (issue 159): the event picker takes the row */
+  /* before and after: four columns fit at 390 px without a sideways swipe; the percent goes under the change, a long name wraps */
+  #dash-root.hl #ba-card .tbl th, #dash-root.hl #ba-card .tbl td { padding-inline: var(--space-1); }
+  #dash-root.hl #ba-card .tbl tbody th, #dash-root.hl #ba-card .tbl tbody td:first-child { white-space: normal; overflow-wrap: anywhere; }
+  #dash-root.hl #ba-card .ba-pct { display: block; }
   #dash-root.hl .tbl { max-width: 100%; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
   /* year tables: the first column (year / category / item) stays put while the numbers scroll under it */
   #dash-root.hl .tbl th:first-child, #dash-root.hl .tbl td:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface-200); border-right: 1px solid var(--line); }
@@ -362,6 +366,7 @@ details[open]:not(#dash-root details) > summary::before { transform: translateY(
 .hl th { position: sticky; top: 0; background: var(--surface-200); font-weight: var(--weight-strong); color: var(--ink-muted); }
 .hl tr.filled td { color: var(--warning); }
 .hl td.neg { color: var(--danger); }
+.hl td.kept { position: relative; }   /* holds its visually hidden "kept at its plan" inside the table's scroll box, not the page's */
 .hl .prose { max-width: 70ch; }
 .hl .prose p, .hl .prose li { line-height: 1.5; }
 .hl .prose h3 { font-size: var(--text-heading); font-weight: var(--weight-strong); margin: var(--space-4) 0 var(--space-1); }

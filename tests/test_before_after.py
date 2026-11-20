@@ -240,6 +240,7 @@ def test_the_check_in_says_since_the_new_normal_and_the_old_copy_returns_unmarke
         rebuild(conn)
     page = client.get("/checkin/2026-06").text
     assert "Mark Year in review as read" in page   # year mode
+    assert '>Add to the plan</button>' in page and 'aria-label="Add to the plan: Food at $940"' in page and "Add “Plan" not in page   # the figure once, the name in the button's
     assert "keeps the pace of the 5 months since Elanor is born, its new normal" in page   # the quarter step
     assert "The average since Elanor is born (Feb 2026), the household's new normal," in page   # the suggested plan
     assert "at the pace of the 5 months since Elanor is born, the household's new normal" in page   # the year in review
@@ -261,3 +262,86 @@ def test_in_real_dollars_the_movers_are_ranked_in_real_dollars():
     mv = ba.compare({"m": "2025-02", "label": "x"}, 3, monthly, cat_month)["movers"]
     assert [r["category"] for r in mv["by_dollars"]] == ["Fuel", "Food"] and [r["category"] for r in mv["by_dollars_real"]] == ["Food", "Fuel"]
     assert [r["category"] for r in mv["by_pct"]] == ["Fuel", "Food"] and [r["category"] for r in mv["by_pct_real"]] == ["Food", "Fuel"]
+
+
+# ------------------------------------------------------------------ in a real browser (the UX review of #159)
+
+from test_appearance import browser, server, sample  # noqa: E402,F401  the app in its own process on the sample household
+
+
+def ba_harness(url: str, **opts) -> dict:
+    import subprocess
+    from conftest import ROOT
+    p = subprocess.run(["node", str(ROOT / "tests" / "js" / "before_after_harness.js"), url, json.dumps(opts)], capture_output=True, text=True, timeout=180)
+    assert p.returncode == 0, p.stderr
+    out = json.loads(p.stdout)
+    assert out["errors"] == [], out["errors"]
+    return out
+
+
+@browser
+@pytest.mark.parametrize("width,theme", [(390, "light"), (390, "dark"), (1280, "light"), (1280, "dark")])
+def test_the_change_column_is_in_view_on_a_phone_and_nothing_scrolls_the_page(sample, width, theme):
+    """The Change column is the point of the comparison and the movers: at 390 px every Change cell ends inside its table's box, no
+    table needs a sideways swipe, and the headers say Before and After (the key says once that each is a month's average)."""
+    s = ba_harness(sample, width=width, theme=theme)
+    for view in ("overview", "overviewPct"):
+        o = s[view]
+        assert o["pageOverflow"] <= 0 and len(o["tables"]) == 2, view
+        for t in o["tables"]:
+            assert t["heads"][1:] == ["Before", "After", "Change"]
+            assert t["overflow"] <= 0 and t["changeOut"] == 0, (view, width, t)
+            assert t["rows"] and all(r[3] for r in t["rows"])
+    assert s["lastmonth"]["pageOverflow"] <= 0
+    assert s["overview"]["options"][-1] == "Feb 2026, new normal: Elanor is born (family)"   # the marker ahead of the label, which a narrow field cuts
+
+
+@browser
+def test_last_month_stamps_the_emergency_fund_and_keys_the_kept_rows(sample):
+    s = ba_harness(sample, width=390, settings="Moved to a bigger hole")
+    lm = s["lastmonth"]
+    ef = lm["ef"]   # DS-STATUS-1: 2.0 months against a target of 6 is a stamp, as the sibling rows are; the sentence stays plain
+    assert ef["stamps"] == ["Needs a look"] and ef["downs"] == 0
+    assert "(target 6 months)" in ef["text"] and "4.0 months short of the target." in ef["text"] and "emergency_months" not in ef["text"]
+    assert ef["dts"][1] == "Emergency savings"
+    key = lm["key"]   # built from the rule as built: the default keeps Housing, Debt and Insurance
+    assert key[-1]["mark"] == "=" and "Housing, Debt and Insurance keep their plan" in key[-1]["text"] and not any(k["mark"] == "↑10" for k in key)
+    kept = {c["category"] for c in lm["cats"] if c["mark"]}
+    assert kept == {"Housing", "Debt", "Insurance"} and all(c["hidden"] == ", kept at its plan" for c in lm["cats"] if c["mark"])
+    assert not any(c["hidden"] for c in lm["cats"] if not c["mark"])
+    assert lm["avgSince"] == "Averages use the 4 budget months since Elanor is born (Feb 2026), the new normal."   # its own, without the plan
+    assert "suggested plan" in lm["detailSince"]
+    st = s["settings"]   # the offer on an edited move row; heard when it appears, and gone once yes is chosen or the kind is not a move
+    assert st["opened"] == {"text": "A new normal? Yes starts the averages here.", "role": "status", "live": "polite", "describedby": "new-normal-hint", "value": "no"}
+    assert st["yes"]["text"] == "" and st["yes"]["describedby"] == "new-normal-hint" and st["job"]["text"] == ""
+
+
+@browser
+def test_the_key_and_the_marks_follow_a_households_own_keep_list(client, sample):
+    with db.pool.connection() as conn:
+        rules = db.get_setting(conn, "rules")
+        db.put_setting(conn, "rules", {**rules, "plan_keep_categories": ["Food"]}); conn.commit()
+    try:
+        assert client.post("/rebuild").status_code in (200, 303)
+        lm = ba_harness(sample, width=1280)["lastmonth"]
+        assert lm["key"][-1]["text"] == "=Food keeps its plan (Settings → Pipeline rules, Roles)"
+        assert [c["category"] for c in lm["cats"] if c["mark"]] == ["Food"]
+        food = next(c for c in lm["cats"] if c["category"] == "Food")
+        assert food["suggest"].startswith("= ") and food["hidden"] == ", kept at its plan"
+        with db.pool.connection() as conn:
+            db.put_setting(conn, "rules", {**rules, "plan_keep_categories": []}); conn.commit()
+        assert client.post("/rebuild").status_code in (200, 303)
+        lm = ba_harness(sample, width=1280)["lastmonth"]
+        assert not any(k["mark"] == "=" for k in lm["key"]) and not any(c["mark"] for c in lm["cats"])   # nothing kept: no mark to explain
+    finally:
+        with db.pool.connection() as conn:
+            db.put_setting(conn, "rules", rules); conn.commit()
+        client.post("/rebuild")
+
+
+def test_the_by_percent_floor_on_the_page_is_the_pipelines_and_a_missing_window_is_not_disabled():
+    from conftest import ROOT
+    page = (ROOT / "app" / "web" / "templates" / "dashboard.html").read_text()
+    assert f"const BA_PCT_FLOOR = {ba.PCT_FLOOR};" in page and "$25" not in page   # formatted with the household's currency
+    assert "add balances (Settings → Accounts)" not in page and "add('*'" not in page   # a missing net worth is a dash, the reason and any growth under the table
+    assert "b.disabled" not in page and "aria-disabled" in page   # a window with no row stays in the tab order; the line under the field says why

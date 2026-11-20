@@ -121,15 +121,14 @@ var FMT = (function () {   // the household's locale and currency, as the server
           }).catch(function () {});
         };
       }
-      if (blank && kind === "events") {   // #159: a move or a new family member is offered as the new normal, never chosen for the household
+      if (kind === "events") {   // #159: a move or a new family member is offered as the new normal, never chosen for the household; new or edited
         var kindSel = tr.querySelector('select[name="kind"]'), nnSel = tr.querySelector('select[name="new_normal"]');
-        if (kindSel && nnSel) {
-          var offer = el("div", { "class": "hint", id: "new-normal-hint" }); nnSel.parentNode.insertBefore(offer, nnSel.nextSibling);
-          kindSel.onchange = function () {
-            var on = kindSel.value === "family" || kindSel.value === "move";
-            offer.textContent = on ? "A new normal? Yes starts the averages here." : "";
-            if (on) nnSel.setAttribute("aria-describedby", "new-normal-hint"); else nnSel.removeAttribute("aria-describedby");
-          };
+        if (kindSel && nnSel) {   // a polite live region, described by the select from the start, so the offer is heard when it appears
+          var offer = el("div", { "class": "hint", id: "new-normal-hint", role: "status", "aria-live": "polite" }); nnSel.parentNode.insertBefore(offer, nnSel.nextSibling);
+          nnSel.setAttribute("aria-describedby", "new-normal-hint");
+          var offerNow = function () { var on = (kindSel.value === "family" || kindSel.value === "move") && nnSel.value !== "yes";
+            offer.textContent = on ? "A new normal? Yes starts the averages here." : ""; };
+          kindSel.onchange = offerNow; nnSel.onchange = offerNow; offerNow();
         }
       }
       tr.cancelEdit = function () { cn.click(); };
