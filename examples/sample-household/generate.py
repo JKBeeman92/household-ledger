@@ -121,6 +121,16 @@ DECISIONS = [  # made_in, text, kind, target, until, person
     ("2026-05", "An extra $50 on the student loan", "extra_payment", {"debt": "Lembas Student Loan", "item": "Student Loan", "extra": 50, "base": 275}, None, "Rosie"),
     ("2026-05", "Plan groceries at $750 for the baby", "plan_change", {"item": "Groceries", "planned": 750, "from": 720}, None, None),
 ]
+# chart appearance (#132): a few names keep a colour of their own (palette slots, which follow the theme, and one fixed colour), and the
+# Generosity envelope is hidden from the catch-all chart, so the first-run dashboard shows a "1 hidden · show" and the tests exercise it
+APPEARANCE = [
+    {"dimension": "category", "name": "Housing", "color": "series-1"},
+    {"dimension": "category", "name": "Food", "color": "series-3"},
+    {"dimension": "employer", "name": "Hobbiton Mill", "color": "#2f7f9a"},
+    {"dimension": "person", "name": "Sam", "color": "series-6"},
+    {"dimension": "event_kind", "name": "family", "color": "series-5"},
+    {"dimension": "item", "name": "Generosity", "hidden": True},
+]
 HOUSEHOLD = {"name": "Sample Household", "title": "Sample Household Ledger", "currency": "USD", "locale": "en-US"}
 
 
@@ -267,7 +277,7 @@ def main(out: Path):
         for g, item, canon, cat, flow, *_ in ITEMS: w.writerow([item, canon, cat, flow, MAPPING_NOTES.get(canon, ""), DEBT_TYPES.get(canon, "")])
     write_balances(out, [f"{y}-{m:02d}" for y, m in months], kept)
     write_decisions(out, months_rows)
-    for name, obj in [("tax_outcomes.json", TAX_OUTCOMES), ("goals.json", GOALS), ("events.json", [{"m": m, "label": l, "kind": k, **({"person": p} if p else {})} for m, l, k, p in EVENTS]), ("rules.json", RULES), ("household.json", HOUSEHOLD)]:
+    for name, obj in [("tax_outcomes.json", TAX_OUTCOMES), ("goals.json", GOALS), ("events.json", [{"m": m, "label": l, "kind": k, **({"person": p} if p else {})} for m, l, k, p in EVENTS]), ("rules.json", RULES), ("household.json", HOUSEHOLD), ("appearance.json", APPEARANCE)]:
         (out / name).write_text(json.dumps(obj, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 
 

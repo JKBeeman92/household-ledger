@@ -306,6 +306,9 @@ def _editor_body(conn, key: str) -> str:
     if key == "yearly_bills":   # not a Settings editor: the household's word on yearly bills (#151), for settings.zip and the seed loader
         from .. import yearly_bills
         return yearly_bills.export_csv(conn)
+    if key == "appearance":   # chart colours and hidden names (#132), for the CLI, settings.zip and the seed loader; the page edits it by row
+        from .. import appearance
+        return appearance.export_json(conn)
     if key == "decisions":   # not a Settings editor: the decisions log and its monthly checks (#155), for settings.zip and the seed loader
         from .. import decisions
         return decisions.export_json(conn)
@@ -332,6 +335,9 @@ def _save_editor(conn, key: str, body: str, by: str = "") -> str:
         return accounts_store.import_accounts(conn, body)
     if key == "balances":
         return accounts_store.import_balances(conn, body, by)
+    if key == "appearance":   # set-appearance (#132): the whole table from appearance.json
+        from .. import appearance
+        return appearance.import_json(conn, body)
     if key == "cpi":
         rows = _cpi_rows(body)
         base = (db.get_setting(conn, "rules", {}) or {}).get("cpi_base_month")
@@ -408,7 +414,10 @@ def settings_page(request: Request, user=Depends(auth.require_editor)):
         from .. import yearly_checklist as _yc
         yc_items = _yc.items(conn)   # Settings → Yearly checklist (#157)
         fund_choices = sorted({r["name"] for r in conn.execute("SELECT name FROM accounts WHERE active ORDER BY name").fetchall()})
+        from .. import appearance
+        look = appearance.page(conn)   # Settings → Chart appearance (#132): the names the data has, and the orphans
     return render(request, "settings.html", user, active="settings", editors=editors, rows=rows, flows=FLOWS, flow_help=FLOW_HELP, bills=bills, purchases=purchases, pp_form=request.session.pop("pp_form", None), pp_bought=request.session.pop("pp_bought", None), debt_category=debt_cat, hh_form=request.session.pop("hh_form", None), yc_items=yc_items, yc_form=request.session.pop("yc_form", None), loan_categories=categories, fund_accounts=fund_choices,
+                  look=look, look_labels=appearance.LABELS, look_slots=appearance.SLOTS, look_filter_from=appearance.FILTER_FROM, look_form=request.session.pop("appearance_form", None),
                   yb_form=request.session.pop("yb_form", None), tax_form=request.session.pop("tax_form", None), bal_hist=request.session.pop("bh_form", None), yb_slug=_yb_slug, tax_cfg=_tax_cfg(),
                   categories=categories, rules={**rules, **(request.session.pop("people_typed", None) or {})}, hh=household, name_families=name_families, unmapped=unmapped,
                   brand_problems=brand_check.check_dir(brand.BRAND_DIR), role_fields=ROLE_FIELDS, role_defaults=ROLE_DEFAULTS,
@@ -734,3 +743,54 @@ async def rules_people_form(request: Request, user=Depends(auth.require_editor))
             db.mark_inputs_changed(conn); conn.commit()
             flash(request, f"Saved {len(people)} people and {len(employers)} employer rule(s). The dashboard shows them after a rebuild: press Rebuild now.")
     return RedirectResponse("/settings#rules/people", status_code=303)
+
+
+# ------------------------------------------------------------------ Settings → Chart appearance (#132)
+
+def _appearance_back(dim: str) -> str:
+    return f"/settings#appearance/{dim.replace('_', '-')}"   # the dimension's sub-tab (DS-FLASH-1)
+
+
+@router.post("/settings/appearance/save")
+async def appearance_save(request: Request, user=Depends(auth.require_editor)):
+    """One dimension's names: a colour (a palette slot or a CSS colour; blank is the palette) and a hide box each. Every colour is
+    checked first; one that cannot be read refuses the save and comes back under its field (DS-FORM-1). A colour that may be hard to
+    see, or that looks like a verdict, is saved with a warning that names the mode. Display only: no rebuild."""
+    from .. import appearance
+    f = await request.form()
+    dim = str(f.get("dimension", ""))
+    if dim not in appearance.DIMENSIONS:
+        raise HTTPException(404)
+    names, colors, hidden = [str(n) for n in f.getlist("name")], [str(c) for c in f.getlist("color")], {str(h) for h in f.getlist("hidden")}
+    if len(colors) != len(names):
+        flash(request, "Not saved: the form came back incomplete; reload the page and try again.", "bad")
+        return RedirectResponse(_appearance_back(dim), status_code=303)
+    errors = {n: p for n, c in zip(names, colors) if (p := appearance.check_color(c)[1])}
+    if errors:   # what was typed comes back, with each problem under its field
+        request.session["appearance_form"] = {"dimension": dim, "values": {n: {"color": c, "hidden": n in hidden} for n, c in zip(names, colors)}, "errors": errors}
+        flash(request, f"Not saved: {len(errors)} colour{'' if len(errors) == 1 else 's'} could not be read ({', '.join(list(errors)[:3])}).", "bad")
+        return RedirectResponse(_appearance_back(dim), status_code=303)
+    warn = []
+    with db.pool.connection() as conn:
+        for n, c in zip(names, colors):
+            stored = appearance.set_one(conn, dim, n, c, n in hidden)
+            warn += [f"{n}: {w}" for w in appearance.warnings(stored)]
+        conn.commit()
+    n_hidden = sum(1 for n in names if n in hidden)
+    flash(request, f"Saved the chart colours for {appearance.LABELS[dim][0].lower()}" + (f"; {n_hidden} hidden from the charts" if n_hidden else "")
+          + ". The dashboard shows them now; no rebuild is needed.")
+    if warn:
+        flash(request, "Saved anyway, but check: " + "; ".join(warn[:4]) + (f"; and {len(warn) - 4} more" if len(warn) > 4 else "") + ".", "warn")
+    return RedirectResponse(_appearance_back(dim), status_code=303)
+
+
+@router.post("/settings/appearance/delete")
+async def appearance_delete(request: Request, user=Depends(auth.require_editor)):
+    """Delete an orphan: a colour or hide switch kept for a name the data no longer has."""
+    from .. import appearance
+    f = await request.form()
+    dim, name = str(f.get("dimension", "")), str(f.get("name", ""))
+    with db.pool.connection() as conn:
+        n = appearance.delete(conn, dim, name); conn.commit()
+    flash(request, f"Deleted the chart appearance kept for {name}." if n else f"Nothing was kept for {name}; it was already gone.", "ok" if n else "bad")
+    return RedirectResponse("/settings#appearance/orphans", status_code=303)

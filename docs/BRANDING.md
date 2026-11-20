@@ -90,6 +90,19 @@ translucent colours cannot be judged on their own and are reported as such: give
 are not. The same check (`app/brand_check.py`) runs in the test suite for the shipped theme and the example kits; to run it on a
 kit locally, add it to `THEMES` in `tests/test_contrast.py`.
 
+## The palette and the household's colours
+
+Two hands are on a chart's colours, and each has its own part. **The kit sets the palette**: what `--series-1` … `--series-8` are,
+by day and by night, and so what every chart's colours look like. **The household chooses which name gets which slot**
+(Settings → Chart appearance, README "Chart colours and hidden names"): Housing is `series-1`, Sam is `series-3`, so they keep those
+slots whatever their rank. A slot follows the kit, so a new kit recolours an assigned name with the kit's own hue for that slot, in
+both modes, and the assignment stays. A name with no slot takes the palette in order, skipping the slots claimed in its dimension.
+
+A household may also give a name a fixed colour (`#2f7f9a`), which no kit changes. The kit still decides whether it reads: a fixed
+colour is checked against the kit in force, at 3:1 on `--surface-200` and at least ΔE 10 (OKLab) from `--success` and `--danger`, in
+both modes, and Settings warns, naming the mode, when it falls short. After changing kits, look over Settings → Chart appearance for
+those warnings; a palette slot never needs it.
+
 ## The marks
 
 `mark.svg` is the full mark, drawn at 48 px and up (the sign-in card, the dashboard masthead); `mark-small.svg` is the cut for

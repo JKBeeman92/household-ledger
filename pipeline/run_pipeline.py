@@ -727,6 +727,8 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
                 for t in yc.get("ticks", []):
                     cur.execute("INSERT INTO yearly_checklist (year, item, label, note, done_at, done_by) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
                                 (t["year"], t["item"], t.get("label") or "", t.get("note") or "", t.get("done_at"), t.get("done_by") or ""))
+        from app import appearance   # chart colours and hidden names (#132); display only, so read here and never by the build
+        appearance.seed(conn, seed_dir / "appearance.json")
         cur.execute("SELECT count(*) FROM decisions")
         if cur.fetchone()[0] == 0 and (seed_dir / "decisions.json").exists():   # the decisions log and its checks (#155), from settings.zip
             for d in json.loads(_read(seed_dir / "decisions.json")):

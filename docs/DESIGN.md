@@ -83,7 +83,7 @@ pages use tokens only.
 | `--accent`, `--accent-hover`, `--accent-soft`, `--on-accent` | Actions, links, the current page, plotted data |
 | `--accent-2`, `--accent-2-deep`, `--accent-2-text`, `--on-accent-2` | Destinations only: goals, waypoints, reference lines, eyebrows |
 | `--success`, `--warning`, `--danger`, `--info`, `--on-status` | Verdicts |
-| `--series-1` … `--series-8` | Chart series, in this order on every chart |
+| `--series-1` … `--series-8` | Chart series, in this order on every chart, unless the household gives a name a slot (DS-CHART-4) |
 | `--chart-grid`, `--chart-axis`, `--chart-reference`, `--graticule` | Chart furniture, and the page's grid |
 | `--focus` | The focus ring |
 
@@ -181,8 +181,15 @@ out falls back. Ids: `dashboard check-in close-month reviews settings day night 
 - **DS-CHART-1** Months that have happened are fixes: a ring with a dot, joined by a solid track.
 - **DS-CHART-2** What has not happened is a dotted course.
 - **DS-CHART-3** A goal is a filled waypoint in `--accent-2`, with its name and amount beside it.
-- **DS-CHART-4** Series take `--series-1` to `--series-8` in order, on every chart, so a category keeps its colour.
+- **DS-CHART-4** Series take `--series-1` to `--series-8` in order, on every chart. A chart coloured by a name (a category, an
+  employer, a person, a debt, an account type, a catch-all item, an event kind) asks `dash.colorFor(dimension, name, i)`, never the
+  palette by position: a name the household gave a colour (Settings → Chart appearance) keeps it on every chart, period and mode,
+  and the rest take the palette in order, passing over the slots claimed in that dimension. A name's place counts hidden names, so
+  hiding one recolours none.
 - **DS-CHART-5** Every chart can be read without seeing it: a caption that states the finding, and its figures as a table.
+- **DS-CHART-6** A chart that leaves out names the household hid says how many, under its plot: a plain button, *2 hidden · show*,
+  which shows them on that chart for that viewer only (remembered like the period filter) and reads *2 hidden, shown here · hide*
+  while they show. Hiding is display only: a total, a tooltip's total, a net line or a table never leaves a hidden name out.
 
 ## 5. Patterns
 
