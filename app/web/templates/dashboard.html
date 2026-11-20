@@ -1795,9 +1795,10 @@ dash.draw('lm-ef', (el) => {
     if (sub) { const d = document.createElement('div'); d.className = 'muted'; d.textContent = sub; if (link) { const a = document.createElement('a'); a.href = link[1]; a.textContent = link[0]; d.append(' ', a); } dd.append(d); } el.append(dt, dd); };
   const r = g.status === 'ok' && g.data.length ? g.data[g.data.length - 1] : null, target = goalValue(G, 'emergency_months');
   if (!r || r.emergency == null) { add('Coverage', '—', 'No account counts toward the emergency fund yet.', null, ['Mark one on Settings → Accounts', '/settings#accounts']); return; }
-  const short = target != null && r.months != null && r.months < target;
+  const r1 = (v) => v == null ? null : Number(Number(v).toFixed(1)), shown = r1(r.months), aim = r1(target);   // both as months1 shows them, so the stamp agrees with the figures: 5.97 reads 6.0, on track
+  const short = aim != null && shown != null && shown < aim;
   add(`End of ${HL.fmtM(HL.parseM(r.m))}`, months1(r.months) + (target != null ? ` (target ${Number.isInteger(target) ? `${target} month${target === 1 ? '' : 's'}` : months1(target)})` : ''),
-    (r.change != null ? (Math.abs(r.change) < 0.05 ? 'About the same as last month. ' : `${r.change >= 0 ? '+' : '−'}${months1(Math.abs(r.change))} since last month. `) : '') + (short ? `${months1(target - r.months)} short of the target.` : target == null ? 'No target set.' : 'At or above the target.'),
+    (r.change != null ? (Math.abs(r.change) < 0.05 ? 'About the same as last month. ' : `${r.change >= 0 ? '+' : '−'}${months1(Math.abs(r.change))} since last month. `) : '') + (short ? `${months1(aim - shown)} short of the target.` : target == null ? 'No target set.' : 'At or above the target.'),
     target == null ? 'none' : r.months == null ? null : short ? 'off' : 'good', target == null ? ['Set one on Settings → Goals', '/settings#goals'] : null);
   add('Emergency savings', HL.usd0(r.emergency), `in ${r.accounts} account${r.accounts === 1 ? '' : 's'}, over ${HL.usd0(r.outgo)} a month of outgo (the ${r.outgo_months}-month average${r.outgo_since ? `, since ${r.outgo_since}, the household's new normal` : ''})` + (r.unconfirmed ? `; ${r.unconfirmed} balance${r.unconfirmed === 1 ? '' : 's'} not yet confirmed` : ''));
 });

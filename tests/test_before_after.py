@@ -317,6 +317,32 @@ def test_last_month_stamps_the_emergency_fund_and_keys_the_kept_rows(sample):
 
 
 @browser
+def test_the_emergency_fund_stamp_reads_on_track_at_the_target_as_shown_and_neutral_without_one(client, sample):
+    """The stamp agrees with the figures as shown: a target a few hundredths above the coverage reads the same to one decimal, so it
+    is on track, not "0.0 months short"; with no emergency_months goal the stamp is neutral and the line links to Settings → Goals."""
+    with db.pool.connection() as conn:
+        months = conn.execute("SELECT rows FROM datasets WHERE name='emergency_fund'").fetchone()["rows"][-1]["months"]
+        goal = conn.execute("SELECT key, value, unit, label, note FROM goals WHERE key='emergency_months'").fetchone()
+    shown = round(months, 1)
+    try:
+        with db.pool.connection() as conn:
+            conn.execute("UPDATE goals SET value=%s WHERE key='emergency_months'", (shown + 0.04,)); conn.commit()
+        assert client.post("/rebuild").status_code in (200, 303)
+        ef = ba_harness(sample, width=390)["lastmonth"]["ef"]
+        assert ef["stamps"] == ["On track"] and "At or above the target." in ef["text"] and "short" not in ef["text"], ef
+        with db.pool.connection() as conn:
+            conn.execute("DELETE FROM goals WHERE key='emergency_months'"); conn.commit()
+        assert client.post("/rebuild").status_code in (200, 303)
+        ef = ba_harness(sample, width=390)["lastmonth"]["ef"]
+        assert ef["stamps"] == ["No goal set"] and "No target set." in ef["text"] and ["Set one on Settings → Goals", "/settings#goals"] in ef["links"], ef
+    finally:
+        with db.pool.connection() as conn:
+            conn.execute("DELETE FROM goals WHERE key='emergency_months'")
+            conn.execute("INSERT INTO goals (key, value, unit, label, note) VALUES (%(key)s, %(value)s, %(unit)s, %(label)s, %(note)s)", goal); conn.commit()
+        client.post("/rebuild")
+
+
+@browser
 def test_the_key_and_the_marks_follow_a_households_own_keep_list(client, sample):
     with db.pool.connection() as conn:
         rules = db.get_setting(conn, "rules")
@@ -345,3 +371,5 @@ def test_the_by_percent_floor_on_the_page_is_the_pipelines_and_a_missing_window_
     assert f"const BA_PCT_FLOOR = {ba.PCT_FLOOR};" in page and "$25" not in page   # formatted with the household's currency
     assert "add balances (Settings → Accounts)" not in page and "add('*'" not in page   # a missing net worth is a dash, the reason and any growth under the table
     assert "b.disabled" not in page and "aria-disabled" in page   # a window with no row stays in the tab order; the line under the field says why
+    css = (ROOT / "app" / "web" / "static" / "app.css").read_text()
+    assert '.hl .seg button[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }' in css   # it looks as unavailable as .btn:disabled

@@ -328,6 +328,7 @@ details[open]:not(#dash-root details) > summary::before { transform: translateY(
 .hl .seg button, .hl .tabs button { font: inherit; background: var(--surface-200); color: var(--ink-muted); border: 0; padding: var(--space-1) var(--space-2); cursor: pointer; }
 .hl .seg button + button { border-left: 1px solid var(--line); }
 .hl .seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface-100); }
+.hl .seg button[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }   /* a window with no row: looks as .btn:disabled, still in the tab order */
 .hl .tabs { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .hl .tabs button { border: 1px solid var(--line); border-radius: var(--radius-md); }
 .hl .tabs button[aria-selected="true"] { background: var(--ink); color: var(--surface-100); border-color: var(--ink); }
