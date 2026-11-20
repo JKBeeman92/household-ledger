@@ -2,20 +2,29 @@
 from . import Step, register, _x
 
 
+def _key(name) -> str:
+    """A person's name as the rows are matched on: case and spacing ignored, so "rosie " is Rosie."""
+    return " ".join(str(name or "").split()).casefold()
+
+
 def by_person(ds: dict, month: str) -> list[dict]:
     """#156: each person's month (by_person, which is empty with fewer than two people), with their accounts and the decisions in force
-    that name them; the shared part last as "Joint", with the accounts that name no one. Figures only, no verdict."""
+    that name them; the shared part last as "Joint", with the accounts and decisions that name no one or a name the People rule does not
+    have (a removed person, say), so none drops out. Names match ignoring case and spacing. Figures only, no verdict."""
     rows = [r for r in ds.get("by_person", []) if r["m"] == month]
     if not rows:
         return []
+    named = {_key(r["who"]) for r in rows if r["who"] != "Household"}
+    owner = lambda name: _key(name) if _key(name) in named else None   # None: under Joint
     accts = [r for r in ds.get("balances", []) if r["m"] == month]
-    decs = [r for r in ds.get("decisions", []) if r["m"] == month and r.get("person")]
+    decs = [r for r in ds.get("decisions", []) if r["m"] == month and _key(r.get("person"))]
     out = []
     for r in rows:
         joint = r["who"] == "Household"
+        me = None if joint else _key(r["who"])
         out.append({**r, "label": "Joint" if joint else r["who"], "joint": joint,
-                    "accounts": sorted(a["account"] for a in accts if (a.get("person") or None) == (None if joint else r["who"])),
-                    "decisions": [] if joint else [d["text"] for d in decs if d["person"] == r["who"]]})
+                    "accounts": sorted(a["account"] for a in accts if owner(a.get("person")) == me),
+                    "decisions": [d["text"] for d in decs if owner(d["person"]) == me]})
     return out
 
 

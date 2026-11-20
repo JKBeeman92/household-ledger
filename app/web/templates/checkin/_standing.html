@@ -6,7 +6,7 @@
   {% if c.ef and c.ef.months is not none %}<dt>Emergency fund</dt><dd>{{ c.ef.months|number(1) }} months of outgo.</dd>{% endif %}
   {% if c.dti and c.dti.dti is not none %}<dt>Debt-to-income</dt><dd>{{ c.dti.dti|share(1) }} of gross; housing {{ c.dti.housing_dti|share(1) }}.</dd>{% endif %}
 </dl>
-{% if c.people %}{% macro since(v) %}{% if v is not none %}, {{ v|money(signed=True) }} since last month{% endif %}{% endmacro %}
+{% if c.people %}{% macro since(v) %}{% if v is not none %}, {% if v|money == 0|money %}no change{% else %}{{ v|money(signed=True) }}{% endif %} since last month{% endif %}{% endmacro %}
 <h3 class="sub" id="standing-people">By person</h3>
 <dl class="dti" aria-labelledby="standing-people">{% for r in c.people %}
   <dt>{{ r.label }}</dt><dd>{% if r.joint %}{% if r.earned or r.earned_change %}Shared income {{ r.earned|money }}{{ since(r.earned_change) }}; shared{% else %}Shared{% endif %} spending {{ r.spent|money }}{{ since(r.spent_change) }}.{% else %}Earned {{ r.earned|money }}{% if r.earned_share is not none %} ({{ r.earned_share|share }} of the month's income){% endif %}{{ since(r.earned_change) }}; own envelopes {{ r.spent|money }}{{ since(r.spent_change) }}.{% endif %}

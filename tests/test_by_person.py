@@ -126,3 +126,33 @@ def test_datasets_zip_carries_by_person(client, loaded):
     z = zipfile.ZipFile(io.BytesIO(client.get("/export/datasets.zip").content))
     name = next(n for n in z.namelist() if n.startswith("by_person"))
     assert json.loads(z.read(name))
+
+
+def test_accounts_and_decisions_naming_someone_else_sit_under_joint():
+    """A name the People rule lacks (a removed person), or one typed with other case or spacing, never drops out of the block."""
+    from app.checkin.step_standing import by_person
+    m = "2026-06"
+    row = lambda who: {"m": m, "who": who, "earned": 0, "earned_share": 0, "earned_change": 0, "spent": 0, "spent_change": 0}
+    ds = {"by_person": [row("Rosie"), row("Sam"), row("Household")],
+          "balances": [{"m": m, "account": a, "person": p} for a, p in [("A", " rosie "), ("B", "Gandalf"), ("C", None), ("D", "Sam")]],
+          "decisions": [{"m": m, "text": t, "person": p} for t, p in [("Rosie's", "ROSIE"), ("Old", "Gandalf"), ("Nobody's", None)]]}
+    out = {r["label"]: r for r in by_person(ds, m)}
+    assert out["Rosie"]["accounts"] == ["A"] and out["Rosie"]["decisions"] == ["Rosie's"]
+    assert out["Sam"]["accounts"] == ["D"] and out["Sam"]["decisions"] == []
+    assert out["Joint"]["accounts"] == ["B", "C"] and out["Joint"]["decisions"] == ["Old"]   # a decision naming no one stays off
+
+
+def test_checkin_says_no_change_for_a_change_that_rounds_to_nothing():
+    """The check-in and the Last month table read a zero change alike: "no change", never "$0" here and "+$0" there."""
+    from app.web_helpers import templates
+    r = {"label": "Rosie", "joint": False, "earned": 100, "earned_share": 0.5, "earned_change": 0.2, "spent": 10, "spent_change": -5,
+         "accounts": [], "decisions": []}
+    page = templates.env.get_template("checkin/_standing.html").render(c={"people": [r]}, household={}, month="2026-06", request=None,
+                                                                         csrf_field=lambda req: "")
+    dd = page[page.index("<dt>Rosie</dt>"):]
+    assert "Earned $100 (50% of the month's income), no change since last month" in dd and "−$5 since last month" in dd
+
+
+def test_dashboard_reads_zero_change_and_absent_joint_income_alike():
+    page = (ROOT / "app" / "web" / "templates" / "dashboard.html").read_text()
+    assert "'no change'" in page and 'data-draw="lm-people-month"' in page

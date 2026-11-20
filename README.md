@@ -671,8 +671,9 @@ same figures. For each person, and for the joint part last:
   People tab's Income by earner chart, a month at a time.
 - **Own envelopes**: what the envelopes `payer_prefix_by_person` and `payer_items_by_person` give them spent, and its change: the
   Spend by payer chart's figure, so envelope ownership, not who tapped the card. Joint is what no rule gives one person.
-- **Accounts and decisions**: the accounts Settings → Accounts names them on (an account that names no one is listed once, under
-  Joint), and the decisions in force this month that name them.
+- **Accounts and decisions**: the accounts Settings → Accounts names them on, and the decisions in force this month that name them.
+  Names match ignoring case and spacing; an account or decision that names no one, or a name the People rule no longer has, is listed
+  once, under Joint, so nothing drops out. A change that rounds to nothing reads *no change*.
 
 These are figures only, never "over" or "under": the check-in is done together, and there is no fair-share view. With one person, or
 none, the card is absent and the `by_person` dataset is empty. It is in `datasets.zip`, the month-close review (per-person totals only,
