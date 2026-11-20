@@ -1,4 +1,4 @@
-{# Step 6: where we stand, read-only (the Last month tab's figures). Context: c.monthly, c.nw, c.dti, c.ef #}
+{# Step 6: where we stand, read-only (the Last month tab's figures). Context: c.monthly, c.nw, c.dti, c.ef, c.people (#156) #}
 <dl class="dti">
   {% if c.monthly %}<dt>The month</dt><dd>Income {{ c.monthly.income|money }}, living spend {{ c.monthly.spend|money }}, debt paid {{ c.monthly.debt|money }}: kept <strong>{{ c.monthly.net|money }}</strong>{% if c.monthly.income %} ({{ (c.monthly.net / c.monthly.income)|share }} of take-home){% endif %}.</dd>{% endif %}
   {% if c.nw %}<dt>Net worth</dt><dd><strong>{{ c.nw.net_worth|money }}</strong>{% if c.nw.change is not none %}, {{ c.nw.change|money(signed=True) }} since last month{% if c.nw.you_did is not none %} (you did {{ c.nw.you_did|money(signed=True) }}, happened {{ c.nw.happened|money(signed=True) }}){% endif %}{% endif %}.{% if c.nw.you_did is not none %}<br><span class="muted">What you did is what was kept and paid down; what happened is the rest: values moving, and interest.</span>{% endif %}</dd>{% endif %}
@@ -6,6 +6,13 @@
   {% if c.ef and c.ef.months is not none %}<dt>Emergency fund</dt><dd>{{ c.ef.months|number(1) }} months of outgo.</dd>{% endif %}
   {% if c.dti and c.dti.dti is not none %}<dt>Debt-to-income</dt><dd>{{ c.dti.dti|share(1) }} of gross; housing {{ c.dti.housing_dti|share(1) }}.</dd>{% endif %}
 </dl>
+{% if c.people %}{% macro since(v) %}{% if v is not none %}, {{ v|money(signed=True) }} since last month{% endif %}{% endmacro %}
+<h3 class="sub" id="standing-people">By person</h3>
+<dl class="dti" aria-labelledby="standing-people">{% for r in c.people %}
+  <dt>{{ r.label }}</dt><dd>{% if r.joint %}{% if r.earned or r.earned_change %}Shared income {{ r.earned|money }}{{ since(r.earned_change) }}; shared{% else %}Shared{% endif %} spending {{ r.spent|money }}{{ since(r.spent_change) }}.{% else %}Earned {{ r.earned|money }}{% if r.earned_share is not none %} ({{ r.earned_share|share }} of the month's income){% endif %}{{ since(r.earned_change) }}; own envelopes {{ r.spent|money }}{{ since(r.spent_change) }}.{% endif %}
+    {% if r.accounts %}<br><span class="muted">Accounts: {{ r.accounts|join(', ') }}.</span>{% endif %}{% if r.decisions %}<br><span class="muted">Decisions: {{ r.decisions|join('; ') }}.</span>{% endif %}</dd>{% endfor %}
+</dl>
+<p class="muted">Earned and own envelopes come from the earner and payer rules (income_by_person, payer_prefix_by_person and payer_items_by_person on <a href="/settings#rules/json">Settings → Pipeline rules → All rules as JSON</a>); joint is what no rule gives one person.</p>{% endif %}
 {% if c.purchases %}{% from "_purchase_macros.html" import verdict, figures, bought_form with context %}
 <h3 class="sub">Planned purchases</h3>
 <ul>{% for p in c.purchases %}{% set g = p.progress %}<li id="{{ p.anchor }}" tabindex="-1"><strong>{{ p.label }}</strong>, {{ p.target_amount|money }} by {{ p.target_month|month_short }}: {{ verdict(g) }}<br><span class="muted">{{ figures(g) }}{% if p.shared_with %} {{ p.funded_by }} also saves for {{ p.shared_with|join(', ') }}, and each counts all of it.{% endif %}</span>

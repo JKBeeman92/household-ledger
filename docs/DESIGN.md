@@ -61,6 +61,9 @@ reaching a waypoint, and a chart border.
   On the server the filters do it (`app/formatting.py`): `|money` (`money(2)` for cents, `money(signed=True)` for a change),
   `|date`, `|datetime`, `|month`, `|month_short`, `|share`, `|number`, and `|plain` for a field's value; a flash uses
   `month_text()`. In script, `dash.fmt` and `HL.mo`. Both read the same CLDR data, so a figure reads alike on either side.
+- **DS-WORD-7** Between people in the household, figures only. A per-person figure (the By person card, the check-in's By person
+  lines) has no verdict, stamp or verdict colour, and no word that ranks one person against another: never *over*, *under*, *more
+  than their share*. The shared part is *Joint*, listed last.
 
 ## 3. Foundations (the kit contract)
 

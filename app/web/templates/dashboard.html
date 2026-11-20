@@ -127,6 +127,14 @@
       <details class="how"><summary>How to read this</summary><p>Net worth is every account's month-end balance (Settings → Accounts; entered at Close a month), assets less debts, leaving out accounts marked not in net worth. Its change since last month is split in two. <b>What you did</b> is the month's income less living spend: what was kept plus what was paid on debts, since paying a loan down is the household's own doing (and, once stated, pre-tax saving such as a 401(k)). <b>What happened to you</b> is the rest: investments and the home's estimate moving, interest charged, and money moving into or out of accounts this page does not track. An account's first month is shown on its own, so adding one is not read as progress. A debt with no balance entered is estimated, and the figure says so. One thing lands on the wrong side: money your budget counts as spent that goes into an account tracked here (a savings envelope paid into a savings account) shows under what happened, not what you did. <b>Excluding home</b> takes a home's typed estimate out, since it moves the total more than any month's decisions.</p></details>
       <dl class="dti" data-draw="lm-nw" data-source="net_worth balances"></dl>
     </div>
+    <div class="card" id="lm-people-card" hidden>
+      <h2 id="lm-people">By person</h2>
+      <ul class="key row"><li>what each person earned, and their part of the month's income</li><li>what each person's own envelopes spent</li><li>the change since last month</li></ul>
+      <details class="how"><summary>How to read this</summary><p>This shows when the People rule (Settings → Pipeline rules) names two or more people. <b>Earned</b> is the income the earner rule (income_by_person) gives each person: the Income by earner chart on the People tab, a month at a time. <b>Own envelopes</b> is what the envelopes the payer rules (payer_prefix_by_person, payer_items_by_person) give each person spent: the Spend by payer chart, so it means envelope ownership, not who paid. <b>Joint</b> is what no rule gives one person: shared income and the shared envelopes. Accounts sit under the person Settings → Accounts names, and an account that names no one under Joint; decisions are the ones in force this month that name a person. These are figures, not a fair-share reckoning.</p></details>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="lm-people"><table><thead><tr><th scope="col">Person</th><th scope="col" class="num">Earned</th><th scope="col" class="num">Part of income</th><th scope="col" class="num">Earned, change</th><th scope="col" class="num">Own envelopes</th><th scope="col" class="num">Own envelopes, change</th></tr></thead><tbody data-draw="lm-people-rows" data-source="by_person"></tbody></table></div>
+      <details class="listcount" id="lm-people-list"><summary data-draw="lm-people-count" data-source="by_person balances decisions">Accounts and decisions</summary>
+        <dl class="dti long-labels" data-draw="lm-people-own" data-source="by_person balances decisions" data-list="unbounded"></dl></details>
+    </div>
     <div class="card" id="lm-decisions-card">
       <h2 id="lm-decisions">Decisions in force</h2>
       <ul class="key row"><li>the decisions in force in the latest month, and how each went</li><li>the share kept, over the last six months of checks</li></ul>
@@ -1073,6 +1081,34 @@ const nwCard = (el) => {
   else add('Over 12 months', '—', 'needs balances from a year before (Settings → Accounts → Balances history)', false);
 };
 dash.draw('lm-nw', nwCard);
+// by person (#156): each person's month beside the shared part, with their accounts and decisions; the card shows only when by_person
+// has rows (the People rule names two or more), so a one-person household never sees it. Figures only, never over or under.
+const bpMonth = () => { const g = dash.data('by_person'); if (g.status !== 'ok' || !g.data.length) return null;
+  const b = dash.data('budget_items'), last = b.status === 'ok' && b.data.length ? b.data.map((r) => r.m).sort().pop() : null;
+  return last && g.data.some((r) => r.m === last) ? last : g.data.map((r) => r.m).sort().pop(); };
+const bpRows = () => { const m = bpMonth(); return m ? dash.data('by_person').data.filter((r) => r.m === m) : []; };
+const bpLabel = (who) => who === 'Household' ? 'Joint' : who;
+dash.draw('lm-people-rows', (tb) => { tb.replaceChildren(); const pct = dash.fmt.pct(0), ch = (v) => v == null ? '—' : sgn(v);
+  for (const r of bpRows()) { const tr = document.createElement('tr');
+    [bpLabel(r.who), HL.usd0(r.earned), r.earned_share == null ? '—' : pct(r.earned_share), ch(r.earned_change), HL.usd0(r.spent), ch(r.spent_change)].forEach((c, i) => {
+      const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); });
+    tb.append(tr); } });
+const bpOwn = () => { const m = bpMonth(); if (!m) return [];
+  const bal = dash.data('balances'), dec = dash.data('decisions');
+  const accts = bal.status === 'ok' ? bal.data.filter((r) => r.m === m) : [], decs = dec.status === 'ok' ? dec.data.filter((r) => r.m === m && r.person) : [];
+  return bpRows().map((r) => { const joint = r.who === 'Household';
+    return { label: bpLabel(r.who), accounts: accts.filter((a) => (a.person || null) === (joint ? null : r.who)).map((a) => a.account).sort(), decisions: joint ? [] : decs.filter((d) => d.person === r.who).map((d) => d.text) }; })
+    .filter((o) => o.accounts.length || o.decisions.length); };
+dash.onData(() => { const card = document.getElementById('lm-people-card'), list = document.getElementById('lm-people-list');
+  if (card) card.hidden = !bpRows().length; if (list) list.hidden = !bpOwn().length; });
+dash.draw('lm-people-count', (el) => { const own = bpOwn(), na = d3.sum(own, (o) => o.accounts.length), nd = d3.sum(own, (o) => o.decisions.length);
+  if (!own.length) return;
+  el.textContent = `Accounts and decisions by person: ${na} account${na === 1 ? '' : 's'}, ${nd} decision${nd === 1 ? '' : 's'} in force`; HL.sizeOnce(el.closest('details'), na + nd <= 8); });
+dash.draw('lm-people-own', (el) => { el.replaceChildren();
+  for (const o of bpOwn()) { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = o.label;
+    if (o.accounts.length) { const d = document.createElement('div'); d.textContent = 'Accounts: ' + o.accounts.join(', '); dd.append(d); }
+    if (o.decisions.length) { const d = document.createElement('div'); d.className = 'muted'; d.textContent = 'Decisions in force: ' + o.decisions.join('; '); dd.append(d); }
+    el.append(dt, dd); } });
 // decisions (#155): those in force in the latest month, with the app's verdict and the household's, and the keep rate
 const decLatest = () => { const g = dash.data('decisions'); if (g.status !== 'ok' || !g.data.length) return null; const last = g.data.map((r) => r.m).sort().pop(); return g.data.filter((r) => r.m === last); };
 const DEC_WORDS = { kept: 'kept', partly: 'partly kept', dropped: 'not kept', pending: 'waiting for the month’s files', unknown: 'yours to say' };

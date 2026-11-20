@@ -17,6 +17,10 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
   every chart draws as before. Settings gains a Chart appearance tab; `settings.zip` gains `appearance.json` (read back by the seed
   loader), the command line `set-appearance FILE` and `export appearance`. No rebuild is needed: the pipeline never reads it.
 
+- **Two people at the table** (#156): no migration. Rebuild once after upgrading to emit `by_person` (in `datasets.zip`, the review
+  and MCP). It is empty, and the Last month tab's By person card and the check-in's By person lines absent, unless the People rule
+  names two or more people.
+
 ## 0.8.0
 
 - **The withholding check** (#153, `0153_tax_outcomes.sql`): a new table only. `settings.zip` gains `tax_outcomes.json`; a new rule,

@@ -661,6 +661,23 @@ them in place of its own earlier suggestion; a decision's note never leaves the 
 is now worked out in the pipeline (`plan_suggestions`), so the tab and the check-in cannot disagree. Renaming a category, an item or
 an account updates the decisions that name it.
 
+## Two people at the table
+
+"Between the two of us, who earned what, and who spent what on themselves?" When the People rule (Settings → Pipeline rules → People
+and employers) names two or more people, the Last month tab has a **By person** card, and the check-in's **Where we stand** step the
+same figures. For each person, and for the joint part last:
+
+- **Earned**: the income `income_by_person` gives them, its part of the month's income, and its change since last month. It is the
+  People tab's Income by earner chart, a month at a time.
+- **Own envelopes**: what the envelopes `payer_prefix_by_person` and `payer_items_by_person` give them spent, and its change: the
+  Spend by payer chart's figure, so envelope ownership, not who tapped the card. Joint is what no rule gives one person.
+- **Accounts and decisions**: the accounts Settings → Accounts names them on (an account that names no one is listed once, under
+  Joint), and the decisions in force this month that name them.
+
+These are figures only, never "over" or "under": the check-in is done together, and there is no fair-share view. With one person, or
+none, the card is absent and the `by_person` dataset is empty. It is in `datasets.zip`, the month-close review (per-person totals only,
+no accounts) and MCP; `python -m app.admin by-person [YYYY-MM]` prints it. No migration: rebuild once after upgrading to emit it.
+
 ## Chart colours and hidden names
 
 "Where did Housing go this year?" is quicker to answer when Housing is the same colour on every chart, whatever its rank, and when the
