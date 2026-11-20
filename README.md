@@ -274,7 +274,7 @@ The month in the file name is the budget month every row counts in. Files named 
 they are, on upload, from a `.zip`, from the import directory, by `python -m pipeline.import_exports` and by the standalone scripts,
 so a back catalogue converted to this format by any means loads in one go. The app stages every rebuild in this format, and
 `python -m pipeline.sources normalize` writes it. **EveryDollar's** exports are this format with `MM/DD/YYYY` dates and their own
-names (`<id>-MM-YYYY-EveryDollar-Transactions.csv`, `…-BudgetItems.csv`); they are the built-in profile, read without a mapping
+names (`<id>-MM-YYYY-EveryDollar-Transactions.csv`, `…-BudgetItems.csv`); they are the built-in profile, read without setting up a source profile
 step, and always will be. `pipeline/filenames.py` recognises both.
 
 ## Other budget tools
@@ -390,7 +390,7 @@ a group gift, a shared bill paid back by friends) shows as one month of large ne
 spending. Give those items Flow `exclude`: their rows stay in the stored exports and in reconciliation, but leave the ledger and
 every chart. The sample household's `Venmo Pass-Through` item shows the pattern.
 
-**A first mapping for a back catalogue.** Settings → Item mapping offers **Draft a mapping from my budget groups** whenever the stored
+**A first mapping for a back catalogue.** Settings → Item mapping offers **Draft Item mapping rows from my budget groups** whenever the stored
 exports carry items with no mapping row. The draft fills only those items and never changes an existing row: Category is the budget
 group; CanonicalItem is the item name without a year's suffix (` 2`, ` Fund`, ` Goal`); Flow is `income` for the `income_groups` (default `Income`), `debt`
 for the `debt_groups` (default `Debt`), `transfer` for names such as `Fund Transfer`, `Transfer Funds`, `… Rebalance` or `Transfer to …`, and `expense` otherwise.

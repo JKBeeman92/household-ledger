@@ -94,7 +94,7 @@ def test_mapping_rejects_a_bad_flow(client, reset_db):
 def test_mapping_accepts_a_good_body(client, reset_db):
     from app import db
     r = client.post("/settings/mapping", data={"body": GOOD_MAPPING})
-    assert "Saved 2 mapping rows" in flashes_after(client, r)
+    assert "Saved 2 Item mapping rows" in flashes_after(client, r)
     with db.pool.connection() as conn:
         assert conn.execute("SELECT count(*) n FROM item_mapping").fetchone()["n"] == 2
 

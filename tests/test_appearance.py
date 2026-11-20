@@ -130,7 +130,7 @@ def test_orphans_are_listed_with_delete(client, reset_db):
         appearance.set_one(conn, "employer", "Old Mill", "series-4", True); conn.commit()
         assert [o["name"] for o in appearance.page(conn)["orphans"]] == ["Old Mill"]
     html = client.get("/settings").text
-    assert 'id="appearance-orphans-table" data-list="unbounded"' in html and "Delete the colour kept for the employer Old Mill" in html
+    assert 'id="appearance-orphans-table" data-list="unbounded"' in html and "Delete the colour and hide switch kept for the employer Old Mill" in html
     assert 'id="st-appearance-orphans"' in html and "Not in the data <span class=\"count\">1</span>" in html
     r = client.post("/settings/appearance/delete", data={"dimension": "employer", "name": "Old Mill"})
     assert r.headers["location"] == "/settings#appearance/orphans"
@@ -390,9 +390,9 @@ def test_hiding_changes_no_total_and_show_is_for_this_viewer_only(sample):
     assert "Student Loan" not in dict(s["charts"]["debts"]["bars"]) and s["charts"]["debts"]["note"] == "1 hidden · show"
     # the button's name is its visible words (WCAG 2.5.3, the 0.9.0 release review); what it hides, and for whom, is its title
     assert all(c["noteLabel"] is None for c in s["charts"].values() if c["note"])
-    assert s["charts"]["cat-stack"]["noteTitle"] == "Hidden in Settings, Chart appearance: Housing. Show brings them back on this chart, for you only."
-    assert s["charts"]["employer"]["noteTitle"].startswith("Hidden in Settings, Chart appearance: Job (event kind).")
-    assert s["charts"]["debts"]["noteTitle"].startswith("Hidden in Settings, Chart appearance: Student Loan.")
+    assert s["charts"]["cat-stack"]["noteTitle"] == "Hidden in Settings → Chart appearance: Housing. Show brings them back on this chart, for you only."
+    assert s["charts"]["employer"]["noteTitle"].startswith("Hidden in Settings → Chart appearance: Job (event kind).")
+    assert s["charts"]["debts"]["noteTitle"].startswith("Hidden in Settings → Chart appearance: Student Loan.")
     # a debt group whose every debt is hidden leaves no empty heading; the others keep theirs
     assert len(plain["charts"]["debts"]["heads"]) == len(s["charts"]["debts"]["heads"]) + 1, (plain["charts"]["debts"]["heads"], s["charts"]["debts"]["heads"])
     # "show" reveals that chart's hidden names for this viewer, remembered like the period filter; another viewer still has them hidden
@@ -402,7 +402,7 @@ def test_hiding_changes_no_total_and_show_is_for_this_viewer_only(sample):
         assert "Generosity" not in dict(snap["charts"]["slush"]["series"])   # only the chart that was pressed
         assert snap["tables"] == plain["tables"]
     assert r["focused"] == "1 hidden, shown here · hide"
-    assert r["after"]["charts"]["cat-stack"]["noteTitle"] == "Hidden in Settings, Chart appearance: Housing. Shown on this chart for you only."
+    assert r["after"]["charts"]["cat-stack"]["noteTitle"] == "Hidden in Settings → Chart appearance: Housing. Shown on this chart for you only."
     assert "Housing" not in dict(r["other"]["charts"]["cat-stack"]["series"])
 
 
@@ -413,7 +413,7 @@ SAMPLE_FINDINGS = {
     "fd-cat": "2026 (6 mo): Housing and Food took 51% of the $28,484 spent.",
     "fd-slush": "2026 (6 mo): the catch-all envelopes took $3,985, the most Generosity with $2,280.",
     "fd-earner": "2026 (6 mo): Rosie earned 66% of the $38,618 income, Sam 34%.",
-    "fd-payer": "2026 (6 mo): personal envelopes took 5% of the $28,484 spent: Rosie $697, Sam $637. The rest was shared.",
+    "fd-payer": "2026 (6 mo): personal envelopes took 5% of the $28,484 spent: Rosie $697, Sam $637. The other 95% was shared, and the chart leaves it out.",
 }
 
 

@@ -26,18 +26,8 @@ def _status(conn, month, state):
     return "todo", "open it to read the year" if _review(conn, month) else "rebuild to see the year, then read it"
 
 
-def _pace_from(last: str, n: int) -> str:
-    """The first of the n budget months ending at `last` ("2026-06", 5 -> "2026-02"): where the new normal's pace starts."""
-    y, m = map(int, last.split("-")); i = y * 12 + m - 1 - (n - 1)
-    return f"{i // 12:04d}-{i % 12 + 1:02d}"
-
-
 def _context(conn, month, state):
-    y = _review(conn, month)
-    a = (y or {}).get("ahead")
-    if a and a.get("pace_since") and a.get("pace_months") and not a.get("pace_from"):   # the month, as the quarter and the dashboard say it
-        y = {**y, "ahead": {**a, "pace_from": _pace_from(y["last"], a["pace_months"])}}
-    return {"y": y}
+    return {"y": _review(conn, month)}   # its ahead.pace_from is the look-ahead's own first month, as the quarter and the dashboard say it
 
 
 register(Step("year_review", 63, "Year in review", _status, applies=_applies, context=_context, actions=("view",), issue="#157"))

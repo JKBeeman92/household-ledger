@@ -36,6 +36,21 @@ def test_the_column_rule_is_a_source_profile_and_item_mapping_is_the_category_ro
     assert "**source profile**" in rule and "**Item mapping**" in rule
 
 
+def test_no_template_calls_either_thing_a_mapping_alone():
+    """DS-WORD-3 on every page, not only the ones the review read: once Item mapping, ids, URLs, Jinja and comments are taken out,
+    the bare word is left in no template; two messages from the routes are checked by name."""
+    left = []
+    for p in sorted(TEMPLATES.rglob("*.html")):
+        t = re.sub(r"\{#.*?#\}|<!--.*?-->|\{%.*?%\}|\{\{.*?\}\}", "", p.read_text(encoding="utf-8"), flags=re.S)
+        t = re.sub(r"(?m)^\s*//.*$", "", t).replace("Item mapping", "")
+        t = re.sub(r"[\w/#.-]*[-_/#.]mapping[\w/#.-]*|mapping[-_/#.][\w/#.-]*|[\"']mapping[\"']", "", t)
+        left += [f"{p.relative_to(TEMPLATES)}: …{t[max(0, m.start() - 40):m.end() + 20]}…" for m in re.finditer(r"(?i)\bmapping\b", t)]
+    assert not left, left
+    routes = ROOT / "app" / "routes"
+    assert "to set up its source profile" in (routes / "sources.py").read_text(encoding="utf-8")
+    assert "already in the mapping" not in (routes / "settings.py").read_text(encoding="utf-8")
+
+
 # ---------------------------------------------------------------- Settings → Sources
 def test_sources_page_labels_the_import_field_and_its_empty_state_names_the_next_step(client, reset_db):
     reset_db(SAMPLE)
@@ -71,7 +86,8 @@ def test_the_batch_review_marks_files_that_replace_a_stored_month_and_says_how_t
     save_tally()
     r = client.post("/upload", files=[("files", ("tally.zip", make_zip(tally_files(household24, ["2025-01", "2025-02"])), "application/zip"))])
     page = client.get(r.headers["location"]).text
-    assert "<strong>2 of these replace a month you already have</strong>" in page and "(Jan 2025)" in page
+    assert "<strong>2 files replace a month you already have</strong>" in page and "(Jan 2025)" in page
+    assert "storing them replaces the files stored for that month." in page   # files counted as files, the month as a month
     rows = re.findall(r'<span class="status-chip ([a-z]*)">([^<]+)</span></td>\s*<td class="mono nowrap">([^<]+)</td>', page)
     assert [(c, w) for c, w, n in rows if "2025-01" in n] == [("warn", "Replaces"), ("warn", "Replaces")]
     assert [(c, w) for c, w, n in rows if "2025-02" in n] == [("ok", "Ready"), ("ok", "Ready")]

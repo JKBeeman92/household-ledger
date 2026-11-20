@@ -143,7 +143,7 @@ async def map_confirm(request: Request, batch: str, background: BackgroundTasks,
                 elif old and old["spec"].get(key):
                     spec[key] = old["spec"][key]   # one file of the pair: the other half of a saved profile stays as it was
                 else:
-                    raise src.ProfileError("a new source needs both files, its transactions and its budget, to set up the mapping")
+                    raise src.ProfileError("a new source needs both files, its transactions and its budget, to set up its source profile")
             src.validate_profile(spec)
             for kind, f in by_kind.items():   # read both before storing anything, so a bad mapping stores nothing
                 src.apply(kind, f["data"], spec)

@@ -22,7 +22,7 @@
       <li>Add any item the ledger has not seen to <b>Item mapping</b> (Settings), then the dashboard fills in.</li>
     </ol>
     <p class="actions"><a class="btn primary" href="/upload">Close a month</a>
-      <form method="post" action="/setup/sample" class="inline" data-confirm="Load the sample household (Rosie and Sam, 18 invented months)? It replaces this install's empty mapping, goals, events and rules; delete its months later to start over.">{{ csrf_field(request) }}<button class="btn" type="submit">Or look around with the sample household</button></form></p>
+      <form method="post" action="/setup/sample" class="inline" data-confirm="Load the sample household (Rosie and Sam, 18 invented months)? It replaces this install's empty Item mapping, goals, events and rules; delete its months later to start over.">{{ csrf_field(request) }}<button class="btn" type="submit">Or look around with the sample household</button></form></p>
     {% else %}<p>An editor needs to load the first month's exports; the dashboard fills in once they do.</p>{% endif %}
   </div>{% endif %}
 
@@ -157,7 +157,7 @@
       <ul class="key row"><li>what each person earned, and their part of the month's income</li><li>what each person's own envelopes spent</li><li>the change since last month</li></ul>
       <p data-draw="lm-people-month" data-source="by_person budget_items"></p>
       <div class="tbl" role="region" tabindex="0" aria-labelledby="lm-people"><table><thead><tr><th scope="col">Person</th><th scope="col" class="num">Earned</th><th scope="col" class="num">Part of income</th><th scope="col" class="num">Earned, change</th><th scope="col" class="num">Spent from own envelopes</th><th scope="col" class="num">Spent, change</th></tr></thead><tbody data-draw="lm-people-rows" data-source="by_person"></tbody></table></div>
-      <details class="how mt-3"><summary>How to read this</summary><p><b>Earned</b>: the income each person brings in, by the earner rule. It is the Income by earner chart on the People tab, one month at a time.</p><p><b>Spent from own envelopes</b>: what the envelopes the payer rules give each person spent. It is the Spend by payer chart, so it shows whose envelope, not who paid.</p><p><b>Joint</b>: what no rule gives to one person, which is shared income and the shared envelopes.</p><p>Accounts sit under the person Settings → Accounts names, and decisions under the person they name. One that names no one, or someone the People rule no longer has, sits under Joint. A change that rounds to nothing reads no change. These are figures, not a fair-share reckoning. The card shows when the People rule names two or more people; the earner, payer and People rules are on <a href="/settings#rules">Settings → Pipeline rules</a>.</p></details>
+      <details class="how mt-3"><summary>How to read this</summary><p><b>Earned</b>: the income each person brings in, by the earner rule. It is the Income by earner chart on the People tab, one month at a time.</p><p><b>Spent from own envelopes</b>: what the envelopes the payer rules give each person spent. It is the Spend by payer chart, so it shows whose envelope, not who paid.</p><p><b>Joint</b>: what no rule gives to one person, which is joint income and the joint envelopes.</p><p>Accounts sit under the person Settings → Accounts names, and decisions under the person they name. One that names no one, or someone the People rule no longer has, sits under Joint. A change that rounds to nothing reads no change. These are figures, not a fair-share reckoning. The card shows when the People rule names two or more people; the earner, payer and People rules are on <a href="/settings#rules">Settings → Pipeline rules</a>.</p></details>
       <details class="listcount mt-3" id="lm-people-list"><summary data-draw="lm-people-count" data-source="by_person balances decisions">Accounts and decisions</summary>
         <dl class="dti long-labels" data-draw="lm-people-own" data-source="by_person balances decisions" data-list="unbounded"></dl></details>
     </div>
@@ -348,9 +348,9 @@
     </div>
       <div id="w-t-items" hidden>
         <h3 class="visually-hidden" id="item-table">Items inside a category</h3>
-        <ul class="key row"><li>pick a category</li><li>merged names from the mapping</li></ul>
+        <ul class="key row"><li>pick a category</li><li>merged names from Item mapping</li></ul>
       
-      <details class="how"><summary>How to read this</summary><p>Pick a category to see its canonical items by year. Item names are the merged names from the mapping, not the budget tool's originals. Items are the budget tool's envelopes after merging renamed copies (Grocery 2 and Grocery are one item). Pick a category above to change the list.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Pick a category to see its canonical items by year. Item names are the merged names from Item mapping, not the budget tool's originals. Items are the budget tool's envelopes after merging renamed copies (Grocery 2 and Grocery are one item). Pick a category above to change the list.</p></details>
       <div class="controls"><select class="cat-pick" aria-label="Category" data-draw="cat-pick" data-source="cat_year item_year"></select></div>
       <div class="tbl" role="region" tabindex="0" aria-labelledby="item-table"><table data-source="item_pivot" data-row-key="item"><thead><tr>
         <th data-field="item">Item</th><th data-field="total">Total</th>
@@ -516,7 +516,7 @@
         <details class="topic"><summary><b>Nominal versus real amounts</b><span>Real restates every month in one month's prices.</span></summary><div class="prose"><p>Nominal is what the bank saw. Real restates each month's amounts in {{ span.cpi_base_long }} prices by multiplying by the ratio of the {{ span.cpi_base_long }} price index to that month's price index. For US households the documented source is CPI-U (all urban consumers, all items, seasonally adjusted, series CPIAUCSL from FRED); other countries use their own consumer price index, entered on the Settings page. Use real to compare lifestyle across years; use nominal to reconcile against statements. <span data-draw="cpi-note" data-source="cpi" data-base="{{ span.cpi_base_iso }}" data-first="{{ span.first_month or '' }}"></span></p></div></details>
         <details class="topic" open><summary><b>What was taken out</b><span>Transfers and other non-spending rows removed before any total.</span></summary><div class="prose"><p>Transfers between envelopes appear in the export as a negative row in one item and a positive row in another, so summing them would inflate both income and spend. They are recognised by merchant text, by item name and by amount pairing, and removed. What follows is generated from the data loaded, so it lists only what this household's rules actually removed.</p>
       <div id="method-exclusions" data-draw="method-exclusions" data-source="exclusions verify"></div></div></details>
-        <details class="topic"><summary><b>Item names</b><span>Renamed envelopes are merged through the mapping.</span></summary><div class="prose"><p>Budget items get renamed and recreated, so the same envelope can appear under several names. Each original name is mapped to a canonical item and a category; the mapping file lives beside the ledger and is the thing to edit (Settings) if a category looks wrong. <span data-draw="method-items" data-source="item_year cat_year"></span></p></div></details>
+        <details class="topic"><summary><b>Item names</b><span>Renamed envelopes are merged through Item mapping.</span></summary><div class="prose"><p>Budget items get renamed and recreated, so the same envelope can appear under several names. Each original name is mapped to a canonical item and a category; Item mapping (Settings) is the thing to edit if a category looks wrong. <span data-draw="method-items" data-source="item_year cat_year"></span></p></div></details>
         <details class="topic"><summary><b>Refreshing</b><span>Every figure is rebuilt from the stored exports.</span></summary><div class="prose"><p>Each month the two exports for the closed budget month are added to the set, the ledger and these files are rebuilt, and the page redraws from them. Nothing on the page is typed in by hand, so a corrected export changes every dependent figure at once.</p></div></details>
         <details class="topic"><summary><b>Reading the colors</b><span>Green and red mark direction, not judgment.</span></summary><div class="prose"><p>Green and red mark direction, not judgment: green is money kept or a category under its envelope, red is money drawn down or an envelope exceeded. Chart series take the brand palette in order (series 1 through 8 in the theme).</p></div></details>
         <details class="topic"><summary><b>Notes</b><span>Notes from the exports are kept in the ledger, never shown here.</span></summary><div class="prose"><p>The ledger carries every note from the exports, but notes are not shown on this page, because they can hold private details such as medication and people's names.</p></div></details>
@@ -604,7 +604,7 @@ window.HL = (() => {
     const on = revealed(chart), p = Object.assign(document.createElement('p'), { className: 'hidden-note' });
     // the visible words are the button's whole name (WCAG 2.5.3); what it hides and for whom is a description, not a second name
     const b = Object.assign(document.createElement('button'), { type: 'button', className: 'btn', textContent: on ? `${n} hidden, shown here · hide` : `${n} hidden · show` });
-    b.title = (list ? `Hidden in Settings, Chart appearance: ${list.join(', ')}. ` : 'Hidden in Settings, Chart appearance. ') + (on ? 'Shown on this chart for you only.' : 'Show brings them back on this chart, for you only.');
+    b.title = (list ? `Hidden in Settings → Chart appearance: ${list.join(', ')}. ` : 'Hidden in Settings → Chart appearance. ') + (on ? 'Shown on this chart for you only.' : 'Show brings them back on this chart, for you only.');
     b.onclick = () => { const r = { ...(dash.params().reveal || {}) }; if (on) delete r[chart]; else r[chart] = 1;
       dash.setParams({ reveal: Object.keys(r).length ? r : null });
       const again = document.querySelector(`[data-draw="${chart}"] .hidden-note button`); if (again) again.focus(); };
@@ -1116,17 +1116,17 @@ dash.draw('ba-empty', (el) => { el.replaceChildren(); const body = document.getE
   if (ev.status === 'ok' && ev.data.length) { el.append(Object.assign(document.createElement('p'), { className: 'muted', textContent: 'No life event has a budget month loaded both before it and since it yet. The comparison shows here once one does.' })); return; }
   HL.empty(el, 'Add a life event, such as a move or a new job, and the months before it are set against the months since.', '/settings#events', 'Add a life event'); });
 dash.draw('ba-pick', (box) => { const sel = box.querySelector('#ba-event'), seg = box.querySelector('#ba-n'), evs = baEvents(), cur = baEvent(), r = baRow(); if (!cur || !sel) return;
-  sel.replaceChildren(...evs.map((e) => new Option(`${baM(e.m)}${e.new_normal ? ', new normal' : ''}: ${baName(e)}`, baKey(e))));   // the marker ahead of the label, so a narrow field keeps it
+  sel.replaceChildren(...evs.map((e) => new Option(`${baM(e.m)}: ${baName(e)}`, baKey(e))));   // month and name only, so a phone's field shows it whole; the note under it says new normal
   sel.value = baKey(cur); sel.onchange = () => dash.setParams({ ba_event: sel.value });
   const have = new Set(baRows().filter((x) => baKey(x) === baKey(cur)).map((x) => x.n));
   for (const b of seg.querySelectorAll('button[data-n]')) { const n = Number(b.dataset.n), off = !have.has(n); b.setAttribute('aria-pressed', String(r && r.n === n));
     if (off) b.setAttribute('aria-disabled', 'true'); else b.removeAttribute('aria-disabled');   // still reached by the keyboard; the line under the field says why (baGone)
     b.onclick = () => { if (!off) dash.setParams({ ba_n: n === 6 ? null : n }); }; } });
 const baGone = () => { const e = baEvent(); if (!e) return []; const have = new Set(baRows().filter((x) => baKey(x) === baKey(e)).map((x) => x.n)); return [3, 6, 12].filter((n) => !have.has(n)); };
-dash.draw('ba-span', (el) => { const r = baRow(); el.textContent = ''; if (!r) return; const b = r.before, a = r.after;
+dash.draw('ba-span', (el) => { const r = baRow(), e = baEvent(); el.textContent = ''; if (!r) return; const b = r.before, a = r.after;
   const side = (s, what) => `${what} ${baM(s.from)} to ${baM(s.to)}` + (s.months < r.n ? `, only ${s.months} of ${r.n} months loaded` : '');
   const gone = baGone();
-  el.textContent = side(b, `Before: ${r.n} budget months,`) + '. ' + side(a, 'After: the event’s month and the months after,') + '.' + (HL.basis() === 'real' ? ' In {{ span.cpi_base_short }} prices.' : '')
+  el.textContent = (e && e.new_normal ? `${baName(e)} is the household's new normal (Settings → Life events). ` : '') + side(b, `Before: ${r.n} budget months,`) + '. ' + side(a, 'After: the event’s month and the months after,') + '.' + (HL.basis() === 'real' ? ' In {{ span.cpi_base_short }} prices.' : '')
     + (gone.length ? ` No ${gone.join(' or ')}-month comparison: no budget month is loaded in that many months before the event.` : ''); });
 const baCells = (tb, rows) => { for (const cells of rows) { const tr = document.createElement('tr'); cells.forEach((c, i) => { const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num';
   if (Array.isArray(c)) td.append(c[0], ' ', Object.assign(document.createElement('span'), { className: 'ba-pct', textContent: c[1] })); else td.textContent = c; tr.append(td); }); tb.append(tr); } };
@@ -2186,7 +2186,8 @@ finding('payer', () => { const g = HL.rd('people'); if (g.status !== 'ok') retur
   const y = latestYear(p), rows = sumBy(p.filter((r) => String(r.y) === y), (r) => r.who, (r) => Number(r.amount)), all = d3.sum(rows, (d) => d[1]); if (!(all > 0)) return;
   const own = rows.filter((d) => d[0] !== 'Household' && d[1] > 0);
   if (!own.length) return nomYear(y) + ': no envelope belongs to a person, so all ' + $(all) + ' spent was shared.';
-  return nomYear(y) + ': personal envelopes took ' + pct0(d3.sum(own, (d) => d[1]) / all) + ' of the ' + $(all) + ' spent: ' + own.map((d) => d[0] + ' ' + $(d[1])).join(', ') + '. The rest was shared.'; });
+  const share = d3.sum(own, (d) => d[1]) / all;   // the chart shows only this share; the line names the rest so it is not read as all spending
+  return nomYear(y) + ': personal envelopes took ' + pct0(share) + ' of the ' + $(all) + ' spent: ' + own.map((d) => d[0] + ' ' + $(d[1])).join(', ') + '. The other ' + pct0(1 - share) + ' was shared, and the chart leaves it out.'; });
 finding('slush', () => { const g = HL.rd('slush'); if (g.status !== 'ok' || !g.data.length) return;
   const y = latestYear(g.data), rows = sumBy(g.data.filter((r) => String(r.y) === y), (r) => r.item, (r) => Number(r.amount)), all = d3.sum(rows, (d) => d[1]);
   const top = rows[0] && rows[0][1] > 0 ? rows[0] : null;

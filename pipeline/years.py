@@ -153,5 +153,5 @@ def review(monthly: list[dict], cat_month: list[dict], net_worth: list[dict], ba
             "decisions": {"checked": len(mine), "kept": kept, "rate": round(kept / len(mine), 3) if mine else None, "biggest": biggest},
             "events": [{k: e.get(k) for k in ("m", "label", "kind", "person")} for e in events if months[0] <= e["m"] <= months[-1]],
             "movers": movers,
-            "ahead": {k: ahead[k] for k in ("until", "pace", "pace_3", "cash", "net_worth", "debt_free", "growth_pct")} | {"pace_since": ahead.get("pace_since"), "pace_months": ahead.get("pace_months")} if ahead else None,
+            "ahead": {k: ahead[k] for k in ("until", "pace", "pace_3", "cash", "net_worth", "debt_free", "growth_pct")} | {k: ahead.get(k) for k in ("pace_since", "pace_months", "pace_from")} if ahead else None,
             "withholding": withholding}

@@ -345,7 +345,8 @@ def test_the_change_column_is_in_view_on_a_phone_and_nothing_scrolls_the_page(sa
             assert t["overflow"] <= 0 and t["changeOut"] == 0, (view, width, t)
             assert t["rows"] and all(r[3] for r in t["rows"])
     assert s["lastmonth"]["pageOverflow"] <= 0
-    assert s["overview"]["options"][-1] == "Feb 2026, new normal: Elanor is born (family)"   # the marker ahead of the label, which a narrow field cuts
+    assert s["overview"]["options"][-1] == "Feb 2026: Elanor is born (family)"   # short enough for a phone's field; the note names the new normal
+    assert s["overview"]["span"].startswith("Elanor is born (family) is the household's new normal (Settings → Life events). Before: ")
 
 
 @browser

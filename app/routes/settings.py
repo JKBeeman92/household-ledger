@@ -176,7 +176,7 @@ def _row_save(conn, kind: str, f: dict) -> tuple[dict, dict]:
         if not c["category"] and c["canonical_item"] and c["canonical_item"] not in mapping_store.categories_of(conn):
             err["category"] = f"required: {c['canonical_item']} is a new canonical item"
         if not err and c["item"] != orig:
-            _unique_err(conn, "SELECT 1 FROM item_mapping WHERE item=%s", (c["item"],), err, "item", "already in the mapping")
+            _unique_err(conn, "SELECT 1 FROM item_mapping WHERE item=%s", (c["item"],), err, "item", "already in Item mapping")
         if not err:
             try:   # the new row first, then the renamed one goes: its canonical item stays in use throughout
                 mapping_store.write_rows(conn, [c])
@@ -249,7 +249,7 @@ def _mapping_rows(body: str, existing: set[str] | None = None) -> tuple[list[dic
         if not err and c["item"] in seen:
             err["item"] = f"duplicate of line {seen[c['item']]}"
         if not err and existing is not None and c["item"] in existing:
-            err["item"] = "already in the mapping"
+            err["item"] = "already in Item mapping"
         for f, m in err.items():
             problems.append(f"line {n}: " + (f"bad Flow on: {c['item'] or '(blank)'} ({m})" if f == "flow" else f"{f} {m}" + (f" on: {c['item']}" if c["item"] else "")))
         if not err:
@@ -264,7 +264,7 @@ def _mapping_add(conn, body: str) -> str:
     existing = {r["item"] for r in conn.execute("SELECT item FROM item_mapping").fetchall()}
     clean, lines = _mapping_rows(body, existing)
     mapping_store.write_rows(conn, clean, lines=lines)
-    return f"{len(clean)} drafted mapping row{'s' * (len(clean) != 1)}"
+    return f"{len(clean)} drafted Item mapping row{'s' * (len(clean) != 1)}"
 
 
 def _mapping_list(conn) -> list[dict]:
@@ -288,7 +288,7 @@ def _mapping_import(conn, body: str) -> str:
     items absent from the CSV deleted, in one transaction, so the table is never emptied and refilled."""
     clean, lines = _mapping_rows(body)
     mapping_store.write_rows(conn, clean, replace=True, lines=lines)   # one canonical item with two categories is refused, by line
-    return f"{len(clean)} mapping rows"
+    return f"{len(clean)} Item mapping rows"
 
 
 def _cpi_rows(body: str) -> list[tuple[str, str, str]]:
@@ -728,7 +728,7 @@ ROLE_FIELDS = [   # (rules key, plain label, what it changes) for the Roles form
     ("paycheck_items", "Items that are paychecks", "Canonical items. The Employer chart, the dashboard's Goals tab take-home and the review's paycheck count read them."),
     ("recurring_categories", "Categories of recurring bills", "The Recurring tab lists their spending."),
     ("plan_keep_categories", "Categories whose plan is kept", "On the Last month tab, their suggested plan stays the current plan instead of the twelve-month average."),
-    ("income_groups", "Budget groups that hold income", "As named in the export. New source profiles and the mapping draft start from these."),
+    ("income_groups", "Budget groups that hold income", "As named in the export. New source profiles and the Item mapping draft start from these."),
     ("debt_groups", "Budget groups that hold debt payments", "As named in the export. The debt-plug rule and the off-budget count read them."),
     ("loan_categories", "Categories of loans between family", "The Method tab counts their inflows and repayments."),
 ]
