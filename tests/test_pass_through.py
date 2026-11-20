@@ -115,4 +115,9 @@ def test_the_finding_reaches_the_build_log_and_close_a_month(client, reset_db):
     assert hits(findings["pass_through"]) == HELD and findings["reconciliation"]["clean"] and findings["unmapped"] == []
     assert "\nPass-through: 2025-09 Venmo Pass-Through: 1,140.00 came in" in detail and "Set Flow exclude on Venmo Pass-Through." in detail
     page = client.get("/upload").text
-    assert 'id="pass-through-panel"' in page and page.count("Set Flow <code>exclude</code> on <code>Venmo Pass-Through</code>.") == 2
+    assert 'id="pass-through-panel"' in page and 'id="pass-through-intro">An item took in' in page   # one item, flagged in two months
+    # each flagged item links to its own mapping row, and the table scrolls by keyboard as well (DS-A11Y-1)
+    assert page.count('<a href="/settings?find=Venmo%20Pass-Through#mapping">Venmo Pass-Through</a>') == 2
+    assert 'aria-label="Months with money held for someone else"' in page
+    # the two sentences of each log line are apart
+    assert "after. Money held for someone else? Set Flow exclude on Venmo Pass-Through." in detail

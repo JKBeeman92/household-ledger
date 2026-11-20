@@ -187,5 +187,8 @@ var FMT = (function () {   // the household's locale and currency, as the server
       var q = filter.value.toLowerCase();
       Array.prototype.forEach.call(tbody.rows, function (tr) { tr.hidden = !!q && tr.textContent.toLowerCase().indexOf(q) < 0 && !tr.classList.contains("editing"); });
     };
+    // ?find=<item> (Close a month links a flagged item here, #107): open with the list filtered to it
+    var find = kind === "mapping" && filter && new URLSearchParams(location.search).get("find");
+    if (find) { filter.value = find; filter.oninput(); }
   });
 })();

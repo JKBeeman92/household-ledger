@@ -7,9 +7,9 @@
   {% else %}
   <p class="muted edge bad edge-note" id="recon-bad">{{ rec.problems|length }} envelope-month{{ '' if rec.problems|length == 1 else 's' }} do not reconcile, of {{ rec.checked + rec.problems|length }} checked. Fix or re-upload the month's exports; the dashboard's Method tab lists them too.</p>
   <details {% if rec.problems|length <= 5 %}open{% endif %}><summary>Show the {{ rec.problems|length }} envelope-month{{ '' if rec.problems|length == 1 else 's' }}</summary>
-  <table class="plain" data-list="unbounded"><thead><tr><th>Month</th><th>Envelope</th><th>Σ transactions</th><th>Spent</th><th>Status</th></tr></thead><tbody>
+  <div class="tablewrap" role="region" tabindex="0" aria-label="Envelope-months that do not reconcile"><table class="plain" data-list="unbounded"><thead><tr><th scope="col">Month</th><th scope="col">Envelope</th><th scope="col">Σ transactions</th><th scope="col">Spent</th><th scope="col">Status</th></tr></thead><tbody>
   {% for p in rec.problems %}<tr><td class="mono">{{ p.budget_month|month_short }}</td><td>{{ p.item }}</td><td class="mono num">{{ p.txn_sum|money(2) }}</td><td class="mono num">{{ p.spent|money(2) }}</td><td>{{ p.status }}</td></tr>{% endfor %}
-  </tbody></table></details>
+  </tbody></table></div></details>
   {% endif %}
 </div>
 {# Money held for someone else (#107): shown only when the last build found some; the rules are pass_through_* (Pipeline rules). #}
@@ -17,12 +17,13 @@
 {% if held %}
 <div class="panel mt-4" id="pass-through-panel">
   <h2>Money held for someone else?</h2>
-  <p class="muted edge warn edge-note" id="pass-through-intro">In {{ held|length }} month{{ '' if held|length == 1 else 's' }}, an item took in many times its usual amount, and, over its usual spending, at least half of it went back out in the months after. Money collected for someone else (a group gift, donations for a relative) looks like this, and shows as one cheap month, then expensive ones. If that is what it is, set Flow <code>exclude</code> on the item in <a href="/settings#mapping">Settings → Item mapping</a> and rebuild: its rows stay in the exports and in reconciliation, and leave the charts. A refund or a one-off needs nothing; the thresholds are the <code>pass_through_*</code> Pipeline rules.</p>
+  <p class="muted edge warn edge-note" id="pass-through-intro">{% set held_items = held|map(attribute='items')|sum(start=[])|unique|list %}{{ 'An item' if held_items|length == 1 else held_items|length ~ ' items' }} took in far more than usual, then paid most of it back out over the next months. That is what money collected for someone else looks like, such as a group gift. Left in, it shows as one cheap month followed by expensive ones.</p>
+  <p class="mt-0">If it was someone else's money, open the item below and set its Flow to <code>exclude</code>, then rebuild. Its rows stay in the exports and in reconciliation, and leave the charts. If it was a refund or a one-off, do nothing.</p>
   <details {% if held|length <= 5 %}open{% endif %}><summary>Show the {{ held|length }} month{{ '' if held|length == 1 else 's' }}</summary>
-  <table class="plain" data-list="unbounded"><thead><tr><th>Month</th><th>Item</th><th class="num">Came in</th><th class="num">Usual month</th><th class="num">Went out after, over usual</th><th>What to do</th></tr></thead><tbody>
-  {% for h in held %}<tr><td class="mono">{{ h.m|month_short }}</td><td>{{ h['items']|join(', ') }}</td><td class="mono num">{{ h.inflow|money(2) }}</td><td class="mono num">{{ h.median|money(2) }}</td><td class="mono num">{{ h.later_outflows|money(2) }}<div class="muted">in {{ h.window }} month{{ '' if h.window == 1 else 's' }}</div></td>
-    <td>Money held for someone else? Set Flow <code>exclude</code> on {% for i in h['items'] %}<code>{{ i }}</code>{{ ' and ' if not loop.last }}{% endfor %}.</td></tr>{% endfor %}
-  </tbody></table></details>
+  <div class="tablewrap" role="region" tabindex="0" aria-label="Months with money held for someone else"><table class="plain" data-list="unbounded"><thead><tr><th scope="col">Month</th><th scope="col">Item</th><th scope="col" class="num">Came in</th><th scope="col" class="num">Usual month</th><th scope="col" class="num">Went out after, over usual</th></tr></thead><tbody>
+  {% for h in held %}<tr><td class="mono">{{ h.m|month_short }}</td><td>{% for i in h['items'] %}<a href="/settings?find={{ i|urlencode }}#mapping">{{ i }}</a>{{ ', ' if not loop.last }}{% endfor %}</td><td class="mono num">{{ h.inflow|money(2) }}</td><td class="mono num">{{ h.median|money(2) }}</td><td class="mono num">{{ h.later_outflows|money(2) }}<div class="muted">in {{ h.window }} month{{ '' if h.window == 1 else 's' }}</div></td></tr>{% endfor %}
+  </tbody></table></div></details>
+  <p class="muted mt-2">How much counts as far more than usual is set by the <code>pass_through_*</code> rules in <a href="/settings#rules">Settings → Pipeline rules</a>.</p>
 </div>
 {% endif %}
 <div class="panel mt-4" id="unmapped-panel">
@@ -37,7 +38,7 @@
     {% if mf %}<p class="err" id="map-err" role="alert">Not saved: {{ mf.error }} Nothing else changed.</p>{% endif %}
     <datalist id="map-categories">{% for c in findings.categories %}<option value="{{ c }}">{% endfor %}</datalist>
     <details {% if un|length <= 8 or mf %}open{% endif %}><summary>Show the {{ un|length }} item{{ '' if un|length == 1 else 's' }}</summary>
-    <table class="plain" data-list="unbounded"><thead><tr><th>Item</th><th>Months</th><th class="num">Rows</th><th>Canonical item</th><th>Category</th><th>Flow</th></tr></thead><tbody>
+    <div class="tablewrap" role="region" tabindex="0" aria-label="Unmapped items"><table class="plain" data-list="unbounded"><thead><tr><th scope="col">Item</th><th scope="col">Months</th><th scope="col" class="num">Rows</th><th scope="col">Canonical item</th><th scope="col">Category</th><th scope="col">Flow</th></tr></thead><tbody>
     {% for u in un %}{% set t = typed.get(u['item']) %}{% set inv = mf and u['item'] in mf.bad %}<tr>
       <td>{{ u.item }}<input type="hidden" name="item" value="{{ u['item'] }}"><div class="muted">{{ u.group }}</div>{% if inv %}<div class="err" id="map-err-{{ loop.index }}">This row: check its category and flow.</div>{% endif %}</td>
       <td class="mono">{{ u.months[0]|month_short }}{% if u.months|length > 1 %} … {{ u.months[-1]|month_short }}{% endif %}</td>
@@ -45,7 +46,7 @@
       <td><input name="canonical" value="{{ t.canonical if t else u['canonical_guess'] }}" aria-label="Canonical item for {{ u['item'] }}"></td>
       <td><input name="category" list="map-categories" value="{{ t.category if t else (u.category_guess or u.group or '') }}" aria-label="Category for {{ u['item'] }}"{% if inv %} aria-invalid="true" aria-describedby="map-err-{{ loop.index }} map-err"{% endif %}></td>
       <td><select name="flow" aria-label="Flow for {{ u['item'] }}"{% if inv %} aria-invalid="true" aria-describedby="map-err-{{ loop.index }} map-err"{% endif %}>{% for f in findings.flows %}<option {% if f == (t.flow if t else u.flow_guess) %}selected{% endif %}>{{ f }}</option>{% endfor %}</select></td>
-    </tr>{% endfor %}</tbody></table></details>
+    </tr>{% endfor %}</tbody></table></div></details>
     <p class="mt-3"><button class="btn" type="submit" {% if build.state == 'running' %}disabled title="A rebuild is running"{% endif %}>Add to mapping and rebuild</button></p>
   </form>
   {% endif %}
