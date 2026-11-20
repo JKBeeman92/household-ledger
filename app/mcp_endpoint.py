@@ -1,7 +1,8 @@
 """MCP server (#33): the month-close figures for Claude Code, Claude Desktop and any other MCP client, at `/mcp`.
 
-Streamable-HTTP transport from the official `mcp` SDK, mounted in this process as one plain ASGI route. It is stateless and answers
-with plain JSON (no SSE), so there is no session to hijack and nothing long-lived to proxy.
+Streamable-HTTP transport from the official `mcp` SDK (2.x since #88; `MCPServer`, which was `FastMCP` in 1.x), mounted in this
+process as one plain ASGI route. It is stateless and answers with plain JSON (no SSE), so there is no session to hijack and nothing
+long-lived to proxy.
 
 Auth is an API token (app/auth.py, #34) and nothing else: no cookie session, not even with AUTH_DISABLED, so the app-level CSRF and
 session dependencies have nothing to protect here (they do not run on this route) and nothing to break it. Every tool needs the
@@ -14,13 +15,15 @@ import json
 import re
 from contextlib import asynccontextmanager
 
-from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.mcpserver import Context, MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from mcp.server.transport_security import TransportSecuritySettings
 from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from . import auth, db, review, review_providers as providers
+from .settings_export import app_version
 
 PATH = "/mcp"
 MONTH = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
@@ -40,6 +43,8 @@ DATASETS = ("monthly", "yearly", "cat_month", "cat_year", "item_year", "budget_i
             "planned_purchases",   # #158: served without an account name where a purchase is saved for in an account (PUBLIC)
             "quarterly", "cat_quarter", "quarter_review")   # #147: derived figures only; the look ahead names no account (PUBLIC): the year's contract income, expected and set-aside figures; an account in it is not named: served without an account name where a bill is saved for in an account (PUBLIC)   # #155: read only; a decision's private note is never in the dataset
 MAX_SECTIONS, MAX_HEADING, MAX_TEXT = 12, 200, 5000
+# A refusal the agent should read is a ToolError (#88). 2.x treats any other exception from a tool, ValueError included, as a crash:
+# the client sees only "Error executing tool <name>" and the text stays in the server log. 1.x sent every exception's text.
 INSTRUCTIONS = ("Read-only access to a household's month-close figures (budget months, not calendar months): per-month and per-category "
                 "totals, envelopes planned vs spent, goals and the written month-close review. There are no transactions, merchants or notes. "
                 "`save_review` writes a month's review and needs a token with the review scope.")
@@ -60,13 +65,13 @@ def _rows(conn, name: str) -> list[dict]:
 
 def _month(m: str) -> str:
     if not isinstance(m, str) or not MONTH.match(m):
-        raise ValueError("a month looks like 2025-03 (YYYY-MM)")
+        raise ToolError("a month looks like 2025-03 (YYYY-MM)")
     return m
 
 
 def _built_month(conn, m: str) -> str:
     if not any(r["m"] == _month(m) for r in _rows(conn, "monthly")):
-        raise ValueError(f"{m} is not a built month; list_months shows the ones that are")
+        raise ToolError(f"{m} is not a built month; list_months shows the ones that are")
     return m
 
 
@@ -76,18 +81,23 @@ def _caller(ctx: Context) -> dict:
 
 def _sections(sections) -> list[dict]:
     if not isinstance(sections, list) or not 1 <= len(sections) <= MAX_SECTIONS:
-        raise ValueError(f"sections must be a list of 1 to {MAX_SECTIONS} objects with heading and text")
-    out = providers.parse_sections(json.dumps({"sections": sections}))   # one rule for what a stored section looks like
+        raise ToolError(f"sections must be a list of 1 to {MAX_SECTIONS} objects with heading and text")
+    try:
+        out = providers.parse_sections(json.dumps({"sections": sections}))   # one rule for what a stored section looks like
+    except ValueError as e:   # its own words ("a section is missing its heading or text") are meant for whoever wrote the sections
+        raise ToolError(str(e)) from e
     for s in out:
         s["heading"], s["text"] = s["heading"].strip(), s["text"].strip()
         if not s["heading"] or not s["text"] or len(s["heading"]) > MAX_HEADING or len(s["text"]) > MAX_TEXT:
-            raise ValueError(f"every section needs a heading (up to {MAX_HEADING} characters) and text (up to {MAX_TEXT})")
+            raise ToolError(f"every section needs a heading (up to {MAX_HEADING} characters) and text (up to {MAX_TEXT})")
     return out
 
 
-def build_server() -> FastMCP:
-    mcp = FastMCP("household-ledger", instructions=INSTRUCTIONS, stateless_http=True, json_response=True, streamable_http_path=PATH,
-                  transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False))   # bearer tokens only, no ambient cookies to rebind
+def build_server() -> MCPServer:
+    # 2.x: everything but the name by keyword (the positional order changed: a bare second argument is now `title`), and the version
+    # is ours to give (an unversioned server reports an empty one). The transport settings moved to streamable_http_app() in run().
+    # Tools stay plain `def`: 2.x runs a sync handler on a worker thread, so a slow query no longer holds up the event loop.
+    mcp = MCPServer("household-ledger", instructions=INSTRUCTIONS, version=app_version())
 
     @mcp.tool()
     def list_months() -> list[dict]:
@@ -101,7 +111,7 @@ def build_server() -> FastMCP:
     def get_dataset(name: str) -> list[dict]:
         """All rows of one derived dataset (the ones the dashboard draws from). Names: %s.""" % ", ".join(DATASETS)
         if name not in DATASETS:
-            raise ValueError(f"unknown dataset {name!r}; available: {', '.join(DATASETS)}")
+            raise ToolError(f"unknown dataset {name!r}; available: {', '.join(DATASETS)}")
         with db.pool.connection() as conn:
             rows = _rows(conn, name)
         return [PUBLIC[name](r) for r in rows] if name in PUBLIC else rows
@@ -125,13 +135,13 @@ def build_server() -> FastMCP:
     def category_trend(category: str, months: int = 12) -> list[dict]:
         """A category's monthly spend (nominal and inflation-adjusted) over the latest `months` built months (1 to 120), oldest first; 0 where it had none."""
         if not isinstance(months, int) or not 1 <= months <= 120:
-            raise ValueError("months must be a whole number from 1 to 120")
+            raise ToolError("months must be a whole number from 1 to 120")
         with db.pool.connection() as conn:
             rows = _rows(conn, "cat_month")
             span = sorted(r["m"] for r in _rows(conn, "monthly"))[-months:]
         names = {r["category"].lower(): r["category"] for r in rows}
         if category.strip().lower() not in names:
-            raise ValueError(f"unknown category {category!r}; available: {', '.join(sorted(names.values()))}")
+            raise ToolError(f"unknown category {category!r}; available: {', '.join(sorted(names.values()))}")
         want = names[category.strip().lower()]
         by_m = {r["m"]: r for r in rows if r["category"] == want}
         return [{"month": m, "category": want, "amount": by_m[m]["amount"] if m in by_m else 0, "amount_real": by_m[m]["amount_real"] if m in by_m else 0} for m in span]
@@ -148,7 +158,7 @@ def build_server() -> FastMCP:
         with db.pool.connection() as conn:
             row = conn.execute("SELECT month, model, generated_at, hand_edited_at, sections FROM reviews WHERE month=%s", (_month(m),)).fetchone()
         if not row:
-            raise ValueError(f"no review is stored for {m}")
+            raise ToolError(f"no review is stored for {m}")
         return {"month": row["month"], "written_by": row["model"], "generated_at": row["generated_at"].isoformat(),
                 "hand_edited_at": row["hand_edited_at"].isoformat() if row["hand_edited_at"] else None, "sections": row["sections"]}
 
@@ -164,7 +174,7 @@ def build_server() -> FastMCP:
         Needs a token with the review scope. The review is marked as written by an agent through this token and replaces a hand-edited one."""
         tok = _caller(ctx)["token"]
         if "review" not in auth.SCOPES[tok["scope"]]:
-            raise ValueError(f"this token's scope ({tok['scope']}) does not include review; create a read+review token to save reviews")
+            raise ToolError(f"this token's scope ({tok['scope']}) does not include review; create a read+review token to save reviews")
         secs = _sections(sections)
         with db.pool.connection() as conn:
             _built_month(conn, m)
@@ -184,7 +194,11 @@ class McpEndpoint:
     @asynccontextmanager
     async def run(self):
         mcp = build_server()
-        mcp.streamable_http_app()   # creates mcp.session_manager
+        # Only the session manager is used; the Starlette app it comes with is never mounted (auth sits in __call__ below). 2.x would
+        # turn DNS-rebinding protection on for a localhost `host`, so it is stated outright: bearer tokens only, no ambient cookies to
+        # rebind, and the endpoint answers whatever hostname the household serves the app on.
+        mcp.streamable_http_app(streamable_http_path=PATH, stateless_http=True, json_response=True,
+                                transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False))   # creates mcp.session_manager
         self.manager = mcp.session_manager
         async with self.manager.run():
             yield
