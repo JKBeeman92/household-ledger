@@ -208,3 +208,56 @@ def test_before_after_is_served_over_mcp(client, reset_db):
     assert "merchant" not in json.dumps(rows).lower()
     import io, zipfile   # and it leaves in datasets.zip, like every dataset
     assert "before_after.json" in zipfile.ZipFile(io.BytesIO(client.get("/export/datasets.zip").content)).namelist()
+
+
+def test_a_category_that_first_appears_late_in_the_after_side_is_not_new_since_the_event():
+    """New since the event: first spent in the event's first three months. One that starts in month 8 of a 12-month after side began
+    with something else (the reviewer's case: Baby counted as new since an event eleven months before the birth)."""
+    months = [f"2025-{m:02d}" for m in range(1, 13)]
+    monthly = [{"m": m, "income": 1000.0, "spend": 500.0, "debt": 0.0, "net": 500.0} for m in months]
+    def cats(m):
+        c = {"Food": 400.0}
+        if m >= "2025-04": c["Gym"] = 30.0      # the event's own month: new since it
+        if m >= "2025-06": c["Streaming"] = 15.0   # the event's third month: still new since it
+        if m >= "2025-07": c["Baby"] = 200.0    # month four on: not the event's doing
+        return [{"m": m, "category": k, "amount": v} for k, v in c.items()]
+    cat_month = [r for m in months for r in cats(m)]
+    ev = {"m": "2025-04", "label": "New job"}
+    r12 = ba.compare(ev, 12, monthly, cat_month)
+    assert [c["category"] for c in r12["new_categories"]] == ["Gym", "Streaming"]
+    assert next(c for c in r12["movers"]["by_dollars"] if c["category"] == "Baby")["new"] is False   # still a mover, just not new
+    assert [c["category"] for c in ba.compare(ev, 3, monthly, cat_month)["new_categories"]] == ["Gym", "Streaming"]
+
+
+def test_the_check_in_says_since_the_new_normal_and_the_old_copy_returns_unmarked(client, reset_db):
+    """Each window that moves says so where it renders: the quarter step's pace, the next-month step's suggested plan and the year
+    review's pace; with nothing marked, the twelve-month wording is back."""
+    from pipeline.run_pipeline import rebuild
+    reset_db(SAMPLE)
+    upload_files(client, SAMPLE)
+    with db.pool.connection() as conn:   # a July year, so June 2026 is a year's last month and its check-in has the year in review
+        db.put_setting(conn, "rules", {**(db.get_setting(conn, "rules") or {}), "year_start_month": 7}); conn.commit()
+        rebuild(conn)
+    page = client.get("/checkin/2026-06").text
+    assert "Mark Year in review as read" in page   # year mode
+    assert "keeps the pace of the 5 months since Elanor is born, its new normal" in page   # the quarter step
+    assert "The average since Elanor is born (Feb 2026), the household's new normal," in page   # the suggested plan
+    assert "at the pace of the 5 months since Elanor is born, the household's new normal" in page   # the year in review
+    assert "the last twelve months" not in page and "The twelve-month average," not in page
+    with db.pool.connection() as conn:
+        conn.execute("UPDATE life_events SET new_normal=false"); conn.commit()
+        rebuild(conn)
+    page = client.get("/checkin/2026-06").text
+    assert "since Elanor is born" not in page
+    assert "keeps the pace of the last twelve months" in page and "The twelve-month average, rounded up" in page and "at the pace of the last twelve months" in page
+
+
+def test_in_real_dollars_the_movers_are_ranked_in_real_dollars():
+    months = ["2025-01", "2025-02"]
+    monthly = [{"m": m, "income": 1000.0, "spend": 300.0, "debt": 0.0, "net": 700.0} for m in months]
+    # Fuel doubles in dollars but mostly with prices; Food rises less in dollars and all of it real
+    cat_month = [{"m": "2025-01", "category": "Fuel", "amount": 100.0, "amount_real": 100.0}, {"m": "2025-01", "category": "Food", "amount": 100.0, "amount_real": 100.0},
+                 {"m": "2025-02", "category": "Fuel", "amount": 200.0, "amount_real": 120.0}, {"m": "2025-02", "category": "Food", "amount": 150.0, "amount_real": 150.0}]
+    mv = ba.compare({"m": "2025-02", "label": "x"}, 3, monthly, cat_month)["movers"]
+    assert [r["category"] for r in mv["by_dollars"]] == ["Fuel", "Food"] and [r["category"] for r in mv["by_dollars_real"]] == ["Food", "Fuel"]
+    assert [r["category"] for r in mv["by_pct"]] == ["Fuel", "Food"] and [r["category"] for r in mv["by_pct_real"]] == ["Food", "Fuel"]

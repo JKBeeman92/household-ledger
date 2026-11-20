@@ -11,8 +11,10 @@ length still compare fairly: income, living spend (`spend`), debt payments, net 
 one month's prices (`*_real`, the CPI toggle). An event with no month loaded on one side has no row.
   movers          living-spend categories by the change in a month's spend (`by_dollars`), and by percent (`by_pct`, only where the
                   before side spent at least $25 a month, so a $3 line doubling is not news); the debt and savings groups are listed
-                  apart (`set_apart`), as on the Quarter tab
-  new_categories  categories with spending on the after side and none in any loaded month before M: "new since <event>"
+                  apart (`set_apart`), as on the Quarter tab; `by_dollars_real` and `by_pct_real` rank the same in real dollars
+  new_categories  categories with spending on the after side and none in any loaded month before M, whose first spending falls in
+                  the event's first MIN_MONTHS months (M .. M+2, or the whole after side when n is shorter): "new since <event>". A
+                  category that first appears late in a long after side began with something else, not with the event
 
 The new normal. An event marked `new_normal` (the household ticks it; never automatic) moves the start of a trailing average: `cut`
 takes a trailing window of months and, when the latest such event at or before the window's end has at least MIN_MONTHS of the
@@ -102,6 +104,8 @@ def compare(event: dict, n: int, monthly: list[dict], cat_month: list[dict], thr
         change[k] = round(a[k] - b[k], 4) if a[k] is not None and b[k] is not None else None   # in points of the rate
     cats: dict[str, dict] = {}
     seen_before: set[str] = set()
+    new_by = add_months(m0, min(MIN_MONTHS, n) - 1)   # the last month a category can first appear in and be new since the event
+    starts_early: set[str] = set()
     for r in cat_month:
         m = r["m"]
         if through and m > through:
@@ -109,6 +113,8 @@ def compare(event: dict, n: int, monthly: list[dict], cat_month: list[dict], thr
         amt, amt_r = float(r.get("amount") or 0), float(r.get("amount_real") or 0)
         if m < m0 and amt:
             seen_before.add(r["category"])
+        if m0 <= m <= new_by and amt and m in after:
+            starts_early.add(r["category"])
         side = "b" if m in before else "a" if m in after else None
         if side:
             c = cats.setdefault(r["category"], {"b": 0.0, "a": 0.0, "b_real": 0.0, "a_real": 0.0})
@@ -118,13 +124,16 @@ def compare(event: dict, n: int, monthly: list[dict], cat_month: list[dict], thr
         pb, pa, pbr, par = c["b"] / len(before), c["a"] / len(after), c["b_real"] / len(before), c["a_real"] / len(after)
         rows.append({"category": name, "before": round(pb, 2), "after": round(pa, 2), "change": round(pa - pb, 2), "pct": _pct(pa, pb) if pb >= PCT_FLOOR else None,
                      "before_real": round(pbr, 2), "after_real": round(par, 2), "change_real": round(par - pbr, 2), "pct_real": _pct(par, pbr) if pbr >= PCT_FLOOR else None,
-                     "new": name not in seen_before and pa != 0})
+                     "new": name not in seen_before and name in starts_early and pa != 0})
     apart = set(set_apart or ())
     living = [r for r in rows if r["category"] not in apart and r["change"]]
+    living_real = [r for r in rows if r["category"] not in apart and r["change_real"]]   # the Dollars switch ranks in real terms too
     return {"m": m0, "label": event["label"], "kind": event.get("kind"), "person": event.get("person"), "new_normal": is_new_normal(event), "n": n,
             "short": b["months"] < n or a["months"] < n, "before": b, "after": a, "change": change,
             "movers": {"by_dollars": sorted(living, key=lambda r: (-abs(r["change"]), r["category"]))[:top],
                        "by_pct": sorted([r for r in living if r["pct"] is not None], key=lambda r: (-abs(r["pct"]), r["category"]))[:top],
+                       "by_dollars_real": sorted(living_real, key=lambda r: (-abs(r["change_real"]), r["category"]))[:top],
+                       "by_pct_real": sorted([r for r in living_real if r["pct_real"] is not None], key=lambda r: (-abs(r["pct_real"]), r["category"]))[:top],
                        "set_apart": sorted([r for r in rows if r["category"] in apart and r["change"]], key=lambda r: (-abs(r["change"]), r["category"]))},
             "new_categories": [{"category": r["category"], "after": r["after"], "after_real": r["after_real"]} for r in rows if r["new"]]}
 

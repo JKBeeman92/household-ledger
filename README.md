@@ -644,16 +644,20 @@ figure is an estimate at the current pace, and "How it is worked out" lists each
 change resets what a normal month is. **Before and after a life event**, on the Overview tab, sets the budget months before any life
 event against the event's own month and the months after it: 6 on each side by default, 3 and 12 offered.
 
-- Each figure is **a month's average** over the months loaded on that side, so a side with fewer months still compares fairly, and
-  the line above the table says when one is short ("only 5 of 6 months loaded"). Income, living spend, debt payments, net kept and the
+- Each figure is **a month's average** over the months loaded on that side, so a side with fewer months still compares fairly, and the
+  line above the table says when one is short ("only 5 of 6 months loaded"). Income, living spend, debt payments, net kept and the
   savings rate, nominal or in one month's prices (the Dollars switch), so inflation is not read as a change of life.
 - **The categories that moved most** in living spend, by dollars and by percent (a percent only where at least $25 a month was spent
-  before), and the categories **new since** the event: nothing spent on them in any loaded month before it (childcare, a new utility).
+  before), and the categories **new since** the event: nothing spent on them in any loaded month before it, and first spent in the
+  event's month or the two after it (childcare, a new utility), so a category that starts a year later is not put down to the event.
 - **The new normal.** Any event can be marked as the new normal (Settings → Life events, *New normal*: yes). It is always the
   household's choice: nothing is marked for you, and a new `move` or `family` event only offers it. Once a marked event has three
   budget months loaded, the averages that look back start from it rather than from the old normal: the look ahead's pace, the
-  emergency fund's outgo and the Last month tab's twelve-month average and suggested plan. Each says "since *the event*". With fewer
-  than three months, the window before it is kept.
+  emergency fund's outgo, and the Last month tab's category averages and suggested plan (its headline net still sets the month against
+  the twelve before). Each says "since *the event*". With fewer than three months, the window before it is kept. A short window holds
+  a yearly bill at its full size: a category paid once a year (insurance, a licence) reads high there until twelve months have passed,
+  so check its suggested plan before taking it (the `plan_keep_categories` rule's categories, Insurance among them by default, keep
+  their plan).
 - **The review** of a month within six months after an event marked as the new normal names it and its before-and-after comparison.
 - The `before_after` dataset (a row per event and window) reaches MCP and `datasets.zip`; the period filter does not apply to it.
   `new_normal` travels in `settings.zip`'s `events.json`, and `python -m app.admin set-events FILE` sets it.
