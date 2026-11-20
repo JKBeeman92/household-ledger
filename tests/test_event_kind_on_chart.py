@@ -132,3 +132,18 @@ def test_the_dashboard_never_asks_whether_an_event_kind_is_hidden():
     assert "hidden kind'" not in page and "evHiddenKinds" not in page and "hiddenAlso" not in page
     assert "HL.hiddenNote(el, 'monthly'" not in page   # the timeline's only hidden names were event kinds
     assert page.count("dash.assigned('event_kind', e.kind)") == 1   # the colour still works
+
+
+def test_a_kind_kept_for_a_name_the_data_lost_is_listed_as_a_colour_only(client, reset_db):
+    from conftest import GOLDEN, upload_files
+    upload_files(client, GOLDEN / "exports")
+    with db.pool.connection() as conn:
+        conn.execute("DELETE FROM appearance")
+        appearance.set_one(conn, "event_kind", "Gone kind", "series-3", False); conn.commit()
+        assert [o["name"] for o in appearance.page(conn)["orphans"]] == ["Gone kind"]
+    html = client.get("/settings").text
+    table = html[html.index('id="appearance-orphans-table"'):]; table = table[:table.index("</table>")]
+    assert "<td>—</td>" in table and "<td>no</td>" not in table   # no hide switch to report
+    assert 'aria-label="Delete the colour kept for the event kind Gone kind"' in table and "hide switch" not in table
+    r = client.post("/settings/appearance/delete", data={"dimension": "event_kind", "name": "Gone kind"}, follow_redirects=True)
+    assert "Deleted the colour kept for Gone kind; if Gone kind comes back, it is automatic again." in r.text

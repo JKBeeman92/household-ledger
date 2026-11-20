@@ -204,8 +204,9 @@ out falls back. Ids: `dashboard check-in close-month reviews settings day night 
   tall and 24 px wide (DS-LAYOUT-2, WCAG 2.5.8); markers closer than 24 px merge, so no two buttons overlap at any width. An event
   switched off the chart (Settings → Life events, the household's one switch) is drawn nowhere and listed under the chart as *not on
   the chart*; it is not a hidden name, so *show* (DS-CHART-6) never brings it back. The kind and person chips are each viewer's filter,
-  never a setting. The list says why any event has no marker (*not on the chart*, *before the chart's first month*). What is still to come sits in a *Coming up* strip after the last month, dotted
-  (DS-CHART-2), never as a marker off the end of the axis; the strip draws 12 months, and its list keeps every later row too.
+  never a setting. The list says why any event has no marker (*not on the chart*, *before the chart's first month*). What is still to
+  come sits in a *Coming up* strip after the last month, dotted (DS-CHART-2), never as a marker off the end of the axis; the strip
+  draws 12 months, and its list keeps every later row too.
 
 ## 5. Patterns
 

@@ -830,5 +830,6 @@ async def appearance_delete(request: Request, user=Depends(auth.require_editor))
     dim, name = str(f.get("dimension", "")), str(f.get("name", ""))
     with db.pool.connection() as conn:
         n = appearance.delete(conn, dim, name); conn.commit()
-    flash(request, f"Deleted the colour and hide switch kept for {name}; if {name} comes back, it is automatic again." if n else f"Nothing was kept for {name}; it was already gone.", "ok" if n else "bad")
+    what = "colour" if dim in appearance.COLOUR_ONLY else "colour and hide switch"
+    flash(request, f"Deleted the {what} kept for {name}; if {name} comes back, it is automatic again." if n else f"Nothing was kept for {name}; it was already gone.", "ok" if n else "bad")
     return RedirectResponse("/settings#appearance/orphans", status_code=303)

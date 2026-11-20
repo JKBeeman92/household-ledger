@@ -270,10 +270,10 @@
 {% if look.orphans %}<div role="tabpanel" id="sp-appearance-orphans" aria-labelledby="st-appearance-orphans">
 <section class="panel" id="appearance-orphans">
   <h2>Not in the data</h2>
-  <p class="muted">A colour or hide switch kept for a name the current data no longer has: a category merged away, an employer renamed in Pipeline rules, a debt paid off before the first month loaded. It does nothing until the name comes back, but a theme colour it holds stays reserved: delete it to free the colour.</p>
+  <p class="muted">A colour or hide switch (a colour only, for an event kind) kept for a name the current data no longer has: a category merged away, an employer renamed in Pipeline rules, a debt paid off before the first month loaded. It does nothing until the name comes back, but a theme colour it holds stays reserved: delete it to free the colour.</p>
   <div class="tablewrap" role="region" tabindex="0" aria-label="Chart colours not in the data table"><table class="plain" id="appearance-orphans-table" data-list="unbounded"><thead><tr><th scope="col">Name</th><th scope="col">Kind of name</th><th scope="col">Colour</th><th scope="col">Hidden</th><th class="acts"><span class="sr">Actions</span></th></tr></thead><tbody>
-    {% for o in look.orphans %}<tr><td>{{ o.name }}</td><td>{{ o.noun }}</td><td class="mono">{{ o.color or "automatic" }}</td><td>{{ "yes" if o.hidden else "no" }}</td>
-      <td class="acts"><form method="post" action="/settings/appearance/delete" class="inline">{{ csrf_field(request) }}<input type="hidden" name="dimension" value="{{ o.dimension }}"><input type="hidden" name="name" value="{{ o.name }}"><button class="btn" type="submit" aria-label="Delete the colour and hide switch kept for the {{ o.noun }} {{ o.name }}">Delete</button></form></td></tr>{% endfor %}
+    {% for o in look.orphans %}<tr><td>{{ o.name }}</td><td>{{ o.noun }}</td><td class="mono">{{ o.color or "automatic" }}</td><td>{{ "—" if o.dimension in look_colour_only else ("yes" if o.hidden else "no") }}</td>
+      <td class="acts"><form method="post" action="/settings/appearance/delete" class="inline">{{ csrf_field(request) }}<input type="hidden" name="dimension" value="{{ o.dimension }}"><input type="hidden" name="name" value="{{ o.name }}"><button class="btn" type="submit" aria-label="Delete the colour{{ '' if o.dimension in look_colour_only else ' and hide switch' }} kept for the {{ o.noun }} {{ o.name }}">Delete</button></form></td></tr>{% endfor %}
   </tbody></table></div>
 </section>
 </div>{% endif %}
