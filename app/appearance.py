@@ -257,5 +257,7 @@ def page(conn) -> dict:
         have = table.get(d, {})
         out[d] = [{"name": n, "color": (have.get(n) or {}).get("color"), "hidden": bool((have.get(n) or {}).get("hidden")),
                    "warnings": warnings((have.get(n) or {}).get("color"), toks)} for n in names[d]]
-    orphans = [{**r, "noun": LABELS[r["dimension"]][1]} for r in rows(conn) if r["name"] not in set(names[r["dimension"]])]
+    # sorted here, not by the database: a server's collation (C or en_US) would order "Old Mill" and "Older Mill" differently
+    orphans = sorted(({**r, "noun": LABELS[r["dimension"]][1]} for r in rows(conn) if r["name"] not in set(names[r["dimension"]])),
+                     key=lambda r: (r["dimension"], r["name"].casefold(), r["name"]))
     return {"dimensions": out, "orphans": orphans}
