@@ -400,12 +400,12 @@ def test_hiding_changes_no_total_and_show_is_for_this_viewer_only(sample):
 
 # DS-CHART-5: what each chart coloured by a name states, drawn from the data, on the sample household (2026 has six months loaded)
 SAMPLE_FINDINGS = {
-    "fd-monthly": "Jan 2025 to Jun 2026: income covered outgo in all 18 budget months, and the household kept $30,425.",
+    "fd-monthly": "Jan 2025 to Jun 2026: income covered outgo in all 18 budget months, and the household kept $29,598.",
     "fd-employer": "Jan 2025 to Jun 2026: Hobbiton Mill paid $75,400 in paychecks.",
-    "fd-cat": "2026 (6 mo): Housing and Food took 53% of the $27,656 spent.",
+    "fd-cat": "2026 (6 mo): Housing and Food took 51% of the $28,484 spent.",
     "fd-slush": "2026 (6 mo): the catch-all envelopes took $3,985, the most Generosity with $2,280.",
     "fd-earner": "2026 (6 mo): Rosie earned 66% of the $38,618 income, Sam 34%.",
-    "fd-payer": "2026 (6 mo): personal envelopes took 5% of the $27,656 spent: Rosie $697, Sam $637. The rest was shared.",
+    "fd-payer": "2026 (6 mo): personal envelopes took 5% of the $28,484 spent: Rosie $697, Sam $637. The rest was shared.",
 }
 
 

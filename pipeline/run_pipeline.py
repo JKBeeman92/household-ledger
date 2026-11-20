@@ -314,9 +314,9 @@ def export_for_pipeline(conn: psycopg.Connection, wd: Path) -> None:
         goals = [dict(r, value=float(r["value"]) if r["value"] is not None else None, confirmed_at=r["confirmed_at"].isoformat() if r["confirmed_at"] else None,
                       target_amount=float(r["target_amount"]) if r["target_amount"] is not None else None, done_at=r["done_at"].isoformat() if r["done_at"] else None)
                  for r in cur]
-        cur.execute("SELECT month m, label, kind, person FROM life_events ORDER BY month, label")
-        with open(wd / "events.json", "w") as out:   # kind and person only when set (#109), so events without them read as before
-            json.dump([{k: v for k, v in r.items() if v is not None} for r in cur], out)
+        cur.execute("SELECT month m, label, kind, person, new_normal FROM life_events ORDER BY month, label")
+        with open(wd / "events.json", "w") as out:   # kind, person and new_normal (#159) only when set (#109), so events without them read as before
+            json.dump([{k: v for k, v in r.items() if v is not None and v is not False} for r in cur], out)
         # accounts and month-end balances (#143): read by make_datasets.py through pipeline/balances.py
         cur.execute(f"SELECT {', '.join(balances.ACCOUNT_COLUMNS)} FROM accounts ORDER BY name")
         with open(wd / "accounts.csv", "w", newline="") as out:
@@ -687,8 +687,10 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
                 events_seed = json.load(f)
             for e in events_seed:
                 kind, person = _seed_event_fields(e, seed_dir / "events.json")
-                cur.execute("INSERT INTO life_events (month,label,kind,person) VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING",
-                            (e["m"], e["label"], kind, person))
+                if not isinstance(e.get("new_normal", False), bool):   # #159: true or false, as settings.zip writes it
+                    raise ValueError(f"{seed_dir / 'events.json'}: event {e.get('m')} {e.get('label')!r}: new_normal must be true or false")
+                cur.execute("INSERT INTO life_events (month,label,kind,person,new_normal) VALUES (%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+                            (e["m"], e["label"], kind, person, e.get("new_normal", False)))
         cur.execute("SELECT count(*) FROM settings WHERE key='rules'")
         if cur.fetchone()[0] == 0 and (seed_dir / "rules.json").exists():
             cur.execute("INSERT INTO settings (key, value) VALUES ('rules', %s)", (_read(seed_dir / "rules.json"),))

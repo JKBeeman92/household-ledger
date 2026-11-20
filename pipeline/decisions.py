@@ -103,14 +103,16 @@ def usual_payment(rows: list[dict], item: str, before: str, n: int = 3) -> float
     return round(statistics.median(paid), 2) if paid else 0.0
 
 
-def plan_suggestions(budget_rows: list[dict], keep: list[str]) -> list[dict]:
+def plan_suggestions(budget_rows: list[dict], keep: list[str], cut=None) -> list[dict]:
     """The Last month tab's suggested plan, per category, for the latest budget month: the average of the (up to) twelve months
     before it, rounded up to $10, or the current plan for the plan_keep_categories. The tab and the check-in's Next month step both
-    read this, so they cannot disagree."""
+    read this, so they cannot disagree. `cut` (before_after.cut with the life events, #159) starts the window at the household's
+    new normal; avg_from, avg_months and avg_since (the event's label, or None) say which months were averaged."""
     months = sorted({r["m"] for r in budget_rows})
     if not months:
         return []
     last, prev = months[-1], months[-13:-1]
+    prev, since = cut(prev) if cut else (prev, None)
     n = len(prev) or 1
     out = []
     for c in sorted({r["category"] for r in budget_rows}):
@@ -119,7 +121,8 @@ def plan_suggestions(budget_rows: list[dict], keep: list[str]) -> list[dict]:
         avg12 = sum(float(r["actual"]) for r in budget_rows if r["m"] in prev and r["category"] == c) / n
         suggest = planned if c in keep else float(-(-avg12 // 10) * 10)   # ceil to the next $10
         flow = cur[0]["flow"] if cur else next((r["flow"] for r in budget_rows if r["category"] == c), None)
-        out.append({"m": last, "category": c, "flow": flow, "planned": planned, "avg12": round(avg12, 2), "suggest": round(suggest, 2)})
+        out.append({"m": last, "category": c, "flow": flow, "planned": planned, "avg12": round(avg12, 2), "suggest": round(suggest, 2),
+                    "avg_from": prev[0] if prev else None, "avg_months": len(prev), "avg_since": since.get("label") if since else None})
     return out
 
 

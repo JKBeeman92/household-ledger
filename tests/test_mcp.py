@@ -122,6 +122,15 @@ def test_transactions_merchants_and_notes_are_never_served(loaded):
         assert not err and "merchant" not in json.dumps(rows).lower()
 
 
+def test_before_after_is_served_with_the_event_label_and_derived_figures_only(loaded):
+    """#159: the owner decided before_after is served; a row is an event's own label and a month's averages either side of it."""
+    assert "before_after" in mcp_endpoint.DATASETS and "before_after" not in mcp_endpoint.PUBLIC
+    err, rows = call(make_token(), "get_dataset", {"name": "before_after"})
+    assert not err and rows and {r["label"] for r in rows} == {"Third paycheck"} and {r["n"] for r in rows} == {3, 6, 12}
+    assert set(rows[0]) == {"m", "label", "kind", "person", "new_normal", "n", "short", "before", "after", "change", "movers", "new_categories"}
+    assert "merchant" not in json.dumps(rows).lower() and "account" not in json.dumps(rows).lower()
+
+
 def test_save_review_needs_the_review_scope_and_stores_like_any_review(loaded):
     m = call(make_token(), "list_months")[1][0]["month"]
     err, text = call(make_token("read"), "save_review", {"m": m, "sections": SECTIONS})

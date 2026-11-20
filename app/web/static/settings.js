@@ -121,6 +121,17 @@ var FMT = (function () {   // the household's locale and currency, as the server
           }).catch(function () {});
         };
       }
+      if (blank && kind === "events") {   // #159: a move or a new family member is offered as the new normal, never chosen for the household
+        var kindSel = tr.querySelector('select[name="kind"]'), nnSel = tr.querySelector('select[name="new_normal"]');
+        if (kindSel && nnSel) {
+          var offer = el("div", { "class": "hint", id: "new-normal-hint" }); nnSel.parentNode.insertBefore(offer, nnSel.nextSibling);
+          kindSel.onchange = function () {
+            var on = kindSel.value === "family" || kindSel.value === "move";
+            offer.textContent = on ? "A new normal? Yes starts the averages here." : "";
+            if (on) nnSel.setAttribute("aria-describedby", "new-normal-hint"); else nnSel.removeAttribute("aria-describedby");
+          };
+        }
+      }
       tr.cancelEdit = function () { cn.click(); };
       sv.onclick = function () { save(tr); };
       cn.onclick = function () { if (tr.dataset.new) { var a = tr.closest("section, .panel, body").querySelector("[data-act=add]"); tr.remove(); if (a) a.focus(); } else { show(tr, row); back(tr); } };

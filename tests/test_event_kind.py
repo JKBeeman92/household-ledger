@@ -37,7 +37,7 @@ def test_row_editor_takes_kind_and_person_and_warns_on_unknown_person(client, re
         got = {e["label"]: (e["kind"], e["person"]) for e in events(conn)}
     assert got["Rosie joins the mill"] == ("other", None) and got["Pippin visits"] == (None, "Pippin") and "Party" not in got
     page = client.get("/settings").text
-    assert 'data-fields="m,label,kind,person"' in page and "&#34;job&#34;" in page and '<datalist id="settings-people"><option value="Rosie">' in page
+    assert 'data-fields="m,label,kind,person,new_normal"' in page and "&#34;job&#34;" in page and '<datalist id="settings-people"><option value="Rosie">' in page
 
 
 def test_non_text_values_are_refused_not_stringified(client, reset_db):

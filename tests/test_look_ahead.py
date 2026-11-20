@@ -90,7 +90,8 @@ def test_sample_household_look_ahead_reaches_the_dashboard_checkin_review_and_mc
     rows = client.get("/api/datasets").json()["look_ahead"]
     assert [r["h"] for r in rows] == [3, 12, 36] and all(r["m"] == "2026-06" for r in rows)
     r = rows[1]
-    assert r["pace_months"] == 12 and r["net_worth_now"] is not None
+    assert r["pace_months"] == 5 and r["pace_from"] == "2026-02" and r["pace_since"] == "Elanor is born"   # the sample's new normal (#159)
+    assert r["net_worth_now"] is not None
     assert r["cash"] == round(r["pace"] * 12 + r["freed"], 2)                                        # reproducible from the row
     assert r["net_worth"] == round(r["net_worth_now"] + r["cash"] + r["paid_down"] + r["growth"], 2)
     assert {g["label"] for g in r["goals"]} == {"A trip to Rivendell", "A new cart"}

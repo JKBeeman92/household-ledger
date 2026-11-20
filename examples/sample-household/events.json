@@ -19,7 +19,8 @@
  {
   "m": "2026-02",
   "label": "Elanor is born",
-  "kind": "family"
+  "kind": "family",
+  "new_normal": true
  },
  {
   "m": "2026-09",

@@ -31,6 +31,8 @@ SYSTEM = (
     "When the data carries `year` (the month ends the household's budget year), add one more section after that, last, headed \"The year\": "
     "the year against the year before (totals, and a month at a time when either is partial), net worth and debts over the year, the "
     "decisions kept, the year's life events, the categories that moved most, and where next year leads at the current pace (an estimate). "
+    "When the data carries `new_normal` (the month is within six months after a life event the household marked as its new normal), name "
+    "the event and its before-and-after comparison in the against-the-trailing-twelve section: the trailing averages elsewhere start from it. "
     "Return only the JSON object."
 )
 
@@ -77,7 +79,7 @@ PAYCHECK_ITEMS_DEFAULT = ["Paycheck"]   # role default: build_ledger.RULES["payc
 
 
 def build_context(conn, month: str) -> dict:
-    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals','debt_to_income','net_worth','emergency_fund','coming_up','tax','planned_purchases','look_ahead')").fetchall()}
+    ds = {r["name"]: r["rows"] for r in conn.execute("SELECT name, rows FROM datasets WHERE name IN ('monthly','cat_month','budget_items','goals','people','balance_totals','debt_to_income','net_worth','emergency_fund','coming_up','tax','planned_purchases','look_ahead','events')").fetchall()}
     monthly = {r["m"]: r for r in ds.get("monthly", [])}
     months = sorted(monthly)
     if month not in monthly:
@@ -112,6 +114,7 @@ def build_context(conn, month: str) -> dict:
            if ds.get("tax") and ds["tax"][0].get("m") == month else {}),   # #153
         **({"planned_purchases": pp} if (pp := purchases_context(ds.get("planned_purchases", []), month)) else {}),   # #158
         **({"look_ahead": la} if (la := look_ahead_context(ds.get("look_ahead", []), month)) else {}),   # #148
+        **({"new_normal": nn} if (nn := new_normal_context(conn, ds, month)) else {}),   # #159
         **({"quarter": qc} if (qc := quarter_context(conn, month)) else {}),
         **({"year": yc} if (yc := year_context(conn, month)) else {}),   # #157: the year's last month, one more section   # #147: one review a month, extended at a quarter's end
         **({"coming_up": coming_up_context(ds.get("coming_up", []), month)} if coming_up_context(ds.get("coming_up", []), month) else {}),
@@ -308,6 +311,34 @@ def look_ahead_context(rows: list[dict], month: str) -> dict | None:
     keep = ("h", "until", "pace", "pace_3", "pace_months", "cash", "cash_3", "freed", "paid_down", "growth_pct", "growth", "net_worth_now", "net_worth", "debt_free")
     out = [{k: r.get(k) for k in keep} for r in rows if r.get("m") == month]
     return {"note": LOOK_AHEAD_NOTE, "horizons": out} if out else None
+
+
+NEW_NORMAL_NOTE = ("The household marked a life event as its new normal (#159): its pattern changed from that month (a move, a new "
+                   "dependent, a new job). before is a month's average over the n budget months before the event, after over the event's month "
+                   "and those after it, up to this month; months says how many are loaded on each side (fewer than n: say so). change is after "
+                   "minus before (savings_rate in points of the rate); movers are living-spend categories by the change in a month's spend; "
+                   "new_categories have spending only since the event. The look ahead's pace, the emergency fund's outgo and the suggested plan "
+                   "average from the event once it has three months: say so rather than comparing with the old normal.")
+
+
+def new_normal_context(conn, ds: dict, month: str, n: int = 6) -> dict | None:
+    """The latest life event marked the new normal whose first six months hold `month` (#159), with its before-and-after comparison as
+    of `month`: derived figures, and the household's own label, as the life events already carry; never transactions or merchants."""
+    from pipeline import before_after as ba
+    marked = [e for e in ds.get("events", []) if ba.is_new_normal(e) and e["m"] <= month <= ba.add_months(e["m"], n - 1)]
+    if not marked:
+        return None
+    e = max(marked, key=lambda e: (e["m"], e["label"]))
+    rules = db.get_setting(conn, "rules", {}) or {}
+    apart = set(rules["debt_groups"] if rules.get("debt_groups") is not None else ["Debt"]) | set(rules.get("goal_savings_groups") or [])   # role default
+    c = ba.compare(e, n, ds.get("monthly", []), ds.get("cat_month", []), month, apart)
+    if not c:
+        return None
+    side = lambda x: {k: x[k] for k in ("from", "to", "months", "income", "spend", "debt", "net", "savings_rate")}
+    mv = lambda r: {k: r[k] for k in ("category", "before", "after", "change", "pct")}
+    return {"note": NEW_NORMAL_NOTE, "event": {k: c[k] for k in ("m", "label", "kind") if c[k]}, "n": n, "before": side(c["before"]), "after": side(c["after"]),
+            "change": {k: c["change"][k] for k in ("income", "spend", "debt", "net", "savings_rate")},
+            "movers": [mv(r) for r in c["movers"]["by_dollars"]], "new_categories": [r["category"] for r in c["new_categories"]]}
 
 
 PURCHASES_NOTE = ("Planned purchases the household is saving for by a date (#158). saved is what the envelope has been given less what it "
