@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.9.0](https://github.com/JKBeeman92/household-ledger/compare/v0.8.0...v0.9.0) (2026-11-20)
+
+
+### Features
+
+* before and after a life event, and the household's new normal ([#232](https://github.com/JKBeeman92/household-ledger/issues/232)) ([d7de8f6](https://github.com/JKBeeman92/household-ledger/commit/d7de8f6d3a155f05f434fd6d40c70ff5de3ef132))
+* each person's share at the check-in: a by_person dataset and a By person block ([#233](https://github.com/JKBeeman92/household-ledger/issues/233)) ([19a2a78](https://github.com/JKBeeman92/household-ledger/commit/19a2a7865eac386190631bf5d2375dfd1b96a160))
+* load a back catalogue from any budget tool through the saved source profiles ([#226](https://github.com/JKBeeman92/household-ledger/issues/226)) ([453908f](https://github.com/JKBeeman92/household-ledger/commit/453908fc66dacb2b4bb53071b97060d244e5f4d2))
+* new normal switches at six months, one averaging window, a twelve-month cap ([#242](https://github.com/JKBeeman92/household-ledger/issues/242)) ([3056a69](https://github.com/JKBeeman92/household-ledger/commit/3056a69f6c588d637e9c3265799d5b12645971a4))
+* one appearance system for charts: a colour and a hide switch for each name ([#225](https://github.com/JKBeeman92/household-ledger/issues/225)) ([a7b3ee2](https://github.com/JKBeeman92/household-ledger/commit/a7b3ee2b5d556214c307ead49d5b69d2667d0f4e))
+* retire the hide switch for life-event kinds; On the chart is the one way off ([#241](https://github.com/JKBeeman92/household-ledger/issues/241)) ([2b64557](https://github.com/JKBeeman92/household-ledger/commit/2b64557d12a8daa77cd2260501a4b416f8a34bb6))
+* the MCP endpoint on the mcp 2.x SDK ([#223](https://github.com/JKBeeman92/household-ledger/issues/223)) ([e31b460](https://github.com/JKBeeman92/household-ledger/commit/e31b46086e657aa884458dfa583a1c8a283d5ff2))
+* tidy life events on the timeline: merged markers, chips, an on-the-chart switch, coming up ([#231](https://github.com/JKBeeman92/household-ledger/issues/231)) ([893b456](https://github.com/JKBeeman92/household-ledger/commit/893b456b8f7e115abb928be37a911bc1cead54f7))
+
+
+### Bug Fixes
+
+* settle the 0.9.0 release UX review: one name per thing, labels, keys ([#234](https://github.com/JKBeeman92/household-ledger/issues/234)) ([c04f771](https://github.com/JKBeeman92/household-ledger/commit/c04f7710fcd2d968d271753960c50cf4533f28b9))
+
 ## [0.8.0](https://github.com/JKBeeman92/household-ledger/compare/v0.7.0...v0.8.0) (2026-11-17)
 
 
