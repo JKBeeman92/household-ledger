@@ -473,6 +473,21 @@ def test_deleting_an_orphan_keeps_focus_with_the_list_and_the_empty_list_hands_i
 
 
 @browser
+def test_a_slow_or_refused_orphan_delete_keeps_focus_on_the_button(sample):
+    """DS-A11Y-5: while the request is in flight the button stays focused (aria-disabled, not disabled, which drops focus to <body>)
+    and a second Enter sends nothing more; a refusal leaves the row, focus on its Delete, and one period at the end of the status."""
+    set_table([{"dimension": "category", "name": "Gone A", "color": "series-2"}, {"dimension": "category", "name": "Gone B", "hidden": True},
+               {"dimension": "category", "name": "Gone C", "color": "series-3"}])
+    s = orphans(sample, order=[0], slow=600)["steps"][0]
+    assert s["during"] == {"tag": "BUTTON", "ariaDisabled": "true"}
+    assert s["focus"] == "Delete the colour and hide switch kept for the category Gone B" and s["count"] == "2"
+    f = orphans(sample, fail=True)
+    assert f["status"] == "Not deleted: Your form expired. Reload the page." and "bad" in f["cls"]
+    assert f["focus"] == "Delete the colour and hide switch kept for the category Gone B" and f["ariaDisabled"] is None and f["rows"] == 2
+    set_table([])
+
+
+@browser
 def test_deleting_an_orphan_without_javascript_posts_and_comes_back_on_the_tab(sample):
     set_table([{"dimension": "category", "name": "Gone A", "color": "series-2"}, {"dimension": "category", "name": "Gone B", "hidden": True}])
     out = orphans(sample, nojs=True)
