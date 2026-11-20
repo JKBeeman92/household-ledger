@@ -107,7 +107,10 @@ def test_an_unreadable_colour_refuses_the_save_and_comes_back_under_its_field(cl
         assert rows(conn) == []   # nothing saved, not even the good row
     html = client.get("/settings").text
     assert "Not saved: 1 colour could not be read (Food)" in html
-    assert 'value="chartreuse-ish"' in html and 'aria-invalid="true"' in html and "A palette slot (series-1 to series-8)" in html
+    assert 'value="chartreuse-ish"' in html and 'aria-invalid="true"' in html and "A theme colour (series-1 to series-8)" in html
+    # the refused form is the one tab known to hold unsaved values: it is rendered marked, so the guard covers it from the start
+    assert html.count('action="/settings/appearance/save" data-unsaved>') == 1
+    assert 'save" data-unsaved>' not in client.get("/settings").text   # the typed values are shown once; after that the saved ones
 
 
 def test_a_faint_or_verdict_coloured_choice_is_saved_with_a_warning(client, reset_db):

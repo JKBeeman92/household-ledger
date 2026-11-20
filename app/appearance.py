@@ -48,7 +48,7 @@ def check_color(raw) -> tuple[str | None, str | None]:
         return None, None
     if (m := re.fullmatch(r"(?:series[-\s]?)?([1-8])", v, re.I)):
         return f"series-{m.group(1)}", None
-    bad = "a palette slot (series-1 to series-8) or a colour such as #2b6cb0, rgb(43 108 176), hsl(210 60% 43%) or oklch(0.5 0.12 250)"
+    bad = "a theme colour (series-1 to series-8) or a colour code such as #2b6cb0, rgb(43 108 176), hsl(210 60% 43%) or oklch(0.5 0.12 250)"
     if not _CSS_CHARS.match(v):
         return None, bad
     try:

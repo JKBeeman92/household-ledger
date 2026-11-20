@@ -70,8 +70,8 @@
     <div class="card">
       <h2 id="monthly-chart">Income against outgo, by budget month</h2>
         <p class="finding" data-draw="fd-monthly" data-source="monthly"></p>
-        <ul class="key row"><li>three lines: income, living spend, and the thinner spend plus debt</li><li><span class="key-mark" aria-hidden="true">=</span>outgo is living spend plus debt payments</li><li><span class="key-mark" aria-hidden="true">−</span>transfers and exclusions left out (Method tab)</li><li><span class="key-mark ln dot" aria-hidden="true"></span>dotted markers are life events: hover one, or open the list below the chart</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Each ring is a month. The legend under the chart names the three lines: income, living spend, and the thinner spend plus debt. The gap between income and spend plus debt is the month’s net. A month where spend plus debt sits above income was funded from savings or a one-off inflow. Spikes in income are bonuses, tax refunds, stimulus or severance; spikes in spend are usually a tax bill, a trip or a project.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Income against outgo, figures"><table><thead><tr><th scope="col">Month</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Spend + debt</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-monthly" data-source="monthly events"></tbody></table></div></details>
+        <ul class="key row"><li>three lines, each named at its right end: income, living spend, and the thinner spend plus debt</li><li><span class="key-mark" aria-hidden="true">=</span>outgo is living spend plus debt payments</li><li><span class="key-mark" aria-hidden="true">−</span>transfers and exclusions left out (Method tab)</li><li><span class="key-mark ln dot" aria-hidden="true"></span>dotted markers are life events: hover one, or open the list below the chart</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Each ring is a month. The gap between income and spend plus debt is the month’s net. A month where spend plus debt sits above income was funded from savings or a one-off inflow. Spikes in income are bonuses, tax refunds, stimulus or severance; spikes in spend are usually a tax bill, a trip or a project.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Income against outgo, figures"><table><thead><tr><th scope="col">Month</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Spend + debt</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-monthly" data-source="monthly events"></tbody></table></div></details>
       <div class="chart" data-draw="monthly" data-source="monthly events"></div>
       <details class="how evlist"><summary>Life events in this period</summary><ul class="key row events" data-draw="event-list" data-source="events" aria-label="Life events"></ul></details>
       <div class="legend"><span data-c="0">Income</span><span data-c="1">Living spend</span><span data-c="2">Spend + debt</span></div>
@@ -874,6 +874,14 @@ dash.draw('monthly', (el) => {
   svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   const c = HL.colors();
   ['income', 'spend', 'outgo'].forEach((k, i) => HL.fixes(svg, rows.map((r) => ({ x: x(r.d), y: y(r[k]) })), c[i], { width: i === 2 ? 1.5 : 2 }));   // DS-CHART-1
+  // each line is named at its right end, so income and living spend are told apart by more than colour, not only the legend: the
+  // lowest name sits under its line, the others over theirs (under it when there is no room above, so a name never sits on its
+  // line), pushed apart from the top down so none touch (haloed, as the goal labels). The names are the legend's, said once there.
+  const last = rows[rows.length - 1], names = [...el.closest('.card').querySelectorAll('.legend [data-c]')].map((s) => s.textContent);
+  const ends = ['income', 'spend', 'outgo'].map((k, i) => ({ name: names[i], y: y(last[k]) })).sort((a, b) => a.y - b.y);
+  ends.forEach((e, i) => { e.y = i === ends.length - 1 || e.y - 7 < mt + 10 ? e.y + 16 : e.y - 7; e.y = Math.min(H - mb - 4, Math.max(e.y, i ? ends[i - 1].y + 14 : -Infinity)); });
+  svg.append('g').attr('class', 'line-ends').attr('aria-hidden', 'true').selectAll('text').data(ends).join('text').attr('x', x(last.d) - 10).attr('y', (e) => e.y).attr('text-anchor', 'end')
+    .attr('fill', 'var(--ink)').attr('paint-order', 'stroke').attr('stroke', 'var(--surface-200)').attr('stroke-width', 4).attr('stroke-linejoin', 'round').text((e) => e.name);
   const t = HL.tip(el);
   const evs = ev.status === 'ok' ? ev.data.filter(HL.evShown('monthly')) : [];   // a hidden event kind leaves the markers (#132); the list below keeps it
   if (ev.status === 'ok') {
@@ -1347,7 +1355,8 @@ dash.draw('debts-paid-box', (box) => {   // the fold shows only when something i
   const rows = debtRows(true, HL.rd('debts')) || []; box.style.display = rows.length ? '' : 'none';
   box.querySelector('summary').textContent = `Paid off (${rows.length})`; });
 dash.draw('debt-order', (p) => {
-  const g = dash.data('debts'); if (g.status !== 'ok' || g.data.length < 2) { p.replaceChildren(); return; }   // one bar has no order to choose
+  const g = HL.rd('debts'), most = Math.max(...[false, true].map((po) => (debtRows(po, g) || []).length));
+  if (most < 2) { p.replaceChildren(); return; }   // the order sorts the open bars and the paid-off ones; one bar in each has none to choose
   const sel = document.createElement('select'); sel.setAttribute('aria-label', 'Order debts by');
   for (const [v, txt] of [['first', 'first payment'], ['total', 'total paid']]) { const o = document.createElement('option'); o.value = v; o.textContent = txt; sel.append(o); }
   sel.value = debtOrder(); sel.onchange = () => dash.setParams({ debt_order: sel.value === 'first' ? null : sel.value });
@@ -1859,7 +1868,7 @@ finding('monthly', () => { const g = HL.rd('monthly'); if (g.status !== 'ok' || 
   const net = d3.sum(rows, (r) => Number(r[f('net')])), kept = (net >= 0 ? 'kept ' : 'drew down ') + $(Math.abs(net));
   if (rows.length === 1) return M(rows[0].m) + ': income was ' + $(inc(rows[0])) + ' and outgo ' + $(out(rows[0])) + ', so the household ' + kept + '.';
   const k = rows.filter((r) => inc(r) >= out(r)).length;
-  const n = rows.length, months = k === n ? 'all ' + n : k === 0 ? 'none of the ' + n : k + ' of ' + n;
+  const n = rows.length, months = k === n ? (n === 2 ? 'both' : 'all ' + n) : k === 0 ? (n === 2 ? 'neither of the 2' : 'none of the ' + n) : k + ' of ' + n;
   return spanOf(rows.map((r) => r.m)) + ': income covered outgo in ' + months + ' budget months, and the household ' + kept + '.'; });
 finding('employer', () => { const g = HL.rd('employer'); if (g.status !== 'ok' || !g.data.length) return;
   const by = sumBy(g.data, (r) => r.employer || 'Unknown', (r) => Number(r.amount)), all = d3.sum(by, (d) => d[1]);
@@ -1875,16 +1884,18 @@ finding('cat', () => { const g = HL.rd('cat_year'); if (g.status !== 'ok' || !g.
   if (rows.length === 1) return HL.yearLabel(y) + ': all ' + $(all) + ' of spending was ' + rows[0][0] + '.';
   const top = rows.slice(0, rows.length > 2 ? 2 : 1);
   return HL.yearLabel(y) + ': ' + top.map((d) => d[0]).join(' and ') + ' took ' + pct0(d3.sum(top, (d) => d[1]) / all) + ' of the ' + $(all) + ' spent.'; });
+// the people dataset has no real-dollar field, so under the real-dollars switch these two say their figures are of the day
+const nomYear = (y) => HL.yearLabel(y) + (HL.basis() === 'real' ? ', in dollars of the day' : '');
 finding('earner', () => { const g = HL.rd('people'); if (g.status !== 'ok') return; const e = g.data.filter((r) => r.role === 'earner'); if (!e.length) return;
   const y = latestYear(e), rows = sumBy(e.filter((r) => String(r.y) === y), (r) => r.who, (r) => Number(r.amount)).filter((d) => d[1] > 0), all = d3.sum(rows, (d) => d[1]);
   if (!rows.length || !(all > 0)) return;
-  if (rows.length === 1) return HL.yearLabel(y) + ': ' + (rows[0][0] === 'Household' ? 'none of the ' + $(all) + ' income was tied to a person' : rows[0][0] + ' earned all the ' + $(all) + ' income') + '.';
-  return HL.yearLabel(y) + ': ' + rows[0][0] + ' earned ' + pct0(rows[0][1] / all) + ' of the ' + $(all) + ' income' + rows.slice(1).map((d) => ', ' + d[0] + ' ' + pct0(d[1] / all)).join('') + '.'; });
+  if (rows.length === 1) return nomYear(y) + ': ' + (rows[0][0] === 'Household' ? 'none of the ' + $(all) + ' income was tied to a person' : rows[0][0] + ' earned all the ' + $(all) + ' income') + '.';
+  return nomYear(y) + ': ' + rows[0][0] + ' earned ' + pct0(rows[0][1] / all) + ' of the ' + $(all) + ' income' + rows.slice(1).map((d) => ', ' + d[0] + ' ' + pct0(d[1] / all)).join('') + '.'; });
 finding('payer', () => { const g = HL.rd('people'); if (g.status !== 'ok') return; const p = g.data.filter((r) => r.role === 'payer'); if (!p.length) return;
   const y = latestYear(p), rows = sumBy(p.filter((r) => String(r.y) === y), (r) => r.who, (r) => Number(r.amount)), all = d3.sum(rows, (d) => d[1]); if (!(all > 0)) return;
   const own = rows.filter((d) => d[0] !== 'Household' && d[1] > 0);
-  if (!own.length) return HL.yearLabel(y) + ': no envelope belongs to a person, so all ' + $(all) + ' spent was shared.';
-  return HL.yearLabel(y) + ': personal envelopes took ' + pct0(d3.sum(own, (d) => d[1]) / all) + ' of the ' + $(all) + ' spent: ' + own.map((d) => d[0] + ' ' + $(d[1])).join(', ') + '. The rest was shared.'; });
+  if (!own.length) return nomYear(y) + ': no envelope belongs to a person, so all ' + $(all) + ' spent was shared.';
+  return nomYear(y) + ': personal envelopes took ' + pct0(d3.sum(own, (d) => d[1]) / all) + ' of the ' + $(all) + ' spent: ' + own.map((d) => d[0] + ' ' + $(d[1])).join(', ') + '. The rest was shared.'; });
 finding('slush', () => { const g = HL.rd('slush'); if (g.status !== 'ok' || !g.data.length) return;
   const y = latestYear(g.data), rows = sumBy(g.data.filter((r) => String(r.y) === y), (r) => r.item, (r) => Number(r.amount)), all = d3.sum(rows, (d) => d[1]);
   const top = rows[0] && rows[0][1] > 0 ? rows[0] : null;

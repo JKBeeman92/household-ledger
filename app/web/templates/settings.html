@@ -236,7 +236,7 @@
 <datalist id="appearance-slots">{% for s in look_slots %}<option value="{{ s }}">{% endfor %}</datalist>
 <details class="how" id="appearance-how"><summary>How colours and hiding work</summary>
   <p>Leave a colour blank and the name takes the next free theme colour. To fix one, type a theme colour, <code>series-1</code> to <code>series-8</code>, which changes with day and night, or a colour code (hex, rgb, hsl or oklch), which stays the same in both. A name with a colour keeps it on every chart and period.</p>
-  <p>Hide takes a name off the chart for everyone. Totals and tables still count it, and anyone can show it again from the chart. Changes show on the dashboard at once.</p>
+  <p>Hide takes a name off the chart for everyone. Totals and tables still count it, and anyone can show it again on their own screen from the chart. Changes show on the dashboard at once.</p>
 </details>
 <div class="subtabs" role="tablist" aria-label="Chart appearance" data-subtabs="appearance">{% for d, lab in look_labels.items() %}{% set slug = d|replace('_', '-') %}<button type="button" role="tab" id="st-appearance-{{ slug }}" aria-controls="sp-appearance-{{ slug }}" aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ 0 if loop.first else -1 }}">{{ lab[0] }} <span class="count">{{ look.dimensions[d]|length }}</span></button>{% endfor %}{% if look.orphans %}<button type="button" role="tab" id="st-appearance-orphans" aria-controls="sp-appearance-orphans" aria-selected="false" tabindex="-1">Not in the data <span class="count">{{ look.orphans|length }}</span></button>{% endif %}</div>
 {% for d, lab in look_labels.items() %}{% set slug = d|replace('_', '-') %}{% set items = look.dimensions[d] %}{% set lf = look_form if look_form and look_form.dimension == d else none %}
@@ -245,7 +245,7 @@
   <h2>{{ lab[0] }}</h2>
   <p class="muted">The colour of each {{ lab[1] }} on {{ lab[2] }}, and whether it is hidden there.</p>
   {% if items %}
-  <form method="post" action="/settings/appearance/save">{{ csrf_field(request) }}<input type="hidden" name="dimension" value="{{ d }}">
+  <form method="post" action="/settings/appearance/save"{% if lf %} data-unsaved{% endif %}>{{ csrf_field(request) }}<input type="hidden" name="dimension" value="{{ d }}">
     {% if items|length > look_filter_from %}<p class="filterbox"><label for="appearance-{{ slug }}-filter">Filter the {{ items|length }} {{ lab[0]|lower }}</label><input type="search" id="appearance-{{ slug }}-filter" data-filter-table="appearance-{{ slug }}-table" placeholder="Part of a name"></p>{% endif %}
     <div class="tablewrap" role="region" tabindex="0" aria-label="{{ lab[0] }}: chart colours table"><table class="plain" id="appearance-{{ slug }}-table" data-list="unbounded"><thead><tr><th scope="col">{{ lab[1][:1]|upper ~ lab[1][1:] }}</th><th scope="col">Colour</th><th scope="col">Hidden</th></tr></thead><tbody>
     {% for r in items %}{% set typed = lf["values"].get(r.name) if lf else none %}{% set err = lf.errors.get(r.name) if lf else none %}{% set rid = "ap-" ~ slug ~ "-" ~ loop.index %}
@@ -307,12 +307,14 @@
   document.querySelectorAll('[data-filter-table]').forEach((inp) => { const tb = document.getElementById(inp.dataset.filterTable).tBodies[0];
     inp.addEventListener('input', () => { const q = inp.value.toLowerCase(); for (const tr of tb.rows) tr.hidden = !!q && !tr.textContent.toLowerCase().includes(q); }); });
   // Chart appearance: each sub-tab's Save saves that tab only. A tab with changes not yet saved says so in its name, and leaving the
-  // page with any (another tab's Save included) asks first, so an edit is never lost without a word.
+  // page with any (another tab's Save included) asks first, so an edit is never lost without a word. A form the server refused
+  // comes back holding the typed values (data-unsaved): those are not saved either, so it starts marked.
   const dirty = new Set(); let saving = null;
   document.querySelectorAll('form[action="/settings/appearance/save"]').forEach((f) => {
     const tab = document.getElementById('st-' + f.closest('[role=tabpanel]').id.slice(3));
-    const mark = (e) => { if (e.target.dataset.filterTable || dirty.has(f)) return; dirty.add(f);
-      const s = document.createElement('span'); s.className = 'unsaved'; s.textContent = ' · not saved'; tab.append(s); };
+    const mark = (e) => { if ((e && e.target.dataset.filterTable) || dirty.has(f)) return; dirty.add(f);
+      const s = document.createElement('span'); s.className = 'muted'; s.textContent = ' · not saved'; tab.append(s); };
+    if (f.hasAttribute('data-unsaved')) mark();
     f.addEventListener('input', mark); f.addEventListener('change', mark);
     f.addEventListener('submit', () => { saving = f; });
   });
