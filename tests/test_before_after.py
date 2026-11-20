@@ -361,7 +361,7 @@ def test_last_month_stamps_the_emergency_fund_and_keys_the_kept_rows(sample):
     assert lm["avgSince"] == "Averages use the 4 budget months since Elanor is born (Feb 2026), the new normal."   # its own, without the plan
     assert "suggested plan" in lm["detailSince"]
     st = s["settings"]   # the offer on an edited move row; heard when it appears, and gone once yes is chosen or the kind is not a move
-    assert st["opened"] == {"text": "A new normal? Yes starts the averages here.", "role": "status", "live": "polite", "describedby": "new-normal-hint", "value": "no"}
+    assert st["opened"] == {"text": "If this month changed what a normal month costs, set New normal to yes: the pace, the emergency fund and the suggested plan will average from here once three months are loaded.", "role": "status", "live": "polite", "describedby": "new-normal-hint", "value": "no"}
     assert st["yes"]["text"] == "" and st["yes"]["describedby"] == "new-normal-hint" and st["job"]["text"] == ""
 
 
