@@ -60,8 +60,8 @@ def map_items(request: Request, background: BackgroundTasks, item: list[str] = F
         conn.commit()
         busy = build_running(conn)
     if busy:
-        flash(request, f"Mapped {len(rows)} item(s). A rebuild is already running; press Rebuild when it finishes.", "bad")
+        flash(request, f"Added {len(rows)} item(s) to Item mapping. A rebuild is already running; press Rebuild when it finishes.", "bad")
     else:
         background.add_task(run_background)
-        flash(request, f"Mapped {len(rows)} item(s). Rebuilding in the background; progress is shown below.")
+        flash(request, f"Added {len(rows)} item(s) to Item mapping. Rebuilding in the background; progress is shown below.")
     return RedirectResponse("/upload#findings-panel", status_code=303)

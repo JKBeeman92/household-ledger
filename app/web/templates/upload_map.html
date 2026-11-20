@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Map columns · {{ household.title }}{% endblock %}
+{% block title %}Source profile · {{ household.title }}{% endblock %}
 {% block content %}
 {% set spec = plan.spec %}
 {% macro v(name, default) %}{{ form.get(name) if form is defined and form and form.get(name) is not none else default }}{% endmacro %}
@@ -11,11 +11,11 @@
     {% for h in headers %}<option value="{{ h }}" {% if h == cur %}selected{% endif %}>{{ h }}</option>{% endfor %}
   </select>
 {% endmacro %}
-<p class="eyebrow">Month close</p>
-<h1 class="page-title">Map your columns</h1>
-<p class="muted measure">These files are not in a format the ledger reads as it is (the internal format, or EveryDollar's exports), so tell it once how to read them. The guesses below come from the
+<p class="eyebrow">Close a month</p>
+<h1 class="page-title">Set up a source profile</h1>
+<p class="muted measure">These files are not in a format the ledger reads as it is (the internal format, or EveryDollar's exports), so tell it once how to read them: a <strong>source profile</strong>, kept on <a href="/settings/sources">Settings → Sources</a>. The guesses below come from the
 column names{% if plan.profile_id %} and the saved profile <strong>{{ spec.name }}</strong>, which recognises these headers{% endif %}. Nothing is stored
-until you confirm. The files are kept exactly as uploaded, so a mapping corrected later is re-applied without uploading again.</p>
+until you confirm. The files are kept exactly as uploaded, so a profile corrected later is re-applied without uploading again.</p>
 {% if error %}<p class="flash bad" role="alert" id="map-error">{{ error }}</p>{% endif %}
 
 <form method="post" action="/upload/map/{{ batch }}">{{ csrf_field(request) }}
@@ -41,7 +41,7 @@ until you confirm. The files are kept exactly as uploaded, so a mapping correcte
     <div><label for="month">Budget month</label><input id="month" name="month" type="month" required value="{{ v('month', plan.month) }}">
       <p class="muted">Guessed from the transaction dates. Re-uploading a month replaces it.</p></div>
     <div><label for="profile_name">Source name</label><input id="profile_name" type="text" name="profile_name" required value="{{ v('profile_name', spec.name) }}" placeholder="e.g. Bree Bank">
-      <p class="muted">The mapping is saved under this name and reused for next month's files with the same columns.</p></div>
+      <p class="muted">The source profile is saved under this name and reused for next month's files with the same columns.</p></div>
   </div>
 </section>
 
@@ -83,7 +83,7 @@ until you confirm. The files are kept exactly as uploaded, so a mapping correcte
 </section>
 {% endif %}
 
-<p class="mt-4"><button class="btn primary" type="submit" id="map-confirm">Save the mapping, store and rebuild</button></p>
+<p class="mt-4"><button class="btn primary" type="submit" id="map-confirm">Save the source profile, store and rebuild</button></p>
 </form>
 <form method="post" action="/upload/map/{{ batch }}/discard">{{ csrf_field(request) }}<button class="btn" type="submit">Discard these files</button></form>
 {% endblock %}

@@ -116,10 +116,23 @@ def test_transactions_merchants_and_notes_are_never_served(loaded):
     err, rows = call(tok, "get_dataset", {"name": "coming_up"})
     assert not err and all(set(r) == {"m", "kind", "label", "amount", "source"} for r in rows)
     assert not any(a in json.dumps(rows) for a in accounts)
+    assert "by_person" in mcp_endpoint.DATASETS   # #156: each person's earned and own-envelope figures; their accounts stay on the page
+    err, rows = call(tok, "get_dataset", {"name": "by_person"})
+    assert not err and {r["who"] for r in rows} == {"Rosie", "Sam", "Household"} and not any(a in json.dumps(rows) for a in accounts)
+    assert all(set(r) == {"m", "who", "earned", "earned_share", "earned_change", "spent", "spent_change"} for r in rows)
     names = {r["name"] for r in sql("SELECT name FROM datasets")}
     for n in names & set(mcp_endpoint.DATASETS):
         err, rows = call(tok, "get_dataset", {"name": n})
         assert not err and "merchant" not in json.dumps(rows).lower()
+
+
+def test_before_after_is_served_with_the_event_label_and_derived_figures_only(loaded):
+    """#159: the owner decided before_after is served; a row is an event's own label and a month's averages either side of it."""
+    assert "before_after" in mcp_endpoint.DATASETS and "before_after" not in mcp_endpoint.PUBLIC
+    err, rows = call(make_token(), "get_dataset", {"name": "before_after"})
+    assert not err and rows and {r["label"] for r in rows} == {"Third paycheck"} and {r["n"] for r in rows} == {3, 6, 12}
+    assert set(rows[0]) == {"m", "label", "kind", "person", "new_normal", "n", "short", "before", "after", "change", "movers", "new_categories"}
+    assert "merchant" not in json.dumps(rows).lower() and "account" not in json.dumps(rows).lower()
 
 
 def test_save_review_needs_the_review_scope_and_stores_like_any_review(loaded):

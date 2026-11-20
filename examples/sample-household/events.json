@@ -6,6 +6,12 @@
   "person": "Sam"
  },
  {
+  "m": "2025-05",
+  "label": "Started budgeting by envelope",
+  "kind": "other",
+  "on_chart": false
+ },
+ {
   "m": "2025-07",
   "label": "Rosie promoted at Hobbiton Mill",
   "kind": "job",
@@ -17,9 +23,16 @@
   "kind": "move"
  },
  {
+  "m": "2025-11",
+  "label": "Sam's knee mended at the healer",
+  "kind": "health",
+  "person": "Sam"
+ },
+ {
   "m": "2026-02",
   "label": "Elanor is born",
-  "kind": "family"
+  "kind": "family",
+  "new_normal": true
  },
  {
   "m": "2026-09",

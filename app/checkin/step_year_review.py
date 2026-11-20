@@ -27,7 +27,7 @@ def _status(conn, month, state):
 
 
 def _context(conn, month, state):
-    return {"y": _review(conn, month)}
+    return {"y": _review(conn, month)}   # its ahead.pace_from is the look-ahead's own first month, as the quarter and the dashboard say it
 
 
 register(Step("year_review", 63, "Year in review", _status, applies=_applies, context=_context, actions=("view",), issue="#157"))

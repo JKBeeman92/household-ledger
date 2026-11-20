@@ -2,8 +2,8 @@
 
 A rename is one UPDATE: item_mapping and canonical_items reference names with ON UPDATE CASCADE. Renaming to a name that already
 exists merges the two. The rules that name what was renamed are updated too (#162), including a rule still at its default, which is
-written out with the new name so it keeps meaning the same thing. Every rename is logged in `renames`; stored reviews keep their
-text, and the Reviews page notes later renames on them. A move is not a rename and is not logged."""
+written out with the new name so it keeps meaning the same thing, and so does the name's chart colour and hidden switch (#132).
+Every rename is logged in `renames`; stored reviews keep their text, and the Reviews page notes later renames on them. A move is not a rename and is not logged."""
 from __future__ import annotations
 import json
 
@@ -60,6 +60,8 @@ def _log_and_rules(conn, dimension: str, old: str, new: str, by: str) -> list[st
         db.put_setting(conn, "rules", rules)
     from . import decisions   # a decision's target names a category or item in JSON no foreign key follows (#155)
     decisions.rewrite_targets(conn, dimension, old, new)
+    from . import appearance   # its rows name a category, or a canonical item (a catch-all item, a debt), with no foreign key (#132)
+    appearance.rename(conn, ("category",) if dimension == "category" else ("item", "debt"), old, new)
     conn.execute("INSERT INTO renames (dimension, old, new, by) VALUES (%s, %s, %s, %s)", (dimension, old, new, by or ""))
     db.mark_inputs_changed(conn)
     return changed
