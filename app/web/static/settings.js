@@ -31,7 +31,6 @@ var FMT = (function () {   // the household's locale and currency, as the server
     return e;
   }
   var flowHelp = {}; try { var fh = document.getElementById && document.getElementById("flow-help"); if (fh) flowHelp = JSON.parse(fh.textContent); } catch (e) {}
-  var hiddenKinds = []; try { var hk = document.getElementById && document.getElementById("hidden-kinds"); if (hk) hiddenKinds = JSON.parse(hk.textContent); } catch (e) {}   // event kinds hidden in Chart appearance
   var cats = {}; (function () { var dl = document.getElementById && document.getElementById("settings-categories"); if (dl) Array.prototype.forEach.call(dl.querySelectorAll("option"), function (o) { cats[o.value.toLowerCase()] = 1; }); })();
   function needRebuild(res) { var b = document.getElementById("rebuild-banner"); if (b && res.rebuild_needed) b.hidden = false; }
   function status(msg, bad) {
@@ -61,7 +60,6 @@ var FMT = (function () {   // the household's locale and currency, as the server
       if (kind === "goals" && f === "value" && isFinite(n)) { if (u.indexOf("share") === 0) return FMT.share(n); if (u.indexOf("usd") === 0) return FMT.money0(n); }
       if (kind === "accounts" && f === "escrow" && isFinite(n)) return FMT.money2(n);
       if (kind === "events" && f === "m" && /^\d{4}-\d{2}$/.test(String(v))) return FMT.month(String(v));
-      if (kind === "events" && f === "on_chart" && String(v) === "yes" && hiddenKinds.indexOf(String(row.kind || "")) >= 0) return "yes, hidden kind";   // as the grid macro says it
       return null;
     }
     function dropOffer(tr) { if (tr.offerRow) { tr.offerRow.remove(); tr.offerRow = null; } }   // the new-normal offer's row (#236)
@@ -206,5 +204,37 @@ var FMT = (function () {   // the household's locale and currency, as the server
       var q = filter.value.toLowerCase();
       Array.prototype.forEach.call(tbody.rows, function (tr) { tr.hidden = !!q && tr.textContent.toLowerCase().indexOf(q) < 0 && !tr.classList.contains("editing"); });
     };
+  });
+})();
+/* Settings → Chart appearance → Not in the data: Delete without reloading the page, so focus stays with the list (DS-A11Y-5), as del()
+   above keeps it for the other lists: on the next row's Delete, else the one before, else (the list now empty, so its tab goes) the
+   first Chart appearance tab. While the request is in flight the button is aria-disabled, not disabled: a disabled button drops focus
+   to <body>. Without JavaScript the form posts and the page comes back on the tab. */
+(function () {
+  var table = document.getElementById("appearance-orphans-table"); if (!table) return;
+  function say(msg, bad) { var s = document.getElementById("rowstatus"); if (s) { s.textContent = msg; s.className = "rowstatus " + (bad ? "bad" : "ok"); } }
+  table.addEventListener("submit", function (e) {
+    var f = e.target, tr = f.closest("tr"), btn = f.querySelector("button");
+    if (!tr || !btn) return;
+    e.preventDefault();
+    if (f.dataset.busy) return;   // one request per row
+    f.dataset.busy = "1"; btn.setAttribute("aria-disabled", "true");
+    function again() { delete f.dataset.busy; btn.removeAttribute("aria-disabled"); btn.focus(); }
+    fetch(f.action, { method: "POST", body: new FormData(f), credentials: "same-origin", headers: { Accept: "application/json" } }).then(function (r) {
+      if (r.status === 401) { location.href = "/login?next=" + encodeURIComponent("/settings#appearance/orphans"); return null; }
+      return r.json().catch(function () { return {}; }).then(function (body) { return r.ok && body.ok ? body : { ok: false, message: body.detail || "server error " + r.status }; });
+    }).then(function (res) {
+      if (!res) return;
+      if (!res.ok) { again(); say("Not deleted: " + String(res.message).replace(/\.$/, "") + ".", true); return; }
+      var nx = tr.nextElementSibling || tr.previousElementSibling; tr.remove();
+      var tab = document.getElementById("st-appearance-orphans"), count = tab && tab.querySelector(".count");
+      if (count) count.textContent = String(table.tBodies[0].rows.length);
+      if (nx) { nx.querySelector("button").focus(); say(res.message, !res.deleted); return; }   // already gone: the row still goes, the status says so as the no-JS flash does
+      var strip = tab && tab.parentNode, panel = document.getElementById("sp-appearance-orphans");   // none left: the tab goes, as on a reload
+      if (tab) tab.remove(); if (panel) panel.remove();
+      var first = strip && strip.querySelector("[role=tab]");
+      if (first) { first.click(); first.focus(); }
+      say(res.message + " Nothing else is kept for names the data no longer has.", !res.deleted);
+    }).catch(function () { again(); say("Not deleted: could not reach the server.", true); });
   });
 })();

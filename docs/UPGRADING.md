@@ -21,6 +21,16 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
   column; `events.json` (in `settings.zip`, a seed directory and `set-events`) carries `"on_chart": false` only for an event switched
   off, so an older file still loads and puts every event on the chart. The Overview's markers merge within a month, take keyboard
   focus, filter by kind and person, and end in a Coming up strip; rebuild once if you switch an event off before the next build.
+- **One way off the charts for a life event** (#235, `0235_event_kind_hide_to_on_chart.sql`): Chart appearance no longer has a hide
+  switch for life-event kinds; a kind keeps its colour. The migration turns each kind you had hidden into **On the chart** = no on
+  every event of that kind (and patches the stored `events` dataset the same way), then clears the kind's hide flag, dropping the row
+  if it held no colour: the charts look the same after the upgrade, and those events now read "not on the chart" in Settings → Life
+  events and the list under the chart. A viewer's "show" no longer brings them back, and such a kind leaves the Overview's Kind chips
+  until one of its events is on the chart again (a viewer's remembered chip for it falls back to All); switch an event on again in
+  Settings → Life events. No rebuild is needed. An older `appearance.json` with `"hidden": true` on an `event_kind` still seeds (from
+  a seed directory or `settings.zip`) and is converted the same way; `set-appearance` and the Settings save refuse it with a message
+  saying where to switch an event off, so before replaying an older `export appearance` with `set-appearance`, drop `"hidden"` from
+  its `event_kind` rows and switch those events off in Settings → Life events.
 - **Before and after a life event, and the new normal** (#159, `0159_new_normal.sql`): adds `life_events.new_normal`, false for every
   existing event; nothing is marked for you, so every average reads as before until the household marks one (Settings → Life events).
   Rebuild once (Close a month → Rebuild) for the new `before_after` dataset; until then the Overview card asks for a rebuild. The

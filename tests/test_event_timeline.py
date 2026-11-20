@@ -3,8 +3,9 @@ does (Settings, the JSON editor, the CLI, settings.zip, the seed loader, the pip
 page, merged markers that each list their events and take keyboard focus, chips by kind and person, and a Coming up strip after the
 last loaded month.
 
-How the per-event switch and #132's per-kind hide combine: both are display only, and an event is drawn only when it is on the chart
-AND its kind is not hidden (or the viewer pressed that chart's "show"). "show" reveals hidden kinds, never an event switched off."""
+Since #235 the per-event switch is the household's one way off the charts: a kind has a colour in Chart appearance and no hide switch
+(migration 0235 turned each hidden kind into its events' on_chart = false), and the chips are each viewer's filter. No "N hidden ·
+show" counts life events on the timeline or on Paycheck source."""
 from __future__ import annotations
 import json, re, shutil
 
@@ -211,20 +212,30 @@ def test_the_chips_filter_the_markers_and_the_list_and_are_remembered(sample):
 
 
 @browser
-def test_a_hidden_kind_and_the_switch_combine_and_show_reveals_only_the_kind(sample):
-    """Hide health (Settings → Chart appearance) and other: the merged Oct–Nov marker becomes the move alone; the note counts health
-    only, because the one event of kind other is switched off the chart, which no "show" brings back."""
-    set_table([{"dimension": "event_kind", "name": "health", "hidden": True}, {"dimension": "event_kind", "name": "other", "hidden": True}])
-    r = harness(sample, press="monthly")
-    s = r["before"]
-    labels = [x["label"] for x in s["charts"]["monthly"]["marks"] if not x["ahead"]]
-    assert "Oct 2025, 1 life event: Moved to a bigger hole, rent goes up (move)" in labels and not [x for x in labels if "knee" in x]
-    assert s["charts"]["monthly"]["note"] == "1 hidden · show"
-    assert "Nov 2025: Sam's knee mended at the healer (health · Sam) · hidden kind" in s["lists"]["event-list"]["items"]   # hidden from the chart, not the list
-    after = [x["label"] for x in r["after"]["charts"]["monthly"]["marks"] if not x["ahead"]]
-    assert any("Sam's knee mended" in x for x in after) and not [x for x in after if "envelope" in x]
-    assert s["tables"] == r["after"]["tables"]   # display only
-    set_table([])
+def test_an_event_off_the_chart_leaves_both_timelines_and_no_note_counts_it(sample):
+    """#235: a kind switched off event by event (what migration 0235 makes of a hidden kind) leaves the Overview timeline and
+    Paycheck source, its events read "not on the chart" in the list, and neither chart says "N hidden · show" for it, while a colour
+    given to the kind still colours the markers that remain."""
+    set_table([{"dimension": "event_kind", "name": "move", "color": "series-4"}])
+    plain = harness(sample)["before"]
+    with db.pool.connection() as conn:
+        conn.execute("UPDATE life_events SET on_chart = false WHERE kind IN ('health', 'job')"); conn.commit(); rebuild(conn)
+    try:
+        s = harness(sample)["before"]
+        labels = [x["label"] for x in s["charts"]["monthly"]["marks"] if not x["ahead"]]
+        assert "Oct 2025, 1 life event: Moved to a bigger hole, rent goes up (move)" in labels and not [x for x in labels if "knee" in x or "(job" in x]
+        assert {f for _, k, f in s["charts"]["monthly"]["markers"] if k == "move"} == {s["colors"][3]}   # the kind's colour still works
+        assert s["charts"]["monthly"]["note"] is None and s["charts"]["employer"]["note"] is None
+        assert s["charts"]["employer"]["markers"] == [] and s["charts"]["employer"]["lines"] == []
+        items = s["lists"]["event-list"]["items"]
+        assert "Nov 2025: Sam's knee mended at the healer (health · Sam) · not on the chart" in items   # off the chart, not the list
+        assert not [i for i in items if "hidden kind" in i]
+        assert not [i for i in s["lists"]["coming-list"]["items"] if "hidden kind" in i]
+        assert s["tables"] == plain["tables"] and plain["charts"]["employer"]["markers"]   # display only; Paycheck had job markers before
+    finally:
+        with db.pool.connection() as conn:
+            conn.execute("UPDATE life_events SET on_chart = true WHERE kind IN ('health', 'job')"); conn.commit(); rebuild(conn)
+        set_table([])
 
 
 @browser

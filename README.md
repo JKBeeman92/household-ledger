@@ -95,7 +95,7 @@ at once as `settings.zip` ([Backups](#backups)), so moving to a new box is: unzi
 | `rules.json` | object; keys and types in [`app/schemas/rules.schema.json`](app/schemas/rules.schema.json) |
 | `household.json` | object; [`app/schemas/household.schema.json`](app/schemas/household.schema.json) |
 | `review.json` | list of `{"m", "order", "heading", "text"}`, one row per review section |
-| `appearance.json` | list of `{"dimension", "name", "color", "hidden"}` ([Chart colours and hidden names](#chart-colours-and-hidden-names)); `color` and `hidden` are optional |
+| `appearance.json` | list of `{"dimension", "name", "color", "hidden"}` ([Chart colours and hidden names](#chart-colours-and-hidden-names)); `color` and `hidden` are optional; an `event_kind` has no `hidden` (an older file's is turned into its events' `on_chart: false`) |
 
 [`examples/sample-household/`](examples/sample-household/) has a working copy of every file except `cpi_u.csv` (the shipped
 `pipeline/cpi_u.csv` is used when none is given) and `review.json`. Keep your seed directory out of public repos —
@@ -729,7 +729,7 @@ coloured by, holding only the names your data has:
 | People | People: the earner and payer stacks |
 | Debts | Position: the Debts timeline |
 | Account types | Position: the stacks under net worth (`cash`, `owed: card`, …) |
-| Life-event kinds | the life-event markers on Overview and Paycheck source |
+| Life-event kinds | the life-event markers on Overview and Paycheck source (a colour only: see below) |
 
 - **Colour**: a palette slot, `series-1` to `series-8`, which follows the brand kit by day and by night, or a fixed colour (hex, `rgb()`,
   `hsl()`, `oklch()`), the same in both. Blank keeps palette order, as before: an unassigned name takes the next slot no other name of
@@ -738,7 +738,9 @@ coloured by, holding only the names your data has:
   names the mode. Nothing is refused for how it looks.
 - **Hidden** takes a name out of its charts' bars, lines and legend, for everyone. It is display only: totals, tooltips' totals, net
   lines, tables, the review and the reconciliation still count it. A chart with hidden names says so ("2 hidden · show"); **show**
-  reveals them on that chart for that viewer only, remembered in the browser like the period filter.
+  reveals them on that chart for that viewer only, remembered in the browser like the period filter. Life-event kinds have no Hidden
+  box: an event leaves the charts by its own **On the chart** switch ([Life events on the timeline](#life-events-on-the-timeline)),
+  and `appearance.json` refuses `"hidden": true` on an `event_kind` (an older one in a seed directory or `settings.zip` is converted).
 - No rebuild: the dashboard picks a change up on its next load. The pipeline never reads it. A rename of a category or canonical item
   carries its colour and switch. A row whose name has left the data is listed under **Not in the data**, with Delete.
 - Command line: `python -m app.admin set-appearance FILE` replaces the table from an `appearance.json`, `export appearance` prints it.
@@ -762,10 +764,10 @@ and optionally its kind and person). Each is a dotted marker on **Income against
   on the chart"), the review, the check-in and MCP, with no marker; for example "Started a new budget method". It is display only and
   travels with the event (`"on_chart": false` in `events.json`, `settings.zip`, a seed directory and `set-events`); the pipeline passes
   it through to the `events` dataset. It is a pipeline input like the rest of the event, so the dashboard shows a change after a rebuild.
-- **How the switches combine.** An event is drawn only when it is on the chart *and* its kind is not hidden in Chart appearance (or you
-  pressed that chart's "show"). "show" reveals hidden kinds, never an event switched off the chart, and the "N hidden" note counts
-  hidden kinds only. No total, table or reconciliation changes either way. Settings → Life events marks an event of a hidden kind
-  "yes, hidden kind" in its On the chart column, and the list under the chart says "hidden kind": the same words on both pages.
+- **Two ways, one each.** **On the chart** is the household's switch: an event switched off has no marker for anyone. The **chips**
+  are your view: they narrow the markers and the list on your screen only. A kind has a colour in Chart appearance and no hide switch
+  (#235), so no "N hidden · show" counts life events. No total, table or reconciliation changes either way. An `appearance.json` from
+  before 0.9.0 that hid a kind seeds as that kind's events switched off the chart, keeping its colour.
 - **Coming up.** When the period reaches the last loaded month, the chart ends in a **Coming up** strip: the next 12 months of the
   `coming_up` dataset (payoffs, yearly bills, tax deadlines, planned purchases and life events dated later), drawn dotted because they
   have not happened, never as markers off the end of the axis. A life event in it follows the same switches and chips. The **Coming

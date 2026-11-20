@@ -79,7 +79,7 @@ table.plain tbody th { color: var(--ink); }
 /* theme toggle shows the mode you would switch TO */
 #theme-toggle .sun { display: inline; } #theme-toggle .moon { display: none; }
 :root[data-theme="light"] #theme-toggle .sun { display: none; } :root[data-theme="light"] #theme-toggle .moon { display: inline; }
-.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
 .keyhelp { margin: var(--space-3) 0; } .keyhelp summary { cursor: pointer; color: var(--ink-muted, var(--ink)); }
 .keyhelp dl { margin: var(--space-2) 0; } .keyhelp dt { margin-top: var(--space-2); font-weight: 600; } .keyhelp dd { margin: 0; max-width: 70ch; }
 /* settings row editors */
