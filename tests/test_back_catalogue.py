@@ -170,6 +170,9 @@ def test_a_zip_of_24_months_stores_in_one_confirmation_and_one_rebuild_and_recon
     page = client.get(batch).text
     assert "48 files ready to store, 24 budget months" in page and "January 2025 to December 2026" in page
     assert "from the file name" in page and "the most common month of its dates" in page and "paired with Tally export" in page
+    # the UX review of #165: months in the table read "Jan 2025" (DS-WORD-6), the filter says what it left, and the table scrolls by keyboard
+    assert '<td class="nowrap mono">Jan 2025</td>' in page and 'id="batch-filter-count" aria-live="polite"' in page
+    assert 'aria-label="What would be stored, file by file"' in page
     assert 'data-list="unbounded"' in page and problems(page) == [] and 'id="batch-filter"' in page
     r = client.post(batch)
     assert r.status_code == 303 and r.headers["location"] == "/upload"
@@ -347,3 +350,23 @@ def test_two_profiled_files_of_one_name_both_reach_sources_zip(client, reset_db,
     names = sorted(n for n in z.namelist() if n.startswith("2025-01/"))
     assert names == ["2025-01/2025-01.csv", "2025-01/transactions-2025-01.csv"]
     assert z.read("2025-01/2025-01.csv") == b and z.read("2025-01/transactions-2025-01.csv") == t
+
+
+def test_the_month_in_a_batch_sentence_is_written_the_households_way():
+    from app.routes.sources import _MONTH_RX
+    say = lambda t: _MONTH_RX.sub(lambda m: "<" + m.group(0) + ">", t)
+    assert say("replaces the stored 2026-05 file") == "replaces the stored <2026-05> file"
+    # a file name, a full date and a non-month are left alone
+    assert say("from the file name tally-2025-03-register.csv") == "from the file name tally-2025-03-register.csv"
+    assert say("dated 2026-05-14") == "dated 2026-05-14" and say("2026-13") == "2026-13"
+
+
+def test_sources_and_upload_pages_label_their_fields_and_tables(client, reset_db, household24):
+    from pipeline import import_exports
+    reset_db(household24)
+    save_tally()
+    page = client.get("/settings/sources").text
+    assert '<label for="src-1-body">' in page and 'id="src-1-body"' in page and ">Save the profile</button>" in page   # no files: nothing to re-read
+    assert import_exports.main([str(household24)]) == 0
+    page = client.get("/upload").text   # the loaded-months table scrolls by keyboard (DS-A11Y-1)
+    assert '<div class="tablewrap" role="region" tabindex="0" aria-label="Loaded months, file by file">' in page

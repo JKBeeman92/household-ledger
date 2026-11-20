@@ -8,7 +8,7 @@ A back catalogue of such files (a zip, or more than two at once) waits there too
 profiles (file → profile → kind → month, and how the month was found), confirmed once for the whole batch, stored in one
 transaction and rebuilt once."""
 from __future__ import annotations
-import json, secrets
+import json, re, secrets
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -202,6 +202,9 @@ def _batch_plan(conn, batch: str) -> tuple[list[tuple[str, bytes]], list[dict]]:
     return files, plan
 
 
+_MONTH_RX = re.compile(r"(?<![\w-])\d{4}-(0[1-9]|1[0-2])(?![\w-])")   # a bare budget month in a sentence, not part of a file name or date
+
+
 @router.get("/upload/batch/{batch}", response_class=HTMLResponse)
 def batch_page(request: Request, batch: str, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
@@ -209,6 +212,8 @@ def batch_page(request: Request, batch: str, user=Depends(auth.require_editor)):
     if not files:
         flash(request, "Those files are no longer waiting (they are kept for a day). Upload them again.", "bad")
         return RedirectResponse("/upload", status_code=303)
+    # the page speaks months the household's way ("May 2026", DS-WORD-6); the dry run itself keeps ISO months, as the CLI prints them
+    plan = [dict(e, **{k: _MONTH_RX.sub(lambda m: month_text(m.group(0)), e[k]) for k in ("how", "detail") if e.get(k)}) for e in plan]
     ready = [e for e in plan if e["state"] == "ready"]
     return render(request, "upload_batch.html", user, active="upload", batch=batch, plan=plan, state_label=STATE_LABEL, ready=ready,
                   months=sorted({e["month"] for e in ready}), profiles=sorted({e["profile"] for e in ready if e["profile"]}),

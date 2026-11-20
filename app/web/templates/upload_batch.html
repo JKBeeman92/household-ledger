@@ -23,7 +23,8 @@
   <p class="muted measure">Each file was matched to a saved source profile by its column names, which also say whether it is the transactions file or the budget file.
   A month comes from the file name when the profile has a pattern for it, or else from the most common month of the transaction dates; a budget file with no month in its name is paired with the transactions file whose sums give its spent figures.
   A file named like an export (EveryDollar's names, or the internal format) is read by its name, and wins its month over another tool's file.</p>
-  {% if plan|length > 8 %}<p class="filterbox"><label for="batch-filter">Filter the {{ plan|length }} files</label><input type="search" id="batch-filter" data-filter-table="batch-table" placeholder="Part of a name, month or reason"></p>{% endif %}
+  {% if plan|length > 8 %}<p class="filterbox"><label for="batch-filter">Filter the {{ plan|length }} files</label><input type="search" id="batch-filter" data-filter-table="batch-table" aria-describedby="batch-filter-count" placeholder="Part of a name, month or reason"></p>
+  <p class="muted" id="batch-filter-count" aria-live="polite"></p>{% endif %}
   <div class="tablewrap" role="region" tabindex="0" aria-label="What would be stored, file by file"><table class="plain" id="batch-table" data-list="unbounded">
     <thead><tr><th scope="col">Result</th><th scope="col">File</th><th scope="col">Profile</th><th scope="col">Kind</th><th scope="col">Budget month</th><th scope="col">How it was found, or why not</th></tr></thead>
     <tbody>{% for e in plan %}<tr>
@@ -31,7 +32,7 @@
       <td class="mono nowrap">{{ e.name }}</td>
       <td>{{ e.profile or '—' }}</td>
       <td class="nowrap">{{ {'transactions': 'Transactions', 'budget_items': 'Budget'}.get(e.kind, '—') }}</td>
-      <td class="nowrap">{{ e.month|month if e.month else '—' }}</td>
+      <td class="nowrap mono">{{ e.month|month_short if e.month else '—' }}</td>
       <td>{% if e.state == 'refused' %}{{ e.detail }}{% else %}{{ e.how }}{% if e.detail %}; {{ e.detail }}{% endif %}{% endif %}</td>
     </tr>{% endfor %}</tbody>
   </table></div>
@@ -39,6 +40,10 @@
 <script nonce="{{ csp_nonce(request) }}">
   // the filter box: hides rows that do not contain the text (as on Settings)
   document.querySelectorAll('[data-filter-table]').forEach((inp) => { const tb = document.getElementById(inp.dataset.filterTable).tBodies[0];
-    inp.addEventListener('input', () => { const q = inp.value.toLowerCase(); for (const tr of tb.rows) tr.hidden = !!q && !tr.textContent.toLowerCase().includes(q); }); });
+    const say = document.getElementById(inp.getAttribute('aria-describedby'));
+    inp.addEventListener('input', () => { const q = inp.value.toLowerCase(); let shown = 0;
+      for (const tr of tb.rows) { tr.hidden = !!q && !tr.textContent.toLowerCase().includes(q); shown += tr.hidden ? 0 : 1; }
+      // what the filter left, said aloud and shown: a filter that matches nothing must not look like an empty batch
+      if (say) say.textContent = !q ? '' : shown ? `Showing ${shown} of ${tb.rows.length} files.` : `No file matches “${inp.value}”.`; }); });
 </script>
 {% endblock %}
