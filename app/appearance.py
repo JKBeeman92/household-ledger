@@ -91,6 +91,16 @@ def warnings(color: str | None, toks: dict | None = None) -> list[str]:
 
 # ------------------------------------------------------------------ the table
 
+# An empty table is this feature's normal state (a cleared name loses its row), so "seed only into an empty table" alone would bring a
+# seed dir's appearance.json back on every start once a household had cleared its colours (#132 review). The first write by the
+# household or by a seed records this settings key, and the seed never runs again after it: the database owns the table from then on.
+WRITTEN = "appearance_written"
+
+
+def _written(conn) -> None:
+    conn.execute("INSERT INTO settings (key, value) VALUES (%s, 'true') ON CONFLICT (key) DO NOTHING", (WRITTEN,))
+
+
 def rows(conn) -> list[dict]:
     return conn.execute("SELECT dimension, name, color, hidden FROM appearance ORDER BY dimension, name").fetchall()
 
@@ -115,6 +125,7 @@ def set_one(conn, dimension: str, name: str, color, hidden: bool) -> str | None:
     c, problem = check_color(color)
     if problem:
         raise ValueError(f"{name}: {problem}")
+    _written(conn)
     if c is None and not hidden:
         conn.execute("DELETE FROM appearance WHERE dimension=%s AND name=%s", (dimension, name))
     else:
@@ -124,6 +135,7 @@ def set_one(conn, dimension: str, name: str, color, hidden: bool) -> str | None:
 
 
 def delete(conn, dimension: str, name: str) -> int:
+    _written(conn)
     return conn.execute("DELETE FROM appearance WHERE dimension=%s AND name=%s", (dimension, name)).rowcount
 
 
@@ -167,6 +179,7 @@ def parse(data) -> list[dict]:
 def import_json(conn, body: str) -> str:
     """Replace the table from appearance.json (the CLI's set-appearance); nothing is written if any item is bad."""
     items = parse(json.loads(body))
+    _written(conn)
     conn.execute("DELETE FROM appearance")
     conn.cursor().executemany("INSERT INTO appearance (dimension, name, color, hidden) VALUES (%s,%s,%s,%s)",
                               [(x["dimension"], x["name"], x["color"], x["hidden"]) for x in items])
@@ -180,8 +193,9 @@ def export_json(conn) -> str:
 
 
 def seed(conn, path) -> None:
-    """First boot: appearance.json from a seed directory, only into an empty table."""
-    if conn.execute("SELECT 1 FROM appearance LIMIT 1").fetchone() or not path.exists():
+    """First boot: appearance.json from a seed directory, only into an empty table the household has never written (WRITTEN)."""
+    if not path.exists() or conn.execute("SELECT 1 FROM settings WHERE key=%s", (WRITTEN,)).fetchone() \
+            or conn.execute("SELECT 1 FROM appearance LIMIT 1").fetchone():
         return
     try:
         items = parse(json.loads(path.read_text(encoding="utf-8-sig")))
@@ -189,6 +203,7 @@ def seed(conn, path) -> None:
         raise ValueError(f"seed {path}: {e}") from None
     conn.cursor().executemany("INSERT INTO appearance (dimension, name, color, hidden) VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING",
                               [(x["dimension"], x["name"], x["color"], x["hidden"]) for x in items])
+    _written(conn)
 
 
 # ------------------------------------------------------------------ what the data names

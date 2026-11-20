@@ -171,11 +171,31 @@ def test_settings_zip_and_a_seed_dir_round_trip(client, reset_db, tmp_path):
     assert "appearance.json" in files
     (tmp_path / "appearance.json").write_bytes(files["appearance.json"])
     with db.pool.connection() as conn:
-        conn.execute("TRUNCATE appearance"); seed_reference_tables(conn, tmp_path); conn.commit()
+        conn.execute("TRUNCATE appearance"); conn.execute("DELETE FROM settings WHERE key=%s", (appearance.WRITTEN,))   # a new install
+        seed_reference_tables(conn, tmp_path); conn.commit()
         assert rows(conn) == before
         appearance.set_one(conn, "category", "Food", "series-8", False); conn.commit()
         seed_reference_tables(conn, tmp_path); conn.commit()   # only into an empty table
         assert {r["name"]: r["color"] for r in rows(conn)}["Food"] == "series-8"
+
+
+def test_clearing_every_colour_survives_a_restart_with_the_seed_dir_still_there(client, reset_db, tmp_path):
+    """An empty table is the normal state (a cleared name loses its row), so the seed must run once, not whenever the table is empty:
+    a household that moved installs with settings.zip in seed/ and then cleared its colours keeps them cleared (#132 review)."""
+    (tmp_path / "appearance.json").write_text(json.dumps([{"dimension": "category", "name": "Food", "color": "series-3"}]))
+    with db.pool.connection() as conn:
+        conn.execute("DELETE FROM appearance"); conn.execute("DELETE FROM settings WHERE key=%s", (appearance.WRITTEN,))
+        seed_reference_tables(conn, tmp_path); conn.commit()   # first boot
+        assert [(r["name"], r["color"]) for r in rows(conn)] == [("Food", "series-3")]
+    client.post("/settings/appearance/save", data={"dimension": "category", "name": ["Food"], "color": [""]})   # cleared: the row goes
+    with db.pool.connection() as conn:
+        assert rows(conn) == []
+        seed_reference_tables(conn, tmp_path); conn.commit()   # the next start
+        assert rows(conn) == []
+    with db.pool.connection() as conn:   # an install whose household cleared a row before any seed file arrived: no seed either
+        conn.execute("DELETE FROM settings WHERE key=%s", (appearance.WRITTEN,))
+        appearance.set_one(conn, "category", "Food", None, False); seed_reference_tables(conn, tmp_path); conn.commit()
+        assert rows(conn) == []
 
 
 def test_the_sample_household_seeds_its_appearance(client, reset_db):
@@ -312,6 +332,21 @@ def test_an_assigned_name_keeps_its_colour_and_no_other_name_takes_a_claimed_slo
             assert (bool(fam) == (rng != "ly")) and set(fam) <= {c[4]} and {f for _, kind, f in s["charts"]["monthly"]["markers"] if kind != "family"} <= {"var(--chart-reference)"}
             seen.setdefault(theme, set()).add(cat["Housing"])
     assert seen["light"] != seen["dark"] and all(len(v) == 1 for v in seen.values())   # a slot follows the theme, and only the theme
+
+
+@browser
+def test_a_slot_given_to_a_middle_name_leaves_every_name_its_own_colour(sample):
+    """Claiming one slot must not make two unassigned names share one while slots are free (#132 review): an unassigned name takes the
+    free slot of its rank among the unassigned names, not of its place in the whole order."""
+    set_table([])
+    names = [n for n, _ in harness(sample)["before"]["charts"]["cat-stack"]["series"]]
+    assert len(names) >= 8, names   # the case needs every slot in use
+    for k, slot in ((3, 4), (5, 6), (6, 1)):   # the slot it had anyway, twice; then one that belonged to another name
+        set_table([{"dimension": "category", "name": names[k], "color": f"series-{slot}"}])
+        s = harness(sample)["before"]
+        fills = [f for _, f in s["charts"]["cat-stack"]["series"]][:8]
+        assert len(set(fills)) == 8 and fills[k] == s["colors"][slot - 1], (k, fills)
+        assert [v for _, v in s["legends"]["cat-legend"]][:8] == fills   # the legend agrees with the bars
 
 
 @browser

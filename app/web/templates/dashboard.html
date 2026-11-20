@@ -589,7 +589,7 @@ window.HL = (() => {
     const every = Math.ceil(xs.length / Math.max(1, Math.floor((W - ml) / (lw + 28))));
     svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).tickValues(xs.filter((_, i) => i % every === 0)).tickFormat(opts.xfmt || ((d) => keyX === 'y' ? HL.yearLabel(d) : d)).tickSize(0)).call((g) => { g.select('.domain').attr('stroke', 'var(--chart-axis)'); g.attr('font-size', null).attr('font-family', null); edgeTicks(g, ml, W - 8); });
     // skip: start later in the palette (people avoid the good/bad hues); a name's colour is by its place in the full order (#132)
-    const colOf = new Map(series.map((s, i) => [s, dim ? dash.colorFor(dim, s, i, opts.skip || 0) : colors()[(i + (opts.skip || 0)) % colors().length]]));
+    const colOf = dim ? dash.colorsFor(dim, series, opts.skip || 0) : new Map(series.map((s, i) => [s, colors()[(i + (opts.skip || 0)) % colors().length]]));
     const col = (s) => colOf.get(s);
     const t = tip(el);
     svg.append('g').selectAll('g').data(stacked).join('g').attr('fill', (d) => col(d.key)).selectAll('rect').data((d) => d.map((p) => ({ ...p, key: d.key }))).join('rect').attr('class', 'b')
@@ -609,7 +609,8 @@ window.HL = (() => {
   // a chart's legend: names in the chart's full order, so each swatch is the colour of its bars; hidden names are left out unless shown.
   // opts: {dimension, skip, chart}; a bare number is the old skip argument
   const legend = (el, names, opts = {}) => { const o = typeof opts === 'number' ? { skip: opts } : opts;
-    el.replaceChildren(...names.map((n, i) => [n, o.dimension ? dash.colorFor(o.dimension, n, i, o.skip || 0) : colors()[(i + (o.skip || 0)) % colors().length]])
+    const cs = o.dimension ? dash.colorsFor(o.dimension, names, o.skip || 0) : null;
+    el.replaceChildren(...names.map((n, i) => [n, cs ? cs.get(n) : colors()[(i + (o.skip || 0)) % colors().length]])
       .filter(([n]) => shown(o.chart, o.dimension, n)).map(([n, c]) => { const s = document.createElement('span'); s.style.setProperty('--sw', c); s.textContent = n; return s; })); };
   const fillTable = (tbody, rows, cells) => {
     tbody.replaceChildren(...rows.map((r) => { const tr = document.createElement('tr'); for (const c of cells) { const td = document.createElement('td'); tr.appendChild(td); const v = c(r, td); td.textContent = v == null ? '—' : v; } return tr; }));
@@ -1244,9 +1245,9 @@ const nwSeries = () => { const g = dash.data('balances'); if (g.status !== 'ok')
   return { rows, keys }; };
 // an account-type stack's name, as the legend shows it and Settings → Chart appearance lists it (app/appearance.py, account_type_label)
 const nwLabel = (k) => (k.startsWith('debt') ? 'owed: ' : '') + k.split(':')[1];
-const nwColor = (k, i) => dash.colorFor('account_type', nwLabel(k), i);   // by its place among all the keys, so hiding one recolours none (#132)
+const nwColor = (k, i, keys) => dash.colorFor('account_type', nwLabel(k), i, 0, keys.map(nwLabel));   // by its place among all the keys, so hiding one recolours none (#132)
 dash.draw('nw-legend', (el) => { el.replaceChildren(); const s = nwSeries(); if (!s) return; const c = HL.colors();
-  s.keys.forEach((k, i) => { if (!HL.shown('nw-chart', 'account_type', nwLabel(k))) return; const sp = document.createElement('span'); sp.dataset.c = String(i % c.length); sp.style.setProperty('--sw', nwColor(k, i)); sp.textContent = nwLabel(k); el.append(sp); }); });
+  s.keys.forEach((k, i) => { if (!HL.shown('nw-chart', 'account_type', nwLabel(k))) return; const sp = document.createElement('span'); sp.dataset.c = String(i % c.length); sp.style.setProperty('--sw', nwColor(k, i, s.keys)); sp.textContent = nwLabel(k); el.append(sp); }); });
 dash.draw('nw-chart', (el) => {
   el.replaceChildren(); const s = nwSeries(), N = HL.rd('net_worth');
   if (!s || !s.rows.length || N.status !== 'ok' || !N.data.length) { HL.empty(el, 'Net worth by month shows here once accounts have month-end balances.', '/settings#accounts', 'Add accounts'); return; }
@@ -1267,7 +1268,7 @@ dash.draw('nw-chart', (el) => {
   const every = Math.max(1, Math.ceil(months.length / Math.max(2, Math.floor((W - ml) / 90))));   // room for "Mar 2025" at a phone's width
   svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).tickValues(months.filter((_, i) => i % every === 0)).tickFormat((m) => dash.fmt.month(HL.parseM(m))).tickSize(0)).call((a) => { a.select('.domain').remove(); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--chart-axis)');
-  series.forEach((sr) => svg.append('g').datum(sr).attr('fill', nwColor(sr.key, s.keys.indexOf(sr.key))).attr('fill-opacity', 0.75).selectAll('rect').data(sr).join('rect')
+  series.forEach((sr) => svg.append('g').datum(sr).attr('fill', nwColor(sr.key, s.keys.indexOf(sr.key), s.keys)).attr('fill-opacity', 0.75).selectAll('rect').data(sr).join('rect')
     .attr('x', (d) => x(d.data.m)).attr('width', x.bandwidth()).attr('y', (d) => y(Math.max(d[0], d[1]))).attr('height', (d) => Math.abs(y(d[0]) - y(d[1]))));
   const cx = (p) => x(p.m) + x.bandwidth() / 2;
   HL.fixes(svg, pts.map((p) => ({ x: cx(p), y: y(p.v), est: p.est })), 'var(--ink)');   // DS-CHART-1, 2: an estimated debt makes its month a dotted course
@@ -1312,7 +1313,7 @@ const drawDebts = (el, rows) => {
   } else lines.push(...rows);
   // a debt's colour is its place among every debt drawn here (#132), so hiding one recolours none; a hidden debt leaves its bar, and its
   // group's total still counts it
-  const chart = el.dataset.draw, at = new Map(lines.filter((r) => !r.head).map((r, i) => [r, i]));
+  const chart = el.dataset.draw, all = lines.filter((r) => !r.head), names = all.map((r) => r.item), at = new Map(all.map((r, i) => [r, i]));
   const nHidden = rows.filter((r) => dash.hidden('debt', r.item)).length;
   const data = lines.filter((r) => r.head || HL.shown(chart, 'debt', r.item)).map((r) => r.head ? r : ({ ...r, d0: HL.parseM(r.first), d1: d3.utcMonth.offset(HL.parseM(r.last), 1), total: Number(r.total), ci: at.get(r) }));
   const debts = data.filter((r) => !r.head);
@@ -1328,7 +1329,7 @@ const drawDebts = (el, rows) => {
   heads.append('text').attr('x', 0).attr('y', rowH / 2 + 4).attr('font-weight', 600).attr('fill', 'var(--ink)').text((r) => `${r.head} · ${HL.money(r.sum)}`);
   const bars = grp.filter((r) => !r.head);
   bars.append('text').attr('x', ml - 8).attr('y', rowH / 2 + 4).attr('text-anchor', 'end').attr('fill', 'var(--ink)').text((r) => r.item);
-  bars.append('rect').attr('class', 'b h').style('animation-delay', (r, i) => Math.min(i, 12) * 30 + 'ms').attr('x', (r) => x(r.d0)).attr('width', (r) => Math.max(3, x(r.d1) - x(r.d0))).attr('y', 5).attr('height', rowH - 10).attr('rx', 3).attr('fill', (r) => dash.colorFor('debt', r.item, r.ci))
+  bars.append('rect').attr('class', 'b h').style('animation-delay', (r, i) => Math.min(i, 12) * 30 + 'ms').attr('x', (r) => x(r.d0)).attr('width', (r) => Math.max(3, x(r.d1) - x(r.d0))).attr('y', 5).attr('height', rowH - 10).attr('rx', 3).attr('fill', (r) => dash.colorFor('debt', r.item, r.ci, 0, names))
     .on('pointermove', (pe, r) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(r.item)}${r.debt_type ? ' · ' + HL.esc(label(r.debt_type)) : ''}</div><div>${HL.esc(HL.fmtM(r.d0))} – ${HL.esc(HL.fmtM(HL.parseM(r.last)))}, ${HL.esc(String(r.months))} months</div><div>Paid ${HL.esc(HL.usd0(r.total))}</div>`); }).on('pointerleave', () => t.hide());
   bars.append('text').attr('x', (r) => x(r.d1) + 6).attr('y', rowH / 2 + 4).text((r) => HL.money(r.total));
   HL.hiddenNote(el, chart, nHidden);

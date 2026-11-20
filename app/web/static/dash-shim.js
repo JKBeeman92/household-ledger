@@ -1,6 +1,6 @@
 /* dash-shim.js — a small stand-in for the Dashboard artifact runtime, so the chart code runs unchanged.
    dash.data(id) -> {status, data}; dash.draw(name, fn); dash.calc(id, {inputs, fn}); dash.onData(fn);
-   dash.params()/setParams()/resetParams(); dash.colors; dash.colorFor(dimension, name, i)/assigned()/hidden() (#132); dash.setLink(name).
+   dash.params()/setParams()/resetParams(); dash.colors; dash.colorFor(dimension, name, i, skip, order)/colorsFor()/assigned()/hidden() (#132); dash.setLink(name).
    Data comes from /api/datasets. */
 (() => {
   const draws = new Map();      // name -> fn
@@ -22,16 +22,22 @@
   const slotOf = (c) => { const m = /^series-([1-8])$/.exec(c || ''); return m ? Number(m[1]) - 1 : null; };
   const entry = (dimension, name) => (appearance()[dimension] || {})[name] || null;
   const assigned = (dimension, name, pal = readColors()) => { const a = entry(dimension, name); if (!a || !a.color) return null; const s = slotOf(a.color); return s == null ? a.color : pal[s]; };
-  // the assigned colour, else the i-th palette colour (from `skip` on: people start later, off the good/bad hues) passing over the slots
-  // other names in this dimension have claimed, so two names never share a colour by accident. With no rows this is colors[(i + skip) % 8],
-  // the positional colour every chart used before.
-  const colorFor = (dimension, name, i, skip = 0) => {
+  // the assigned colour, else a palette colour (from `skip` on: people start later, off the good/bad hues) passing over the slots other
+  // names in this dimension have claimed, so two names never share a colour by accident. `order` is the chart's full order of names
+  // (hidden ones included, so hiding recolours none) and `i` this name's place in it: an unassigned name takes the free slot matching
+  // its rank among the names in `order` with no colour of their own, not its rank in the whole order, or a claimed slot would leave
+  // two unassigned names 8 - k apart sharing one (#132 review). With no rows that rank is i, so this is colors[(i + skip) % 8], the
+  // positional colour every chart used before. Without `order` the rank is i itself (callers that colour a single name).
+  const colorFor = (dimension, name, i, skip = 0, order = null) => {
     const pal = readColors(), own = assigned(dimension, name, pal); if (own) return own;
     const claimed = new Set(Object.values(appearance()[dimension] || {}).map((a) => slotOf(a && a.color)).filter((s) => s != null));
-    const order = pal.map((_, k) => (k + skip) % pal.length), free = order.filter((k) => !claimed.has(k));
-    const use = free.length ? free : order;   // all eight claimed: positional again, rather than no colour
-    return pal[use[((i % use.length) + use.length) % use.length]];
+    const seq = pal.map((_, k) => (k + skip) % pal.length), free = seq.filter((k) => !claimed.has(k));
+    const use = free.length ? free : seq;   // all eight claimed: positional again, rather than no colour
+    const rank = order ? order.slice(0, i).filter((n) => !assigned(dimension, n, pal)).length : i;
+    return pal[use[((rank % use.length) + use.length) % use.length]];
   };
+  // every name's colour in one go, for a chart that colours a whole order: Map name -> colour
+  const colorsFor = (dimension, names, skip = 0) => new Map(names.map((n, i) => [n, colorFor(dimension, n, i, skip, names)]));
 
   const calcValue = (id, seen = new Set()) => {
     const c = calcs.get(id); if (!c) return undefined;
@@ -63,7 +69,7 @@
   const dash = {
     currency, locale, fmt,
     get colors() { return readColors(); },
-    colorFor, assigned: (dimension, name) => assigned(dimension, name),
+    colorFor, colorsFor, assigned: (dimension, name) => assigned(dimension, name),
     hidden(dimension, name) { const a = entry(dimension, name); return !!(a && a.hidden); },
     data(id) {
       if (status !== 'ok') return { status, data: [], columns: [], meta: [] };
