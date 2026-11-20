@@ -504,18 +504,36 @@ def describe_problems(problems: list[dict], conn: psycopg.Connection) -> list[st
 
 
 def pass_through_findings(wd: Path) -> list[dict]:
-    """The months build_ledger.py found where one item's inflow is many times its usual size and is paid back out (#107).
-    Absent when the scripts are older than the file, which reads as none."""
+    """The months build_ledger.py found where an item that is usually quiet took in more than is usual for it and large for the
+    household (#107). Absent when the scripts are older than the file, which reads as none."""
     p = wd / "pass_through.json"
     return json.loads(_read(p)) if p.exists() else []
+
+
+def pass_through_after(h: dict) -> str:
+    """What went back out after a pass-through finding, as evidence: '$X went back out ...', or that none did. Empty with no window."""
+    money = lambda v: f"{v:,.2f}"
+    n = h.get("months_after", h.get("window"))
+    if h.get("later_outflows") is None:
+        return ""
+    if not n:
+        return "no months after it yet"
+    span = f"the {n} month{'' if n == 1 else 's'} after"
+    return (f"{money(h['later_outflows'])} more than usual went back out through it in {span}" if h["later_outflows"]
+            else f"none went back out through it in {span} (a transfer may have carried it)")
 
 
 def describe_pass_through(held: list[dict]) -> list[str]:
     """The pass-through findings as sentences for the build log, each ending with the fix (Flow exclude), as the page says it."""
     money = lambda v: f"{v:,.2f}"
-    return [f"{h['m']} {', '.join(h['items'])}: {money(h['inflow'])} came in, against a usual {money(h['median'])} a month, and "
-            f"{money(h['later_outflows'])} more than usual went out in the {h['window']} month(s) after. Money held for someone else? "
-            f"Set Flow exclude on {' and '.join(h['items'])}." for h in held]
+    out = []
+    for h in held:
+        after = pass_through_after(h)
+        out.append(f"{h['m']} {', '.join(h['items'])}: {money(h['inflow'])} came in, against a usual {money(h['median'])} a month"
+                   + (f" and a floor of {money(h['floor'])} for this household" if h.get("floor") is not None else "")
+                   + (f"; {after}" if after else "") + ". Money held for someone else? "
+                   f"Set Flow exclude on {' and '.join(h['items'])}.")
+    return out
 
 
 def incomplete_months_note(conn: psycopg.Connection) -> str:

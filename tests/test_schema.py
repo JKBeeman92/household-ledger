@@ -78,6 +78,10 @@ def test_maximum_is_checked_as_well_as_minimum():
     assert schema.validate({"pass_through_window": 50}, s) == ["pass_through_window: must be at most 12"]
     assert schema.validate({"pass_through_window": 0}, s) == ["pass_through_window: must be at least 1"]
     assert schema.validate({"year_start_month": 13}, s) == ["year_start_month: must be at most 12"]
+    # a share of income: 0 (only the dollar floor) to 1
+    assert schema.validate({"pass_through_income_share": 0, "pass_through_floor": None}, s) == []
+    assert schema.validate({"pass_through_income_share": 1.5}, s) == ["pass_through_income_share: must be at most 1"]
+    assert schema.validate({"pass_through_income_share": -0.1}, s) == ["pass_through_income_share: must be at least 0"]
 
 
 # ---- the app: save validates, help text renders, schema is published ----

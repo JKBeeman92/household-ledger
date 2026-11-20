@@ -13,9 +13,11 @@ Migrations are not reversible. To roll back, pin the previous image tag in `dock
 
 ## 0.9.0
 
-- **Money held for someone else** (#107): no migration. Three new rules, `pass_through_multiple` (5), `pass_through_floor` (250) and
-  `pass_through_window` (3), have defaults; an empty value turns the check off. After the first rebuild, Close a month may list
-  months where an item that is not excluded took in many times its usual amount and paid it back out; nothing else changes.
+- **Money held for someone else** (#107): no migration. Four new rules have defaults: `pass_through_multiple` (5),
+  `pass_through_income_share` (0.10), `pass_through_floor` (250) and `pass_through_window` (3); an empty value turns the check off
+  (the window: only its evidence). After the first rebuild, Close a month may list months where an item that is usually quiet and
+  not excluded took in more than a tenth of the household's usual monthly income, with what went back out through it after as
+  evidence; nothing else changes. A large refund on an item that is usually empty is listed too: leave it as it is.
 - **Chart colours and hidden names** (#132, `0132_appearance.sql`): a new table only; no existing data is touched, and with no rows
   every chart draws as before. Settings gains a Chart appearance tab; `settings.zip` gains `appearance.json` (read back by the seed
   loader), the command line `set-appearance FILE` and `export appearance`. No rebuild is needed: the pipeline never reads it.

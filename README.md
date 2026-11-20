@@ -394,29 +394,37 @@ September 2025 and bought in October, and a cabin weekend collected in March 202
 Every build looks for the pattern in items that are not excluded yet (#107), and Close a month lists what it finds under **Money
 held for someone else?**, beside Reconciliation, with the same lines in the build log and after `rebuild` or `import_exports` on
 the command line. A budget month is listed for an item, its canonical item, in an `expense` or `debt` envelope (transfers and plugs
-left out) when all three hold:
+left out) when both hold:
 
-1. its net inflow that month is more than `pass_through_multiple` times the item's median absolute monthly amount over the
-   trailing 12 budget months (a month with no rows counts as 0; months before the first export are not counted);
-2. that inflow is more than `pass_through_floor` dollars;
-3. the item's outflows in the `pass_through_window` budget months after it, counting in each month only what is above its usual
-   month (the median in 1), add up to at least half of the inflow.
+1. **the item is usually quiet**: its net inflow that month is more than `pass_through_multiple` times its usual month, the median
+   absolute monthly amount over the trailing 12 budget months (a month with no rows counts as 0, so on an item that is usually
+   empty any inflow passes; months before the first export are not counted, and the first export month is not judged at all);
+2. **the inflow is large for this household**: more than `pass_through_income_share` of the household's usual monthly income (the
+   median of its monthly income, as the ledger counts it, over the same 12 budget months), and never less than `pass_through_floor`
+   dollars.
 
-The third is what tells money held for someone else from a refund: a refund comes in once and is not paid back out. Counting only
-what is above the usual month keeps a refund on an item spent every month (Eating Out) from being listed because of its ordinary
-spending in the months after. Each entry
-says "Money held for someone else? Set Flow `exclude` on `<item>`." It is a hint, not an error: the build still succeeds and
-the exit code stays reconciliation's. If it is a refund or a one-off, leave it.
+The second keeps out what a household moves through its own sinking funds and giving envelopes: a few hundred dollars back into
+an emergency or vacation fund, or a tax refund on the tax envelope, is small beside a month's income. Refunds stay out by the
+first: a refund lands on an item the household spends from, so its usual month is not small (a refund of a few hundred dollars on
+Eating Out is not listed). **The known trade-off**: a large refund on an item that is usually empty (a yearly bill refunded in
+another month) is listed; leave it as it is.
+
+What went back out is shown as evidence and is never a condition: each entry says how much more than its usual month left through
+the item in the `pass_through_window` budget months after ("$X more than usual went back out"), or that none did. Money collected
+for someone else is often handed over by a transfer, which the ledger leaves out, so "none went back out through this item" does
+not mean it was not someone else's money. Each entry ends "Money held for someone else? Set Flow `exclude` on `<item>`." It is a
+hint, not an error: the build still succeeds and the exit code stays reconciliation's. If it was a refund or your own money, leave it.
 
 | Rule | Default | What it sets |
 |---|---|---|
 | `pass_through_multiple` | `5` | How many times the item's usual month the inflow must be. |
-| `pass_through_floor` | `250` | The smallest inflow, in dollars, that is looked at. |
-| `pass_through_window` | `3` | How many budget months after the inflow count toward paying it out (1 to 12). |
+| `pass_through_income_share` | `0.10` | The share of the household's usual monthly income the inflow must be over (0 to 1; 0 leaves only the floor). |
+| `pass_through_floor` | `250` | The smallest inflow, in dollars, that is ever listed, whatever the income. |
+| `pass_through_window` | `3` | How many budget months after the inflow are shown as evidence (1 to 12). |
 
 Set them in the rules JSON (Settings → Pipeline rules) or with `python -m app.admin set-rules`. Unlike the other rules, where an
-empty value (`null`) keeps the default, an empty value in any of these three turns the check off. The defaults are a first guess:
-on a long back catalogue, check what it lists and move them.
+empty value (`null`) keeps the default, an empty value turns the check off (`pass_through_window`: the evidence only). The defaults
+are a first guess: on a long back catalogue, check what it lists and move them.
 
 **A first mapping for a back catalogue.** Settings → Item mapping offers **Draft Item mapping rows from my budget groups** whenever the stored
 exports carry items with no mapping row. The draft fills only those items and never changes an existing row: Category is the budget

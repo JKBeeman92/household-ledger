@@ -62,7 +62,9 @@ EXTRA = {("2025-12", "Holiday"): (["Hobbiton Toys", "Bywater Market", "Westfarth
 PAY_START, PAY_EVERY = date(2025, 1, 3), 14
 # money held for someone else (#107): friends' shares collected on Venmo, then paid out in the months after. Written without the
 # random stream, so every other row stays as it was. The item is mapped exclude, so the charts never see it; mapped expense, the
-# build's pass-through check finds 2025-09 and 2026-03 and no other month of the household's (tests/test_pass_through.py).
+# build's pass-through check finds 2025-09 and 2026-03 and no other month of the household's (tests/test_pass_through.py): the item
+# is empty in a usual month, and both collections are over a tenth of the household's usual monthly income (about 5,900), the
+# default pass_through_income_share (the cabin weekend's 640 by about 50: smaller shares would drop it).
 PASS_THROUGH = {
     "2025-09": [(d, 19000, "Merry's present, a share") for d in (3, 5, 6, 9, 11, 12)],
     "2025-10": [(4, -114000, "Merry's present")],

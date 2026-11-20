@@ -29,7 +29,9 @@ of `docker compose logs ledger` (check them for anything private first).
       uploading**. Without a browser: `docker compose exec ledger python -m app.admin draft-mapping > draft.csv`, review it, then
       `add-mapping` and `rebuild` (README, "Without a browser").
       If Close a month then lists **Money held for someone else?** (`PASS-THROUGH?` lines after `rebuild` on the command line),
-      decide for each item: `exclude`, or a refund left as it is.
+      decide for each item: `exclude` if it was someone else's money (even when none went back out through the item: it may
+      have been handed over by a transfer), or leave it if it was a refund or your own money. On a long back catalogue, check
+      what it lists against what you remember and move the `pass_through_*` rules (README) if it lists too much or too little.
       Upload one month on **Close a month** (a `.zip` works too): the page returns at once, shows the build running, then a
       "Last upload" panel and a clean reconciliation. Upload a file of a few MB through the proxy too: a 413 from the proxy (not the
       app) means its body-size limit is below `MAX_UPLOAD_MB`.

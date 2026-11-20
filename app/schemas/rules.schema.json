@@ -74,15 +74,19 @@
     },
     "pass_through_multiple": {
       "type": ["number", "null"], "minimum": 1,
-      "description": "Money held for someone else (#107): a month's net inflow on an expense or debt item counts when it is more than this many times the item's median absolute monthly amount over the trailing 12 budget months. Default 5. Empty (null) turns the check off."
+      "description": "Money held for someone else (#107): a month's net inflow on an expense or debt item counts when it is more than this many times the item's usual month (its median absolute monthly net over the trailing 12 budget months), so only items that are usually quiet are looked at. Default 5. Empty (null) turns the check off."
+    },
+    "pass_through_income_share": {
+      "type": ["number", "null"], "minimum": 0, "maximum": 1,
+      "description": "Money held for someone else (#107): the inflow must also be more than this share of the household's usual monthly income (its median over the same 12 budget months), so it is large for this household. Default 0.10. 0 leaves only pass_through_floor. Empty (null) turns the check off."
     },
     "pass_through_floor": {
       "type": ["number", "null"], "minimum": 0,
-      "description": "Money held for someone else (#107): the inflow must also be more than this many dollars, so small items that are usually near zero are left alone. Default 250. Empty (null) turns the check off."
+      "description": "Money held for someone else (#107): the smallest inflow, in dollars, that is ever listed, whatever the income. Default 250. Empty (null) turns the check off."
     },
     "pass_through_window": {
       "type": ["integer", "null"], "minimum": 1, "maximum": 12,
-      "description": "Money held for someone else (#107): the item's outflows in this many budget months after the inflow, above its usual month, must add up to at least half of it, which is what tells it from a refund (one that is not paid back out). Default 3. Empty (null) turns the check off."
+      "description": "Money held for someone else (#107): how many budget months after the inflow are shown as evidence, with what went back out through the item above its usual month. Not a condition: money handed over by a transfer never shows there. Default 3. Empty (null) shows no evidence."
     },
     "merchant_rules": {
       "type": "array",

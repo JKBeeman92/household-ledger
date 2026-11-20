@@ -12,18 +12,19 @@
   </tbody></table></div></details>
   {% endif %}
 </div>
-{# Money held for someone else (#107): shown only when the last build found some; the rules are pass_through_* (Pipeline rules). #}
+{# Money held for someone else (#107): shown only when the last build found some; the rules are pass_through_* (Pipeline rules).
+   What went back out is evidence, not a condition: money handed over by a transfer never shows on the item. #}
 {% set held = findings.pass_through or [] %}
 {% if held %}
 <div class="panel mt-4" id="pass-through-panel">
   <h2>Money held for someone else?</h2>
-  <p class="muted edge warn edge-note" id="pass-through-intro">{% set held_items = held|map(attribute='items')|sum(start=[])|unique|list %}{{ 'An item' if held_items|length == 1 else held_items|length ~ ' items' }} took in far more than usual, then paid most of it back out over the next months. That is what money collected for someone else looks like, such as a group gift. Left in, it shows as one cheap month followed by expensive ones.</p>
-  <p class="mt-0">If it was someone else's money, open the item below and set its Flow to <code>exclude</code>, then rebuild. Its rows stay in the exports and in reconciliation, and leave the charts. If it was a refund or a one-off, do nothing.</p>
+  <p class="muted edge warn edge-note" id="pass-through-intro">{% set held_items = held|map(attribute='items')|sum(start=[])|unique|list %}{{ 'An item that is usually quiet' if held_items|length == 1 else held_items|length ~ ' items that are usually quiet' }} took in a large sum for this household. That is what money collected for someone else looks like, such as donations for a relative or a group gift. Left in, it shows as one cheap month, then expensive ones as it is paid out, or none at all when it was handed over by a transfer.</p>
+  <p class="mt-0">If it was someone else's money, open the item below and set its Flow to <code>exclude</code>, then rebuild. Its rows stay in the exports and in reconciliation, and leave the charts. If it was a refund or your own money, do nothing.</p>
   <details {% if held|length <= 5 %}open{% endif %}><summary>Show the {{ held|length }} month{{ '' if held|length == 1 else 's' }}</summary>
-  <div class="tablewrap" role="region" tabindex="0" aria-label="Months with money held for someone else"><table class="plain" data-list="unbounded"><thead><tr><th scope="col">Month</th><th scope="col">Item</th><th scope="col" class="num">Came in</th><th scope="col" class="num">Usual month</th><th scope="col" class="num">Went out after, over usual</th></tr></thead><tbody>
-  {% for h in held %}<tr><td class="mono">{{ h.m|month_short }}</td><td>{% for i in h['items'] %}<a href="/settings?find={{ i|urlencode }}#mapping">{{ i }}</a>{{ ', ' if not loop.last }}{% endfor %}</td><td class="mono num">{{ h.inflow|money(2) }}</td><td class="mono num">{{ h.median|money(2) }}</td><td class="mono num">{{ h.later_outflows|money(2) }}<div class="muted">in {{ h.window }} month{{ '' if h.window == 1 else 's' }}</div></td></tr>{% endfor %}
+  <div class="tablewrap" role="region" tabindex="0" aria-label="Months with money held for someone else"><table class="plain" data-list="unbounded"><thead><tr><th scope="col">Month</th><th scope="col">Item</th><th scope="col" class="num">Came in</th><th scope="col" class="num">Usual month</th><th scope="col">Went back out after</th></tr></thead><tbody>
+  {% for h in held %}{% set n = h.months_after if h.months_after is defined else h.window %}<tr><td class="mono">{{ h.m|month_short }}</td><td>{% for i in h['items'] %}<a href="/settings?find={{ i|urlencode }}#mapping">{{ i }}</a>{{ ', ' if not loop.last }}{% endfor %}</td><td class="num"><span class="mono">{{ h.inflow|money(2) }}</span>{% if h.floor is defined and h.floor is not none %}<div class="muted">over {{ h.floor|money(0) }} for this household</div>{% endif %}</td><td class="mono num">{{ h.median|money(2) }}</td><td>{% if h.later_outflows is none %}<span class="muted">Not shown</span>{% elif not n %}<span class="muted">No months after it yet</span>{% elif h.later_outflows %}<span class="mono">{{ h.later_outflows|money(2) }}</span> more than usual, in the {{ n }} month{{ '' if n == 1 else 's' }} after{% else %}None through this item in the {{ n }} month{{ '' if n == 1 else 's' }} after<div class="muted">A transfer may have carried it.</div>{% endif %}</td></tr>{% endfor %}
   </tbody></table></div></details>
-  <p class="muted mt-2">How much counts as far more than usual is set by the <code>pass_through_*</code> rules in <a href="/settings#rules">Settings → Pipeline rules</a>.</p>
+  <p class="muted mt-2">What counts as usually quiet and as large for this household is set by the <code>pass_through_*</code> rules in <a href="/settings#rules">Settings → Pipeline rules</a>.</p>
 </div>
 {% endif %}
 <div class="panel mt-4" id="unmapped-panel">
