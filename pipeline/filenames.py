@@ -65,5 +65,10 @@ def iso_date(value: str) -> tuple[str, str, str]:
         mm, dd, yy = m.groups()
     else:
         raise ValueError(f"{value!r} is not a date (YYYY-MM-DD, or MM/DD/YYYY)")
-    datetime.date(int(yy), int(mm), int(dd))   # raises ValueError for 2025-02-30
+    try:
+        datetime.date(int(yy), int(mm), int(dd))
+    except ValueError:
+        # 2025-02-30: say so in our words, with the value. datetime's own message does not quote it, and its wording changed
+        # in Python 3.15 ("day is out of range for month" became "day 30 must be in range 1..28 ...", #218).
+        raise ValueError(f"{value!r} is not a date (no such day)") from None
     return yy, mm.zfill(2), dd.zfill(2)

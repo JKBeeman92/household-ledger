@@ -73,12 +73,13 @@ def _store_rows(cur, sid: int, kind: str, bm: str, rows: list[dict]) -> None:
 
 
 def ingest(conn: psycopg.Connection, filename: str, data: bytes, uploaded_by: str = "", *,
-           profile: dict | None = None, kind: str | None = None, budget_month: str | None = None) -> dict:
+           profile: dict | None = None, kind: str | None = None, budget_month: str | None = None, commit: bool = True) -> dict:
     """Store one export file. Replaces an existing file of the same kind+month.
 
     Without `profile` the file must be an EveryDollar export, named as EveryDollar names it. With a profile ({"id", "spec"} from
     source_profiles) the caller says which kind of file it is and for which budget month; the file is kept as uploaded and its
-    rows are read through the profile's mapping."""
+    rows are read through the profile's mapping. commit=False leaves the transaction open, so a batch is stored whole or not at all
+    (store_planned, #165)."""
     if profile is None:
         kind, bm, rows = parse_export(filename, data)
         content, profile_id = None, None
@@ -99,8 +100,79 @@ def ingest(conn: psycopg.Connection, filename: str, data: bytes, uploaded_by: st
             (kind, bm, os.path.basename(filename), sha, len(rows), uploaded_by, profile_id, content),
         )
         _store_rows(cur, cur.fetchone()[0], kind, bm, rows)
-    conn.commit()
+    if commit:
+        conn.commit()
     return {"kind": kind, "budget_month": bm, "rows": len(rows), "sha256": sha}
+
+
+def stored_files(conn: psycopg.Connection) -> dict[tuple[str, str], str]:
+    """{(kind, budget month): sha256} of every stored export file."""
+    with conn.cursor(row_factory=tuple_row) as cur:
+        cur.execute("SELECT kind, budget_month, sha256 FROM source_files")
+        return {(k, m): sha for k, m, sha in cur.fetchall()}
+
+
+def plan_files(conn: psycopg.Connection, files: list[tuple[str, bytes]], *, default_mode: bool, profile_name: str | None = None,
+               present: set[tuple[str, str]] = frozenset()) -> list[dict]:
+    """The dry run of a batch of files not named like exports (#165): sources.plan_batch against the saved profiles (only
+    `profile_name`'s when given; ValueError if there is none by that name) and the files already stored. Stores nothing."""
+    from .sources import plan_batch
+    profiles = load_profiles(conn)
+    if profile_name is not None:
+        profiles = [p for p in profiles if p["name"] == profile_name.strip()]
+        if not profiles:
+            raise ValueError(f"no saved source profile is called {profile_name!r}")
+    plan = plan_batch(files, profiles, default_mode=default_mode, present=set(present), stored=stored_files(conn))
+    conn.commit()   # read only: end the transaction the reads opened
+    return plan
+
+
+def plan_named(files: list[tuple[str, bytes]], stored: dict[tuple[str, str], str]) -> list[dict]:
+    """The dry run of files named like exports (the internal format, EveryDollar's) that a zip holds with another tool's files
+    (#165): read as ingest reads them, in plan_batch's shape (profile None, "named": True), so the whole zip waits for the one
+    confirmation and is stored in one transaction, and plan_batch can refuse a profiled file for the same month and kind (the
+    batch's own export wins, as on the command line). Stores nothing."""
+    out = []
+    for i, (name, data) in enumerate(files):
+        e = {"i": i, "name": name, "profile": None, "profile_id": None, "kind": None, "month": None, "how": "named like an export",
+             "rows": 0, "state": "refused", "detail": "", "named": True}
+        out.append(e)
+        try:
+            kind, bm, rows = parse_export(os.path.basename(name), data)
+        except Exception as ex:  # noqa: BLE001  a bad file is named in the table, not stored
+            e["detail"] = str(ex)[:300]; continue
+        e.update(kind=kind, month=bm, rows=len(rows), state="ready")
+        if stored.get((kind, bm)) == hashlib.sha256(data).hexdigest():
+            e.update(state="unchanged", detail="already stored, unchanged")
+        elif (kind, bm) in stored:
+            e["detail"] = f"replaces the stored {bm} file"
+    return out
+
+
+def store_planned(conn: psycopg.Connection, plan: list[dict], files: list[tuple[str, bytes]], uploaded_by: str = "", *,
+                  atomic: bool = True) -> list[dict]:
+    """Store the files of a plan that are ready, each through its profile (or by its name, for plan_named's entries), for the
+    month and kind the plan found. atomic: all of them in one transaction, or none (a zip's batch, confirmed once); otherwise each
+    on its own, and one that fails is reported and the rest go on (the import directory). Returns [{"name", "ok", "detail"}] for
+    the ready files."""
+    specs = {p["id"]: p["spec"] for p in load_profiles(conn)}
+    out = []
+    for e in (x for x in plan if x["state"] == "ready"):
+        try:
+            if e.get("named"):
+                info = ingest(conn, files[e["i"]][0], files[e["i"]][1], uploaded_by=uploaded_by, commit=not atomic)
+                out.append({"name": e["name"], "ok": True, "detail": f"{info['budget_month']}, {info['kind'].replace('_', ' ')}, {info['rows']} rows, named like an export"})
+                continue
+            info = ingest(conn, files[e["i"]][0], files[e["i"]][1], uploaded_by=uploaded_by, profile={"id": e["profile_id"], "spec": specs[e["profile_id"]]},
+                          kind=e["kind"], budget_month=e["month"], commit=not atomic)
+            out.append({"name": e["name"], "ok": True, "detail": f"{info['budget_month']}, {info['kind'].replace('_', ' ')}, {info['rows']} rows, read with “{e['profile']}”"})
+        except Exception as ex:  # noqa: BLE001
+            conn.rollback()
+            if atomic:
+                raise ValueError(f"{e['name']}: {ex}") from None
+            out.append({"name": e["name"], "ok": False, "detail": str(ex)[:300]})
+    conn.commit()
+    return out
 
 
 def reapply_profile(conn: psycopg.Connection, profile_id: int) -> int:
@@ -242,9 +314,9 @@ def export_for_pipeline(conn: psycopg.Connection, wd: Path) -> None:
         goals = [dict(r, value=float(r["value"]) if r["value"] is not None else None, confirmed_at=r["confirmed_at"].isoformat() if r["confirmed_at"] else None,
                       target_amount=float(r["target_amount"]) if r["target_amount"] is not None else None, done_at=r["done_at"].isoformat() if r["done_at"] else None)
                  for r in cur]
-        cur.execute("SELECT month m, label, kind, person FROM life_events ORDER BY month, label")
-        with open(wd / "events.json", "w") as out:   # kind and person only when set (#109), so events without them read as before
-            json.dump([{k: v for k, v in r.items() if v is not None} for r in cur], out)
+        cur.execute("SELECT month m, label, kind, person, on_chart, new_normal FROM life_events ORDER BY month, label")
+        with open(wd / "events.json", "w") as out:   # kind and person only when set (#109), on_chart only when off (#140), new_normal only when set (#159): plain events read as before
+            json.dump([{k: v for k, v in r.items() if v is not None and not (k == "on_chart" and v) and not (k == "new_normal" and not v)} for r in cur], out)
         # accounts and month-end balances (#143): read by make_datasets.py through pipeline/balances.py
         cur.execute(f"SELECT {', '.join(balances.ACCOUNT_COLUMNS)} FROM accounts ORDER BY name")
         with open(wd / "accounts.csv", "w", newline="") as out:
@@ -479,19 +551,47 @@ def _rebuild(conn: psycopg.Connection) -> dict:
 
 
 # ---------------------------------------------------------------- bulk import
+SEED_CSVS = {"item_mapping.csv", "cpi_u.csv", "accounts.csv", "balances.csv", "yearly_bills.csv"}   # seed_reference_tables' files, not exports
+
+
+def other_csv(path: Path, root: Path) -> bool:
+    """Whether a CSV under root that is not named like an export is offered to the source profiles (#165): not a seed file, and not
+    under a dot-folder or dot-named, the way to keep an unrelated CSV (a bank statement, notes) in the import directory without
+    it being named as a failure in the build log at every start."""
+    rel = path.relative_to(root) if path.is_relative_to(root) else Path(path.name)
+    return not filenames.is_export(path.name) and path.name not in SEED_CSVS and not any(part.startswith(".") for part in rel.parts)
+
+
 def import_dir(conn: psycopg.Connection, import_dir: Path, uploaded_by: str = "import") -> dict:
-    """Load every EveryDollar export under import_dir that is new or changed (by sha256), then rebuild once if anything loaded.
-    Safe to run at every start: already-loaded files are skipped, so the directory can stay in place."""
+    """Load every export under import_dir that is new or changed (by sha256), then rebuild once if anything loaded.
+    Safe to run at every start: already-loaded files are skipped, so the directory can stay in place.
+
+    Files named like exports (the internal format, EveryDollar's) are read as they are. Once a source profile is saved, the other
+    CSVs are matched against the saved profiles by their headers (#165), and their months come from the profile's own month rule
+    (month_from) only: nobody sees this import before it stores, so the dates are never guessed from without one. A file that no
+    profile recognises, or that has no month or no other half, is not stored and is named in the build log. The seed files
+    (item_mapping.csv, accounts.csv, …: the sample household's folder is both) are not exports and are left alone."""
     import_dir = Path(import_dir)
     if not import_dir.is_dir():
         return {"loaded": 0, "skipped": 0}
-    known = {}
-    with conn.cursor(row_factory=tuple_row) as cur:
-        cur.execute("SELECT kind, budget_month, sha256 FROM source_files")
-        known = {(k, m): sha for k, m, sha in cur.fetchall()}
+    known = stored_files(conn)
     loaded = skipped = 0
     failed: list[dict] = []
-    for f in sorted(x for x in import_dir.rglob("*.csv") if filenames.is_export(x.name)):
+    csvs = sorted(import_dir.rglob("*.csv"))
+    named = [x for x in csvs if filenames.is_export(x.name)]
+    other = [x for x in csvs if other_csv(x, import_dir)]
+    if other and load_profiles(conn):
+        files = [(str(x.relative_to(import_dir)), x.read_bytes()) for x in other]
+        plan = plan_files(conn, files, default_mode=False, present={filenames.parse(x.name) for x in named})
+        skipped += sum(1 for e in plan if e["state"] == "unchanged")
+        failed += [{"file": e["name"], "error": e["detail"]} for e in plan if e["state"] == "refused"]
+        for r in store_planned(conn, plan, files, uploaded_by, atomic=False):
+            if r["ok"]:
+                loaded += 1
+            else:
+                failed.append({"file": r["name"], "error": r["detail"]})
+    conn.commit()
+    for f in named:
         data = f.read_bytes()
         kind, bm = filenames.parse(f.name)
         if known.get((kind, bm)) == hashlib.sha256(data).hexdigest():
@@ -521,9 +621,10 @@ def import_dir(conn: psycopg.Connection, import_dir: Path, uploaded_by: str = "i
 EVENT_KINDS = ("job", "move", "family", "health", "purchase", "debt", "other")   # the CHECK in db/migrations/0109_life_event_kind.sql
 
 
-def _seed_event_fields(e: dict, path) -> tuple[str | None, str | None]:
-    """A seed event's kind and person, checked as the Settings editor checks them; a bad one stops seeding with a message naming it,
-    rather than a bare constraint error."""
+def _seed_event_fields(e: dict, path) -> tuple[str | None, str | None, bool, bool]:
+    """A seed event's kind, person, on_chart switch (#140) and new_normal mark (#159), checked as the Settings editor and set-events
+    check them; a bad one stops seeding with a message naming it, rather than a bare constraint error. A file without on_chart (every
+    file before 0.9.0) puts every event on the chart; one without new_normal marks none."""
     where = f"{path}: event {e.get('m')} {e.get('label')!r}"
     for f in ("kind", "person"):
         if e.get(f) is not None and not isinstance(e.get(f), str):
@@ -531,7 +632,14 @@ def _seed_event_fields(e: dict, path) -> tuple[str | None, str | None]:
     kind = (e.get("kind") or "").strip().lower() or None
     if kind and kind not in EVENT_KINDS:
         raise ValueError(f"{where}: kind {kind!r} is not one of {', '.join(EVENT_KINDS)} (or leave it out)")
-    return kind, (e.get("person") or "").strip() or None
+    from app.routes.settings import check_on_chart, new_normal_value   # one rule with Settings, the JSON editor and set-events: missing or null is on
+    on_chart = check_on_chart(e.get("on_chart"))
+    if on_chart is None:
+        raise ValueError(f"{where}: on_chart must be yes or no, true or false (or leave it out)")
+    new_normal = new_normal_value(e.get("new_normal"))   # the same rule: missing, null or empty is false
+    if new_normal is None:
+        raise ValueError(f"{where}: new_normal must be yes or no, true or false (or leave it out)")
+    return kind, (e.get("person") or "").strip() or None, on_chart, new_normal
 
 
 # the yearly checklist's seven defaults as db/migrations/0157_yearly_checklist.sql ships them (#157): a seed file replaces the list only
@@ -586,9 +694,9 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
             with open(seed_dir / "events.json") as f:
                 events_seed = json.load(f)
             for e in events_seed:
-                kind, person = _seed_event_fields(e, seed_dir / "events.json")
-                cur.execute("INSERT INTO life_events (month,label,kind,person) VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING",
-                            (e["m"], e["label"], kind, person))
+                kind, person, on_chart, new_normal = _seed_event_fields(e, seed_dir / "events.json")
+                cur.execute("INSERT INTO life_events (month,label,kind,person,on_chart,new_normal) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+                            (e["m"], e["label"], kind, person, on_chart, new_normal))
         cur.execute("SELECT count(*) FROM settings WHERE key='rules'")
         if cur.fetchone()[0] == 0 and (seed_dir / "rules.json").exists():
             cur.execute("INSERT INTO settings (key, value) VALUES ('rules', %s)", (_read(seed_dir / "rules.json"),))
@@ -627,6 +735,8 @@ def seed_reference_tables(conn: psycopg.Connection, seed_dir: Path = HERE) -> No
                 for t in yc.get("ticks", []):
                     cur.execute("INSERT INTO yearly_checklist (year, item, label, note, done_at, done_by) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
                                 (t["year"], t["item"], t.get("label") or "", t.get("note") or "", t.get("done_at"), t.get("done_by") or ""))
+        from app import appearance   # chart colours and hidden names (#132); display only, so read here and never by the build
+        appearance.seed(conn, seed_dir / "appearance.json")
         cur.execute("SELECT count(*) FROM decisions")
         if cur.fetchone()[0] == 0 and (seed_dir / "decisions.json").exists():   # the decisions log and its checks (#155), from settings.zip
             for d in json.loads(_read(seed_dir / "decisions.json")):

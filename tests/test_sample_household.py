@@ -44,3 +44,20 @@ def test_sample_household_has_a_payoff_estimate_and_something_coming_up(client, 
     assert loan["payoff"] > "2026-06" and [n["code"] for n in loan["notes"]] == ["estimated"] and loan["moved"] == 0
     kinds = {(r["kind"], r["m"]) for r in data["coming_up"]}
     assert ("event", "2026-09") in kinds and ("payoff", loan["payoff"]) in kinds
+
+
+def test_sample_household_shows_each_person_at_the_check_in(client, reset_db):
+    """#156: two people, so the By person block has Rosie, Sam and the joint part for the latest month, each year of it summing to the
+    earner and payer charts; Rosie's student loan decision and her accounts sit under her name at the check-in."""
+    reset_db(SAMPLE)
+    assert import_exports.main([str(SAMPLE)]) == 0
+    data = client.get("/api/datasets").json()
+    last = [r for r in data["by_person"] if r["m"] == "2026-06"]
+    assert [r["who"] for r in last] == ["Rosie", "Sam", "Household"] and all(r["earned_change"] is not None for r in last)
+    assert all(r["spent"] > 0 for r in last if r["who"] != "Household")   # each has a fun-money envelope
+    for p in data["people"]:
+        assert round(sum(r["earned" if p["role"] == "earner" else "spent"] for r in data["by_person"] if r["m"][:4] == p["y"] and r["who"] == p["who"]), 2) == p["amount"]
+    page = client.get("/checkin/2026-06").text
+    sec = page[page.index('id="standing-people"'):]; sec = sec[:sec.index("</dl>")]
+    rosie = sec.split("<dt>Rosie</dt>")[1].split("<dt>Sam</dt>")[0]
+    assert "Lembas Student Loan" in rosie and "An extra $50 on the student loan" in rosie and "Pony and Cart" in sec.split("<dt>Sam</dt>")[1]

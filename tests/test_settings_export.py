@@ -8,7 +8,7 @@ from test_api_tokens import make_token
 from app import admin, db, settings_export
 from pipeline.run_pipeline import seed_reference_tables
 
-EXPECTED = ["item_mapping.csv", "cpi_u.csv", "goals.json", "events.json", "accounts.csv", "checkins.json", "decisions.json", "yearly_bills.csv", "tax_payments.json", "tax_outcomes.json", "yearly_checklist.json", "rules.json", "household.json", "manifest.json"]
+EXPECTED = ["item_mapping.csv", "cpi_u.csv", "goals.json", "events.json", "accounts.csv", "checkins.json", "decisions.json", "yearly_bills.csv", "tax_payments.json", "tax_outcomes.json", "yearly_checklist.json", "appearance.json", "rules.json", "household.json", "manifest.json"]
 
 
 def snapshot(conn) -> dict:
@@ -18,6 +18,7 @@ def snapshot(conn) -> dict:
             "cpi": q("SELECT month, cpi, source FROM cpi ORDER BY month"),
             "goals": q("SELECT key, value, unit, label, note FROM goals ORDER BY key"),
             "events": q("SELECT month, label, kind, person FROM life_events ORDER BY month, label"),
+            "appearance": q("SELECT dimension, name, color, hidden FROM appearance ORDER BY dimension, name"),   # #132
             "rules": db.get_setting(conn, "rules", {}), "household": db.get_setting(conn, "household", {})}
 
 
@@ -29,8 +30,10 @@ def customise(client):
         assert client.post(f"/settings/{kind}/row", data=data).json()["ok"], kind
     client.post("/settings/rules/people", data={"people": "Rosie, Sam", "emp_match": ["hobbiton mill"], "emp_name": ["Hobbiton Mill"]})
     client.post("/settings/household/form", data={"name": "Bagshot Row", "title": "Bagshot Ledger", "currency": "eur", "locale": "en-GB"})
+    client.post("/settings/appearance/save", data={"dimension": "category", "name": ["Fun", "Food"], "color": ["series-4", "#2f7f9a"], "hidden": ["Food"]})   # #132
     with db.pool.connection() as conn:
         assert db.get_setting(conn, "rules", {})["people"] == ["Rosie", "Sam"] and db.get_setting(conn, "household", {})["name"] == "Bagshot Row"
+        assert conn.execute("SELECT count(*) n FROM appearance").fetchone()["n"] == 2
 
 
 def test_zip_round_trips_into_a_new_install(client, reset_db, tmp_path):
@@ -43,7 +46,7 @@ def test_zip_round_trips_into_a_new_install(client, reset_db, tmp_path):
         before = snapshot(conn)
     seed = tmp_path / "seed"; zf.extractall(seed)
     with db.pool.connection() as conn:   # a new install: empty reference tables, then first-boot seeding from the unzipped files
-        conn.execute("TRUNCATE item_mapping, cpi, goals, life_events, settings")
+        conn.execute("TRUNCATE item_mapping, cpi, goals, life_events, settings, appearance")
         seed_reference_tables(conn, seed); db.seed_household(conn, seed); conn.commit()
         after = snapshot(conn)
     assert after == before

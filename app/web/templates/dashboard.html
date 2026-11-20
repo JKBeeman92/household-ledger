@@ -17,12 +17,12 @@
     <h2>Close your first month</h2>
     {% if user and user.is_editor %}
     <ol class="steps">
-      <li>Export the month from your budget tool: a transactions file and a budget file. From EveryDollar these are <b>Transactions</b> and <b>BudgetItems</b>, named like <code>…-06-2026-EveryDollar-Transactions.csv</code>; another tool's pair is mapped once on upload.</li>
-      <li>Upload both on <a href="/upload">Close a month</a> (a <code>.zip</code> of several months works too). Another budget tool's files work through a column mapping.</li>
-      <li>Map any item the ledger has not seen, then the dashboard fills in.</li>
+      <li>Export the month from your budget tool: a transactions file and a budget file. From EveryDollar these are <b>Transactions</b> and <b>BudgetItems</b>, named like <code>…-06-2026-EveryDollar-Transactions.csv</code>; another tool's pair is read through a <b>source profile</b>, set up once on upload.</li>
+      <li>Upload both on <a href="/upload">Close a month</a> (a <code>.zip</code> of several months works too).</li>
+      <li>Add any item the ledger has not seen to <b>Item mapping</b> (Settings), then the dashboard fills in.</li>
     </ol>
     <p class="actions"><a class="btn primary" href="/upload">Close a month</a>
-      <form method="post" action="/setup/sample" class="inline" data-confirm="Load the sample household (Rosie and Sam, 18 invented months)? It replaces this install's empty mapping, goals, events and rules; delete its months later to start over.">{{ csrf_field(request) }}<button class="btn" type="submit">Or look around with the sample household</button></form></p>
+      <form method="post" action="/setup/sample" class="inline" data-confirm="Load the sample household (Rosie and Sam, 18 invented months)? It replaces this install's empty Item mapping, goals, events and rules; delete its months later to start over.">{{ csrf_field(request) }}<button class="btn" type="submit">Or look around with the sample household</button></form></p>
     {% else %}<p>An editor needs to load the first month's exports; the dashboard fills in once they do.</p>{% endif %}
   </div>{% endif %}
 
@@ -69,11 +69,37 @@
 
     <div class="card">
       <h2 id="monthly-chart">Income against outgo, by budget month</h2>
-        <ul class="key row"><li><span class="key-mark" aria-hidden="true">=</span>outgo is living spend plus debt payments</li><li><span class="key-mark" aria-hidden="true">−</span>transfers and exclusions left out (Method tab)</li><li><span class="key-mark ln dot" aria-hidden="true"></span>dotted markers are life events: hover one, or open the list below the chart</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Outgo is living spend plus debt payments. Income and outgo leave out transfers between envelopes and the other exclusions listed on the Method tab. Dotted markers are life events; hover for the label. Each ring is a month. The gap between the income track and the thinner spend-plus-debt track is the month’s net. Months where spend-plus-debt sits above income were funded from savings or a one-off inflow. Spikes in income are bonuses, tax refunds, stimulus or severance; spikes in spend are usually a tax bill, a trip or a project. Hover a dot along the top for the event behind a step change.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Spend + debt</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-monthly" data-source="monthly events"></tbody></table></div></details>
-      <div class="chart" data-draw="monthly" data-source="monthly events"></div>
-      <details class="how evlist"><summary>Life events in this period</summary><ul class="key row events" data-draw="event-list" data-source="events" aria-label="Life events"></ul></details>
+        <p class="finding" data-draw="fd-monthly" data-source="monthly"></p>
+        <ul class="key row"><li>three lines, each named at its right end: income, living spend, and the thinner spend plus debt</li><li><span class="key-mark" aria-hidden="true">=</span>outgo is living spend plus debt payments</li><li><span class="key-mark" aria-hidden="true">−</span>transfers and exclusions left out (Method tab)</li><li><span class="key-mark ln dot" aria-hidden="true"></span>dotted markers are life events, a number where several fall within a month: tap, hover or tab to one, or open the list below the chart</li><li><span class="key-mark ahead" aria-hidden="true"></span>after the last month, a Coming up strip: the next 12 months’ payoffs, yearly bills, tax deadlines, planned purchases and life events</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Each ring is a month. The gap between income and spend plus debt is the month’s net. A month where spend plus debt sits above income was funded from savings or a one-off inflow. Spikes in income are bonuses, tax refunds, stimulus or severance; spikes in spend are usually a tax bill, a trip or a project.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Income against outgo, figures"><table><thead><tr><th scope="col">Month</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Spend + debt</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-monthly" data-source="monthly events"></tbody></table></div></details>
+      <div class="ev-filter" data-draw="ev-filter" data-source="events"></div>
+      <div class="chart" data-draw="monthly" data-source="monthly events coming_up"></div>
+      <details class="how evlist"><summary>Life events in this period</summary><ul class="key row events" data-list="unbounded" data-draw="event-list" data-source="events monthly coming_up" aria-label="Life events"></ul></details>
+      <details class="how evlist"><summary>Coming up</summary><ul class="key row events" data-list="unbounded" data-draw="coming-list" data-source="coming_up events" aria-label="Coming up"></ul></details>
       <div class="legend"><span data-c="0">Income</span><span data-c="1">Living spend</span><span data-c="2">Spend + debt</span></div>
+    </div>
+
+    <div class="card" id="ba-card">
+      <h2 id="ba">Before and after a life event</h2>
+      <p class="finding" data-draw="fd-ba" data-source="before_after"></p>
+      <ul class="key row"><li>every figure is a month's average: the months before the event against its month and the months after</li><li>the Dollars switch applies, so inflation is not read as a change of life</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Before is the budget months before the event; after is the event's own month and the months after it, as many on each side as you choose. Each figure is a month's average over the months loaded on that side, so a side with fewer months still compares fairly, and the line above the table says when a side is short. Savings rate is net kept over income. The categories are living spend: debt payments and the savings groups are in the rows above. A category is new when nothing was spent on it in any loaded month before the event and its first spending falls in the event's month or the two after it, so one that starts much later is not put down to the event. In real dollars the categories are ranked by their change in real dollars. The period filter does not apply here: the event sets the months. On Settings → Life events, an event marked as the new normal also starts the averages the look ahead, the emergency fund and the suggested plan use.</p></details>
+      <div data-draw="ba-empty" data-source="before_after events"></div>
+      <div id="ba-body">
+        <div class="tools ba-tools" data-draw="ba-pick" data-source="before_after">
+          <span class="ba-field"><label for="ba-event">Life event</label> <select id="ba-event"></select></span>
+          <span class="seg" role="group" aria-label="Months on each side" id="ba-n"><button type="button" data-n="3" aria-pressed="false">3 months</button><button type="button" data-n="6" aria-pressed="true">6 months</button><button type="button" data-n="12" aria-pressed="false">12 months</button></span>
+        </div>
+        <p class="note" data-draw="ba-span" data-source="before_after"></p>
+        <div class="tbl" role="region" tabindex="0" aria-labelledby="ba"><table><thead><tr><th scope="col">Figure</th><th scope="col" class="num">Before</th><th scope="col" class="num">After</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="ba-compare" data-source="before_after"></tbody></table></div>
+        <div class="card-head">
+          <h3 class="sub" id="ba-movers">The categories that moved most</h3>
+          <div class="seg" role="group" aria-label="Rank the categories" data-switch="ba-movers"><button type="button" aria-pressed="true" data-show="ba-t-dollars">By dollars</button><button type="button" aria-pressed="false" data-show="ba-t-pct">By percent</button></div>
+        </div>
+        <div id="ba-t-dollars"><div class="tbl short" role="region" tabindex="0" aria-labelledby="ba-movers"><table><thead><tr><th scope="col">Category</th><th scope="col" class="num">Before</th><th scope="col" class="num">After</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="ba-movers-dollars" data-source="before_after"></tbody></table></div></div>
+        <div id="ba-t-pct" hidden><div class="tbl short" role="region" tabindex="0" aria-labelledby="ba-movers"><table><thead><tr><th scope="col">Category</th><th scope="col" class="num">Before</th><th scope="col" class="num">After</th><th scope="col" class="num">Change</th></tr></thead><tbody data-draw="ba-movers-pct" data-source="before_after"></tbody></table></div></div>
+        <p class="note" data-draw="ba-new" data-source="before_after"></p>
+      </div>
     </div>
 
 
@@ -87,20 +113,21 @@
         <div><h3 class="sub">Categories</h3><div class="chart radar" data-draw="radar-b" data-source="cat_year"></div></div>
         <div><h3 class="sub">Categories</h3><div class="chart radar" data-draw="radar-c" data-source="cat_year"></div></div>
       </div>
-      <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table class="words2"><thead><tr><th scope="col">Year</th><th scope="col">Category</th><th scope="col" class="num">Spent</th></tr></thead><tbody data-draw="dt-radar" data-source="cat_year"></tbody></table></div></details>
+      <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Category shape, figures"><table class="words2"><thead><tr><th scope="col">Year</th><th scope="col">Category</th><th scope="col" class="num">Spent</th></tr></thead><tbody data-draw="dt-radar" data-source="cat_year"></tbody></table></div></details>
     </div>
     <div class="grid">
       <div class="card">
         <h2 id="annual-chart">By year</h2>
         <ul class="key row"><li><span class="key-mark" aria-hidden="true">=</span>net is income − spend − debt</li><li>the latest year may be partial (Position tab)</li></ul>
-      <details class="how"><summary>How to read this</summary><p>The latest year may cover only part of a year; the Months column on the Position tab says how many. Net is income minus spend minus debt payments. Three bars per year. When the income bar clears the other two combined, the year was positive. A year with fewer than twelve months loaded has shorter bars than a full year would.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Year</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Debt payments</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-annual" data-source="yearly"></tbody></table></div></details>
+      <details class="how"><summary>How to read this</summary><p>The latest year may cover only part of a year; the Months column on the Position tab says how many. Net is income minus spend minus debt payments. Three bars per year. When the income bar clears the other two combined, the year was positive. A year with fewer than twelve months loaded has shorter bars than a full year would.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="By year, figures"><table><thead><tr><th scope="col">Year</th><th scope="col">Income</th><th scope="col">Living spend</th><th scope="col">Debt payments</th><th scope="col">Net</th></tr></thead><tbody data-draw="dt-annual" data-source="yearly"></tbody></table></div></details>
         <div class="chart" data-draw="annual" data-source="yearly"></div>
         <div class="legend"><span data-c="0">Income</span><span data-c="1">Living spend</span><span data-c="3">Debt payments</span></div>
       </div>
       <div class="card">
         <h2 id="employer-chart">Paycheck source, by month</h2>
-        <ul class="key row"><li>employer read from the deposit text (employers rule)</li><li>deposits it cannot place: Unknown</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Employer is read from the deposit description using the employers rule in Settings; deposits it cannot place are shown as Unknown. Paycheck deposits by month, colored by employer. A change of color is a job change; a taller month has three paychecks or a bonus paid through payroll. The dotted markers are life events of kind job, and events with no kind; hover one for its label.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Employer</th><th scope="col">Paid</th><th scope="col">Deposits</th></tr></thead><tbody data-draw="dt-employer" data-source="employer"></tbody></table></div></details>
+        <p class="finding" data-draw="fd-employer" data-source="employer"></p>
+        <ul class="key row"><li>employer read from the deposit text (employer names: Settings → Pipeline rules)</li><li>deposits it cannot place: Unknown</li><li><span class="key-mark ln dot" aria-hidden="true"></span>dots along the top: job events, and events with no kind; tap, hover or tab to one for its label</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Paycheck deposits by month, coloured by employer. A change of colour is a change of employer; a taller month has three paychecks or a bonus paid through payroll.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Paycheck source, figures"><table><thead><tr><th scope="col">Month</th><th scope="col">Employer</th><th scope="col">Paid</th><th scope="col">Deposits</th></tr></thead><tbody data-draw="dt-employer" data-source="employer"></tbody></table></div></details>
         <div class="chart" data-draw="employer" data-source="employer events"></div>
         <div class="legend" data-draw="employer-legend" data-source="employer"></div>
       </div>
@@ -124,6 +151,15 @@
       <p class="tools" data-draw="lm-nw-toggle" data-source="net_worth"></p>
       <details class="how"><summary>How to read this</summary><p>Net worth is every account's month-end balance (Settings → Accounts; entered at Close a month), assets less debts, leaving out accounts marked not in net worth. Its change since last month is split in two. <b>What you did</b> is the month's income less living spend: what was kept plus what was paid on debts, since paying a loan down is the household's own doing (and, once stated, pre-tax saving such as a 401(k)). <b>What happened to you</b> is the rest: investments and the home's estimate moving, interest charged, and money moving into or out of accounts this page does not track. An account's first month is shown on its own, so adding one is not read as progress. A debt with no balance entered is estimated, and the figure says so. One thing lands on the wrong side: money your budget counts as spent that goes into an account tracked here (a savings envelope paid into a savings account) shows under what happened, not what you did. <b>Excluding home</b> takes a home's typed estimate out, since it moves the total more than any month's decisions.</p></details>
       <dl class="dti" data-draw="lm-nw" data-source="net_worth balances"></dl>
+    </div>
+    <div class="card" id="lm-people-card" hidden>
+      <h2 id="lm-people">By person</h2>
+      <ul class="key row"><li>what each person earned, and their part of the month's income</li><li>what each person's own envelopes spent</li><li>the change since last month</li></ul>
+      <p data-draw="lm-people-month" data-source="by_person budget_items"></p>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="lm-people"><table><thead><tr><th scope="col">Person</th><th scope="col" class="num">Earned</th><th scope="col" class="num">Part of income</th><th scope="col" class="num">Earned, change</th><th scope="col" class="num">Spent from own envelopes</th><th scope="col" class="num">Spent, change</th></tr></thead><tbody data-draw="lm-people-rows" data-source="by_person"></tbody></table></div>
+      <details class="how mt-3"><summary>How to read this</summary><p><b>Earned</b>: the income each person brings in, by the earner rule. It is the Income by earner chart on the People tab, one month at a time.</p><p><b>Spent from own envelopes</b>: what the envelopes the payer rules give each person spent. It is the Spend by payer chart, so it shows whose envelope, not who paid.</p><p><b>Joint</b>: what no rule gives to one person, which is joint income and the joint envelopes.</p><p>Accounts sit under the person Settings → Accounts names, and decisions under the person they name. One that names no one, or someone the People rule no longer has, sits under Joint. A change that rounds to nothing reads no change. These are figures, not a fair-share reckoning. The card shows when the People rule names two or more people; the earner, payer and People rules are on <a href="/settings#rules">Settings → Pipeline rules</a>.</p></details>
+      <details class="listcount mt-3" id="lm-people-list"><summary data-draw="lm-people-count" data-source="by_person balances decisions">Accounts and decisions</summary>
+        <dl class="dti long-labels" data-draw="lm-people-own" data-source="by_person balances decisions" data-list="unbounded"></dl></details>
     </div>
     <div class="card" id="lm-decisions-card">
       <h2 id="lm-decisions">Decisions in force</h2>
@@ -152,16 +188,17 @@
     </div>
     <div class="card" id="lm-ahead-card">
       <h2 id="lm-ahead">Where the current pace leads</h2>
-      <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the 12-month pace, with the 3-month pace beside it</li></ul>
-      <div class="tbl" role="region" tabindex="0" aria-labelledby="lm-ahead"><table><thead><tr><th scope="col">In</th><th scope="col" class="num">Kept, 12-month pace</th><th scope="col" class="num">Kept, 3-month pace</th><th scope="col" class="num">Net worth</th></tr></thead><tbody data-draw="ahead-rows" data-source="look_ahead"></tbody></table></div>
+      <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the pace (the last twelve months, or since the new normal), with the 3-month pace beside it</li></ul>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="lm-ahead"><table><thead><tr><th scope="col">In</th><th scope="col" class="num">Kept, at the pace</th><th scope="col" class="num">Kept, 3-month pace</th><th scope="col" class="num">Net worth</th></tr></thead><tbody data-draw="ahead-rows" data-source="look_ahead"></tbody></table></div>
+      <p class="note" data-draw="ahead-since" data-source="look_ahead"></p>
       <h3 class="sub" id="lm-ahead-dates">Dates at this pace, 12 months on</h3>
       <dl class="dti" data-draw="ahead-facts" data-source="look_ahead" aria-labelledby="lm-ahead-dates"></dl>
-      <details class="how"><summary>How it is worked out</summary><p>The pace is the monthly net (income less living spend and debt payments) averaged over the last twelve budget months. Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. No investment return is assumed unless a yearly growth is set (Settings → Pipeline rules → All rules as JSON: assumed_growth_pct), and no change in income or spending.</p><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
+      <details class="how"><summary>How it is worked out</summary><p>The pace is the monthly net (income less living spend and debt payments) averaged over the last twelve budget months, or over the months since a life event the household marked as its new normal (Settings → Life events). Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. No investment return is assumed unless a yearly growth is set (Settings → Pipeline rules → All rules as JSON: assumed_growth_pct), and no change in income or spending.</p><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
     </div>
     <div class="card" id="lm-ef-card">
       <h2 id="lm-ef">{{ glyph('emergency-fund') }} Emergency fund</h2>
       <ul class="key row"><li>if income stopped: months of outgo the emergency savings would cover</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Emergency money is the month-end balance of the asset accounts marked Emergency (Settings → Accounts; cash and savings accounts are, unless you switch one off, such as a holiday fund). Outgo is living spend plus debt payments, averaged over the last twelve budget months, so one heavy month does not swing it. Total outgo is used, not a bare-bones budget: it is the honest figure. A target shows when you set emergency_months on Settings → Goals.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Emergency money is the month-end balance of the asset accounts marked Emergency (Settings → Accounts; cash and savings accounts are, unless you switch one off, such as a holiday fund). Outgo is living spend plus debt payments, averaged over the last twelve budget months (or since the household's new normal, when it marked one), so one heavy month does not swing it. Total outgo is used, not a bare-bones budget: it is the honest figure. A target shows when you set one on Settings → Goals: a goal with the key emergency_months, in months.</p></details>
       <dl class="dti" data-draw="lm-ef" data-source="emergency_fund goals"></dl>
     </div>
     <div class="card" id="lm-dti-card">
@@ -193,15 +230,16 @@
         <ul class="key row"><li><span class="bar" style="--k: var(--danger)"></span>needs a look</li><li><span class="bar" style="--k: var(--success)"></span>room to spare</li><li>for income, savings, giving and debt, more is better</li></ul>
         <details class="how"><summary>How to read this</summary><p>Spent minus planned for the month. Red bars went over their envelope; green came in under. A large red bar on a planned-zero category means an unplanned expense, not an overrun. Income is shown as received minus expected, so red means less arrived than expected.</p></details>
         <div class="chart" data-draw="lm-var" data-source="lm_cats"></div>
-        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Category</th><th scope="col">Planned</th><th scope="col">Spent</th><th scope="col">vs plan</th></tr></thead><tbody data-draw="dt-lm-var" data-source="lm_cats"></tbody></table></div></details>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Over and under plan, figures"><table><thead><tr><th scope="col">Category</th><th scope="col">Planned</th><th scope="col">Spent</th><th scope="col">vs plan</th></tr></thead><tbody data-draw="dt-lm-var" data-source="lm_cats"></tbody></table></div></details>
       </div>
       <div class="card">
-        <h2 id="lm-avg-chart">Against the trailing twelve months</h2>
+        <h2 id="lm-avg-chart">Against the recent average</h2>
         <p class="finding" data-draw="fd-lm-avg" data-source="lm_cats"></p>
-        <ul class="key row"><li><span class="bar r" style="--k: var(--danger)"></span>above its average</li><li><span class="bar l" style="--k: var(--success)"></span>below it</li><li>should the plan move?</li></ul>
-        <details class="how"><summary>How to read this</summary><p>Spent this month minus the average of the twelve months before it, by category. This compares the month with its own recent history rather than with the plan. A category that is over plan but at its twelve-month average has a plan problem; one that is at plan but far above its average had an unusual month.</p></details>
+        <p class="note" data-draw="lm-avg-since" data-source="plan_suggestions"></p>
+        <ul class="key row"><li><span class="bar" style="--k: var(--danger)"></span>worse than usual</li><li><span class="bar" style="--k: var(--success)"></span>better than usual</li><li>a bar to the right is above its average, to the left below it</li><li>for savings, giving and debt, more is better</li><li>a bar far from zero, either way, is a plan to look at again</li></ul>
+        <details class="how"><summary>How to read this</summary><p>Spent this month minus the average of the twelve months before it (or of the months since a life event the household marked as its new normal), by category. This compares the month with its own recent history rather than with the plan. A category that is over plan but at its average has a plan problem; one that is at plan but far above its average had an unusual month.</p></details>
         <div class="chart" data-draw="lm-avg" data-source="lm_cats"></div>
-        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Category</th><th scope="col">12-month average</th><th scope="col">Spent</th><th scope="col">vs average</th></tr></thead><tbody data-draw="dt-lm-avg" data-source="lm_cats"></tbody></table></div></details>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Against the recent average, figures"><table><thead><tr><th scope="col">Category</th><th scope="col">Average</th><th scope="col">Spent</th><th scope="col">vs average</th></tr></thead><tbody data-draw="dt-lm-avg" data-source="lm_cats"></tbody></table></div></details>
       </div>
     </div>
     <div class="card">
@@ -210,15 +248,16 @@
         <div class="seg" role="group" aria-label="Which table" data-switch="lm-tables"><button type="button" aria-pressed="true" data-show="lm-t-cats">By category</button><button type="button" aria-pressed="false" data-show="lm-t-items">Envelopes that missed most</button></div>
       </div>
       <div id="lm-t-cats">
-        <ul class="key row"><li><span class="key-mark" aria-hidden="true">Σ</span>Planned, spent, 12-month average</li><li><span class="key-mark" aria-hidden="true">↑10</span>Suggested plan: the average rounded up to the next $10</li><li><span class="key-mark" aria-hidden="true">=</span>Housing, Debt, Insurance keep their plan</li></ul>
-        <div class="tbl short"><table data-source="lm_cats" data-row-key="category"><thead><tr>
-          <th data-field="category">Category</th><th data-field="planned">Planned</th><th data-field="actual">Spent</th><th data-field="vs_plan">vs plan</th><th data-field="avg12">12-mo avg</th><th data-field="vs_avg">vs avg</th><th data-field="suggest">Suggested plan</th>
+        <p class="note" data-draw="lm-since" data-source="plan_suggestions"></p>
+        <ul class="key row" data-draw="lm-cats-key" data-source="lm_cats goal_config"></ul>
+        <div class="tbl short" role="region" tabindex="0" aria-labelledby="lm-table"><table data-source="lm_cats" data-row-key="category"><thead><tr>
+          <th data-field="category">Category</th><th data-field="planned">Planned</th><th data-field="actual">Spent</th><th data-field="vs_plan">vs plan</th><th data-field="avg12">Average</th><th data-field="vs_avg">vs avg</th><th data-field="suggest">Suggested plan</th>
         </tr></thead><tbody data-draw="lm-cats"></tbody></table></div>
       </div>
       <div id="lm-t-items" hidden>
         <h3 class="visually-hidden" id="lm-items">Envelopes that missed by the most</h3>
         <ul class="key row"><li><span class="key-mark" aria-hidden="true">25</span>Largest gaps, either way</li><li><span class="key-mark" aria-hidden="true">+</span>spent more than planned</li><li><span class="key-mark" aria-hidden="true">&lt;$1</span>hidden</li></ul>
-        <div class="tbl short"><table data-source="lm_items" data-row-key="item"><thead><tr>
+        <div class="tbl short" role="region" tabindex="0" aria-labelledby="lm-items"><table data-source="lm_items" data-row-key="item"><thead><tr>
           <th data-field="item">Envelope</th><th data-field="category">Category</th><th data-field="planned">Planned</th><th data-field="actual">Spent</th><th data-field="gap">Gap</th>
         </tr></thead><tbody data-draw="lm-items"></tbody></table></div>
       </div>
@@ -244,7 +283,7 @@
         <p class="finding" data-draw="fd-goal" data-source="goal_month goals"></p>
         <ul class="key row"><li><span class="key-mark fix" aria-hidden="true"></span>each month: the twelve-month trailing share</li><li><span class="key-mark wp" aria-hidden="true"></span>a target, floor or cap, with its figure</li><li><span class="key-mark" aria-hidden="true">↑</span>above target is good for giving and savings, bad for housing</li></ul>
       <div class="chart" data-draw="goal-lines" data-source="goal_month goals"></div>
-        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Giving / gross</th><th scope="col">Planned savings / gross</th><th scope="col">Housing and utilities / take-home</th></tr></thead><tbody data-draw="dt-goal-lines" data-source="goal_month"></tbody></table></div></details>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="The three ratios, figures"><table><thead><tr><th scope="col">Month</th><th scope="col">Giving / gross</th><th scope="col">Planned savings / gross</th><th scope="col">Housing and utilities / take-home</th></tr></thead><tbody data-draw="dt-goal-lines" data-source="goal_month"></tbody></table></div></details>
       <div class="legend"><span data-c="0">Giving / gross</span><span data-c="1">Planned savings / gross</span><span data-c="2">Housing and utilities / take-home</span></div>
       <details class="how"><summary>How to read this</summary><p>Each line is a share over the last twelve months, one ring a month; the filled dot at the right, with its dotted level, is your target, floor or cap. Above it is good for giving and savings, and bad for housing. Twelve months smooth out a three-paycheck month or a lump payment, so a change in habit takes a few months to show.</p><p>Giving and planned savings are shares of gross: the stated annual salary spread evenly across months. Housing and utilities are a share of take-home: the paychecks that actually landed.</p></details>
     </div>
@@ -253,7 +292,7 @@
         <p class="finding" data-draw="fd-ef" data-source="emergency_fund goals"></p>
         <ul class="key row"><li><span class="key-mark fix" aria-hidden="true"></span>months of outgo the emergency savings cover</li><li><span class="key-mark wp" aria-hidden="true"></span>your target, when set</li><li><span class="key-mark" aria-hidden="true">↑</span>higher is safer</li></ul>
       <div class="chart" data-draw="ef-lines" data-source="emergency_fund goals"></div>
-        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Emergency money</th><th scope="col">Outgo a month</th><th scope="col">Months covered</th></tr></thead><tbody data-draw="dt-ef" data-source="emergency_fund"></tbody></table></div></details>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Emergency fund coverage, figures"><table><thead><tr><th scope="col">Month</th><th scope="col">Emergency money</th><th scope="col">Outgo a month</th><th scope="col">Months covered</th></tr></thead><tbody data-draw="dt-ef" data-source="emergency_fund"></tbody></table></div></details>
       <details class="how"><summary>How to read this</summary><p>Each month-end's emergency money (accounts marked Emergency on Settings → Accounts) divided by the average monthly living spend plus debt payments over the twelve budget months to then. The waypoint, with its dotted level, is emergency_months from Settings → Goals.</p></details>
     </div>
     <div class="card">
@@ -261,7 +300,7 @@
         <p class="finding" data-draw="fd-dti" data-source="debt_to_income"></p>
         <ul class="key row"><li><span class="key-mark fix" aria-hidden="true"></span>each month: the twelve-month trailing share of gross</li><li><span class="key-mark wp" aria-hidden="true"></span>your cap, when set</li><li><span class="key-mark" aria-hidden="true">↓</span>lower is better</li></ul>
       <div class="chart" data-draw="dti-lines" data-source="debt_to_income goals"></div>
-        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">All debt / gross</th><th scope="col">Housing / gross</th><th scope="col">All debt / take-home</th><th scope="col">Housing / take-home</th></tr></thead><tbody data-draw="dt-dti" data-source="debt_to_income"></tbody></table></div></details>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Debt against income, figures"><table><thead><tr><th scope="col">Month</th><th scope="col">All debt / gross</th><th scope="col">Housing / gross</th><th scope="col">All debt / take-home</th><th scope="col">Housing / take-home</th></tr></thead><tbody data-draw="dt-dti" data-source="debt_to_income"></tbody></table></div></details>
       <div class="legend"><span data-c="0">All debt / gross</span><span data-c="2">Housing / gross</span></div>
       <details class="how"><summary>How to read this</summary><p>Debt payments, and housing payments, as a share of gross pay, each over the trailing twelve months so a month with an extra payment does not whip the line around. Housing is the housing categories plus any mortgage-type debt (Last month tab, "Debt against income"). The waypoints are the caps you set on Settings → Goals (dti_cap, housing_dti_cap); without one there is no waypoint, because lenders' rules of thumb are theirs, not a household's. With no gross pay recorded there is nothing to draw.</p></details>
     </div>
@@ -270,14 +309,14 @@
         <h2 id="goal-table">Latest months in detail</h2>
         <ul class="key row"><li><span class="key-mark" aria-hidden="true">1</span>single months, newest first</li><li><span class="key-mark" aria-hidden="true">3×</span>three-paycheck months lower the housing share</li></ul>
         <details class="how"><summary>How to read this</summary><p>Single-month figures, newest first. Expect the housing share to drop in three-paycheck months and rise in two-paycheck months.</p></details>
-        <div class="tbl"><table data-source="goal_month" data-row-key="m"><thead><tr>
+        <div class="tbl" role="region" tabindex="0" aria-labelledby="goal-table"><table data-source="goal_month" data-row-key="m"><thead><tr>
           <th data-field="m">Month</th><th data-field="paychecks">Paychecks</th><th data-field="takehome">Take-home</th><th data-field="giving">Giving</th><th data-field="giving_share">/ gross</th><th data-field="joy_planned">Planned savings</th><th data-field="joy_share">/ gross</th><th data-field="housing">Housing and utilities</th><th data-field="housing_share">/ take-home</th>
         </tr></thead><tbody data-draw="goal-table"></tbody></table></div>
       </div>
       <div class="card">
         <div class="card-head"><h2 id="goal-params">The targets as recorded</h2><p class="m-0" data-draw="goal-set" data-source="goals"></p></div>
         <ul class="key row"><li>your stated figures, not derived from data</li><li>gross salary is asked for at every month-close</li></ul>
-        <div class="tbl"><table data-source="goals" data-row-key="key"><thead><tr><th data-field="label">Target</th><th data-field="value">Value</th><th data-field="note">Note</th><th data-field="confirmed_at">Last confirmed</th></tr></thead><tbody data-draw="goal-params"></tbody></table></div>
+        <div class="tbl" role="region" tabindex="0" aria-labelledby="goal-params"><table data-source="goals" data-row-key="key"><thead><tr><th data-field="label">Target</th><th data-field="value">Value</th><th data-field="note">Note</th><th data-field="confirmed_at">Last confirmed</th></tr></thead><tbody data-draw="goal-params"></tbody></table></div>
         <details class="how"><summary>What is not here yet</summary><p>These are the user's stated figures, not derived from the data. Gross salary is asked for at every month-close; the others change only when the user says so. Record or change any of them on Settings → Goals. Investing that is deposited outside your budget tool never appears in the exports, so this page cannot see it. Once the amount is recorded in the targets table it can be shown as a share of gross alongside the others, and it should be: it is the one goal this page currently cannot check.</p></details>
       </div>
     </div>
@@ -288,8 +327,9 @@
     <p class="intro">Which categories carry the spending, how each has grown, and what sits inside any one of them.</p>
     <div class="card">
       <h2 id="cat-chart">Spend by category, by year</h2>
-        <ul class="key row"><li>stacked by category, largest at the bottom</li><li><span class="key-mark" aria-hidden="true">+</span>debt, taxes, large purchases and savings spending included</li><li><span class="key-mark" aria-hidden="true">−</span>transfers and plugs left out</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Stacked by category. Debt payments, taxes, large purchases and savings-envelope spending are included and labelled; transfers and plugs are not. Each column is a year; each band a category, largest at the bottom. A band that suddenly grows or appears marks a year when that category changed size, such as a one-off purchase or two years of one bill paid in one budget year.</p></details>
+        <p class="finding" data-draw="fd-cat" data-source="cat_year"></p>
+        <ul class="key row"><li>stacked by category, largest at the bottom; the legend runs in the same order</li><li><span class="key-mark" aria-hidden="true">+</span>debt, taxes, large purchases and savings spending included</li><li><span class="key-mark" aria-hidden="true">−</span>transfers and plugs left out</li></ul>
+      <details class="how"><summary>How to read this</summary><p>Each column is a year and each band a category. A year with fewer than twelve months loaded is labelled with its months and stands shorter than a full year. A band that suddenly grows or appears marks a year when that category changed size, such as a one-off purchase or two years of one bill paid in one budget year.</p></details>
       <div class="chart" data-draw="cat-stack" data-source="cat_year"></div>
       <div class="legend" data-draw="cat-legend" data-source="cat_year"></div>
     </div>
@@ -302,17 +342,17 @@
         <ul class="key row"><li><span class="key-mark" aria-hidden="true">Σ</span>last column: the {{ span.years }}-year total</li><li><span class="key-mark" aria-hidden="true">—</span>nothing booked that year</li></ul>
       
       <details class="how"><summary>How to read this</summary><p>Same figures as the chart. Columns are budget years; the last column is the {{ span.years }}-year total. Dashes mean nothing was booked to that category that year. Negative numbers are possible where refunds or inbound transfers outweighed spending in an envelope.</p></details>
-      <div class="tbl"><table data-source="cat_pivot" data-row-key="category"><thead><tr>
+      <div class="tbl" role="region" tabindex="0" aria-label="Category by year"><table data-source="cat_pivot" data-row-key="category"><thead><tr>
         <th data-field="category">Category</th><th data-field="total">Total</th>
       </tr></thead><tbody data-draw="cat-pivot"></tbody></table></div>
     </div>
       <div id="w-t-items" hidden>
         <h3 class="visually-hidden" id="item-table">Items inside a category</h3>
-        <ul class="key row"><li>pick a category</li><li>merged names from the mapping</li></ul>
+        <ul class="key row"><li>pick a category</li><li>merged names from Item mapping</li></ul>
       
-      <details class="how"><summary>How to read this</summary><p>Pick a category to see its canonical items by year. Item names are the merged names from the mapping, not the budget tool's originals. Items are the budget tool's envelopes after merging renamed copies (Grocery 2 and Grocery are one item). Pick a category above to change the list.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Pick a category to see its canonical items by year. Item names are the merged names from Item mapping, not the budget tool's originals. Items are the budget tool's envelopes after merging renamed copies (Grocery 2 and Grocery are one item). Pick a category above to change the list.</p></details>
       <div class="controls"><select class="cat-pick" aria-label="Category" data-draw="cat-pick" data-source="cat_year item_year"></select></div>
-      <div class="tbl"><table data-source="item_pivot" data-row-key="item"><thead><tr>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="item-table"><table data-source="item_pivot" data-row-key="item"><thead><tr>
         <th data-field="item">Item</th><th data-field="total">Total</th>
       </tr></thead><tbody data-draw="item-pivot"></tbody></table></div>
     </div>
@@ -326,24 +366,25 @@
       <h2 id="recurring-table">Recurring costs</h2>
         <ul class="key row"><li>subscriptions, utilities and insurance</li><li><span class="key-mark" aria-hidden="true">÷12</span>now: twelve-month average, empty months included</li><li>inactive: no charge in three months</li></ul>
       <details class="how"><summary>How to read this</summary><p>Subscriptions, utilities and insurance. "Now" is the average over the last twelve budget months, including months with no charge, so an annual bill shows as a twelfth. Inactive rows have had no charge in the last three months. “Now / month” averages the last twelve budget months including months with no charge, so an annual bill shows as a twelfth of itself. Compare it with the lifetime column to see how long a cost has been running.</p></details>
-      <div class="tbl"><table data-source="recurring" data-row-key="item"><thead><tr>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="recurring-table"><table data-source="recurring" data-row-key="item"><thead><tr>
         <th data-field="item">Item</th><th data-field="active">Active</th><th data-field="first">First</th><th data-field="last">Last</th><th data-field="monthly_now">Now / month</th><th data-field="lifetime">Lifetime</th>
       </tr></thead><tbody data-draw="recurring"></tbody></table></div>
     </div>
     <div class="grid">
       <div class="card">
         <h2 id="slush-chart">Catch-all envelopes</h2>
+        <p class="finding" data-draw="fd-slush" data-source="slush"></p>
         <ul class="key row"><li><span class="key-mark" aria-hidden="true">Σ</span>catch-alls: <span data-draw="slush-items" data-source="goal_config">none yet</span></li><li><span class="key-mark" aria-hidden="true">↑</span>a tall bar is spending under a saving label</li><li><code>catchall_items</code> in the rules on Settings</li></ul>
       <details class="how"><summary>How to read this</summary><p>Spending booked to the envelopes your rules name as catch-alls; name them as <code>catchall_items</code> in the rules on the Settings page. Envelopes named like savings can end up holding everyday spending. When a bar here is tall, real spending was hidden under a saving label that year. An empty chart means nothing was booked to these envelopes.</p></details>
         <div class="chart" data-draw="slush" data-source="slush"></div>
         <div class="legend" data-draw="slush-legend" data-source="slush"></div>
-        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table class="words2"><thead><tr><th scope="col">Year</th><th scope="col">Envelope</th><th scope="col" class="num">Net spent</th></tr></thead><tbody data-draw="dt-slush" data-source="slush"></tbody></table></div><p class="note">A negative figure is money returned to the envelope over the year.</p></details>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Catch-all envelopes, figures"><table class="words2"><thead><tr><th scope="col">Year</th><th scope="col">Envelope</th><th scope="col" class="num">Net spent</th></tr></thead><tbody data-draw="dt-slush" data-source="slush"></tbody></table></div><p class="note">A negative figure is money returned to the envelope over the year.</p></details>
       </div>
       <div class="card">
         <h2 id="excl-table">What was removed from the totals</h2>
         <ul class="key row"><li><span class="key-mark" aria-hidden="true">−</span>taken out before any total</li><li><span class="key-mark" aria-hidden="true">Σ</span><span data-draw="excl-context" data-source="exclusions">—</span></li></ul>
       <details class="how"><summary>How to read this</summary><p>Rows and dollars taken out so income and spend mean what they say. These rows and dollars exist in the raw exports but were removed before any total was computed. Dollar rows show the amount removed; row counts show how many transactions the rule touched.</p></details>
-        <div class="tbl"><table data-source="exclusions" data-row-key="key"><thead><tr><th data-field="key">Adjustment</th><th data-field="value">Amount</th></tr></thead><tbody data-draw="exclusions"></tbody></table></div>
+        <div class="tbl" role="region" tabindex="0" aria-labelledby="excl-table"><table data-source="exclusions" data-row-key="key"><thead><tr><th data-field="key">Adjustment</th><th data-field="value">Amount</th></tr></thead><tbody data-draw="exclusions"></tbody></table></div>
       </div>
     </div>
   </section>
@@ -382,11 +423,12 @@
     </div>
     <div class="card" id="q-ahead-card">
       <h2 id="q-ahead">Where the current pace leads</h2>
-      <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the 12-month pace, with the 3-month pace beside it</li></ul>
-      <div class="tbl" role="region" tabindex="0" aria-labelledby="q-ahead"><table><thead><tr><th scope="col">In</th><th scope="col" class="num">Kept, 12-month pace</th><th scope="col" class="num">Kept, 3-month pace</th><th scope="col" class="num">Net worth</th></tr></thead><tbody data-draw="ahead-rows" data-source="look_ahead"></tbody></table></div>
+      <ul class="key row"><li>estimates, if the household keeps the pace it has: not a plan</li><li>the pace (the last twelve months, or since the new normal), with the 3-month pace beside it</li></ul>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="q-ahead"><table><thead><tr><th scope="col">In</th><th scope="col" class="num">Kept, at the pace</th><th scope="col" class="num">Kept, 3-month pace</th><th scope="col" class="num">Net worth</th></tr></thead><tbody data-draw="ahead-rows" data-source="look_ahead"></tbody></table></div>
+      <p class="note" data-draw="ahead-since" data-source="look_ahead"></p>
       <h3 class="sub" id="q-ahead-dates">Dates at this pace, 12 months on</h3>
       <dl class="dti" data-draw="ahead-facts" data-source="look_ahead" aria-labelledby="q-ahead-dates"></dl>
-      <details class="how"><summary>How it is worked out</summary><p>The pace is the monthly net (income less living spend and debt payments) averaged over the last twelve budget months. Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. No investment return is assumed unless a yearly growth is set (Settings → Pipeline rules → All rules as JSON: assumed_growth_pct), and no change in income or spending.</p><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
+      <details class="how"><summary>How it is worked out</summary><p>The pace is the monthly net (income less living spend and debt payments) averaged over the last twelve budget months, or over the months since a life event the household marked as its new normal (Settings → Life events). Kept adds the payments each debt frees once it is paid off. Net worth is today's, plus what is kept, plus what the debt payments take off the balances. No investment return is assumed unless a yearly growth is set (Settings → Pipeline rules → All rules as JSON: assumed_growth_pct), and no change in income or spending.</p><dl class="dti" data-draw="ahead-inputs" data-source="look_ahead"></dl></details>
     </div>
   </section>
   <section id="position" class="page" role="tabpanel" aria-labelledby="tab-position" tabindex="0" hidden>
@@ -395,7 +437,7 @@
       <h2 id="yearly-table">Year by year</h2>
         <ul class="key row"><li><span class="key-mark" aria-hidden="true">%</span>savings rate is net ÷ income</li><li><span class="key-mark" aria-hidden="true">$</span>real columns in {{ span.cpi_base_long }} prices (Method)</li></ul>
       <details class="how"><summary>How to read this</summary><p>Savings rate is net ÷ income, both as they reach the budget (take-home): positive means the year added to savings, negative means it drew them down. Savings rate incl. pre-tax saving adds the 401(k), 403(b), HSA and similar saving taken from pay before it reaches the budget, as stated per person on Settings → Goals, to both sides; it shows "—" until one is stated. Real columns restate each month in {{ span.cpi_base_long }} prices using the price index (Method tab).</p></details>
-      <div class="tbl"><table data-source="yearly" data-row-key="y"><thead><tr>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="yearly-table"><table data-source="yearly" data-row-key="y"><thead><tr>
         <th data-field="y">Year</th><th data-field="months">Months</th><th data-field="income">Income</th><th data-field="spend">Living spend</th><th data-field="debt">Debt payments</th><th data-field="net">Net</th><th data-field="savings_rate">Savings rate</th><th data-field="savings_rate_pretax">Savings rate incl. pre-tax saving</th><th data-field="income_real">Income (real)</th><th data-field="spend_real">Spend (real)</th><th data-field="net_real">Net (real)</th>
       </tr></thead><tbody data-draw="yearly"></tbody></table></div>
     </div>
@@ -405,7 +447,7 @@
         <p class="finding" data-draw="fd-debts" data-source="debts"></p>
         <ul class="key row"><li><span class="key-mark" aria-hidden="true">↔</span>first to last payment month</li><li><span class="key-mark" aria-hidden="true">Σ</span>label: total paid, interest included</li></ul>
         <p class="tools" data-draw="debt-order" data-source="debts"></p>
-      <details class="how"><summary>How to read this</summary><p>Each bar spans the months a debt item received payments; the label is the total paid. Bars run from first to last payment month. Debts given a type (Settings → Item mapping → Debt types) are grouped by it, with each type's total; once any debt has a type, a debt with no payment in the latest months (the debt_paid_off_months rule, 3 by default) is folded under Paid off. Total paid includes principal and interest as the budget tool recorded them, not the original loan balance.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Debt</th><th scope="col">Type</th><th scope="col">First payment</th><th scope="col">Last payment</th><th scope="col">Months</th><th scope="col">Total paid</th></tr></thead><tbody data-draw="dt-debts" data-source="debts"></tbody></table></div></details>
+      <details class="how"><summary>How to read this</summary><p>Each bar spans the months a debt item received payments; the label is the total paid. Bars run from first to last payment month. Debts given a type (Settings → Item mapping → Debt types) are grouped by it, with each type's total; once any debt has a type, a debt with no payment in the latest months (the debt_paid_off_months rule, 3 by default) is folded under Paid off. Total paid includes principal and interest as the budget tool recorded them, not the original loan balance.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Debt timeline, figures"><table><thead><tr><th scope="col">Debt</th><th scope="col">Type</th><th scope="col">First payment</th><th scope="col">Last payment</th><th scope="col">Months</th><th scope="col">Total paid</th></tr></thead><tbody data-draw="dt-debts" data-source="debts"></tbody></table></div></details>
         <div class="chart" data-draw="debts" data-source="debts"></div>
         <details class="how paidoff" data-draw="debts-paid-box" data-source="debts"><summary>Paid off</summary><div class="chart" data-draw="debts-paid" data-source="debts"></div></details>
       </div>
@@ -415,20 +457,20 @@
         <ul class="key row"><li><span class="key-mark fix" aria-hidden="true"></span>net worth at each month-end</li><li><span class="key-mark ln dot" aria-hidden="true"></span>dotted: a debt in it is estimated</li><li><span class="key-mark" aria-hidden="true">▼</span>accounts added</li></ul>
         <div class="chart" data-draw="nw-chart" data-source="balances net_worth"></div>
         <div class="legend" data-draw="nw-legend" data-source="balances"></div>
-        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Month</th><th scope="col">Assets</th><th scope="col">Debts</th><th scope="col">Net worth</th><th scope="col">Change</th><th scope="col">You did</th><th scope="col">Happened</th></tr></thead><tbody data-draw="dt-nw" data-source="net_worth"></tbody></table></div></details>
+        <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Net worth, figures"><table><thead><tr><th scope="col">Month</th><th scope="col">Assets</th><th scope="col">Debts</th><th scope="col">Net worth</th><th scope="col">Change</th><th scope="col">You did</th><th scope="col">Happened</th></tr></thead><tbody data-draw="dt-nw" data-source="net_worth"></tbody></table></div></details>
         <details class="how"><summary>How to read this</summary><p>Assets stack above zero and debts below, by account type; the track of rings is net worth, assets less debts. Where a debt had no balance entered for a month its figure is estimated (from the one before, a month's interest and the payments since): that month's ring and track are dotted; enter it at Close a month to make them solid. A triangle marks a month in which accounts were added, so a step up there is new accounts, not progress. Colours follow the order of the types until each type gets a colour of its own.</p></details>
       </div>
       <div class="card">
         <h2 id="balances-table">Balances at the latest month-end</h2>
         <details class="how"><summary>How to read this</summary><p>What each account stood at at the end of the latest budget month with any balance, as typed at Close a month or in Settings → Accounts → Balances history. <b>Estimated</b>: a debt with no balance typed for the month, worked out from the one before plus a month's interest (at its APR), less the payments to its linked item. <b>Carried</b>: an asset with no balance typed, unchanged from the month before. Confirm both at Close a month.</p></details>
         <p class="muted" data-draw="balances-empty" data-source="balances"></p>
-        <div class="tbl short"><table><thead><tr><th scope="col">Account</th><th scope="col">Kind</th><th scope="col">Balance</th><th scope="col">Status</th></tr></thead><tbody data-draw="balances-latest" data-source="balances"></tbody></table></div>
+        <div class="tbl short" role="region" tabindex="0" aria-labelledby="balances-table"><table><thead><tr><th scope="col">Account</th><th scope="col">Kind</th><th scope="col">Balance</th><th scope="col">Status</th></tr></thead><tbody data-draw="balances-latest" data-source="balances"></tbody></table></div>
       </div>
       <div class="card">
         <h2 id="net-chart">Net kept, by year</h2>
         <p class="finding" data-draw="fd-net" data-source="yearly"></p>
         <ul class="key row"><li><span class="key-mark bar" aria-hidden="true" style="--k: var(--success)"></span>added to savings</li><li><span class="key-mark bar" aria-hidden="true" style="--k: var(--danger)"></span>drawn from savings</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Income minus living spend minus debt payments. Below zero means the year was funded from savings or one-off inflows. Green years added to savings; red years drew on them. A deep red bar usually means taxes, giving or savings-envelope spending landed in a year with lower income.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short"><table><thead><tr><th scope="col">Year</th><th scope="col">Net kept</th><th scope="col">Savings rate</th></tr></thead><tbody data-draw="dt-net" data-source="yearly"></tbody></table></div></details>
+      <details class="how"><summary>How to read this</summary><p>Income minus living spend minus debt payments. Below zero means the year was funded from savings or one-off inflows. Green years added to savings; red years drew on them. A deep red bar usually means taxes, giving or savings-envelope spending landed in a year with lower income.</p></details><details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Net kept, figures"><table><thead><tr><th scope="col">Year</th><th scope="col">Net kept</th><th scope="col">Savings rate</th></tr></thead><tbody data-draw="dt-net" data-source="yearly"></tbody></table></div></details>
         <div class="chart" data-draw="net" data-source="yearly"></div>
       </div>
     </div>
@@ -441,15 +483,17 @@
     <div class="grid">
       <div class="card">
         <h2 id="earner-chart">Income by earner</h2>
+        <p class="finding" data-draw="fd-earner" data-source="people"></p>
         <ul class="key row"><li>from the income_by_person rule</li><li>income not tied to a person: Household</li></ul>
-      <details class="how"><summary>How to read this</summary><p>Earner is assigned by item, using the income_by_person rule in Settings. Refunds, interest and other inflows not tied to a person are Household. Earner is assigned by item: the items named for each person in the income_by_person rule belong to that person, and everything else is Household. If a person is missing here, add their income items to the rule and rebuild.</p></details>
+      <details class="how"><summary>How to read this</summary><p>The income items named for each person in the income_by_person rule (Settings → Pipeline rules) belong to that person. Everything else, such as refunds and interest, is Household. If a person is missing here, add their income items to the rule and rebuild.</p></details>
         <div class="chart" data-draw="earner" data-source="people"></div>
         <div class="legend" data-draw="earner-legend" data-source="people"></div>
       </div>
       <div class="card">
         <h2 id="payer-chart">Spend by payer</h2>
+        <p class="finding" data-draw="fd-payer" data-source="people"></p>
         <ul class="key row"><li>payer means envelope owner, not who paid</li><li>shared envelopes left out: <span data-draw="payer-shared" data-source="people">—</span></li></ul>
-      <details class="how"><summary>How to read this</summary><p>Payer is envelope ownership, the only signal a budget tool's export carries: each person's discretionary envelopes versus everything shared. Expect Household to dominate. The exports have no payer field, so payer here means envelope ownership, matched by the payer_prefix_by_person and payer_items_by_person rules, with the shared remainder as Household. It answers “how much discretionary money did each person direct,” not “who tapped the card.”</p></details>
+      <details class="how"><summary>How to read this</summary><p>The exports have no payer field, so payer means envelope ownership: the envelopes the payer_prefix_by_person and payer_items_by_person rules (Settings → Pipeline rules) give each person. Shared envelopes are left out of the chart. It answers “how much discretionary money did each person direct,” not “who tapped the card.”</p></details>
         <div class="chart" data-draw="payer" data-source="people"></div>
         <div class="legend" data-draw="payer-legend" data-source="people"></div>
       </div>
@@ -457,8 +501,7 @@
     <div class="card">
       <h2 id="people-table">Earner and payer shares by year</h2>
         <ul class="key row"><li><span class="key-mark" aria-hidden="true">%</span>share of that year's total income or spend</li></ul>
-        <details class="how"><summary>How to read this</summary><p>Shares are of that year's total income or total spend.</p></details>
-      <div class="tbl"><table data-source="people_pivot" data-row-key="y"><thead><tr>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="people-table"><table data-source="people_pivot" data-row-key="y"><thead><tr>
         <th data-field="y">Year</th></tr></thead><tbody data-draw="people-pivot"></tbody></table></div>
     </div>
   </section>
@@ -473,7 +516,7 @@
         <details class="topic"><summary><b>Nominal versus real amounts</b><span>Real restates every month in one month's prices.</span></summary><div class="prose"><p>Nominal is what the bank saw. Real restates each month's amounts in {{ span.cpi_base_long }} prices by multiplying by the ratio of the {{ span.cpi_base_long }} price index to that month's price index. For US households the documented source is CPI-U (all urban consumers, all items, seasonally adjusted, series CPIAUCSL from FRED); other countries use their own consumer price index, entered on the Settings page. Use real to compare lifestyle across years; use nominal to reconcile against statements. <span data-draw="cpi-note" data-source="cpi" data-base="{{ span.cpi_base_iso }}" data-first="{{ span.first_month or '' }}"></span></p></div></details>
         <details class="topic" open><summary><b>What was taken out</b><span>Transfers and other non-spending rows removed before any total.</span></summary><div class="prose"><p>Transfers between envelopes appear in the export as a negative row in one item and a positive row in another, so summing them would inflate both income and spend. They are recognised by merchant text, by item name and by amount pairing, and removed. What follows is generated from the data loaded, so it lists only what this household's rules actually removed.</p>
       <div id="method-exclusions" data-draw="method-exclusions" data-source="exclusions verify"></div></div></details>
-        <details class="topic"><summary><b>Item names</b><span>Renamed envelopes are merged through the mapping.</span></summary><div class="prose"><p>Budget items get renamed and recreated, so the same envelope can appear under several names. Each original name is mapped to a canonical item and a category; the mapping file lives beside the ledger and is the thing to edit (Settings) if a category looks wrong. <span data-draw="method-items" data-source="item_year cat_year"></span></p></div></details>
+        <details class="topic"><summary><b>Item names</b><span>Renamed envelopes are merged through Item mapping.</span></summary><div class="prose"><p>Budget items get renamed and recreated, so the same envelope can appear under several names. Each original name is mapped to a canonical item and a category; Item mapping (Settings) is the thing to edit if a category looks wrong. <span data-draw="method-items" data-source="item_year cat_year"></span></p></div></details>
         <details class="topic"><summary><b>Refreshing</b><span>Every figure is rebuilt from the stored exports.</span></summary><div class="prose"><p>Each month the two exports for the closed budget month are added to the set, the ledger and these files are rebuilt, and the page redraws from them. Nothing on the page is typed in by hand, so a corrected export changes every dependent figure at once.</p></div></details>
         <details class="topic"><summary><b>Reading the colors</b><span>Green and red mark direction, not judgment.</span></summary><div class="prose"><p>Green and red mark direction, not judgment: green is money kept or a category under its envelope, red is money drawn down or an envelope exceeded. Chart series take the brand palette in order (series 1 through 8 in the theme).</p></div></details>
         <details class="topic"><summary><b>Notes</b><span>Notes from the exports are kept in the ledger, never shown here.</span></summary><div class="prose"><p>The ledger carries every note from the exports, but notes are not shown on this page, because they can hold private details such as medication and people's names.</p></div></details>
@@ -482,7 +525,7 @@
     <div class="card" id="recon-card">
       <h2>Reconciliation</h2>
       <p class="note" data-draw="reconciliation-note">Every envelope's transactions should sum to its Spent in the BudgetItems export; any that do not are listed here.</p>
-      <div class="tbl"><table data-source="reconciliation" data-row-key="item"><thead><tr><th data-field="m">Month</th><th data-field="item">Envelope</th><th data-field="txn_sum">Σ transactions</th><th data-field="spent">Spent</th><th data-field="delta">Delta</th><th data-field="status">Status</th></tr></thead><tbody data-draw="reconciliation"></tbody></table></div>
+      <div class="tbl" role="region" tabindex="0" aria-label="Reconciliation"><table data-source="reconciliation" data-row-key="item"><thead><tr><th data-field="m">Month</th><th data-field="item">Envelope</th><th data-field="txn_sum">Σ transactions</th><th data-field="spent">Spent</th><th data-field="delta">Delta</th><th data-field="status">Status</th></tr></thead><tbody data-draw="reconciliation"></tbody></table></div>
       <script nonce="{{ csp_nonce(request) }}">(() => {
         const rows = () => { const g = dash.data('reconciliation'); return g.status === 'ok' ? g.data : null; };
         dash.draw('reconciliation-note', (el) => { const d = rows(); if (d) el.textContent = d.length ? d.length + ' envelope' + (d.length === 1 ? '' : 's') + ' do not reconcile. Fix or re-upload the month, then rebuild.' : 'All envelopes reconcile: every month\'s transactions sum to the budget\'s Spent.'; });
@@ -499,7 +542,7 @@
       </div>
       <div id="m-t-cpi">
         <p class="note">Filled months are marked in the Source column and shown in the warning color.</p>
-        <div class="tbl"><table data-source="cpi" data-row-key="month"><thead><tr><th data-field="month">Month</th><th data-field="cpi">Price index</th><th data-field="source">Source</th></tr></thead><tbody data-draw="cpi"></tbody></table></div>
+        <div class="tbl" role="region" tabindex="0" aria-label="Price index"><table data-source="cpi" data-row-key="month"><thead><tr><th data-field="month">Month</th><th data-field="cpi">Price index</th><th data-field="source">Source</th></tr></thead><tbody data-draw="cpi"></tbody></table></div>
       </div>
       <div id="cpi-estimated" hidden>
         <p class="note">Not yet published by the index; the value is carried forward, interpolated or estimated. <b>Fetch latest</b> on the CPI page replaces them once published.</p>
@@ -507,7 +550,7 @@
       </div>
       <div id="m-t-verify" hidden><h3 class="visually-hidden" id="verify-table">Unverified inflows</h3>
         <p class="note">Booked as income in the budget tool but not yet identified. Kept out of every total until confirmed.</p>
-        <div class="tbl"><table data-source="verify" data-row-key="m,item"><thead><tr><th data-field="m">Month</th><th data-field="item">Item</th><th data-field="merchant">Merchant</th><th data-field="amount">Amount</th></tr></thead><tbody data-draw="verify"></tbody></table></div>
+        <div class="tbl" role="region" tabindex="0" aria-labelledby="verify-table"><table data-source="verify" data-row-key="m,item"><thead><tr><th data-field="m">Month</th><th data-field="item">Item</th><th data-field="merchant">Merchant</th><th data-field="amount">Amount</th></tr></thead><tbody data-draw="verify"></tbody></table></div>
       </div>
     </div>
   </section>
@@ -548,13 +591,109 @@ window.HL = (() => {
     const lx = last.parentNode.transform.baseVal.length ? last.parentNode.transform.baseVal.getItem(0).matrix.e : null;
     if (lx != null && lx + last.getComputedTextLength() / 2 > x1) last.setAttribute('text-anchor', 'end');
   };
+  // Chart appearance (#132): a name's colour is dash.colorFor(dimension, name, i), its place in the full order, so hiding one never
+  // recolours the rest. A hidden name leaves the bars, lines and legend unless this viewer pressed "show" on that chart (the reveal
+  // param, remembered like the period filter); totals, tooltips' totals and the tables never leave anything out.
+  const revealed = (chart) => !!((dash.params().reveal || {})[chart]);
+  const shown = (chart, dimension, name) => !dimension || revealed(chart) || !dash.hidden(dimension, name);
+  // "2 hidden · show" (DS-CHART-6): drawn inside the chart, so a redraw replaces it with the chart; focus comes back to it after a press
+  // names: what is hidden (a name, or a life-event kind as "Family (event kind)"), for the button's title; a count is still taken
+  const hiddenNote = (el, chart, names) => {
+    const list = Array.isArray(names) ? names : null, n = list ? list.length : names;
+    if (!n) return;
+    const on = revealed(chart), p = Object.assign(document.createElement('p'), { className: 'hidden-note' });
+    // the visible words are the button's whole name (WCAG 2.5.3); what it hides and for whom is a description, not a second name
+    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'btn', textContent: on ? `${n} hidden, shown here · hide` : `${n} hidden · show` });
+    b.title = (list ? `Hidden in Settings → Chart appearance: ${list.join(', ')}. ` : 'Hidden in Settings → Chart appearance. ') + (on ? 'Shown on this chart for you only.' : 'Show brings them back on this chart, for you only.');
+    b.onclick = () => { const r = { ...(dash.params().reveal || {}) }; if (on) delete r[chart]; else r[chart] = 1;
+      dash.setParams({ reveal: Object.keys(r).length ? r : null });
+      const again = document.querySelector(`[data-draw="${chart}"] .hidden-note button`); if (again) again.focus(); };
+    p.append(b); el.append(p);
+  };
+  // ---- life events on the timelines (#140) ----
+  // A timeline draws an event when both display switches let it: the event is on the chart (Settings → Life events, one per event)
+  // AND its kind is not hidden (Settings → Chart appearance, #132) or this viewer pressed that chart's "show". "show" reveals hidden
+  // kinds only, never an event switched off the chart: that is the household saying it is not a chart event. Either way the event
+  // stays in the list under the chart, the review and the check-in, and no total or table changes.
+  const REF = 'var(--chart-reference)';
+  const onChart = (e) => e.on_chart !== false;
+  // markers coloured by kind: an assigned colour, else the reference colour they always had
+  const evColor = (e) => (e.kind && dash.assigned('event_kind', e.kind)) || REF;
+  const evShown = (chart) => (e) => onChart(e) && (!e.kind || shown(chart, 'event_kind', e.kind));
+  const evHiddenKinds = (evs) => [...new Set(evs.filter((e) => onChart(e) && e.kind && dash.hidden('event_kind', e.kind)).map((e) => e.kind))].map((k) => `${KIND_WORDS[k] || k} (event kind)`);   // kinds, not events; shown or not
+  const evHidden = (evs) => evHiddenKinds(evs).length;
+  const KIND_WORDS = { job: 'Job', move: 'Move', family: 'Family', health: 'Health', purchase: 'Purchase', debt: 'Debt', other: 'Other' };   // event kinds as chips name them (db/migrations/0109): a label, not a role
+  const mIdx = (m) => { const [y, mo] = String(m).split('-').map(Number); return y * 12 + mo - 1; };
+  // A marker's button is the tap and pointer target: 44 px tall (DS-LAYOUT-2) and EV_TARGET wide, WCAG 2.5.8's 24 px, so a phone's
+  // narrow months keep their own markers; app.css's .ev-mark has the same width.
+  const EV_TARGET = 24;
+  const evFinish = (g) => {
+    const kinds = new Set(g.events.map((e) => e.kind || null)), cols = new Set(g.events.map((e) => e.color || evColor(e)));
+    Object.assign(g, { n: g.events.length, kind: kinds.size === 1 ? [...kinds][0] : null, color: cols.size === 1 ? [...cols][0] : REF,
+                       last: g.events[g.events.length - 1].m, text: g.events.map((e) => e.text || evText(e)).join('; ') });
+    return g;
+  };
+  // Events within one month of each other are one marker with a count (#140): a marker holds the events from its first month to
+  // the month after, so a crowded season draws at most one marker per month. A marker also takes the events closer than `gap`
+  // pixels to it (the target size), so no two buttons overlap and no two dots overprint. xOf: month -> pixel.
+  const evGroups = (evs, xOf, gap = EV_TARGET) => {
+    const out = [];
+    for (const e of [...evs].sort((a, b) => a.m < b.m ? -1 : a.m > b.m ? 1 : String(a.label).localeCompare(String(b.label)))) {
+      const g = out[out.length - 1];
+      if (g && (mIdx(e.m) - mIdx(g.m) <= 1 || xOf(e.m) - xOf(g.m) < gap)) g.events.push(e); else out.push({ m: e.m, events: [e] });
+    }
+    return out.map(evFinish);
+  };
+  const evText = (e) => e.label + ([e.kind, e.person].filter(Boolean).length ? ` (${[e.kind, e.person].filter(Boolean).join(' · ')})` : '');   // its label, then its kind and person when set (#109)
+  const span2 = (g) => g.last !== g.m ? `${fmtM(parseM(g.m))} to ${fmtM(parseM(g.last))}` : fmtM(parseM(g.m));
+  // Each marker, merged or not: a dashed line down the plot and a dot at the top in the svg (a merged one is bigger and carries its
+  // count), and a real button over the dot, so the keyboard reaches every marker and a tap opens it (WCAG 2.1.1; DS-A11Y-1, DS-LAYOUT-2).
+  // The svg is one image to assistive technology (a11y.js), so the buttons sit beside it in the chart's box; each names every event
+  // it holds. opts: {cx (group -> x), top, bottom, dotted (not happened yet: DS-CHART-2), what (the name's first words)}
+  const eventMarks = (el, svg, groups, t, opts) => {
+    if (!groups.length) return;
+    const { cx, top, bottom } = opts, dot = top + 4, r = (g) => g.n > 1 ? 8 : 4;
+    // a button is centred on its dot but kept inside the chart's box; a marker whose kept-in button would overlap the one before
+    // takes its events, so the targets never overlap, even at the edges
+    const T = EV_TARGET, W = el.clientWidth || 600, left = (g) => Math.max(0, Math.min(W - T, cx(g) - T / 2));
+    groups = groups.reduce((acc, g) => { const p = acc[acc.length - 1];
+      if (p && left(g) - left(p) < T) { p.events.push(...g.events); evFinish(p); } else acc.push(g); return acc; }, []);
+    const lines = svg.append('g').attr('class', 'ev-lines');
+    lines.selectAll('line').data(groups).join('line').attr('x1', cx).attr('x2', cx).attr('y1', top).attr('y2', bottom).attr('stroke', (g) => g.color)
+      .attr('stroke-dasharray', opts.dotted ? '1 5' : '2 3').attr('stroke-linecap', opts.dotted ? 'round' : null).style('pointer-events', 'none');
+    const marks = svg.append('g').attr('class', 'ev-dots').style('pointer-events', 'none');
+    // one event: a dot in its colour, as before; several: a ring in their colour (the reference colour when they differ) round the count,
+    // in ink on the chart's ground so it reads in both modes; ahead of the last month the ring is dotted (DS-CHART-2)
+    const cy = (g) => g.n > 1 || opts.dotted ? dot + 4 : dot;
+    marks.selectAll('circle').data(groups).join('circle').attr('class', opts.dotted ? 'ev ev-ahead' : 'ev').attr('cx', cx).attr('cy', cy)
+      .attr('r', (g) => opts.dotted ? Math.max(5, r(g) + 1) : r(g)).attr('fill', (g) => g.n > 1 || opts.dotted ? 'var(--surface-200)' : g.color)
+      .attr('stroke', (g) => g.n > 1 || opts.dotted ? g.color : null).attr('stroke-width', 2).attr('stroke-dasharray', opts.dotted ? '1 2' : null);
+    marks.selectAll('text').data(groups.filter((g) => g.n > 1)).join('text').attr('class', 'ev-n').attr('x', cx).attr('y', dot + 4).attr('dy', '0.35em')
+      .attr('text-anchor', 'middle').attr('fill', 'var(--ink)').text((g) => g.n);
+    const box = Object.assign(document.createElement('div'), { className: 'ev-marks' + (opts.dotted ? ' ahead' : '') });
+    for (const g of groups) {
+      const b = Object.assign(document.createElement('button'), { type: 'button', className: 'ev-mark' });
+      const noun = opts.noun || ['life event', 'life events'], where = span2(g), what = `${opts.what || ''}${where}, ${g.n} ${g.n === 1 ? noun[0] : noun[1]}`;
+      b.setAttribute('aria-label', `${what}: ${g.text}`);
+      b.style.setProperty('--x', left(g) + 'px');   // data: where the marker is (DS-SPACE-1)
+      const html = `<div class="tip-ev"><div class="t">${esc((opts.what || '') + where)}</div>` + g.events.map((e) => { const c = e.color || evColor(e); return `<div>${c !== REF ? `<span class="sw" style="--sw:${c}"></span>` : '┊ '}${esc(e.text || evText(e))}</div>`; }).join('') + '</div>';
+      const open = () => t.show(cx(g), dot + 14, html), close = () => t.hide();
+      b.addEventListener('focus', open); b.addEventListener('blur', close); b.addEventListener('click', open);
+      b.addEventListener('pointerenter', open); b.addEventListener('pointerleave', () => { if (document.activeElement !== b) close(); });
+      b.addEventListener('keydown', (k) => { if (k.key === 'Escape') close(); });
+      box.append(b);
+    }
+    el.append(box);
+  };
   const stackChart = (el, rows, keyX, keySeries, keyVal, opts = {}) => {
     el.replaceChildren();
+    const chart = opts.chart || el.dataset.draw, dim = opts.dimension;
     const xs = Array.from(new Set(rows.map((r) => r[keyX]))).sort();
     const series = opts.order || Array.from(d3.rollup(rows, (v) => d3.sum(v, (r) => r[keyVal]), (r) => r[keySeries])).sort((a, b) => b[1] - a[1]).map((d) => d[0]);
     const byX = d3.rollup(rows, (v) => Object.fromEntries(v.map((r) => [r[keySeries], r[keyVal]])), (r) => r[keyX]);
     const data = xs.map((x) => ({ x, ...Object.fromEntries(series.map((s) => [s, (byX.get(x) || {})[s] || 0])) }));
-    const stacked = d3.stack().keys(series)(data);
+    const drawn = series.filter((s) => shown(chart, dim, s)), hiddenNames = (dim ? series.filter((s) => dash.hidden(dim, s)) : []).concat(opts.hiddenAlso || []);
+    const stacked = d3.stack().keys(drawn)(data);
     const W = el.clientWidth || 600, H = 260, mt = 8, mb = 28;
     const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
     const yMax = d3.max(stacked[stacked.length - 1] || [[0, 0]], (d) => d[1]) || 1;
@@ -566,22 +705,26 @@ window.HL = (() => {
     for (const v of xs) { probeX.text(opts.xfmt ? opts.xfmt(v) : keyX === 'y' ? HL.yearLabel(v) : v); lw = Math.max(lw, probeX.node().getComputedTextLength()); } probeX.remove();
     const every = Math.ceil(xs.length / Math.max(1, Math.floor((W - ml) / (lw + 28))));
     svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).tickValues(xs.filter((_, i) => i % every === 0)).tickFormat(opts.xfmt || ((d) => keyX === 'y' ? HL.yearLabel(d) : d)).tickSize(0)).call((g) => { g.select('.domain').attr('stroke', 'var(--chart-axis)'); g.attr('font-size', null).attr('font-family', null); edgeTicks(g, ml, W - 8); });
-    const col = (i) => colors()[(i + (opts.skip || 0)) % colors().length];   // skip: start later in the palette (people avoid the good/bad hues)
+    // skip: start later in the palette (people avoid the good/bad hues); a name's colour is by its place in the full order (#132)
+    const colOf = dim ? dash.colorsFor(dim, series, opts.skip || 0) : new Map(series.map((s, i) => [s, colors()[(i + (opts.skip || 0)) % colors().length]]));
+    const col = (s) => colOf.get(s);
     const t = tip(el);
-    svg.append('g').selectAll('g').data(stacked).join('g').attr('fill', (d, i) => col(i)).selectAll('rect').data((d) => d.map((p) => ({ ...p, key: d.key }))).join('rect').attr('class', 'b')
+    svg.append('g').selectAll('g').data(stacked).join('g').attr('fill', (d) => col(d.key)).selectAll('rect').data((d) => d.map((p) => ({ ...p, key: d.key }))).join('rect').attr('class', 'b')
       .attr('x', (d) => x(d.data.x)).attr('width', x.bandwidth()).attr('y', (d) => y(d[1])).attr('height', (d) => Math.max(0, y(d[0]) - y(d[1]))).attr('rx', 2)
-      .on('pointermove', (ev, d) => { const [px, py] = d3.pointer(ev, el); const i = series.indexOf(d.key); t.show(px, py, `<div class="t">${esc(opts.xfmt ? opts.xfmt(d.data.x) : d.data.x)}</div><div><span class="sw" style="--sw:${col(i)}"></span>${esc(d.key)} ${esc(money(d[1] - d[0]))}</div><div class="t">Total ${esc(money(d3.sum(series, (s) => d.data[s])))}</div>`); })
+      .on('pointermove', (ev, d) => { const [px, py] = d3.pointer(ev, el); t.show(px, py, `<div class="t">${esc(opts.xfmt ? opts.xfmt(d.data.x) : d.data.x)}</div><div><span class="sw" style="--sw:${col(d.key)}"></span>${esc(d.key)} ${esc(money(d[1] - d[0]))}</div><div class="t">Total ${esc(money(d3.sum(series, (s) => d.data[s])))}</div>`); })   // the total counts hidden names too
       .on('pointerleave', () => t.hide());
-    const marks = (opts.markers || []).filter((e) => x(e.x) !== undefined);   // [{x, text}]: dashed line and dot over that bar, label on hover
-    if (marks.length) {
-      const cx = (e) => x(e.x) + x.bandwidth() / 2;
-      svg.append('g').selectAll('line').data(marks).join('line').attr('x1', cx).attr('x2', cx).attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--chart-reference)').attr('stroke-dasharray', '2 3').style('pointer-events', 'none');
-      svg.append('g').selectAll('circle').data(marks).join('circle').attr('class', 'ev').attr('cx', cx).attr('cy', mt + 4).attr('r', 4).attr('fill', 'var(--chart-reference)').style('cursor', 'default')
-        .on('pointermove', (pe, e) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${esc(opts.xfmt ? opts.xfmt(e.x) : e.x)}</div><div>${esc(e.text)}</div>`); }).on('pointerleave', () => t.hide());
-    }
+    // life events over the bars (#140): merged within a month, a button each; [{m, label, kind?, person?, color?}]
+    const evs = (opts.events || []).filter((e) => x(e.m) !== undefined), bx = (m) => x(m) + x.bandwidth() / 2;
+    eventMarks(el, svg, evGroups(evs, bx), t, { cx: (g) => bx(g.m), top: mt, bottom: H - mb });
+    hiddenNote(el, chart, hiddenNames);
     return series;
   };
-  const legend = (el, names, skip = 0) => { el.replaceChildren(...names.map((n, i) => { const s = document.createElement('span'); s.style.setProperty('--sw', colors()[(i + skip) % colors().length]); s.textContent = n; return s; })); };
+  // a chart's legend: names in the chart's full order, so each swatch is the colour of its bars; hidden names are left out unless shown.
+  // opts: {dimension, skip, chart}; a bare number is the old skip argument
+  const legend = (el, names, opts = {}) => { const o = typeof opts === 'number' ? { skip: opts } : opts;
+    const cs = o.dimension ? dash.colorsFor(o.dimension, names, o.skip || 0) : null;
+    el.replaceChildren(...names.map((n, i) => [n, cs ? cs.get(n) : colors()[(i + (o.skip || 0)) % colors().length]])
+      .filter(([n]) => shown(o.chart, o.dimension, n)).map(([n, c]) => { const s = document.createElement('span'); s.style.setProperty('--sw', c); s.textContent = n; return s; })); };
   const fillTable = (tbody, rows, cells) => {
     tbody.replaceChildren(...rows.map((r) => { const tr = document.createElement('tr'); for (const c of cells) { const td = document.createElement('td'); tr.appendChild(td); const v = c(r, td); td.textContent = v == null ? '—' : v; } return tr; }));
   };
@@ -619,7 +762,8 @@ window.HL = (() => {
   const waypoints = (svg, x1, x2, items) => {   // items: [{y (screen), label}]; labels at least 14px apart, highest first
     const list = items.filter((w) => w && Number.isFinite(w.y)).sort((a, b) => a.y - b.y); let last = -Infinity;
     for (const w of list) { const ty = Math.max(w.y - 7, last + 15); last = ty; waypoint(svg, x1, x2, w.y, w.label, ty); } };
-  return { money, pct, basis, fld, parseM, fmtM, mo, day, empty, fixes, waypoint, waypoints, WP_ROOM, colors, tip, esc, margins, stackChart, legend, fillTable, usd0, edgeTicks };
+  return { money, pct, basis, fld, parseM, fmtM, mo, day, empty, fixes, waypoint, waypoints, WP_ROOM, colors, tip, esc, margins, stackChart, legend, fillTable, usd0, edgeTicks,
+           revealed, shown, hiddenNote, evColor, evShown, evHidden, evHiddenKinds, evGroups, EV_TARGET, evText, eventMarks, onChart, KIND_WORDS, mIdx, REF };
 })();
 // ---- period filter (issue #116): one range for every timeline, resolved against the LOADED months, not today's date ----
 (() => {
@@ -697,20 +841,22 @@ dash.calc('lm_totals', { inputs: ['budget_items'], title: 'Last month totals vs 
   const net = inc - sp - db, anet = ainc - asp - adb;
   return [{ row: 'last', month: last, income_actual: inc, income_planned: incp, income_vs_plan: inc - incp, spend_actual: sp, spend_planned: spp, spend_vs_plan: sp - spp, debt_actual: db, debt_planned: dbp, debt_vs_plan: db - dbp, net_actual: net, net_avg: anet, net_vs_avg: net - anet, income_avg: ainc, spend_avg: asp, debt_avg: adb }];
 } });
-dash.calc('lm_cats', { inputs: ['budget_items', 'goal_config'], title: 'Last month by category vs plan and trailing average', description: 'For the latest budget month, per category: planned, spent, gap to plan, average of the twelve months before, gap to that average, and a suggested plan (12-month average rounded up to the nearest 10; the plan_keep_categories rule\u2019s categories keep the current plan).', fn: (budget_items, goal_config) => {
+dash.calc('lm_cats', { inputs: ['budget_items', 'goal_config'], title: 'Last month by category vs plan and trailing average', description: 'For the latest budget month, per category: planned, spent, gap to plan, average of the twelve months before (from the household\u2019s new normal when it marked one, as plan_suggestions.avg_from says), gap to that average, and a suggested plan (that average rounded up to the nearest 10; the plan_keep_categories rule\u2019s categories keep the current plan, and kept is true for them).', fn: (budget_items, goal_config) => {
   const gc = (goal_config && goal_config[0]) || {}, saveGroups = new Set(gc.savings_groups || []), giveCats = new Set(gc.giving_categories || ['Giving']);   // role default
-  const months = [...new Set(budget_items.map((r) => r.m))].sort(); const last = months[months.length - 1]; const prev = months.slice(-13, -1); const n = prev.length || 1;
+  const months = [...new Set(budget_items.map((r) => r.m))].sort(); const last = months[months.length - 1]; const prev = months.slice(-13, -1);
   const keep = gc.plan_keep_categories || ['Housing', 'Debt', 'Insurance'];   // role default, until a rebuild emits plan_keep_categories
   const cats = [...new Set(budget_items.map((r) => r.category))];
   const psd = dash.data('plan_suggestions'), ps = psd.status === 'ok' ? psd.data : [];   // read, not an input: an install not yet rebuilt still draws
+  const base = ps.find((r) => r.m === last && r.avg_from);   // the new normal (#159): the window the pipeline averaged, so the average and the suggestion agree
+  const win = base ? prev.filter((m) => m >= base.avg_from) : prev, nw = win.length || 1;
   return cats.map((c) => {
     const cur = budget_items.filter((r) => r.m === last && r.category === c); const flow = cur[0] ? cur[0].flow : (budget_items.find((r) => r.category === c) || {}).flow;
     const planned = d3.sum(cur, (r) => Number(r.planned)), actual = d3.sum(cur, (r) => Number(r.actual));
-    const avg12 = d3.sum(budget_items.filter((r) => prev.includes(r.m) && r.category === c), (r) => Number(r.actual)) / n;
+    const avg12 = d3.sum(budget_items.filter((r) => win.includes(r.m) && r.category === c), (r) => Number(r.actual)) / nw;
     const built = ps.find((r) => r.m === last && r.category === c);   // the pipeline's figure (pipeline/decisions.py), which the check-in reads too
-    const suggest = built ? Number(built.suggest) : keep.includes(c) ? planned : Math.ceil(avg12 / 10) * 10;
+    const kept = keep.includes(c), suggest = built ? Number(built.suggest) : kept ? planned : Math.ceil(avg12 / 10) * 10;
     const want_more = flow === 'income' || flow === 'debt' || giveCats.has(c) || cur.some((r) => saveGroups.has(r.group));   // more than planned is good
-    return { category: c, flow, planned, actual, vs_plan: actual - planned, avg12, vs_avg: actual - avg12, suggest, want_more };
+    return { category: c, flow, planned, actual, vs_plan: actual - planned, avg12, vs_avg: actual - avg12, suggest, kept, want_more };
   }).filter((r) => r.planned || r.actual || r.avg12).sort((a, b) => Math.abs(b.vs_plan) - Math.abs(a.vs_plan));
 } });
 dash.calc('lm_items', { inputs: ['budget_items'], title: 'Last month envelopes by gap to plan', description: 'For the latest budget month, every budget item with planned, spent and the gap (spent minus planned), largest absolute gap first.', fn: (budget_items) => {
@@ -820,8 +966,50 @@ for (const [sfx, calc] of [['n', 'last12'], ['r', 'last12_real']]) {
 
 <script nonce="{{ csp_nonce(request) }}">(() => {
 
-// an event as text: its label, then its kind and person when set (#109)
-HL.evText = (e) => e.label + ([e.kind, e.person].filter(Boolean).length ? ` (${[e.kind, e.person].filter(Boolean).join(' · ')})` : '');
+// ---- the life-event chips over "Income against outgo" (#140): by kind and by person, remembered per viewer like the period filter ----
+// The options are the kinds and people the events on the chart have; a remembered choice the data no longer has reads as All.
+HL.evOptions = () => { const g = dash.data('events'); const evs = g.status === 'ok' ? g.data.filter(HL.onChart) : [];
+  const order = Object.keys(HL.KIND_WORDS);
+  return { kind: [...new Set(evs.map((e) => e.kind).filter(Boolean))].sort((a, b) => order.indexOf(a) - order.indexOf(b)),
+           person: [...new Set(evs.map((e) => e.person).filter(Boolean))].sort() }; };
+HL.evFilter = () => { const f = dash.params().evf || {}, o = HL.evOptions();
+  return { kind: o.kind.includes(f.kind) ? f.kind : null, person: o.person.includes(f.person) ? f.person : null }; };
+HL.evPicked = (f = HL.evFilter()) => (e) => (!f.kind || e.kind === f.kind) && (!f.person || e.person === f.person);
+dash.draw('ev-filter', (box) => {
+  box.replaceChildren(); const o = HL.evOptions(), f = HL.evFilter();
+  box.style.display = o.kind.length || o.person.length ? '' : 'none';   // display, not [hidden]: dash-shim skips draws inside [hidden]
+  const group = (key, label, all, opts, words) => {
+    if (!opts.length) return;
+    const g = Object.assign(document.createElement('div'), { className: 'ev-chips' }); g.setAttribute('role', 'group'); g.setAttribute('aria-label', `Life events on the chart, by ${key}`);
+    g.append(Object.assign(document.createElement('span'), { className: 'ctl-label', textContent: label }));
+    for (const v of [null, ...opts]) {
+      const b = Object.assign(document.createElement('button'), { type: 'button', textContent: v == null ? all : words(v) });
+      b.dataset.v = v == null ? '' : v; b.setAttribute('aria-pressed', String(f[key] === v));
+      b.onclick = () => { const next = { ...f, [key]: v }; for (const k of Object.keys(next)) if (next[k] == null) delete next[k];
+        dash.setParams({ evf: Object.keys(next).length ? next : null });
+        const again = document.querySelector(`[data-draw="ev-filter"] .ev-chips[aria-label$="${key}"] button[data-v="${CSS.escape(v == null ? '' : v)}"]`); if (again) again.focus(); };
+      g.append(b);
+    }
+    box.append(g);
+  };
+  group('kind', 'Kind', 'All', o.kind, (k) => HL.KIND_WORDS[k] || k);
+  group('person', 'Person', 'Everyone', o.person, (p) => p);
+});
+// what is coming up after the last loaded month (#140, the coming_up dataset of #144), when the period reaches the last loaded month:
+// every row after it, however far; the strip draws the next AHEAD months of them and the Coming up list keeps them all. A life event in it is drawn by the same switches and chips as the markers; the rest (payoffs, yearly bills,
+// tax deadlines, dated goals) always are. Each row: {m, kind, label, amount, event?}
+HL.AHEAD = 12;
+HL.comingUp = () => {
+  const cu = dash.data('coming_up'), ev = dash.data('events'), g = dash.data('monthly'), R = HL.range();
+  if (cu.status !== 'ok' || g.status !== 'ok' || !g.data.length || (R.to && R.to !== R.last)) return null;
+  const last = g.data.map((r) => r.m).sort().pop(), until = mAdd(last, HL.AHEAD);
+  const byKey = new Map((ev.status === 'ok' ? ev.data : []).map((e) => [e.m + '|' + e.label, e]));
+  return { last, until, rows: cu.data.filter((c) => c.m > last).map((c) => ({ ...c, event: c.kind === 'event' ? (byKey.get(c.m + '|' + c.ref) || { m: c.m, label: c.label }) : null })) };
+};
+const mAdd = (m, n) => { const t = HL.mIdx(m) + n; return `${Math.floor(t / 12)}-${String(t % 12 + 1).padStart(2, '0')}`; };
+const CU_WORDS = { payoff: 'payoff', yearly_bill: 'yearly bill', tax_deadline: 'tax deadline', goal: 'planned purchase', event: 'life event' };
+HL.cuText = (c) => c.event ? HL.evText(c.event) : `${c.label} (${CU_WORDS[c.kind] || c.kind}${c.amount != null ? ', ' + HL.usd0(c.amount) : ''})`;
+HL.cuDrawn = (chart) => { const picked = HL.evPicked(), seen = HL.evShown(chart); return (c) => !c.event || (seen(c.event) && picked(c.event)); };
 // ---- monthly income vs outgo line chart with event markers ----
 dash.draw('monthly', (el) => {
   const g = HL.rd('monthly'), ev = HL.rd('events');
@@ -829,29 +1017,49 @@ dash.draw('monthly', (el) => {
   if (g.status !== 'ok') { el.textContent = '—'; return; }
   const f = HL.fld; const rows = [...g.data].sort((a, b) => a.m < b.m ? -1 : 1).map((r) => ({ d: HL.parseM(r.m), m: r.m, income: Number(r[f('income')]), spend: Number(r[f('spend')]), outgo: Number(r[f('spend')]) + Number(r[f('debt')]) }));
   const W = el.clientWidth || 600, H = 300, mt = 10, mb = 28;
+  // the Coming up strip (#140) takes the right of the plot, after the last loaded month: never markers off the end of the axis
+  const cu = HL.comingUp(), ahead = cu ? cu.rows.filter((c) => c.m <= cu.until).filter(HL.cuDrawn('monthly')) : [];
+  // the gap keeps the plot's last marker and the strip's first a whole target apart, so their buttons never overlap
+  const stripW = ahead.length ? Math.round(Math.max(84, Math.min(200, W * 0.2))) : 0, gapW = ahead.length ? Math.max(14, HL.EV_TARGET - 10) : 0, xEnd = W - 8 - stripW - gapW;
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
   const y = d3.scaleLinear([0, d3.max(rows, (r) => Math.max(r.income, r.outgo))], [H - mb, mt]).nice();
   const ml = HL.margins(svg, y.ticks(5), HL.money);
-  const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, W - 8]);
+  const x = d3.scaleUtc(d3.extent(rows, (r) => r.d), [ml, xEnd]);
   svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
-  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
+  svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((xEnd - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').attr('stroke', 'var(--chart-axis)'); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, xEnd); });
   const c = HL.colors();
   ['income', 'spend', 'outgo'].forEach((k, i) => HL.fixes(svg, rows.map((r) => ({ x: x(r.d), y: y(r[k]) })), c[i], { width: i === 2 ? 1.5 : 2 }));   // DS-CHART-1
+  // each line is named at its right end, so income and living spend are told apart by more than colour, not only the legend: the
+  // lowest name sits under its line, the others over theirs (under it when there is no room above, so a name never sits on its
+  // line), pushed apart from the top down so none touch (haloed, as the goal labels). The names are the legend's, said once there.
+  const last = rows[rows.length - 1], names = [...el.closest('.card').querySelectorAll('.legend [data-c]')].map((s) => s.textContent);
+  const ends = ['income', 'spend', 'outgo'].map((k, i) => ({ name: names[i], y: y(last[k]) })).sort((a, b) => a.y - b.y);
+  ends.forEach((e, i) => { e.y = i === ends.length - 1 || e.y - 7 < mt + 10 ? e.y + 16 : e.y - 7; e.y = Math.min(H - mb - 4, Math.max(e.y, i ? ends[i - 1].y + 14 : -Infinity)); });
+  svg.append('g').attr('class', 'line-ends').attr('aria-hidden', 'true').selectAll('text').data(ends).join('text').attr('x', x(last.d) - 10).attr('y', (e) => e.y).attr('text-anchor', 'end')
+    .attr('fill', 'var(--ink)').attr('paint-order', 'stroke').attr('stroke', 'var(--surface-200)').attr('stroke-width', 4).attr('stroke-linejoin', 'round').text((e) => e.name);
   const t = HL.tip(el);
-  if (ev.status === 'ok') {
-    svg.append('g').selectAll('line').data(ev.data).join('line').attr('x1', (e) => x(HL.parseM(e.m))).attr('x2', (e) => x(HL.parseM(e.m))).attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--chart-reference)').attr('stroke-dasharray', '2 3');
-    svg.append('g').selectAll('circle').data(ev.data).join('circle').attr('class', 'ev').attr('cx', (e) => x(HL.parseM(e.m))).attr('cy', mt + 4).attr('r', 4).attr('fill', 'var(--chart-reference)').style('cursor', 'default')
-      .on('pointermove', (pe, e) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(HL.parseM(e.m)))}</div><div>${HL.esc(HL.evText(e))}</div>`); }).on('pointerleave', () => t.hide());
-  }
+  // drawn: on the chart, of a kind not hidden (or shown here), and picked by the chips; the list below keeps every event (#132, #140)
+  const evs = ev.status === 'ok' ? ev.data.filter(HL.evShown('monthly')).filter(HL.evPicked()).filter((e) => e.m >= rows[0].m && e.m <= last.m) : [];   // a later one is in the strip
   const hover = svg.append('g').attr('display', 'none');
   hover.append('line').attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--chart-axis)');
   const dots = hover.selectAll('circle').data([0, 1, 2]).join('circle').attr('r', 3.5).attr('fill', (i) => c[i]);
   const bis = d3.bisector((r) => r.d).center;
-  svg.append('rect').attr('x', ml).attr('y', mt).attr('width', Math.max(0, W - ml - 8)).attr('height', H - mt - mb).attr('fill', 'transparent')
+  svg.append('rect').attr('x', ml).attr('y', mt).attr('width', Math.max(0, xEnd - ml)).attr('height', H - mt - mb).attr('fill', 'transparent')
     .on('pointermove', (pe) => { const [px, py] = d3.pointer(pe, el); const i = bis(rows, x.invert(px)); const r = rows[i]; if (!r) return; hover.attr('display', null).select('line').attr('x1', x(r.d)).attr('x2', x(r.d)); dots.attr('cx', x(r.d)).attr('cy', (k) => y([r.income, r.spend, r.outgo][k]));
-      t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}</div><div><span class="sw" style="--sw:${c[0]}"></span>Income ${HL.esc(HL.usd0(r.income))}</div><div><span class="sw" style="--sw:${c[1]}"></span>Living spend ${HL.esc(HL.usd0(r.spend))}</div><div><span class="sw" style="--sw:${c[2]}"></span>Spend + debt ${HL.esc(HL.usd0(r.outgo))}</div><div class="t">Net ${HL.esc(HL.usd0(r.income - r.outgo))}</div>` + (ev.status === 'ok' ? HL.rd('events').data.filter((e) => e.m === r.m).map((e) => `<div>┊ ${HL.esc(e.label)}</div>`).join('') : '')); })
+      t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(r.d))}</div><div><span class="sw" style="--sw:${c[0]}"></span>Income ${HL.esc(HL.usd0(r.income))}</div><div><span class="sw" style="--sw:${c[1]}"></span>Living spend ${HL.esc(HL.usd0(r.spend))}</div><div><span class="sw" style="--sw:${c[2]}"></span>Spend + debt ${HL.esc(HL.usd0(r.outgo))}</div><div class="t">Net ${HL.esc(HL.usd0(r.income - r.outgo))}</div>` + evs.filter((e) => e.m === r.m).map((e) => `<div>┊ ${HL.esc(e.label)}</div>`).join('')); })
     .on('pointerleave', () => { hover.attr('display', 'none'); t.hide(); });
-  svg.selectAll('circle.ev').raise();   // markers above the hover overlay, so their own tooltip works
+  const ex = (m) => x(HL.parseM(m));
+  HL.eventMarks(el, svg, HL.evGroups(evs, ex), t, { cx: (gr) => ex(gr.m), top: mt, bottom: H - mb });
+  if (ahead.length) {   // DS-CHART-2: what has not happened is dotted; the strip's months run on their own short scale
+    const x0 = W - 8 - stripW, xs = d3.scaleLinear([HL.mIdx(cu.last) + 1, HL.mIdx(cu.until)], [x0 + 10, W - 18]);
+    const strip = svg.append('g').attr('class', 'coming-up');
+    strip.append('line').attr('x1', x0 - gapW / 2).attr('x2', x0 - gapW / 2).attr('y1', mt).attr('y2', H - mb).attr('stroke', 'var(--chart-axis)').attr('stroke-dasharray', '1 3');
+    strip.append('text').attr('x', x0 + stripW / 2).attr('y', H - mb + 16).attr('text-anchor', 'middle').text('Coming up');
+    const items = ahead.map((cr) => ({ m: cr.m, label: cr.label, kind: cr.event ? cr.event.kind : null, color: cr.event ? HL.evColor(cr.event) : HL.REF, text: HL.cuText(cr) }));
+    const sx = (m) => xs(HL.mIdx(m));
+    HL.eventMarks(el, svg, HL.evGroups(items, sx), t, { cx: (gr) => sx(gr.m), top: mt, bottom: H - mb, dotted: true, what: 'Coming up, ', noun: ['item', 'items'] });
+  }
+  HL.hiddenNote(el, 'monthly', ev.status === 'ok' ? HL.evHiddenKinds(ev.data) : []);
 });
 
 })();</script>
@@ -860,15 +1068,84 @@ dash.draw('monthly', (el) => {
 
 // ---- annual grouped bars, net bars, employer stack ----
 dash.draw('event-list', (ul) => {
-  // closed by default: a dozen events would otherwise push the next chart off the screen (#139); hover a marker for its label
-  const box = ul.closest('details'), g = HL.rd('events'); ul.replaceChildren();
-  const n = g.status === 'ok' ? g.data.length : 0;
+  // closed by default: a dozen events would otherwise push the next chart off the screen (#139); hover a marker for its label. It
+  // follows the period filter and the chips (#140), and keeps the events no marker shows, each said why as the Coming up list says
+  // it: switched off the chart, of a hidden kind, or before the first month the chart draws. An event after the last loaded month
+  // is in the Coming up list instead, when that list is there; otherwise it stays here, so no event drops out of both.
+  const box = ul.closest('details'), g = HL.rd('events'), mm = HL.rd('monthly'), cu = HL.comingUp(); ul.replaceChildren();
+  const ms = mm.status === 'ok' ? mm.data.map((r) => r.m).sort() : [], firstM = ms[0], lastM = ms[ms.length - 1], seen = HL.evShown('monthly');
+  const evs = g.status === 'ok' ? g.data.filter(HL.evPicked()).filter((e) => !cu || e.m <= cu.last) : [];
+  const why = (e) => !HL.onChart(e) ? ' · not on the chart' : !seen(e) ? ' · hidden kind' : firstM && e.m < firstM ? ' · before the chart’s first month'
+    : lastM && e.m > lastM ? ' · after the chart’s last month' : '';
+  const n = evs.length;
   // display, not the hidden attribute: dash-shim skips draws inside [hidden], so a hidden box could never show itself again
   if (box) { box.style.display = n ? '' : 'none'; box.querySelector('summary').textContent = `Life events in this period (${n})`; }
   if (!n) return;
-  for (const e of [...g.data].sort((a, b) => a.m < b.m ? -1 : 1)) { const li = document.createElement('li'); const gl = document.createElement('span'); gl.className = 'key-mark'; gl.setAttribute('aria-hidden', 'true'); gl.textContent = '┊';
-    li.append(gl, `${HL.fmtM(HL.parseM(e.m))}: ${HL.evText(e)}`); ul.append(li); }
+  for (const e of [...evs].sort((a, b) => a.m < b.m ? -1 : 1)) { const li = document.createElement('li'); const gl = document.createElement('span'); gl.className = 'key-mark'; gl.setAttribute('aria-hidden', 'true'); gl.textContent = '┊';
+    li.append(gl, `${HL.fmtM(HL.parseM(e.m))}: ${HL.evText(e)}${why(e)}`); ul.append(li); }
 });
+// the Coming up strip's items as words (DS-CHART-5), and every later one the strip's AHEAD months do not reach; the ones it leaves
+// out (switched off, a hidden kind, or later than the strip) are said so
+dash.draw('coming-list', (ul) => {
+  const box = ul.closest('details'), cu = HL.comingUp(); ul.replaceChildren();
+  const picked = HL.evPicked(), rows = cu ? cu.rows.filter((c) => !c.event || picked(c.event)) : [], drawn = HL.cuDrawn('monthly');
+  const why = (c) => c.m > cu.until ? ` · after the chart’s ${HL.AHEAD} months` : drawn(c) ? '' : c.event && !HL.onChart(c.event) ? ' · not on the chart' : ' · hidden kind';
+  if (box) { box.style.display = rows.length ? '' : 'none'; box.querySelector('summary').textContent = `Coming up (${rows.length})`; }
+  for (const c of rows) { const li = document.createElement('li'); const gl = document.createElement('span'); gl.className = 'key-mark'; gl.setAttribute('aria-hidden', 'true'); gl.textContent = '┊';
+    li.append(gl, `${HL.fmtM(HL.parseM(c.m))}: ${HL.cuText(c)}${why(c)}`); ul.append(li); }
+});
+// ---- before and after a life event (#159): the before_after dataset, a row per event and window length (pipeline/before_after.py) ----
+const baRows = () => { const g = dash.data('before_after'); return g.status === 'ok' ? g.data : []; };
+const baKey = (r) => r.m + '|' + r.label;
+const baEvents = () => { const seen = new Map(); for (const r of baRows()) if (!seen.has(baKey(r))) seen.set(baKey(r), r); return [...seen.values()]; };
+const baEvent = () => { const evs = baEvents(), p = dash.params().ba_event; if (!evs.length) return null;
+  return evs.find((e) => baKey(e) === p) || [...evs].reverse().find((e) => e.new_normal) || evs[evs.length - 1]; };   // the newest new normal, else the newest event
+const baRow = () => { const e = baEvent(); if (!e) return null; const rs = baRows().filter((r) => baKey(r) === baKey(e)), n = Number(dash.params().ba_n) || 6;
+  return rs.find((r) => r.n === n) || rs.find((r) => r.n === 6) || rs[0]; };
+const baM = (m) => HL.fmtM(HL.parseM(m));
+const BA_PCT_FLOOR = 25;   // PCT_FLOOR in pipeline/before_after.py: a month's spend before, below which a change in percent is not ranked
+const baSigned = (v) => (v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + HL.usd0(Math.abs(v)));
+const baPct = (v) => (v == null ? '' : `(${v > 0 ? '+' : v < 0 ? '−' : ''}${dash.fmt.pct(0)(Math.abs(v))})`);
+const baChange = (v, pct) => { const p = baPct(pct); return p ? [baSigned(v), p] : baSigned(v); };   // the percent goes under the amount on a phone, so Change stays in view
+const baName = (e) => HL.evText ? HL.evText(e) : e.label;
+dash.draw('ba-empty', (el) => { el.replaceChildren(); const body = document.getElementById('ba-body'), g = dash.data('before_after'), ev = dash.data('events');
+  if (g.status === 'ok' && g.data.length) { if (body) body.hidden = false; return; }
+  if (body) body.hidden = true;
+  if (g.status === 'missing') { el.append(Object.assign(document.createElement('p'), { className: 'muted', textContent: 'Rebuild the ledger to compare before and after a life event (Close a month).' })); return; }
+  if (g.status !== 'ok') return;
+  if (ev.status === 'ok' && ev.data.length) { el.append(Object.assign(document.createElement('p'), { className: 'muted', textContent: 'No life event has a budget month loaded both before it and since it yet. The comparison shows here once one does.' })); return; }
+  HL.empty(el, 'Add a life event, such as a move or a new job, and the months before it are set against the months since.', '/settings#events', 'Add a life event'); });
+dash.draw('ba-pick', (box) => { const sel = box.querySelector('#ba-event'), seg = box.querySelector('#ba-n'), evs = baEvents(), cur = baEvent(), r = baRow(); if (!cur || !sel) return;
+  sel.replaceChildren(...evs.map((e) => new Option(`${baM(e.m)}: ${baName(e)}`, baKey(e))));   // month and name only, so a phone's field shows it whole; the note under it says new normal
+  sel.value = baKey(cur); sel.onchange = () => dash.setParams({ ba_event: sel.value });
+  const have = new Set(baRows().filter((x) => baKey(x) === baKey(cur)).map((x) => x.n));
+  for (const b of seg.querySelectorAll('button[data-n]')) { const n = Number(b.dataset.n), off = !have.has(n); b.setAttribute('aria-pressed', String(r && r.n === n));
+    if (off) b.setAttribute('aria-disabled', 'true'); else b.removeAttribute('aria-disabled');   // still reached by the keyboard; the line under the field says why (baGone)
+    b.onclick = () => { if (!off) dash.setParams({ ba_n: n === 6 ? null : n }); }; } });
+const baGone = () => { const e = baEvent(); if (!e) return []; const have = new Set(baRows().filter((x) => baKey(x) === baKey(e)).map((x) => x.n)); return [3, 6, 12].filter((n) => !have.has(n)); };
+dash.draw('ba-span', (el) => { const r = baRow(), e = baEvent(); el.textContent = ''; if (!r) return; const b = r.before, a = r.after;
+  const side = (s, what) => `${what} ${baM(s.from)} to ${baM(s.to)}` + (s.months < r.n ? `, only ${s.months} of ${r.n} months loaded` : '');
+  const gone = baGone();
+  el.textContent = (e && e.new_normal ? `${baName(e)} is the household's new normal (Settings → Life events). ` : '') + side(b, `Before: ${r.n} budget months,`) + '. ' + side(a, 'After: the event’s month and the months after,') + '.' + (HL.basis() === 'real' ? ' In {{ span.cpi_base_short }} prices.' : '')
+    + (gone.length ? ` No ${gone.join(' or ')}-month comparison: no budget month is loaded in that many months before the event.` : ''); });
+const baCells = (tb, rows) => { for (const cells of rows) { const tr = document.createElement('tr'); cells.forEach((c, i) => { const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num';
+  if (Array.isArray(c)) td.append(c[0], ' ', Object.assign(document.createElement('span'), { className: 'ba-pct', textContent: c[1] })); else td.textContent = c; tr.append(td); }); tb.append(tr); } };
+dash.draw('ba-compare', (tb) => { tb.replaceChildren(); const r = baRow(); if (!r) return; const f = HL.fld, ch = r.change;
+  baCells(tb, [['Income', 'income'], ['Living spend', 'spend'], ['Debt payments', 'debt'], ['Net kept', 'net']].map(([lab, k]) =>   /* label, not a role */
+    [lab, HL.usd0(r.before[f(k)]), HL.usd0(r.after[f(k)]), baChange(ch[f(k)], ch[f(k) + '_pct'])]));
+  const sr = (v) => (v == null ? '—' : dash.fmt.pct(1)(v)), d = ch[f('savings_rate')];
+  baCells(tb, [['Savings rate', sr(r.before[f('savings_rate')]), sr(r.after[f('savings_rate')]), d == null ? '—' : [(d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(d * 100).toFixed(1), 'points']]]); });
+const baMovers = (key) => (tb) => { tb.replaceChildren(); const r = baRow(); if (!r) return; const real = HL.basis() === 'real', list = (real && r.movers[key + '_real']) || r.movers[key];   // ranked in the active basis
+  if (!list.length) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = key === 'by_pct' ? `No category to rank by percent. A category is ranked here when it averaged ${HL.usd0(BA_PCT_FLOOR)} or more a month before the event and changed after it.` : 'No living-spend category moved.'; tr.append(td); tb.append(tr); return; }
+  baCells(tb, list.map((x) => [x.category + (x.new ? ' (new)' : ''), HL.usd0(real ? x.before_real : x.before), HL.usd0(real ? x.after_real : x.after),
+    baChange(real ? x.change_real : x.change, real ? x.pct_real : x.pct)])); };
+dash.draw('ba-movers-dollars', baMovers('by_dollars')); dash.draw('ba-movers-pct', baMovers('by_pct'));
+dash.draw('ba-new', (el) => { const r = baRow(); el.textContent = ''; if (!r) return; const real = HL.basis() === 'real';
+  el.textContent = r.new_categories.length ? `New since ${r.label}: ` + r.new_categories.map((c) => `${c.category} (${HL.usd0(real ? c.after_real : c.after)} a month)`).join(', ') + '.'
+    : `No category is new since ${r.label}.`; });
+dash.draw('fd-ba', (el) => { const r = baRow(); el.textContent = ''; if (!r) return; const f = HL.fld, ch = r.change;
+  const way = (v, up, down) => (v > 0 ? `${up} ${HL.usd0(v)}` : v < 0 ? `${down} ${HL.usd0(-v)}` : 'stayed level');
+  el.textContent = `Since ${r.label} (${baM(r.m)}), living spend ${way(ch[f('spend')], 'rose', 'fell')} a month and the household kept ${ch[f('net')] > 0 ? HL.usd0(ch[f('net')]) + ' more' : ch[f('net')] < 0 ? HL.usd0(-ch[f('net')]) + ' less' : 'the same'} a month, against the ${r.before.months} months before.`; });
 dash.draw('annual', (el) => {
   const g = HL.rd('yearly'); el.replaceChildren();
   if (g.status !== 'ok') { el.textContent = '—'; return; }
@@ -913,10 +1190,11 @@ dash.draw('employer', (el) => {
   const g = HL.rd('employer'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
   const rows = g.data.map((r) => ({ m: r.m, employer: r.employer, amount: Number(r.amount) }));
   const ev = HL.rd('events');   // job changes, plus events with no kind so nothing disappears on upgrade (#109)
-  const markers = ev.status === 'ok' ? ev.data.filter((e) => !e.kind || e.kind === 'job').map((e) => ({ x: e.m, text: HL.evText(e) })) : [];
-  employerOrder = HL.stackChart(el, rows, 'm', 'employer', 'amount', { order: [...d3.rollup(rows, (v) => d3.sum(v, (r) => r.amount), (r) => r.employer)].filter((d) => d[0] !== 'Unknown').sort((a, b) => b[1] - a[1]).map((d) => d[0]).concat(rows.some((r) => r.employer === 'Unknown') ? ['Unknown'] : []), xfmt: (m) => dash.fmt.month(HL.parseM(m)), markers });
+  const jobs = ev.status === 'ok' ? ev.data.filter((e) => !e.kind || e.kind === 'job') : [];
+  const events = jobs.filter(HL.evShown('employer'));   // coloured and hidden by kind (#132), switched off per event and merged within a month (#140)
+  employerOrder = HL.stackChart(el, rows, 'm', 'employer', 'amount', { order: [...d3.rollup(rows, (v) => d3.sum(v, (r) => r.amount), (r) => r.employer)].filter((d) => d[0] !== 'Unknown').sort((a, b) => b[1] - a[1]).map((d) => d[0]).concat(rows.some((r) => r.employer === 'Unknown') ? ['Unknown'] : []), xfmt: (m) => dash.fmt.month(HL.parseM(m)), events, dimension: 'employer', hiddenAlso: HL.evHiddenKinds(jobs) });
 });
-dash.draw('employer-legend', (el) => { const g = dash.data('employer'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, employerOrder); });
+dash.draw('employer-legend', (el) => { const g = dash.data('employer'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, employerOrder, { dimension: 'employer', chart: 'employer' }); });
 
 })();</script>
 
@@ -927,9 +1205,9 @@ let catOrder = [];
 dash.draw('cat-stack', (el) => {
   const g = HL.rd('cat_year'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
   const f = HL.basis() === 'real' ? 'amount_real' : 'amount';
-  catOrder = HL.stackChart(el, g.data.map((r) => ({ y: r.y, category: r.category, v: Number(r[f]) })), 'y', 'category', 'v');
+  catOrder = HL.stackChart(el, g.data.map((r) => ({ y: r.y, category: r.category, v: Number(r[f]) })), 'y', 'category', 'v', { dimension: 'category' });
 });
-dash.draw('cat-legend', (el) => { const g = HL.rd('cat_year'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, catOrder); });
+dash.draw('cat-legend', (el) => { const g = HL.rd('cat_year'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, catOrder, { dimension: 'category', chart: 'cat-stack' }); });
 
 const yearHead = (tb, years) => { const tr = tb.parentElement.tHead.rows[0]; const old = [...tr.children]; tr.replaceChildren(old[0], ...years.map((y) => Object.assign(document.createElement('th'), { textContent: y })), Object.assign(document.createElement('th'), { textContent: 'Total' })); };
 const yearsOf = (rows) => [...new Set(rows.map((r) => r.y))].sort();
@@ -973,10 +1251,10 @@ dash.draw('recurring', (tb) => {
 let slushOrder = [];
 dash.draw('slush', (el) => {
   const g = HL.rd('slush'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
-  slushOrder = HL.stackChart(el, g.data.map((r) => ({ y: r.y, item: r.item, v: Number(r.amount) })), 'y', 'item', 'v');
+  slushOrder = HL.stackChart(el, g.data.map((r) => ({ y: r.y, item: r.item, v: Number(r.amount) })), 'y', 'item', 'v', { dimension: 'item' });
 });
 dash.draw('slush-items', (el) => { const items = HL.goalConfig().catchall_items; el.textContent = items.length ? items.join(', ') : 'none yet'; });
-dash.draw('slush-legend', (el) => { const g = HL.rd('slush'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, slushOrder); });
+dash.draw('slush-legend', (el) => { const g = HL.rd('slush'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, slushOrder, { dimension: 'item', chart: 'slush' }); });
 dash.draw('excl-context', (el) => { const g = dash.data('exclusions'); if (g.status !== 'ok') { el.textContent = '—'; return; }
   const v = (k) => Number((g.data.find((r) => r.kind === k) || {}).value); const n = v('rows_in_totals'), m = v('months');
   el.textContent = Number.isFinite(n) ? `${dash.fmt.num(n)} rows count in the totals${Number.isFinite(m) ? ` over ${m} months` : ''}` : 'rows and dollars per adjustment'; });
@@ -1025,6 +1303,42 @@ const nwCard = (el) => {
   else add('Over 12 months', '—', 'needs balances from a year before (Settings → Accounts → Balances history)', false);
 };
 dash.draw('lm-nw', nwCard);
+// by person (#156): each person's month beside the shared part, with their accounts and decisions; the card shows only when by_person
+// has rows (the People rule names two or more), so a one-person household never sees it. Figures only, never over or under.
+const bpMonth = () => { const g = dash.data('by_person'); if (g.status !== 'ok' || !g.data.length) return null;
+  const b = dash.data('budget_items'), last = b.status === 'ok' && b.data.length ? b.data.map((r) => r.m).sort().pop() : null;
+  return last && g.data.some((r) => r.m === last) ? last : g.data.map((r) => r.m).sort().pop(); };
+const bpRows = () => { const m = bpMonth(); return m ? dash.data('by_person').data.filter((r) => r.m === m) : []; };
+const bpLabel = (who) => who === 'Household' ? 'Joint' : who;
+// a change that rounds to nothing reads "no change", as at the check-in; joint income that is nothing at all is a dash, not $0 / 0%
+const bpCh = (v) => v == null ? '—' : Math.round(v) === 0 ? 'no change' : sgn(v);
+dash.draw('lm-people-month', (el) => { const m = bpMonth(), g = dash.data('by_person'); if (!m) return;
+  const prev = g.data.map((r) => r.m).filter((x) => x < m).sort().pop();
+  el.textContent = HL.fmtM(HL.parseM(m)) + (prev ? `, with the change since ${HL.fmtM(HL.parseM(prev))}.` : ', the first month built, so no change yet.'); });
+dash.draw('lm-people-rows', (tb) => { tb.replaceChildren(); const pct = dash.fmt.pct(0);
+  for (const r of bpRows()) { const tr = document.createElement('tr'), noInc = r.who === 'Household' && !r.earned && !r.earned_change;
+    [bpLabel(r.who), noInc ? '—' : HL.usd0(r.earned), noInc || r.earned_share == null ? '—' : pct(r.earned_share), noInc ? '—' : bpCh(r.earned_change), HL.usd0(r.spent), bpCh(r.spent_change)].forEach((c, i) => {
+      const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); });
+    tb.append(tr); } });
+// accounts and decisions match a person ignoring case and spacing; one naming no one, or a name the People rule lacks, sits under Joint
+const bpKey = (n) => String(n || '').trim().split(/\s+/).join(' ').toLowerCase();
+const bpOwn = () => { const m = bpMonth(); if (!m) return [];
+  const bal = dash.data('balances'), dec = dash.data('decisions'), rows = bpRows();
+  const named = new Set(rows.filter((r) => r.who !== 'Household').map((r) => bpKey(r.who))), owner = (n) => named.has(bpKey(n)) ? bpKey(n) : null;
+  const accts = bal.status === 'ok' ? bal.data.filter((r) => r.m === m) : [], decs = dec.status === 'ok' ? dec.data.filter((r) => r.m === m && bpKey(r.person)) : [];
+  return rows.map((r) => { const me = r.who === 'Household' ? null : bpKey(r.who);
+    return { label: bpLabel(r.who), accounts: accts.filter((a) => owner(a.person) === me).map((a) => a.account).sort(), decisions: decs.filter((d) => owner(d.person) === me).map((d) => d.text) }; })
+    .filter((o) => o.accounts.length || o.decisions.length); };
+dash.onData(() => { const card = document.getElementById('lm-people-card'), list = document.getElementById('lm-people-list');
+  if (card) card.hidden = !bpRows().length; if (list) list.hidden = !bpOwn().length; });
+dash.draw('lm-people-count', (el) => { const own = bpOwn(), na = d3.sum(own, (o) => o.accounts.length), nd = d3.sum(own, (o) => o.decisions.length);
+  if (!own.length) return;
+  el.textContent = `${na} account${na === 1 ? '' : 's'} and ${nd} decision${nd === 1 ? '' : 's'}, by person`; HL.sizeOnce(el.closest('details'), na + nd <= 8); });
+dash.draw('lm-people-own', (el) => { el.replaceChildren();
+  for (const o of bpOwn()) { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = o.label;
+    if (o.accounts.length) { const d = document.createElement('div'); d.textContent = 'Accounts: ' + o.accounts.join(', '); dd.append(d); }
+    if (o.decisions.length) { const d = document.createElement('div'); d.className = 'muted'; d.textContent = 'Decisions in force: ' + o.decisions.join('; '); dd.append(d); }
+    el.append(dt, dd); } });
 // decisions (#155): those in force in the latest month, with the app's verdict and the household's, and the keep rate
 const decLatest = () => { const g = dash.data('decisions'); if (g.status !== 'ok' || !g.data.length) return null; const last = g.data.map((r) => r.m).sort().pop(); return g.data.filter((r) => r.m === last); };
 const DEC_WORDS = { kept: 'kept', partly: 'partly kept', dropped: 'not kept', pending: 'waiting for the month’s files', unknown: 'yours to say' };
@@ -1144,7 +1458,7 @@ dash.draw('y-facts', (el) => { el.replaceChildren(); const r = yr(); if (!r) ret
   if (r.events.length) add('Life events', r.events.map((e) => `${m(e.m)}: ${e.label}`).join('; '));
   if (r.withholding) { const w = r.withholding; for (const o of w.outcomes.slice(-4)) add(`Tax year ${o.year}`, `${o.amount >= 0 ? 'a refund of' : 'a bill of'} ${HL.usd0(Math.abs(o.amount))}`);
     if (w.adjust) add('Withholding', `${w.adjust_kind === 'refund' ? 'A refund' : w.adjust_kind === 'owed' ? 'A bill' : 'A refund or a bill'} of ${HL.usd0(w.note_at)} or more two years running: consider adjusting withholding, the tax taken out of each paycheck`); }
-  if (r.ahead) add('Where next year leads', `at the last twelve months' pace, about ${ySigned(r.ahead.cash)} kept by ${m(r.ahead.until)}` + (r.ahead.net_worth != null ? `, net worth about ${HL.usd0(r.ahead.net_worth)}` : '') + ' (an estimate, not a plan)'); });
+  if (r.ahead) add('Where next year leads', `at the pace ${r.ahead.pace_since ? `of the ${r.ahead.pace_months} months since ${r.ahead.pace_since}, the household's new normal` : "of the last twelve months"}, about ${ySigned(r.ahead.cash)} kept by ${m(r.ahead.until)}` + (r.ahead.net_worth != null ? `, net worth about ${HL.usd0(r.ahead.net_worth)}` : '') + ' (an estimate, not a plan)'); });
 dash.draw('y-movers', (tb) => { tb.replaceChildren(); const r = yr(), mv = r && r.movers;
   if (!mv) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = r ? 'The year before is not loaded.' : '—'; tr.append(td); tb.append(tr); return; }
   for (const x of (HL.basis() === 'real' ? mv.real : mv.nominal)) { const tr = document.createElement('tr');
@@ -1158,17 +1472,26 @@ const aheadMonth = (m) => HL.fmtM(HL.parseM(m));
 dash.draw('ahead-rows', (tb) => { tb.replaceChildren(); const rows = ahead();
   if (!rows.length) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4; td.textContent = dash.data('look_ahead').status === 'missing' ? 'Rebuild the ledger to see where the pace leads (Close a month).' : 'Load a month to see where the pace leads.'; tr.append(td); tb.append(tr); return; }
   for (const r of rows) { const tr = document.createElement('tr');
-    [`${r.h} months, to ${aheadMonth(r.until)}`, aheadSigned(r.cash), aheadSigned(r.cash_3), r.net_worth == null ? 'add balances (Settings → Accounts)' : HL.usd0(r.net_worth) + (r.growth_pct ? ' *' : '')].forEach((c, i) => {
+    [`${r.h} months, to ${aheadMonth(r.until)}`, aheadSigned(r.cash), aheadSigned(r.cash_3), r.net_worth == null ? '—' : HL.usd0(r.net_worth)].forEach((c, i) => {
       const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); });
     tb.append(tr); } });
+// the new normal (#159): a window cut at a life event the household marked says so where the figure is
+HL.sinceNote = (label, from, n, what) => label ? `${what} the ${n} budget month${n === 1 ? '' : 's'} since ${label} (${aheadMonth(from)}), the household's new normal, not the last twelve.` : '';
+dash.draw('ahead-since', (el) => { const r = ahead()[0]; el.replaceChildren(); if (!r) return;   // and, under the table, what the Net worth column leaves out or assumes
+  const parts = [HL.sinceNote(r.pace_since, r.pace_from, r.pace_months, 'The pace is the average net kept a month over'), r.net_worth == null ? 'Net worth needs month-end balances:' : r.growth_pct ? `Net worth includes an assumed ${r.growth_pct}% a year growth on assets.` : ''].filter(Boolean);
+  el.append(parts.join(' ')); if (r.net_worth == null) el.append(' ', Object.assign(document.createElement('a'), { href: '/settings#accounts', textContent: 'add them on Settings → Accounts' }), '.'); });
+const lmSince = () => { const g = dash.data('plan_suggestions'); return g.status === 'ok' ? g.data.find((x) => x.avg_since) : null; };
+dash.draw('lm-since', (el) => { const r = lmSince(); el.textContent = r ? HL.sinceNote(r.avg_since, r.avg_from, r.avg_months, 'The averages and the suggested plan use') : ''; });
+dash.draw('lm-avg-since', (el) => { const r = lmSince();   // the Average card has no suggested plan: its own, shorter line
+  el.textContent = r ? `Averages use the ${r.avg_months} budget month${r.avg_months === 1 ? '' : 's'} since ${r.avg_since} (${aheadMonth(r.avg_from)}), the household's new normal.` : ''; });
 dash.draw('ahead-facts', (el) => { el.replaceChildren(); const rows = ahead(); if (!rows.length) return; const r = rows.find((x) => x.h === 12) || rows[0];
   const add = (dt, dd) => { el.append(Object.assign(document.createElement('dt'), { textContent: dt }), Object.assign(document.createElement('dd'), { textContent: dd })); };
   add('Debt-free (mortgage excluded)', r.debt_free === r.m ? 'already' : r.debt_free ? aheadMonth(r.debt_free) : `no date yet: ${r.debt_free_open} ${r.debt_free_open === 1 ? 'debt has' : 'debts have'} no payoff date at the current payment`);
   for (const g of r.goals) add(g.label, g.reach_m ? `${aheadMonth(g.reach_m)} at its pace (wanted by ${aheadMonth(g.target_month)})` : (g.within ? 'reached' : 'not at this pace'));
-  if (r.growth_pct) add('*', `includes an assumed ${r.growth_pct}% a year growth on assets`); });
+  if (r.growth_pct) add('Growth assumed', `${r.growth_pct}% a year on assets, in the net worth above`); });
 dash.draw('ahead-inputs', (el) => { el.replaceChildren(); const rows = ahead(); if (!rows.length) return; const r0 = rows[0];
   const add = (dt, dd) => { el.append(Object.assign(document.createElement('dt'), { textContent: dt }), Object.assign(document.createElement('dd'), { textContent: dd })); };
-  add('12-month pace', `${aheadSigned(r0.pace)} a month, the average net of ${r0.pace_months} budget month${r0.pace_months === 1 ? '' : 's'} from ${aheadMonth(r0.pace_from)}`);
+  add('The pace', `${aheadSigned(r0.pace)} a month, the average net of ${r0.pace_months} budget month${r0.pace_months === 1 ? '' : 's'} from ${aheadMonth(r0.pace_from)}`);   // the line under the table says when that is the new normal
   add('3-month pace', `${aheadSigned(r0.pace_3)} a month`);
   add('Net worth now', r0.net_worth_now == null ? 'needs month-end balances (Settings → Accounts)' : HL.usd0(r0.net_worth_now));
   for (const r of rows) {
@@ -1209,28 +1532,33 @@ const NW_TYPES = ['cash', 'savings', 'retirement', 'brokerage', 'home', 'vehicle
 const nwSeries = () => { const g = dash.data('balances'); if (g.status !== 'ok') return null; const rows = g.data.filter((r) => r.in_net_worth);
   const keys = [...new Set(rows.map((r) => r.kind + ':' + (r.type || 'other')))].sort((a, b) => (a[0] === b[0] ? 0 : a < b ? 1 : -1) || NW_TYPES.indexOf(a.split(':')[1]) - NW_TYPES.indexOf(b.split(':')[1]));
   return { rows, keys }; };
+// an account-type stack's name, as the legend shows it and Settings → Chart appearance lists it (app/appearance.py, account_type_label)
+const nwLabel = (k) => (k.startsWith('debt') ? 'owed: ' : '') + k.split(':')[1];
+const nwColor = (k, i, keys) => dash.colorFor('account_type', nwLabel(k), i, 0, keys.map(nwLabel));   // by its place among all the keys, so hiding one recolours none (#132)
 dash.draw('nw-legend', (el) => { el.replaceChildren(); const s = nwSeries(); if (!s) return; const c = HL.colors();
-  s.keys.forEach((k, i) => { const sp = document.createElement('span'); sp.dataset.c = String(i % c.length); sp.style.setProperty('--sw', c[i % c.length]); sp.textContent = (k.startsWith('debt') ? 'owed: ' : '') + k.split(':')[1]; el.append(sp); }); });
+  s.keys.forEach((k, i) => { if (!HL.shown('nw-chart', 'account_type', nwLabel(k))) return; const sp = document.createElement('span'); sp.dataset.c = String(i % c.length); sp.style.setProperty('--sw', nwColor(k, i, s.keys)); sp.textContent = nwLabel(k); el.append(sp); }); });
 dash.draw('nw-chart', (el) => {
   el.replaceChildren(); const s = nwSeries(), N = HL.rd('net_worth');
   if (!s || !s.rows.length || N.status !== 'ok' || !N.data.length) { HL.empty(el, 'Net worth by month shows here once accounts have month-end balances.', '/settings#accounts', 'Add accounts'); return; }
   const months = N.data.map((r) => r.m), inR = new Set(months);
   const data = months.map((m) => { const o = { m, d: HL.parseM(m) }; for (const k of s.keys) o[k] = 0;
     for (const r of s.rows) if (r.m === m) o[r.kind + ':' + (r.type || 'other')] += r.kind === 'debt' ? -Number(r.amount) : Number(r.amount); return o; });
-  const series = d3.stack().keys(s.keys).offset(d3.stackOffsetDiverging)(data);
+  const keys = s.keys.filter((k) => HL.shown('nw-chart', 'account_type', nwLabel(k)));   // a hidden type leaves the stacks; the net worth line keeps it
+  const series = d3.stack().keys(keys).offset(d3.stackOffsetDiverging)(data);
+  const pts = N.data.map((r) => ({ m: r.m, v: nwField(r, 'net_worth'), est: r.estimated > 0, added: r.added_accounts }));
+  const nHidden = s.keys.filter((k) => dash.hidden('account_type', nwLabel(k))).map(nwLabel);
+  const lineIn = nHidden.length ? pts.map((p) => p.v) : [];   // with a stack hidden the line may run past the rest, so the scale takes it in
   const W = el.clientWidth || 600, H = 300, mt = 10, mb = 28;
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
-  const y = d3.scaleLinear([Math.min(0, d3.min(series, (sr) => d3.min(sr, (d) => d[0]))), Math.max(0, d3.max(series, (sr) => d3.max(sr, (d) => d[1])))], [H - mb, mt]).nice();
+  const y = d3.scaleLinear([Math.min(0, d3.min(series, (sr) => d3.min(sr, (d) => d[0])) ?? 0, ...lineIn), Math.max(0, d3.max(series, (sr) => d3.max(sr, (d) => d[1])) ?? 0, ...lineIn)], [H - mb, mt]).nice();
   const ml = HL.margins(svg, y.ticks(5), HL.money);
   const x = d3.scaleBand(months, [ml, W - 8]).padding(0.15);
   svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(HL.money).tickSize(-(W - ml - 8))).call((a) => { a.select('.domain').remove(); a.selectAll('line').attr('stroke', 'var(--chart-grid)'); a.attr('font-size', null).attr('font-family', null); });
   const every = Math.max(1, Math.ceil(months.length / Math.max(2, Math.floor((W - ml) / 90))));   // room for "Mar 2025" at a phone's width
   svg.append('g').attr('transform', `translate(0,${H - mb})`).call(d3.axisBottom(x).tickValues(months.filter((_, i) => i % every === 0)).tickFormat((m) => dash.fmt.month(HL.parseM(m))).tickSize(0)).call((a) => { a.select('.domain').remove(); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 8); });
   svg.append('line').attr('x1', ml).attr('x2', W - 8).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--chart-axis)');
-  const c = HL.colors();
-  series.forEach((sr, i) => svg.append('g').attr('fill', c[i % c.length]).attr('fill-opacity', 0.75).selectAll('rect').data(sr).join('rect')
+  series.forEach((sr) => svg.append('g').datum(sr).attr('fill', nwColor(sr.key, s.keys.indexOf(sr.key), s.keys)).attr('fill-opacity', 0.75).selectAll('rect').data(sr).join('rect')
     .attr('x', (d) => x(d.data.m)).attr('width', x.bandwidth()).attr('y', (d) => y(Math.max(d[0], d[1]))).attr('height', (d) => Math.abs(y(d[0]) - y(d[1]))));
-  const pts = N.data.map((r) => ({ m: r.m, v: nwField(r, 'net_worth'), est: r.estimated > 0, added: r.added_accounts }));
   const cx = (p) => x(p.m) + x.bandwidth() / 2;
   HL.fixes(svg, pts.map((p) => ({ x: cx(p), y: y(p.v), est: p.est })), 'var(--ink)');   // DS-CHART-1, 2: an estimated debt makes its month a dotted course
   pts.filter((p) => p.added).forEach((p) => svg.append('path').attr('d', d3.symbol(d3.symbolTriangle, 40)()).attr('transform', `translate(${cx(p)},${mt + 4}) rotate(180)`).attr('fill', 'var(--ink-muted)'));
@@ -1240,6 +1568,7 @@ dash.draw('nw-chart', (el) => {
       t.show(px, py, `<div class="t">${HL.esc(HL.fmtM(HL.parseM(r.m)))}</div><div>Net worth ${HL.usd0(nwField(r, 'net_worth'))}${r.estimated ? ' (estimated debt in it)' : ''}</div><div>Assets ${HL.usd0(r.assets)} · debts ${HL.usd0(r.debts)}</div>` +
         (r.change != null ? `<div>Change ${sgn(r.change)}${r.you_did != null ? `: you did ${sgn(r.you_did)}, happened ${sgn(r.happened)}` : ''}</div>` : '') + (r.added_accounts ? `<div>${r.added_accounts} account${r.added_accounts === 1 ? '' : 's'} added</div>` : '')); })
     .on('pointerleave', () => t.hide());
+  HL.hiddenNote(el, 'nw-chart', nHidden);
 });
 // Balances (#143): each account at the latest month-end the dataset has; estimated and carried months say so
 const balancesLatest = () => { const g = dash.data('balances'); if (g.status !== 'ok' || !g.data.length) return null; const last = g.data.reduce((a, r) => r.m > a ? r.m : a, '');
@@ -1271,22 +1600,31 @@ const drawDebts = (el, rows) => {
     const keys = [...DEBT_TYPES, ...[...groups.keys()].filter((k) => k && !DEBT_TYPES.includes(k)).sort(), ''];   // an unknown type still draws
     for (const t of keys) { const rs = groups.get(t); if (!rs) continue; lines.push({ head: label(t), sum: d3.sum(rs, (r) => Number(r.total)) }, ...rs); }
   } else lines.push(...rows);
-  const data = lines.map((r) => r.head ? r : ({ ...r, d0: HL.parseM(r.first), d1: d3.utcMonth.offset(HL.parseM(r.last), 1), total: Number(r.total) }));
+  // a debt's colour is its place among every debt drawn here (#132), so hiding one recolours none; a hidden debt leaves its bar, and its
+  // group's total still counts it
+  const chart = el.dataset.draw, all = lines.filter((r) => !r.head), names = all.map((r) => r.item), at = new Map(all.map((r, i) => [r, i]));
+  const nHidden = rows.filter((r) => dash.hidden('debt', r.item)).map((r) => r.item);
+  // a group's heading only above a debt that is drawn: a group whose debts are all hidden leaves no empty heading (its "N hidden" note says so)
+  const data = []; let head = null;
+  for (const r of lines) { if (r.head) { head = r; continue; } if (!HL.shown(chart, 'debt', r.item)) continue; if (head) { data.push(head); head = null; }
+    data.push({ ...r, d0: HL.parseM(r.first), d1: d3.utcMonth.offset(HL.parseM(r.last), 1), total: Number(r.total), ci: at.get(r) }); }
   const debts = data.filter((r) => !r.head);
+  if (!debts.length) { el.textContent = `Every debt in this period is hidden (Settings → Chart appearance).`; HL.hiddenNote(el, chart, nHidden); return; }
   const W = el.clientWidth || 600, rowH = 26, mt = 22, mb = 8, H = mt + data.length * rowH + mb;
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
   const probe = svg.append('text').attr('opacity', 0); let ml = 0; for (const r of debts) { probe.text(r.item); ml = Math.max(ml, probe.node().getComputedTextLength()); } probe.remove(); ml = Math.ceil(ml) + 12;
   const x = d3.scaleUtc([d3.min(debts, (r) => r.d0), d3.max(debts, (r) => r.d1)], [ml, W - 70]);
   svg.append('g').attr('transform', `translate(0,${mt - 6})`).call(d3.axisTop(x).ticks(Math.max(2, Math.floor((W - ml) / 130))).tickFormat(dash.fmt.month).tickSize(0)).call((a) => { a.select('.domain').remove(); a.attr('font-size', null).attr('font-family', null); HL.edgeTicks(a, ml, W - 70); });
-  const c = HL.colors(); const t = HL.tip(el);
+  const t = HL.tip(el);
   const grp = svg.append('g').selectAll('g').data(data).join('g').attr('transform', (r, i) => `translate(0,${mt + i * rowH})`);
   const heads = grp.filter((r) => r.head);
   heads.append('text').attr('x', 0).attr('y', rowH / 2 + 4).attr('font-weight', 600).attr('fill', 'var(--ink)').text((r) => `${r.head} · ${HL.money(r.sum)}`);
   const bars = grp.filter((r) => !r.head);
   bars.append('text').attr('x', ml - 8).attr('y', rowH / 2 + 4).attr('text-anchor', 'end').attr('fill', 'var(--ink)').text((r) => r.item);
-  bars.append('rect').attr('class', 'b h').style('animation-delay', (r, i) => Math.min(i, 12) * 30 + 'ms').attr('x', (r) => x(r.d0)).attr('width', (r) => Math.max(3, x(r.d1) - x(r.d0))).attr('y', 5).attr('height', rowH - 10).attr('rx', 3).attr('fill', (r) => c[debts.indexOf(r) % c.length])
+  bars.append('rect').attr('class', 'b h').style('animation-delay', (r, i) => Math.min(i, 12) * 30 + 'ms').attr('x', (r) => x(r.d0)).attr('width', (r) => Math.max(3, x(r.d1) - x(r.d0))).attr('y', 5).attr('height', rowH - 10).attr('rx', 3).attr('fill', (r) => dash.colorFor('debt', r.item, r.ci, 0, names))
     .on('pointermove', (pe, r) => { const [px, py] = d3.pointer(pe, el); t.show(px, py, `<div class="t">${HL.esc(r.item)}${r.debt_type ? ' · ' + HL.esc(label(r.debt_type)) : ''}</div><div>${HL.esc(HL.fmtM(r.d0))} – ${HL.esc(HL.fmtM(HL.parseM(r.last)))}, ${HL.esc(String(r.months))} months</div><div>Paid ${HL.esc(HL.usd0(r.total))}</div>`); }).on('pointerleave', () => t.hide());
   bars.append('text').attr('x', (r) => x(r.d1) + 6).attr('y', rowH / 2 + 4).text((r) => HL.money(r.total));
+  HL.hiddenNote(el, chart, nHidden);
   el.style.minHeight = H + 'px';
 };
 dash.draw('debts', (el) => drawDebts(el, debtRows(false, HL.rd('debts'))));
@@ -1295,7 +1633,8 @@ dash.draw('debts-paid-box', (box) => {   // the fold shows only when something i
   const rows = debtRows(true, HL.rd('debts')) || []; box.style.display = rows.length ? '' : 'none';
   box.querySelector('summary').textContent = `Paid off (${rows.length})`; });
 dash.draw('debt-order', (p) => {
-  const g = dash.data('debts'); if (g.status !== 'ok' || !g.data.length) { p.replaceChildren(); return; }
+  const g = HL.rd('debts'), most = Math.max(...[false, true].map((po) => (debtRows(po, g) || []).length));
+  if (most < 2) { p.replaceChildren(); return; }   // the order sorts the open bars and the paid-off ones; one bar in each has none to choose
   const sel = document.createElement('select'); sel.setAttribute('aria-label', 'Order debts by');
   for (const [v, txt] of [['first', 'first payment'], ['total', 'total paid']]) { const o = document.createElement('option'); o.value = v; o.textContent = txt; sel.append(o); }
   sel.value = debtOrder(); sel.onchange = () => dash.setParams({ debt_order: sel.value === 'first' ? null : sel.value });
@@ -1309,14 +1648,14 @@ dash.draw('debt-order', (p) => {
 // ---- people ----
 let earnerOrder = [], payerOrder = [];
 dash.draw('earner', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
-  earnerOrder = HL.stackChart(el, g.data.filter((r) => r.role === 'earner').map((r) => ({ y: r.y, who: r.who, v: Number(r.amount) })), 'y', 'who', 'v', { order: [...peopleNames(g.data), 'Household'], skip: 2 }); });
-dash.draw('earner-legend', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, earnerOrder, 2); });
+  earnerOrder = HL.stackChart(el, g.data.filter((r) => r.role === 'earner').map((r) => ({ y: r.y, who: r.who, v: Number(r.amount) })), 'y', 'who', 'v', { order: [...peopleNames(g.data), 'Household'], skip: 2, dimension: 'person' }); });
+dash.draw('earner-legend', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, earnerOrder, { skip: 2, dimension: 'person', chart: 'earner' }); });
 dash.draw('payer', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.replaceChildren(); el.textContent = '—'; return; }
-  payerOrder = HL.stackChart(el, g.data.filter((r) => r.role === 'payer' && r.who !== 'Household').map((r) => ({ y: r.y, who: r.who, v: Number(r.amount) })), 'y', 'who', 'v', { order: peopleNames(g.data), skip: 2 }); });   // shared spending dwarfs personal envelopes; it is the caption
+  payerOrder = HL.stackChart(el, g.data.filter((r) => r.role === 'payer' && r.who !== 'Household').map((r) => ({ y: r.y, who: r.who, v: Number(r.amount) })), 'y', 'who', 'v', { order: peopleNames(g.data), skip: 2, dimension: 'person' }); });   // shared spending dwarfs personal envelopes; it is the caption
 dash.draw('payer-shared', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.textContent = '—'; return; }
   const sh = d3.sum(g.data.filter((r) => r.role === 'payer' && r.who === 'Household'), (r) => Number(r.amount)), all = d3.sum(g.data.filter((r) => r.role === 'payer'), (r) => Number(r.amount));
   el.textContent = all ? `${HL.money(sh)} (${dash.fmt.pct(0)(sh / all)} of spending)` : '—'; });
-dash.draw('payer-legend', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, payerOrder, 2); });
+dash.draw('payer-legend', (el) => { const g = HL.rd('people'); if (g.status !== 'ok') { el.replaceChildren(); return; } HL.legend(el, payerOrder, { skip: 2, dimension: 'person', chart: 'payer' }); });
 dash.draw('people-pivot', (tb) => {
   const g = dash.data('people_pivot'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   const names = peopleNames(dash.data('people').data), pct = dash.fmt.pct(1);
@@ -1496,7 +1835,17 @@ const signed = (v, td, badWhenPositive) => { if (badWhenPositive ? v > 0.5 : v <
 dash.draw('lm-cats', (tb) => {
   const g = dash.data('lm_cats'); if (g.status !== 'ok') { tb.replaceChildren(); return; }
   HL.fillTable(tb, g.data, [(r) => r.category, (r) => HL.usd0(r.planned), (r) => HL.usd0(r.actual), (r, td) => signed(r.vs_plan, td, !r.want_more), (r) => HL.usd0(r.avg12), (r, td) => signed(r.vs_avg, td, !r.want_more), (r) => HL.usd0(r.suggest)]);
+  g.data.forEach((r, i) => { if (!r.kept) return; const td = tb.rows[i] && tb.rows[i].cells[6]; if (!td) return;   // the key's "=" mark, on the rows the rule keeps
+    const m = Object.assign(document.createElement('span'), { className: 'key-mark', textContent: '= ' }); m.setAttribute('aria-hidden', 'true'); td.prepend(m); td.classList.add('kept');
+    td.append(Object.assign(document.createElement('span'), { className: 'visually-hidden', textContent: ', kept at its plan' })); });
 });
+// the Detail key, from the plan_keep_categories rule as built, so it names the household's own kept categories (and none when the rule is empty)
+dash.draw('lm-cats-key', (ul) => { const gc = dash.data('goal_config'), c = gc.status === 'ok' && gc.data[0] ? gc.data[0] : {};
+  const keep = c.plan_keep_categories || ['Housing', 'Debt', 'Insurance'];   // role default, until a rebuild emits plan_keep_categories
+  const li = (mark, text) => { const l = document.createElement('li'); if (mark) { const m = Object.assign(document.createElement('span'), { className: 'key-mark', textContent: mark }); m.setAttribute('aria-hidden', 'true'); l.append(m); } l.append(text); return l; };
+  const list = keep.length < 2 ? keep.join('') : keep.slice(0, -1).join(', ') + ' and ' + keep[keep.length - 1];
+  ul.replaceChildren(li('', 'Planned and spent are this budget month; the average is the months before it'), li('', `Suggested plan: the average rounded up to the next ${HL.usd0(10)}`),
+    ...(keep.length ? [li('=', `${list} keep${keep.length === 1 ? 's' : ''} ${keep.length === 1 ? 'its' : 'their'} plan (Settings → Pipeline rules, Roles)`)] : [])); });
 
 
 dash.draw('lm-review', (el) => {
@@ -1629,14 +1978,17 @@ dash.draw('lm-dti', (el) => {
 const months1 = (v) => v == null ? '—' : `${Number(v).toFixed(1)} month${Number(v).toFixed(1) === '1.0' ? '' : 's'}`;
 dash.draw('lm-ef', (el) => {
   const g = dash.data('emergency_fund'), G = dash.data('goals'); el.replaceChildren();
-  const add = (label, main, sub, bad, link) => { const dt = document.createElement('dt'), dd = document.createElement('dd'), v = document.createElement('span'); dt.textContent = label; v.className = 'v'; v.textContent = main; dd.append(v);
-    if (sub) { const d = document.createElement('div'); d.className = 'muted' + (bad ? ' down' : ''); d.textContent = sub; if (link) { const a = document.createElement('a'); a.href = link[1]; a.textContent = link[0]; d.append(' ', a); } dd.append(d); } el.append(dt, dd); };
+  const add = (label, main, sub, tone, link) => { const dt = document.createElement('dt'), dd = document.createElement('dd'), v = document.createElement('span'); dt.textContent = label; v.className = 'v'; v.textContent = main; dd.append(v);
+    if (tone) dd.append(' ', HL.stamp(tone));   // DS-STATUS-1: the verdict is a stamp, as on the rows above; the sentence under it stays plain
+    if (sub) { const d = document.createElement('div'); d.className = 'muted'; d.textContent = sub; if (link) { const a = document.createElement('a'); a.href = link[1]; a.textContent = link[0]; d.append(' ', a); } dd.append(d); } el.append(dt, dd); };
   const r = g.status === 'ok' && g.data.length ? g.data[g.data.length - 1] : null, target = goalValue(G, 'emergency_months');
-  if (!r || r.emergency == null) { add('Coverage', '—', 'No account counts toward the emergency fund yet.', false, ['Mark one on Settings → Accounts', '/settings#accounts']); return; }
-  add(`End of ${HL.fmtM(HL.parseM(r.m))}`, months1(r.months) + (target != null ? ` (target ${target})` : ''),
-    (r.change != null ? (Math.abs(r.change) < 0.05 ? 'About the same as last month. ' : `${r.change >= 0 ? '+' : '−'}${Math.abs(r.change).toFixed(1)} since last month. `) : '') + (target != null && r.months != null && r.months < target ? `${(target - r.months).toFixed(1)} short of the target.` : target == null ? 'No target set (emergency_months on Settings → Goals).' : 'At or above the target.'),
-    target != null && r.months != null && r.months < target);
-  add('From', HL.usd0(r.emergency), `in ${r.accounts} account${r.accounts === 1 ? '' : 's'}, over ${HL.usd0(r.outgo)} a month of outgo (the ${r.outgo_months}-month average)` + (r.unconfirmed ? `; ${r.unconfirmed} balance${r.unconfirmed === 1 ? '' : 's'} not yet confirmed` : ''));
+  if (!r || r.emergency == null) { add('Coverage', '—', 'No account counts toward the emergency fund yet.', null, ['Mark one on Settings → Accounts', '/settings#accounts']); return; }
+  const r1 = (v) => v == null ? null : Number(Number(v).toFixed(1)), shown = r1(r.months), aim = r1(target);   // both as months1 shows them, so the stamp agrees with the figures: 5.97 reads 6.0, on track
+  const short = aim != null && shown != null && shown < aim;
+  add(`End of ${HL.fmtM(HL.parseM(r.m))}`, months1(r.months) + (target != null ? ` (target ${Number.isInteger(target) ? `${target} month${target === 1 ? '' : 's'}` : months1(target)})` : ''),
+    (r.change != null ? (Math.abs(r.change) < 0.05 ? 'About the same as last month. ' : `${r.change >= 0 ? '+' : '−'}${months1(Math.abs(r.change))} since last month. `) : '') + (short ? `${months1(aim - shown)} short of the target.` : target == null ? 'No target set.' : 'At or above the target.'),
+    target == null ? 'none' : r.months == null ? null : short ? 'off' : 'good', target == null ? ['Set one on Settings → Goals', '/settings#goals'] : null);
+  add('Emergency savings', HL.usd0(r.emergency), `in ${r.accounts} account${r.accounts === 1 ? '' : 's'}, over ${HL.usd0(r.outgo)} a month of outgo (the ${r.outgo_months}-month average${r.outgo_since ? `, since ${r.outgo_since}, the household's new normal` : ''})` + (r.unconfirmed ? `; ${r.unconfirmed} balance${r.unconfirmed === 1 ? '' : 's'} not yet confirmed` : ''));
 });
 dash.draw('ef-lines', (el) => {   /* series 4: series 2 is Planned savings in the chart above (DS-CHART-4) */
   const g = HL.rd('emergency_fund'), G = dash.data('goals'); el.replaceChildren();
@@ -1698,7 +2050,7 @@ dash.draw('goal-params', (tb) => {
 
 <script src="/static/a11y.js"></script>
 {% endblock %}
-{% block head %}<meta name="ledger-currency" content="{{ fmt.currency }}"><meta name="ledger-locale" content="{{ fmt.locale }}"><script src="/static/dash-shim.js"></script><script nonce="{{ csp_nonce(request) }}">
+{% block head %}<meta name="ledger-currency" content="{{ fmt.currency }}"><meta name="ledger-locale" content="{{ fmt.locale }}"><script type="application/json" id="ledger-appearance" nonce="{{ csp_nonce(request) }}">{{ appearance|tojson }}</script><script src="/static/dash-shim.js"></script><script nonce="{{ csp_nonce(request) }}">
 // Segmented switches inside a card ([data-switch]): each button shows its own panel (data-show) and hides its siblings'.
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-switch] button[data-show]'); if (!b) return;
@@ -1795,5 +2147,50 @@ const lmGap = (field, up, down, keep) => () => { const g = dash.data('lm_cats');
   if (hi[field] > 0) out.push(up + ' ' + hi.category + ', ' + sg(hi[field])); if (lo[field] < 0) out.push(down + ' ' + lo.category + ', ' + sg(lo[field])); return out.join('; ') + '.'; };
 finding('lm-var', lmGap('vs_plan', 'Spending furthest over plan:', 'furthest under plan:', (r) => r.flow !== 'income'));
 finding('lm-avg', lmGap('vs_avg', 'Furthest above its average:', 'furthest below it:', (r) => r.flow !== 'income'));
+// The charts coloured by a name state what the data says, hidden names included: hiding is display only (DS-CHART-6), as for the
+// debts and net worth findings above. A yearly finding is of the latest year in the period, labelled as the axis labels it, so a
+// partial year says how many months it has ("2026 (6 mo)").
+const pct0 = (v) => dash.fmt.pct(0)(v);
+const spanOf = (ms) => { const s = [...ms].sort(); return s[0] === s[s.length - 1] ? M(s[0]) : M(s[0]) + ' to ' + M(s[s.length - 1]); };
+const latestYear = (rows) => rows.map((r) => String(r.y)).sort().pop();
+const sumBy = (rows, key, val) => [...d3.rollup(rows, (v) => d3.sum(v, val), key)].sort((a, b) => b[1] - a[1]);
+finding('monthly', () => { const g = HL.rd('monthly'); if (g.status !== 'ok' || !g.data.length) return; const f = HL.fld;
+  const rows = g.data, inc = (r) => Number(r[f('income')]), out = (r) => Number(r[f('spend')]) + Number(r[f('debt')]);
+  const net = d3.sum(rows, (r) => Number(r[f('net')])), kept = (net >= 0 ? 'kept ' : 'drew down ') + $(Math.abs(net));
+  if (rows.length === 1) return M(rows[0].m) + ': income was ' + $(inc(rows[0])) + ' and outgo ' + $(out(rows[0])) + ', so the household ' + kept + '.';
+  const k = rows.filter((r) => inc(r) >= out(r)).length;
+  const n = rows.length, months = k === n ? (n === 2 ? 'both' : 'all ' + n) : k === 0 ? (n === 2 ? 'neither of the 2' : 'none of the ' + n) : k + ' of ' + n;
+  return spanOf(rows.map((r) => r.m)) + ': income covered outgo in ' + months + ' budget months, and the household ' + kept + '.'; });
+finding('employer', () => { const g = HL.rd('employer'); if (g.status !== 'ok' || !g.data.length) return;
+  const by = sumBy(g.data, (r) => r.employer || 'Unknown', (r) => Number(r.amount)), all = d3.sum(by, (d) => d[1]);
+  const known = by.filter((d) => d[0] !== 'Unknown'), unk = by.find((d) => d[0] === 'Unknown'), span = spanOf(g.data.map((r) => r.m));
+  const tail = unk && unk[1] ? '; ' + $(unk[1]) + ' could not be placed with an employer' : '';
+  if (!known.length) return span + ': ' + $(all) + ' in paychecks, none placed with an employer.';
+  if (known.length === 1) return span + ': ' + known[0][0] + ' paid ' + $(known[0][1]) + ' in paychecks' + tail + '.';
+  const last = g.data.map((r) => r.m).sort().pop(), now = [...new Set(g.data.filter((r) => r.m === last && r.employer && r.employer !== 'Unknown').map((r) => r.employer))];
+  return span + ': ' + known.length + ' employers paid ' + $(all) + ', the most ' + known[0][0] + ' with ' + $(known[0][1]) + tail + '.' + (now.length ? ' In ' + M(last) + ' the pay came from ' + now.join(' and ') + '.' : ''); });
+finding('cat', () => { const g = HL.rd('cat_year'); if (g.status !== 'ok' || !g.data.length) return; const f = HL.basis() === 'real' ? 'amount_real' : 'amount';
+  const y = latestYear(g.data), rows = sumBy(g.data.filter((r) => String(r.y) === y), (r) => r.category, (r) => Number(r[f]));
+  const all = d3.sum(rows, (d) => d[1]); if (!(all > 0)) return;
+  if (rows.length === 1) return HL.yearLabel(y) + ': all ' + $(all) + ' of spending was ' + rows[0][0] + '.';
+  const top = rows.slice(0, rows.length > 2 ? 2 : 1);
+  return HL.yearLabel(y) + ': ' + top.map((d) => d[0]).join(' and ') + ' took ' + pct0(d3.sum(top, (d) => d[1]) / all) + ' of the ' + $(all) + ' spent.'; });
+// the people dataset has no real-dollar field, so under the real-dollars switch these two say their figures are of the day
+const nomYear = (y) => HL.yearLabel(y) + (HL.basis() === 'real' ? ', in dollars of the day' : '');
+finding('earner', () => { const g = HL.rd('people'); if (g.status !== 'ok') return; const e = g.data.filter((r) => r.role === 'earner'); if (!e.length) return;
+  const y = latestYear(e), rows = sumBy(e.filter((r) => String(r.y) === y), (r) => r.who, (r) => Number(r.amount)).filter((d) => d[1] > 0), all = d3.sum(rows, (d) => d[1]);
+  if (!rows.length || !(all > 0)) return;
+  if (rows.length === 1) return nomYear(y) + ': ' + (rows[0][0] === 'Household' ? 'none of the ' + $(all) + ' income was tied to a person' : rows[0][0] + ' earned all the ' + $(all) + ' income') + '.';
+  return nomYear(y) + ': ' + rows[0][0] + ' earned ' + pct0(rows[0][1] / all) + ' of the ' + $(all) + ' income' + rows.slice(1).map((d) => ', ' + d[0] + ' ' + pct0(d[1] / all)).join('') + '.'; });
+finding('payer', () => { const g = HL.rd('people'); if (g.status !== 'ok') return; const p = g.data.filter((r) => r.role === 'payer'); if (!p.length) return;
+  const y = latestYear(p), rows = sumBy(p.filter((r) => String(r.y) === y), (r) => r.who, (r) => Number(r.amount)), all = d3.sum(rows, (d) => d[1]); if (!(all > 0)) return;
+  const own = rows.filter((d) => d[0] !== 'Household' && d[1] > 0);
+  if (!own.length) return nomYear(y) + ': no envelope belongs to a person, so all ' + $(all) + ' spent was shared.';
+  const share = d3.sum(own, (d) => d[1]) / all;   // the chart shows only this share; the line names the rest so it is not read as all spending
+  return nomYear(y) + ': personal envelopes took ' + pct0(share) + ' of the ' + $(all) + ' spent: ' + own.map((d) => d[0] + ' ' + $(d[1])).join(', ') + '. The other ' + pct0(1 - share) + ' was shared, and the chart leaves it out.'; });
+finding('slush', () => { const g = HL.rd('slush'); if (g.status !== 'ok' || !g.data.length) return;
+  const y = latestYear(g.data), rows = sumBy(g.data.filter((r) => String(r.y) === y), (r) => r.item, (r) => Number(r.amount)), all = d3.sum(rows, (d) => d[1]);
+  const top = rows[0] && rows[0][1] > 0 ? rows[0] : null;
+  return HL.yearLabel(y) + ': the catch-all envelopes ' + (all >= 0 ? 'took ' : 'got back ') + $(Math.abs(all)) + (top && rows.length > 1 ? ', the most ' + top[0] + ' with ' + $(top[1]) : '') + '.'; });
 })();</script>
 {% endblock %}

@@ -169,6 +169,23 @@ def rgb(value: str) -> tuple[float, float, float]:
     raise Unreadable(f"could not evaluate {value}")
 
 
+def oklab(value: str) -> tuple[float, float, float]:
+    """A CSS colour in OKLab (L 0..1), from its sRGB: Björn Ottosson's forward matrices, the inverse of _oklab_to_srgb."""
+    r, g, b = (_lin(c) for c in rgb(value))
+    l_ = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) ** (1 / 3)
+    m_ = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) ** (1 / 3)
+    s_ = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b) ** (1 / 3)
+    return (0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
+            1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
+            0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_)
+
+
+def delta_e(a: str, b: str) -> float:
+    """How far apart two colours look: the OKLab distance on a 0..100 scale (×100, so 2 is about a just-noticeable difference and the
+    appearance check's "within ΔE 10" is a distance under 0.1, #132)."""
+    return 100 * math.dist(oklab(a), oklab(b))
+
+
 def lum(value: str) -> float:
     r, g, b = (_lin(c) for c in rgb(value))
     return 0.2126 * r + 0.7152 * g + 0.0722 * b

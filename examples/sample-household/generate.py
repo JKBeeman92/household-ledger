@@ -48,8 +48,12 @@ ITEMS = [
     ("Transportation", "Cart Registration", "Cart Registration", "Transportation", "expense", 0, ["Shire Cart Office"], (0, 0), (1.0, 1.0)),
     # estimated tax (#153): Sam's garden contracts have no tax withheld; a quarter of them is planned into this envelope each month
     ("Savings", "Tax Set-Aside", "Tax Set-Aside", "Savings", "expense", 450, ["Green Hills Credit Union"], (0, 0), (1.0, 1.0)),
+    # before and after (#159): a category that starts with the baby, written without the random stream like the yearly bills above,
+    # so the comparison lists it as new since "Elanor is born", the event the household marked as its new normal
+    ("Baby", "Baby Things", "Baby Things", "Baby", "expense", 0, ["Bywater Babywear", "Healing Hands Apothecary"], (0, 0), (1.0, 1.0)),
 ]
 YEARLY = {"Smial Insurance": (2, 96000, 11), "Cart Registration": (3, 18600, 8)}   # item: (month, cents, day)
+BABY = ("Baby Things", 15000, {"2026-02": (21240, 9), "2026-03": (16815, 14), "2026-04": (14180, 11), "2026-05": (15525, 16), "2026-06": (14960, 10)})   # item, planned cents, month: (cents, day)
 DEBT_TYPES = {"Student Loan": "student"}   # the mapping's optional DebtType column (#141)
 FIXED_DAY = {"Rent": 1, "Internet": 6, "Renters Insurance": 9, "Car Insurance": 12, "Student Loan": 15, "Emergency Fund": 4, "Electric": 18, "Water": 21, "Charity": 5}
 SEASON = {"Electric": {12: 1.35, 1: 1.45, 2: 1.35, 7: 1.15, 8: 1.15}}
@@ -62,9 +66,14 @@ NET_PAY = 1880
 
 MAPPING_NOTES = {"Paycheck": "Rosie, paid every two weeks", "Contract Income": "Sam, garden contracts",
                  "Venmo Pass-Through": "money moved for friends, not part of the household budget"}
-EVENTS = [("2025-03", "Sam takes on garden contracts", "job", "Sam"), ("2025-07", "Rosie promoted at Hobbiton Mill", "job", "Rosie"),
-          ("2025-10", "Moved to a bigger hole, rent goes up", "move", None), ("2026-02", "Elanor is born", "family", None),
-          ("2026-09", "Elanor starts at the Bywater nursery", "family", None)]   # (m, label, kind, person); the last is still to come (#144, coming_up)
+EVENTS = [("2025-03", "Sam takes on garden contracts", "job", "Sam"), ("2025-05", "Started budgeting by envelope", "other", None, False),
+          ("2025-07", "Rosie promoted at Hobbiton Mill", "job", "Rosie"),
+          ("2025-10", "Moved to a bigger hole, rent goes up", "move", None), ("2025-11", "Sam's knee mended at the healer", "health", "Sam"),
+          ("2026-02", "Elanor is born", "family", None),
+          ("2026-09", "Elanor starts at the Bywater nursery", "family", None)]
+# (m, label, kind, person[, on_chart]); the last is still to come (#144, coming_up). The timeline (#140): the move and Sam's knee, a
+# month apart, draw as one marker with a count; "Started budgeting by envelope" is switched off the chart and stays in the list.
+NEW_NORMAL = {("2026-02", "Elanor is born")}   # #159: the household marked the birth as its new normal; nothing is ever marked for it
 RULES = {
     "people": ["Rosie", "Sam"],
     "contract_income_items": ["Contract Income"], "tax_set_aside_items": ["Tax Set-Aside"],   # #153
@@ -121,6 +130,16 @@ DECISIONS = [  # made_in, text, kind, target, until, person
     ("2026-05", "An extra $50 on the student loan", "extra_payment", {"debt": "Lembas Student Loan", "item": "Student Loan", "extra": 50, "base": 275}, None, "Rosie"),
     ("2026-05", "Plan groceries at $750 for the baby", "plan_change", {"item": "Groceries", "planned": 750, "from": 720}, None, None),
 ]
+# chart appearance (#132): a few names keep a colour of their own (palette slots, which follow the theme, and one fixed colour), and the
+# Generosity envelope is hidden from the catch-all chart, so the first-run dashboard shows a "1 hidden · show" and the tests exercise it
+APPEARANCE = [
+    {"dimension": "category", "name": "Housing", "color": "series-1"},
+    {"dimension": "category", "name": "Food", "color": "series-3"},
+    {"dimension": "employer", "name": "Hobbiton Mill", "color": "#2f7f9a"},
+    {"dimension": "person", "name": "Sam", "color": "series-6"},
+    {"dimension": "event_kind", "name": "family", "color": "series-5"},
+    {"dimension": "item", "name": "Generosity", "hidden": True},
+]
 HOUSEHOLD = {"name": "Sample Household", "title": "Sample Household Ledger", "currency": "USD", "locale": "en-US"}
 
 
@@ -155,6 +174,10 @@ def build_month(rng, y, m):
             mo, cents, day = YEARLY[item]
             planned[item] = cents if m == mo else 0
             if m == mo: txns.append((day, g, item, "Expense", merch[0], -cents, "the yearly bill"))
+            continue
+        if item == BABY[0]:   # from the birth on: planned each month, spent on fixed days (#159)
+            planned[item] = BABY[1] if bm in BABY[2] else 0
+            if bm in BABY[2]: txns.append((BABY[2][bm][1], g, item, "Expense", merch[0], -BABY[2][bm][0], ""))
             continue
         if item in ("Smial Insurance Fund", "Tax Set-Aside"):   # envelopes saving for a bill or the tax: planned each month, nothing spent
             planned[item] = base
@@ -267,7 +290,7 @@ def main(out: Path):
         for g, item, canon, cat, flow, *_ in ITEMS: w.writerow([item, canon, cat, flow, MAPPING_NOTES.get(canon, ""), DEBT_TYPES.get(canon, "")])
     write_balances(out, [f"{y}-{m:02d}" for y, m in months], kept)
     write_decisions(out, months_rows)
-    for name, obj in [("tax_outcomes.json", TAX_OUTCOMES), ("goals.json", GOALS), ("events.json", [{"m": m, "label": l, "kind": k, **({"person": p} if p else {})} for m, l, k, p in EVENTS]), ("rules.json", RULES), ("household.json", HOUSEHOLD)]:
+    for name, obj in [("tax_outcomes.json", TAX_OUTCOMES), ("goals.json", GOALS), ("events.json", [{"m": e[0], "label": e[1], "kind": e[2], **({"person": e[3]} if e[3] else {}), **({"on_chart": False} if len(e) > 4 and not e[4] else {}), **({"new_normal": True} if (e[0], e[1]) in NEW_NORMAL else {})} for e in EVENTS]), ("rules.json", RULES), ("household.json", HOUSEHOLD), ("appearance.json", APPEARANCE)]:
         (out / name).write_text(json.dumps(obj, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 
 

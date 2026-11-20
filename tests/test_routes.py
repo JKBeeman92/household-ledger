@@ -73,7 +73,7 @@ def test_another_csv_goes_to_the_mapping_step_and_stores_nothing_yet(client, res
     # any other CSV may be another budget tool's export (#96): it waits for the mapping step instead of being refused
     r = client.post("/upload", files=[("files", ("notes.csv", b"a,b\n1,2\n", "text/csv"))])
     assert r.status_code == 303 and r.headers["location"].startswith("/upload/map/")
-    assert "Map your columns" in client.get(r.headers["location"]).text
+    assert "Set up a source profile" in client.get(r.headers["location"]).text
     assert client.get("/api/status").json()["months"] == 0
 
 
@@ -94,7 +94,7 @@ def test_mapping_rejects_a_bad_flow(client, reset_db):
 def test_mapping_accepts_a_good_body(client, reset_db):
     from app import db
     r = client.post("/settings/mapping", data={"body": GOOD_MAPPING})
-    assert "Saved 2 mapping rows" in flashes_after(client, r)
+    assert "Saved 2 Item mapping rows" in flashes_after(client, r)
     with db.pool.connection() as conn:
         assert conn.execute("SELECT count(*) n FROM item_mapping").fetchone()["n"] == 2
 

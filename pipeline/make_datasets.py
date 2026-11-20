@@ -115,17 +115,24 @@ _cpi = {r["month"]: float(r["cpi"]) for r in csv.DictReader(open("cpi_u.csv"))}
 w("net_worth", _bal.net_worth(_brows, _did, _cpi, D["meta"]["cpi_base"]))
 # emergency_fund (#150): emergency money (asset accounts marked emergency) over the average monthly outgo (living spend plus debt
 # payments) of the trailing twelve budget months, or as many as there are. null coverage: no emergency account, or no outgo yet.
+# A life event marked the new normal (#159) starts the window at it, once it has three months: outgo_from and outgo_since say so.
+import before_after as _ba   # noqa: E402  (beside this script)
 _ems, _efr = sorted(mn), []
 for i, m in enumerate(_ems):
     held = [r["amount"] for r in _brows if r["m"] == m and r["emergency"]]
-    win = _ems[max(0, i - 11):i + 1]; outgo = sum(mn[x]["spend"] + mn[x]["debt"] for x in win) / len(win)
+    win, _since = _ba.cut(_ems[max(0, i - 11):i + 1], D["events"]); outgo = sum(mn[x]["spend"] + mn[x]["debt"] for x in win) / len(win)
     money = round(sum(held), 2) if held else None
     _efr.append({"m": m, "emergency": money, "accounts": len(held), "unconfirmed": sum(1 for r in _brows if r["m"] == m and r["emergency"] and not r["confirmed"]),
-                 "outgo": round(outgo, 2), "outgo_months": len(win), "months": round(money / outgo, 2) if money is not None and outgo > 0 else None})
+                 "outgo": round(outgo, 2), "outgo_months": len(win), "outgo_from": win[0], "outgo_since": _ba.since_label(_since),
+                 "months": round(money / outgo, 2) if money is not None and outgo > 0 else None})
 for a, b in zip(_efr, _efr[1:]):
     b["change"] = round(b["months"] - a["months"], 2) if a["months"] is not None and b["months"] is not None else None
 if _efr: _efr[0]["change"] = None
 w("emergency_fund", _efr)
+# before_after (#159): each life event against the months before and after it (3, 6 and 12), a month's average on each side, nominal
+# and real, with the categories that moved and those new since it. Movers are living spend; the debt and savings groups are set apart.
+w("before_after", _ba.before_after(D["events"], json.load(open("dash_data/monthly.json")), json.load(open("dash_data/cat_month.json")), None,
+                                   set(RU["debt_groups"] if RU.get("debt_groups") is not None else ["Debt"]) | set(RU.get("goal_savings_groups") or [])))   # role default
 
 
 # what the Goals tab counts as giving, housing and savings (defaults as in build_ledger.RULES), and the catch-all list for its copy
@@ -178,3 +185,31 @@ for i, m in enumerate(_ms):
                  "months_12": len(win), "dti_12": _share(t["debt"], _gross * len(win) if _gross else None), "housing_dti_12": _share(t["housing"], _gross * len(win) if _gross else None),
                  "dti_takehome_12": _share(t["debt"], t["takehome"]), "housing_takehome_12": _share(t["housing"], t["takehome"])})
 w("debt_to_income", _dti)
+
+# by_person (#156): each person's month, for the Last month tab's By person block, the check-in's Where we stand and the review. earned is
+# what the income_by_person rule gives them (the earner chart's figure, a month at a time) and earned_share its part of the month's
+# income; spent is the envelopes the payer rules give them (the payer chart's). Household is what no rule gives a person: shared income
+# and shared spending. *_change is against the budget month before, null when that month is not loaded. Figures only, no verdict: the
+# check-in is done together. Empty when the people rule names fewer than two: one person's "share" says nothing.
+_people = list(dict.fromkeys(p.strip() for p in (RU.get("people") or []) if isinstance(p, str) and p.strip() and p.strip() != "Household"))
+_bp = []
+if len(_people) >= 2:
+    _earn, _pay = collections.defaultdict(float), collections.defaultdict(float)
+    for r in L:
+        if r["InTotals"] != "1":
+            continue
+        if r["Flow"] == "income": _earn[(r["BudgetMonth"], r["Earner"])] += float(r["Amount"])
+        if r["Flow"] in ("expense", "debt"): _pay[(r["BudgetMonth"], r["Payer"])] += -float(r["Amount"])
+    _who = _people + sorted({w for (_, w) in [*_earn, *_pay]} - set(_people) - {"Household"}) + ["Household"]   # a rule's name the people list leaves out still shows, as on the charts
+    _bms = sorted({r["BudgetMonth"] for r in L})
+    _inc = collections.defaultdict(float)
+    for (m, _), v in _earn.items(): _inc[m] += v
+    _r2 = lambda x: round(x, 2) + 0.0   # never -0.0
+    for m in _bms:
+        p = _bal.prev_month(m)
+        for who in _who:
+            e, s = _earn.get((m, who), 0.0), _pay.get((m, who), 0.0)
+            _bp.append({"m": m, "who": who, "earned": _r2(e), "earned_share": round(e / _inc[m], 4) if _inc[m] else None,
+                        "earned_change": _r2(e - _earn.get((p, who), 0.0)) if p in _loaded else None,
+                        "spent": _r2(s), "spent_change": _r2(s - _pay.get((p, who), 0.0)) if p in _loaded else None})
+w("by_person", _bp)

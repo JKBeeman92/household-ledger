@@ -43,11 +43,14 @@ def test_workflow_permissions_are_scoped_per_job():
 def test_pr_check_scans_the_loaded_image_with_trivy():
     jobs = yaml.safe_load((ROOT / ".github/workflows/build.yml").read_text())["jobs"]
     st = jobs["image-check"]["steps"]
-    build = next(s for s in st if s["uses"].startswith("docker/build-push-action@"))
+    build = next(s for s in st if s.get("uses", "").startswith("docker/build-push-action@"))
     assert build["with"]["load"] is True and build["with"]["push"] is False
-    trivy = next(s for s in st if s["uses"].startswith("aquasecurity/trivy-action@"))
+    trivy = next(s for s in st if s.get("uses", "").startswith("aquasecurity/trivy-action@"))
     assert trivy["with"]["image-ref"] == build["with"]["tags"] and trivy["with"]["exit-code"] == "1"
     assert st.index(trivy) > st.index(build)
+    # the image itself is checked for pip, between the build and the scan (#218)
+    nopip = next(s for s in st if "find_spec('pip')" in s.get("run", ""))
+    assert build["with"]["tags"] in nopip["run"] and st.index(build) < st.index(nopip) < st.index(trivy)
 
 
 def test_compose_app_container_is_hardened():
@@ -65,6 +68,13 @@ def test_dockerfile_forwarded_allow_ips_is_env_configurable_with_todays_default(
     assert "--no-proxy-headers" in df
     assert 'os.environ.get("FORWARDED_ALLOW_IPS"' in (ROOT / "app" / "config.py").read_text()
     assert "trusted_hosts=settings.forwarded_allow_ips" in (ROOT / "app" / "main.py").read_text()
+
+
+def test_the_image_drops_pip_and_its_bundled_copy_after_installing():
+    # pip's vendored msgpack/urllib3/setuptools are what the PR image scan flagged (#218); nothing in the image runs pip
+    df = (ROOT / "Dockerfile").read_text()
+    install = next(l for l in df.split("\nRUN ") if l.startswith("pip install"))
+    assert "pip uninstall -y pip" in install and "ensurepip/_bundled" in install
 
 
 def test_dependabot_does_not_group_minor_bumps_of_zero_x_packages():

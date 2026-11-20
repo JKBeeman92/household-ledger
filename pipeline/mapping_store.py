@@ -82,7 +82,7 @@ def settle_legacy(rows: list[dict]) -> tuple[list[dict], list[str]]:
     for r in rows:
         cat = (r.get("category") or "").strip()
         if not cat or cat.upper() == UNMAPPED:
-            notes.append(f"{r['item']}: its category was {'blank' if not cat else 'the placeholder ' + cat}, so it left the mapping; "
+            notes.append(f"{r['item']}: its category was {'blank' if not cat else 'the placeholder ' + cat}, so it left Item mapping; "
                          "it is listed as unmapped until you map it")
             continue
         if not (r.get("canonical_item") or "").strip():

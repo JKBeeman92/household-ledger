@@ -16,13 +16,17 @@ A profile is plain JSON, so it can be exported and imported:
                     "amount_mode": "signed" | "split" | "type", "expense_sign": "negative" | "positive",
                     "income_values": ["income"], "income_groups": ["Wages"]},
    "budget": {"headers": [...], "columns": {"group": ..., "item": ..., "planned": ..., "spent": ...},
-              "decimal": ".", "thousands": ",", "spent_sign": "negative" | "positive", "income_groups": ["Wages"]}}
+              "decimal": ".", "thousands": ",", "spent_sign": "negative" | "positive", "income_groups": ["Wages"]},
+   "month_from": {"filename": "(?P<yyyy>\\d{4})-(?P<mm>\\d{2})"} | {"column": "date", "rule": "mode"}}   (optional, #165)
+
+month_from says where a back catalogue's budget months come from when many months arrive at once (a zip, the import directory,
+`python -m pipeline.import_exports --profile`): plan_batch below. The budget month stays the rule; this only finds it.
 
 Standalone: `python -m pipeline.sources normalize --profile p.json --month 2026-03 --transactions t.csv --budget b.csv --out DIR`
 writes the pair as internal-format files (YYYY-MM-transactions.csv, YYYY-MM-budget.csv), which the pipeline scripts read.
 """
 from __future__ import annotations
-import argparse, csv, hashlib, io, json, re, sys
+import argparse, collections, csv, hashlib, io, json, os, re, sys
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -241,11 +245,30 @@ def validate_section(kind: str, sec: dict | None) -> None:
             raise ProfileError(f"transactions: unknown date format; use one of {', '.join(DATE_FORMATS)}")
 
 
+def validate_month_from(mf) -> None:
+    """month_from (#165): {"filename": regex with (?P<yyyy>) and (?P<mm>)}, {"column": "date", "rule": "mode"}, or both (the name
+    first, the dates when the name carries no month)."""
+    if mf is None:
+        return
+    if not isinstance(mf, dict) or not mf or set(mf) - {"filename", "column", "rule"}:
+        raise ProfileError('month_from must be {"filename": "<pattern>"} or {"column": "date", "rule": "mode"}')
+    if "filename" in mf:
+        try:
+            rx = re.compile(str(mf["filename"]))
+        except re.error as e:
+            raise ProfileError(f"month_from: the filename pattern is not a regular expression ({e})") from None
+        if not {"yyyy", "mm"} <= set(rx.groupindex):
+            raise ProfileError("month_from: the filename pattern needs the groups (?P<yyyy>…) and (?P<mm>…)")
+    if ("column" in mf or "rule" in mf) and (mf.get("column") != "date" or mf.get("rule") != "mode"):
+        raise ProfileError('month_from: the only date rule is {"column": "date", "rule": "mode"}, the most common month of the dates')
+
+
 def validate_profile(p: dict) -> dict:
     if not isinstance(p, dict) or not str(p.get("name", "")).strip():
         raise ProfileError("a profile needs a name")
     validate_section("transactions", p.get("transactions"))
     validate_section("budget_items", p.get("budget"))
+    validate_month_from(p.get("month_from"))
     return p
 
 
@@ -309,6 +332,141 @@ def to_internal(kind: str, rows: list[dict], month: str) -> tuple[str, bytes]:
     w = csv.DictWriter(buf, fieldnames=ED_TXN if kind == "transactions" else ED_BUDGET, lineterminator="\n")
     w.writeheader(); w.writerows(rows)
     return filenames.neutral_name(kind, month), buf.getvalue().encode()
+
+
+# ---------------------------------------------------------------- a back catalogue (#165)
+def month_of_dates(data: bytes, sec: dict) -> tuple[str | None, str]:
+    """(budget month, how it was found) from a transactions file's dates: the most common YYYY-MM among them, read with the
+    section's date format. A tie or no readable date gives None and says why: a guess between two months is no guess."""
+    try:
+        _, rows = read_csv(data)
+    except ProfileError as e:
+        return None, str(e)
+    col, fmt = (sec.get("columns") or {}).get("date"), sec.get("date_format", "MM/DD/YYYY")
+    ms = collections.Counter()
+    for r in rows:
+        try:
+            ms[parse_date(r.get(col, ""), fmt)[:7]] += 1   # YYYY-MM-DD: its budget-month part
+        except ProfileError:
+            pass   # a blank or summary line; apply() decides whether the file reads at all
+    if not ms:
+        return None, "no transaction date could be read"
+    (m, n), *rest = ms.most_common()
+    if rest and rest[0][1] == n:
+        tied = sorted(k for k, v in ms.items() if v == n)
+        return None, f"as many dates fall in {' as in '.join(tied)}, so the month cannot be told from them"
+    return m, f"the most common month of its dates ({n} of {sum(ms.values())})"
+
+
+def guess_month(name: str, data: bytes, profile: dict, kind: str, *, default_mode: bool = False) -> tuple[str | None, str]:
+    """(budget month, how it was found) for one file under its profile's month_from: the file name's pattern first, then (for a
+    transactions file) the most common month of its dates. default_mode uses the dates for a profile with no month_from; only
+    a caller that shows the guess before storing passes it (a zip upload, the command line), never the unattended import directory.
+    A budget file has no dates: with no month in its name, plan_batch pairs it with the transactions file it reconciles with."""
+    mf = profile.get("month_from")
+    if mf and mf.get("filename"):
+        m = re.search(mf["filename"], os.path.basename(name))
+        if m and re.fullmatch(r"\d{4}", m["yyyy"] or "") and (m["mm"] or "").isdigit() and 1 <= int(m["mm"]) <= 12:
+            return f"{m['yyyy']}-{int(m['mm']):02d}", "from the file name"
+        if not mf.get("rule"):
+            return None, "the file name does not match the profile's month pattern"
+    if not (mf and mf.get("rule") == "mode") and not default_mode:
+        return None, "the profile has no month rule (month_from), so the month is not guessed"
+    if kind != "transactions":
+        return None, "a budget file has no dates"
+    month, how = month_of_dates(data, profile["transactions"])
+    return month, (how + ("" if mf else "; a guess: the profile has no month rule") if month else how)
+
+
+PAIR_SHARE = 0.5   # a budget file pairs with the transactions file whose sums match its spent figures on at least this share of lines
+
+
+def _spent_match(budget_rows: list[dict], txn_rows: list[dict]) -> tuple[int, int]:
+    """(lines that reconcile, lines looked at): the reconciliation rule, Σ Amount per item == Spent, as a pairing test."""
+    sums: dict[str, Decimal] = {}
+    for r in txn_rows:
+        sums[r["Item"]] = sums.get(r["Item"], Decimal(0)) + Decimal(r["Amount"])
+    spent = {r["Item"]: Decimal(r["Spent"]) for r in budget_rows}
+    lines = {i for i, v in spent.items() if v} | set(sums)
+    return sum(1 for i in lines if sums.get(i, Decimal(0)) == spent.get(i, Decimal(0))), len(lines)
+
+
+def plan_batch(files: list[tuple[str, bytes]], profiles: list[dict], *, default_mode: bool = False,
+               present: set[tuple[str, str]] = frozenset(), stored: dict[tuple[str, str], str] | None = None) -> list[dict]:
+    """The dry run of a batch of files not named like exports: for each, the saved profile that recognises its headers, its
+    kind, its budget month and how that was found, and whether it would be stored. Nothing is stored here.
+
+    profiles are source_profiles rows ({"id", "name", "spec"}); present is the (kind, month) of named exports in the same batch, and
+    stored the {(kind, month): sha256} already in the database. Pairing is by (month, kind): a file whose other half is neither in
+    the batch nor stored is refused (half a month reconciles as every line wrong), as are two files for one month and kind, and a
+    file no profile recognises: none of these is ever guessed. Returns one dict per file, in the order given:
+    {"i", "name", "profile", "profile_id", "kind", "month", "how", "rows", "state": "ready" | "unchanged" | "refused", "detail"}."""
+    stored = stored or {}
+    cands = [dict(p["spec"], _id=p["id"], _name=p["name"]) for p in profiles]
+    out, rows_of = [], {}
+    for i, (name, data) in enumerate(files):
+        e = {"i": i, "name": name, "profile": None, "profile_id": None, "kind": None, "month": None,
+             "how": "", "rows": 0, "state": "refused", "detail": ""}
+        out.append(e)
+        try:
+            header = headers_of(data)
+        except ProfileError as err:
+            e["detail"] = f"not read: {err}"; continue
+        m = match_profile(header, cands)
+        if not m:
+            e["detail"] = "no saved source profile recognises its columns"; continue
+        p, kind = m
+        e.update(profile=p["_name"], profile_id=p["_id"], kind=kind)
+        try:
+            rows_of[i] = apply(kind, data, p)
+        except ProfileError as err:
+            e["detail"] = f"not read with “{p['_name']}”: {err}"; continue
+        e["rows"] = len(rows_of[i])
+        e["month"], e["how"] = guess_month(name, data, p, kind, default_mode=default_mode)
+        e["state"] = "ready" if e["month"] else "refused"
+        if not e["month"] and kind == "transactions":
+            e["detail"] = f"no budget month: {e['how']}"
+    # a budget file with no month in its name: the transactions file of its profile whose sums give its spent figures
+    txns = [e for e in out if e["kind"] == "transactions" and e["month"]]
+    claims: dict[int, list[dict]] = {}
+    for b in (e for e in out if e["kind"] == "budget_items" and not e["month"] and e["i"] in rows_of):
+        share = lambda x: x[0] / x[1] if x[1] else 0
+        scored = sorted(((*_spent_match(rows_of[b["i"]], rows_of[t["i"]]), t) for t in txns if t["profile_id"] == b["profile_id"]), key=lambda x: -share(x))
+        if scored and share(scored[0]) >= PAIR_SHARE and (len(scored) == 1 or share(scored[1]) < share(scored[0])):
+            claims.setdefault(scored[0][2]["i"], []).append(b)
+            b["month"], b["how"] = scored[0][2]["month"], f"paired with {os.path.basename(scored[0][2]['name'])}: its spent matches those transactions on {scored[0][0]} of {scored[0][1]} lines"
+            b["state"] = "ready"
+        else:
+            b["detail"] = f"no budget month: {b['how']}, and no transactions file in the batch matches its spent figures"
+    for t, bs in claims.items():
+        if len(bs) > 1:   # two budget files reconcile with one transactions file: neither is chosen
+            for b in bs:
+                b.update(state="refused", detail=f"more than one budget file matches {out[t]['name']}: {', '.join(x['name'] for x in bs)}")
+    # pairing by (month, kind): one file of each per month, and its other half here or already stored
+    ready = [e for e in out if e["state"] == "ready"]
+    by_slot: dict[tuple[str, str], list[dict]] = {}
+    for e in ready:
+        by_slot.setdefault((e["kind"], e["month"]), []).append(e)
+    for (kind, month), es in by_slot.items():
+        what = "transactions" if kind == "transactions" else "budget"
+        if (kind, month) in present:
+            for e in es:
+                e.update(state="refused", detail=f"the batch also has a {what} file for {month} named like an export")
+        elif len(es) > 1:
+            for e in es:
+                e.update(state="refused", detail=f"more than one {what} file for {month}: {', '.join(x['name'] for x in es)}")
+    for e in (x for x in out if x["state"] == "ready"):
+        other = "budget_items" if e["kind"] == "transactions" else "transactions"
+        slot = (other, e["month"])
+        mate = by_slot.get(slot, [])
+        if not (len(mate) == 1 and mate[0]["state"] == "ready") and slot not in present and slot not in stored:
+            e.update(state="refused", detail=f"unpaired: no {'budget' if other == 'budget_items' else 'transactions'} file for {e['month']} in the batch or stored")
+    for e in (x for x in out if x["state"] == "ready"):
+        if stored.get((e["kind"], e["month"])) == hashlib.sha256(files[e["i"]][1]).hexdigest():
+            e.update(state="unchanged", detail="already stored, unchanged")
+        elif (e["kind"], e["month"]) in stored:
+            e["detail"] = f"replaces the stored {e['month']} file"
+    return out
 
 
 # ---------------------------------------------------------------- CLI
