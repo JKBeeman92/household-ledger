@@ -140,12 +140,20 @@ def test_save_review_needs_the_review_scope_and_stores_like_any_review(loaded):
     assert call(tok, "list_months")[1][0]["has_review"] is True
 
 
-@pytest.mark.parametrize("sections", [[], "text", [{"heading": "x"}], [{"heading": " ", "text": "y"}], [{"heading": "h", "text": "t" * 5001}], [{"heading": "h", "text": "t"}] * 13])
-def test_save_review_rejects_malformed_sections(loaded, sections):
+@pytest.mark.parametrize("sections, why", [
+    ([], "1 to 12"),
+    ("text", "valid list"),
+    ([{"heading": "x"}], "missing its heading or text"),
+    ([{"heading": " ", "text": "y"}], "every section needs a heading"),
+    ([{"heading": "h", "text": "t" * 5001}], "every section needs a heading"),
+    ([{"heading": "h", "text": "t"}] * 13, "1 to 12"),
+])
+def test_save_review_rejects_malformed_sections(loaded, sections, why):
     m = call(make_token(), "list_months")[1][0]["month"]
     err, text = call(make_token("read+review"), "save_review", {"m": m, "sections": sections})
     # the agent is told what was wrong: a refusal is a ToolError, not a crash whose text 2.x keeps in the server log (#88)
-    assert err and text.startswith("Error executing tool save_review: ") and sql("SELECT count(*) n FROM reviews")[0]["n"] == 0
+    assert err and text.startswith("Error executing tool save_review: ") and why in text
+    assert sql("SELECT count(*) n FROM reviews")[0]["n"] == 0
 
 
 def test_save_review_refuses_an_unbuilt_month(loaded):
