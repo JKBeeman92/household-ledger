@@ -361,9 +361,12 @@ left out) when all three hold:
 1. its net inflow that month is more than `pass_through_multiple` times the item's median absolute monthly amount over the
    trailing 12 budget months (a month with no rows counts as 0; months before the first export are not counted);
 2. that inflow is more than `pass_through_floor` dollars;
-3. the item's outflows in the `pass_through_window` budget months after it add up to at least half of the inflow.
+3. the item's outflows in the `pass_through_window` budget months after it, counting in each month only what is above its usual
+   month (the median in 1), add up to at least half of the inflow.
 
-The third is what tells money held for someone else from a refund: a refund comes in once and is not paid back out. Each entry
+The third is what tells money held for someone else from a refund: a refund comes in once and is not paid back out. Counting only
+what is above the usual month keeps a refund on an item spent every month (Eating Out) from being listed because of its ordinary
+spending in the months after. Each entry
 says "Money held for someone else? Set Flow `exclude` on `<item>`." It is a hint, not an error: the build still succeeds and
 the exit code stays reconciliation's. If it is a refund or a one-off, leave it.
 

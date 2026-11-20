@@ -62,7 +62,35 @@ def test_a_refund_that_is_not_paid_back_out_is_not_flagged(tmp_path):
     assert hits(build(tmp_path / "paid", venmo="exclude", extra={JUNE: [REFUND], JULY: [paid_out]})) == [("2025-06", "Household Supplies")]
 
 
-@pytest.mark.parametrize("key", ["pass_through_multiple", "pass_through_floor", "pass_through_window"])
+def eating_out(day: str, amount: str) -> list[str]:
+    return ["Food", "Eating Out", "Income" if amount[0] != "-" else "Expense", day, "Michel Delving Kitchen", "Bywater Checking", amount, ""]
+
+
+def test_a_refund_on_an_item_spent_every_month_is_not_flagged(tmp_path):
+    """Eating Out is spent every month (median about 140): the dinners of the three months after a refund are its usual spending,
+    not the refund being paid back out, so only the outflow above the usual month counts toward condition 3."""
+    assert hits(build(tmp_path, venmo="exclude", extra={JUNE: [eating_out("06/16/2025", "1200.00")]})) == []
+
+
+AUGUST = "5ca1ab1e-08-2025-EveryDollar-Transactions.csv"
+
+
+def test_the_window_rule_moves_the_result(tmp_path):
+    """Collected in June, paid out in August: two months later, so inside a window of 3 and outside a window of 1."""
+    paid_late = ["Household", "Household Supplies", "Expense", "08/05/2025", "Michel Delving Emporium", "Bywater Checking", "-1100.00", ""]
+    extra = {JUNE: [REFUND], AUGUST: [paid_late]}
+    assert hits(build(tmp_path / "w3", venmo="exclude", extra=extra)) == [("2025-06", "Household Supplies")]
+    assert hits(build(tmp_path / "w1", {"pass_through_window": 1}, venmo="exclude", extra=extra)) == []
+
+
+def test_the_multiple_rule_moves_the_result(tmp_path):
+    """A $700 inflow on Eating Out nets about 515 in June: over twice its usual month and under five times it; paid out in July."""
+    extra = {JUNE: [eating_out("06/16/2025", "700.00")], JULY: [eating_out("07/02/2025", "-650.00")]}
+    assert hits(build(tmp_path / "m5", venmo="exclude", extra=extra)) == []
+    assert hits(build(tmp_path / "m2", {"pass_through_multiple": 2}, venmo="exclude", extra=extra)) == [("2025-06", "Eating Out")]
+
+
+@pytest.mark.parametrize("key",["pass_through_multiple", "pass_through_floor", "pass_through_window"])
 def test_emptying_any_of_the_three_rules_turns_the_finding_off(tmp_path, key):
     assert build(tmp_path, {key: None}) == []
 
@@ -70,6 +98,7 @@ def test_emptying_any_of_the_three_rules_turns_the_finding_off(tmp_path, key):
 def test_the_rules_are_the_thresholds(tmp_path):
     assert hits(build(tmp_path / "floor", {"pass_through_floor": 1000})) == HELD[:1]     # 640 is under it, 1140 is not
     assert hits(build(tmp_path / "window", {"pass_through_window": 1})) == HELD          # both are half paid out within a month
+    # the window and multiple rules moving a result: test_the_window_rule_moves_the_result, test_the_multiple_rule_moves_the_result
     assert build(tmp_path / "pad", {"pass_through_floor": 0, "pass_through_multiple": 1, "pass_through_window": 12}) != []
 
 

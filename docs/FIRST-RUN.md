@@ -26,8 +26,10 @@ of `docker compose logs ledger` (check them for anything private first).
       rebuild (a single unreadable file does not do that: it is skipped and named in the build log); `… N file(s) stored, … the rebuild after them failed` means the files are in and the rebuild stopped. On a
       first start with an empty mapping that is expected: it names the unmapped items. On Settings → Item mapping press **Draft a
       mapping from my budget groups**, check the draft (pass-through money needs `exclude`), add it, then press **Rebuild without
-      uploading**. If Close a month then lists **Money held for someone else?**, decide for each item: `exclude`, or a refund left as it is. Without a browser: `docker compose exec ledger python -m app.admin draft-mapping > draft.csv`, review it, then
+      uploading**. Without a browser: `docker compose exec ledger python -m app.admin draft-mapping > draft.csv`, review it, then
       `add-mapping` and `rebuild` (README, "Without a browser").
+      If Close a month then lists **Money held for someone else?** (`PASS-THROUGH?` lines after `rebuild` on the command line),
+      decide for each item: `exclude`, or a refund left as it is.
       Upload one month on **Close a month** (a `.zip` works too): the page returns at once, shows the build running, then a
       "Last upload" panel and a clean reconciliation. Upload a file of a few MB through the proxy too: a 413 from the proxy (not the
       app) means its body-size limit is below `MAX_UPLOAD_MB`.

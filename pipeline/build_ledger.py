@@ -180,8 +180,12 @@ with open("ledger.csv","w",newline="") as f:
 #   1. the month's net inflow is more than pass_through_multiple times the item's median absolute monthly net over the trailing 12
 #      budget months (a month with no rows counts as 0; months before the first export are not counted, so the first month has none);
 #   2. it is more than pass_through_floor dollars;
-#   3. the item's outflows in the pass_through_window budget months after it add up to at least half of it.
-# The third is what tells it from a refund, which comes in once and is not paid back out. Items already excluded never reach here.
+#   3. the item's outflows in the pass_through_window budget months after it, above its usual month (the median in 1), add up to at
+#      least half of it.
+# The third is what tells it from a refund, which comes in once and is not paid back out. Only the outflow above the usual month counts,
+# so that the ordinary spending of an item used every month (a $1,200 refund on Eating Out, then three months of dinners) is not taken
+# for the money being paid back out; on an item that is near zero most months the usual is 0 and every outflow counts.
+# Items already excluded never reach here.
 # Grouped by canonical item so that a renamed envelope ("Gifts 2") keeps its history; the finding names the raw items, where Flow is set.
 def add_months(m, n):
     k = int(m[:4]) * 12 + int(m[5:7]) - 1 + n
@@ -201,7 +205,7 @@ def pass_through(out, first_month, multiple, floor, window):
         if inflow <= floor: continue
         before = [abs(net.get((add_months(m, -i), ci), 0.0)) for i in range(1, 13) if add_months(m, -i) >= first_month]
         usual = statistics.median(before) if before else 0.0
-        later = sum(spent.get((add_months(m, i), ci), 0.0) for i in range(1, window + 1))
+        later = sum(max(0.0, spent.get((add_months(m, i), ci), 0.0) - usual) for i in range(1, window + 1))
         if inflow > multiple * usual and later >= inflow / 2:
             hits.append({"m": m, "item": ci, "items": sorted(raw[(m, ci)]), "inflow": round(inflow, 2), "median": round(usual, 2),
                          "later_outflows": round(later, 2), "window": window})
@@ -212,7 +216,7 @@ _pt = pass_through(out, min((r["BudgetMonth"] for r in rows), default="0000-01")
 json.dump(_pt, open("pass_through.json", "w"))   # read back by run_pipeline into the build's findings, beside UNMAPPED and reconciliation
 for h in _pt:
     print(f"pass-through? {h['m']} {', '.join(h['items'])}: {h['inflow']:.2f} in (usually {h['median']:.2f} a month), "
-          f"{h['later_outflows']:.2f} out in the {h['window']} month(s) after")
+          f"{h['later_outflows']:.2f} out over usual in the {h['window']} month(s) after")
 
 json.dump(dict(excluded), open("excluded.json", "w"))
 json.dump({k: round(v, 2) for k, v in excluded_amt.items()}, open("excluded_amounts.json", "w"))   # gross dollars moved per excluded item (pass-through money nets to about zero)

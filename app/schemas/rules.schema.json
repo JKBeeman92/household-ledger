@@ -82,7 +82,7 @@
     },
     "pass_through_window": {
       "type": ["integer", "null"], "minimum": 1, "maximum": 12,
-      "description": "Money held for someone else (#107): the item's outflows in this many budget months after the inflow must add up to at least half of it, which is what tells it from a refund (one that is not paid back out). Default 3. Empty (null) turns the check off."
+      "description": "Money held for someone else (#107): the item's outflows in this many budget months after the inflow, above its usual month, must add up to at least half of it, which is what tells it from a refund (one that is not paid back out). Default 3. Empty (null) turns the check off."
     },
     "merchant_rules": {
       "type": "array",

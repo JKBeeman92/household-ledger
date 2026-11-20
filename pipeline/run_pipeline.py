@@ -442,7 +442,7 @@ def describe_pass_through(held: list[dict]) -> list[str]:
     """The pass-through findings as sentences for the build log, each ending with the fix (Flow exclude), as the page says it."""
     money = lambda v: f"{v:,.2f}"
     return [f"{h['m']} {', '.join(h['items'])}: {money(h['inflow'])} came in, against a usual {money(h['median'])} a month, and "
-            f"{money(h['later_outflows'])} went out in the {h['window']} month(s) after. Money held for someone else? "
+            f"{money(h['later_outflows'])} more than usual went out in the {h['window']} month(s) after.Money held for someone else? "
             f"Set Flow exclude on {' and '.join(h['items'])}." for h in held]
 
 
