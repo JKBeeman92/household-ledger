@@ -59,9 +59,9 @@ reaching a waypoint, and a chart border.
   smaller by 1/N than one to the other months alone; the Average card's How to read says so. The Last month headline's net is not
   this window: it is set against the twelve months before. A window cut at a life event is written *the N budget months since {label}
   ({Nov 2026}), the household's new normal*, the bracket being the first month averaged (the event's own month, or the first loaded
-  after it when that month is missing), the plain one *the last N budget months*, and one still to move *Averages move to the
-  new normal from {Aug 2026}, six budget months after {label} ({Feb 2026})*, on the dashboard and in the check-in alike; a table
-  header names it short: *(since Feb 2026)*, *(last 12 months)*.
+  after it when that month is missing), the plain one *the last N budget months*, and one still to move *From {Aug 2026} averages
+  move to the new normal: {label} ({Feb 2026})*, after the window it still uses, on the dashboard and in the check-in alike; a
+  table header names it short: *(since Feb 2026)*, *(last 12 budget months)*. One average has one label: *Average* and *vs average*.
 - **DS-WORD-4** Sentences are short and say what happened and what to do next. An error names the cause and the remedy; it
   does not apologise. No exclamation marks.
 - **DS-WORD-5** Sentence case everywhere. Capitals with letter-spacing are for eyebrows and stamps only.

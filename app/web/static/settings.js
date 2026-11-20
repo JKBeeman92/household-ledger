@@ -64,8 +64,9 @@ var FMT = (function () {   // the household's locale and currency, as the server
       if (kind === "events" && f === "on_chart" && String(v) === "yes" && hiddenKinds.indexOf(String(row.kind || "")) >= 0) return "yes, hidden kind";   // as the grid macro says it
       return null;
     }
+    function dropOffer(tr) { if (tr.offerRow) { tr.offerRow.remove(); tr.offerRow = null; } }   // the new-normal offer's row (#236)
     function show(tr, row) {
-      tr.className = ""; tr.textContent = "";
+      dropOffer(tr); tr.className = ""; tr.textContent = "";
       fields.forEach(function (f) { var th = table.querySelector('th[data-sort="' + f + '"]'), at = { "data-f": f }, empty = row[f] == null || row[f] === "", s = empty ? null : shown(f, row); if (th && th.classList.contains("num")) at["class"] = "num"; if (empty) at["data-v"] = ""; else if (s != null) at["data-v"] = String(row[f]); tr.appendChild(el("td", at, empty ? "\u2014" : s != null ? s : String(row[f]))); });   // the stored value stays in data-v for the editor and the sort   // a missing figure is a dash, the stored value kept in data-v (DS-WORD-6)   // a figure column stays right-aligned (DS-TYPE-3)
       var td = el("td", { "class": "acts" });
       var what = whatOf(row);   // a button names its row to a screen reader (DS-A11Y-2)
@@ -76,7 +77,7 @@ var FMT = (function () {   // the household's locale and currency, as the server
     function rowOf(tr) { var r = {}; fields.forEach(function (f) { var td = tr.querySelector('td[data-f="' + f + '"]'); r[f] = td.hasAttribute("data-v") ? td.getAttribute("data-v") : td.textContent; }); return r; }   // data-v: the stored value behind a formatted figure
     function edit(tr, blank) {
       Array.prototype.forEach.call(document.querySelectorAll("tr.editing"), function (o) { if (o !== tr && o.cancelEdit) o.cancelEdit(); });   // one editor open at a time, so one primary Save (DS-BTN-1)
-      var row = blank ? {} : rowOf(tr); tr.className = "editing"; tr.textContent = "";
+      var row = blank ? {} : rowOf(tr); dropOffer(tr); tr.className = "editing"; tr.textContent = "";
       fields.forEach(function (f) {
         var td = el("td", { "data-f": f }), inp;
         if (f === "flow") {
@@ -126,16 +127,22 @@ var FMT = (function () {   // the household's locale and currency, as the server
       if (kind === "events") {   // #159: a move or a new family member is offered as the new normal, never chosen for the household; new or edited
         var kindSel = tr.querySelector('select[name="kind"]'), nnSel = tr.querySelector('select[name="new_normal"]');
         if (kindSel && nnSel) {   // a polite live region, described by the select from the start, so the offer is heard when it appears
-          var offer = el("div", { "class": "hint", id: "new-normal-hint", role: "status", "aria-live": "polite" }); nnSel.parentNode.insertBefore(offer, nnSel.nextSibling);
+          // in a full-width row of its own under the edit row (#236 review): New normal is the last column, off-screen on a phone
+          var offer = el("div", { "class": "hint", id: "new-normal-hint", role: "status", "aria-live": "polite" }), cell = el("td", { colspan: String(fields.length + 1) });
+          var offerTr = el("tr", { "class": "editing offer" }); cell.appendChild(offer); offerTr.appendChild(cell); offerTr.owner = tr;
+          tr.parentNode.insertBefore(offerTr, tr.nextSibling); tr.offerRow = offerTr;
           nnSel.setAttribute("aria-describedby", "new-normal-hint");
-          var offerNow = function () { var on = (kindSel.value === "family" || kindSel.value === "move") && nnSel.value !== "yes";
-            offer.textContent = on ? "If this month changed what a normal month costs, set New normal to yes: the pace, the emergency fund and the suggested plan will average from here once six budget months after it are loaded, until twelve months have passed." : ""; };
+          var offerNow = function () { var on = (kindSel.value === "family" || kindSel.value === "move") && nnSel.value !== "yes"; offer.textContent = "";
+            if (!on) return;
+            var why = el("a", { href: "#events" }, "What New normal does");   // #events keeps this tab; the click opens the help under the table
+            why.onclick = function (e) { var d = document.getElementById("events-columns"); if (!d) return; e.preventDefault(); d.open = true; d.scrollIntoView({ block: "nearest" }); var su = d.querySelector("summary"); if (su) su.focus(); };
+            offer.appendChild(document.createTextNode("Did this change what a normal month costs? Set New normal to yes. ")); offer.appendChild(why); };
           kindSel.onchange = offerNow; nnSel.onchange = offerNow; offerNow();
         }
       }
       tr.cancelEdit = function () { cn.click(); };
       sv.onclick = function () { save(tr); };
-      cn.onclick = function () { if (tr.dataset.new) { var a = tr.closest("section, .panel, body").querySelector("[data-act=add]"); tr.remove(); if (a) a.focus(); } else { show(tr, row); back(tr); } };
+      cn.onclick = function () { if (tr.dataset.new) { var a = tr.closest("section, .panel, body").querySelector("[data-act=add]"); dropOffer(tr); tr.remove(); if (a) a.focus(); } else { show(tr, row); back(tr); } };
       tr.onkeydown = function (e) { if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); save(tr); } else if (e.key === "Escape") cn.click(); };
       var first = tr.querySelector("input,select"); if (first) first.focus();
     }
@@ -183,14 +190,14 @@ var FMT = (function () {   // the household's locale and currency, as the server
         var idx = fields.indexOf(th.dataset.sort), dir = th.getAttribute("aria-sort") === "ascending" ? -1 : 1;
         table.querySelectorAll("th").forEach(function (o) { o.removeAttribute("aria-sort"); });
         th.setAttribute("aria-sort", dir === 1 ? "ascending" : "descending");
-        var trs = Array.prototype.slice.call(tbody.rows), val = function (tr) { var c = tr.cells[idx]; var i = c.querySelector("input,select"); return (i ? i.value : c.hasAttribute("data-v") ? c.getAttribute("data-v") : c.textContent).trim(); };   // data-v: the stored figure behind a formatted one
+        var trs = Array.prototype.slice.call(tbody.rows).filter(function (tr) { return !tr.owner; }), val = function (tr) { var c = tr.cells[idx]; var i = c.querySelector("input,select"); return (i ? i.value : c.hasAttribute("data-v") ? c.getAttribute("data-v") : c.textContent).trim(); };   // data-v: the stored figure behind a formatted one
         var num = trs.every(function (tr) { var v = val(tr); return v === "" || !isNaN(parseFloat(v)) && isFinite(v); });
         trs.sort(function (a, b) {
           var x = val(a), y = val(b);
           if (num) return dir * ((x === "" ? Infinity : parseFloat(x)) - (y === "" ? Infinity : parseFloat(y)) || 0);
           return dir * x.localeCompare(y, undefined, { sensitivity: "base" });
         });
-        trs.forEach(function (tr) { tbody.appendChild(tr); });
+        trs.forEach(function (tr) { tbody.appendChild(tr); if (tr.offerRow) tbody.appendChild(tr.offerRow); });   // an offer row stays under its edit row
       }
       if (btn) btn.onclick = go; else th.onclick = go;
     });

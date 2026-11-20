@@ -258,7 +258,7 @@ def test_a_category_that_first_appears_late_in_the_after_side_is_not_new_since_t
     assert [c["category"] for c in ba.compare(ev, 3, monthly, cat_month)["new_categories"]] == ["Gym", "Streaming"]
 
 
-SWITCH = "Averages move to the new normal from Aug 2026, six budget months after Elanor is born (Feb 2026)."
+SWITCH = "From Aug 2026 averages move to the new normal: Elanor is born (Feb 2026)."
 MOVE_SINCE = "the 9 budget months since Moved to a bigger hole, rent goes up (Oct 2025), the household's new normal"
 
 
@@ -277,7 +277,8 @@ def test_the_check_in_says_when_the_window_moves_then_since_the_new_normal_and_t
     assert "Mark Year in review as read" in page   # year mode
     assert '>Add to the plan</button>' in page and "Add “Plan" not in page and 'aria-label="Add to the plan: ' in page   # the figure once, the name in the button's
     assert "keeps its pace, the average net kept a month, over the last 12 budget months: " in page and f"). {SWITCH}</p>" in page   # the quarter step
-    assert f"The average of the last 12 budget months, rounded up to the next ten, where it differs from this month's plan. {SWITCH} Adding one" in page   # the plan
+    assert "The average of the last 12 budget months, rounded up to the next ten, where it differs from this month's plan. Adding one" in page   # the plan
+    assert f"compares the plan you set with it. {SWITCH}</p>" in page   # when it moves, after what to do
     assert "at its pace, the average net kept a month, over the last 12 budget months, about " in page and f"(an estimate, not a plan). {SWITCH}</dd>" in page   # the year
     assert "months of outgo, the average of the last 12 budget months." in page   # the emergency fund, in Where you stand
     assert "since Elanor is born" not in page and "the last twelve months" not in page and "The twelve-month average," not in page
@@ -386,15 +387,20 @@ def test_last_month_stamps_the_emergency_fund_and_keys_the_kept_rows(sample):
     assert kept == {"Housing", "Debt", "Insurance"} and all(c["hidden"] == ", kept at its plan" for c in lm["cats"] if c["mark"])
     assert not any(c["hidden"] for c in lm["cats"] if not c["mark"])
     # #236: the birth has four months after it, so every window is the last 12 and says, one way, when it moves
-    assert lm["avgSince"] == SWITCH   # its own, without the plan
+    assert lm["avgSince"] == f"Averages use the last 12 budget months. {SWITCH}"   # its own, without the plan, the window now first
+    assert s["goals"]["efSince"] == f"The latest outgo is the average of the last 12 budget months. {SWITCH}" and s["goals"]["efSinceShown"]   # under the chart's finding
+    assert s["goals"]["pageOverflow"] <= 0
     assert lm["detailSince"] == f"The averages and the suggested plan use the last 12 budget months. {SWITCH}"
     assert lm["aheadSince"].startswith(f"The pace is the average net kept a month over the last 12 budget months. {SWITCH}")
-    assert lm["aheadHead"] == "Kept, at the pace\n(last 12 months)"   # the header names its window, on a line of its own
+    assert lm["aheadHead"] == "Kept, at the pace\n(last 12 budget months)"   # the header names its window, on a line of its own
     assert ef["text"].count("the average of the last 12 budget months") == 1 and SWITCH in ef["text"]
     # the Average card's key says what its colours mean, as the plan card's does (DS-CHART-5), and keeps the direction in words
     assert lm["avgKey"][:4] == ["worse than usual", "better than usual", "a bar to the right is above its average, to the left below it", "for savings, giving and debt, more is better"]
     st = s["settings"]   # the offer on an edited move row; heard when it appears, and gone once yes is chosen or the kind is not a move
-    assert st["opened"] == {"text": "If this month changed what a normal month costs, set New normal to yes: the pace, the emergency fund and the suggested plan will average from here once six budget months after it are loaded, until twelve months have passed.", "role": "status", "live": "polite", "describedby": "new-normal-hint", "value": "no"}
+    opened = {k: st["opened"][k] for k in ("text", "role", "live", "describedby", "value", "link")}
+    assert opened == {"text": "Did this change what a normal month costs? Set New normal to yes. What New normal does", "role": "status", "live": "polite", "describedby": "new-normal-hint", "value": "no", "link": "#events"}
+    assert st["opened"]["inView"] and st["opened"]["underRow"] and st["opened"]["pageOverflow"] <= 0, st["opened"]   # at 390, in a row of its own under the edit row
+    assert st["helpOpen"] is True   # its link opens the full explanation
     assert st["yes"]["text"] == "" and st["yes"]["describedby"] == "new-normal-hint" and st["job"]["text"] == ""
 
 

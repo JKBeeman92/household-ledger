@@ -251,7 +251,7 @@
         <p class="note" data-draw="lm-since" data-source="plan_suggestions"></p>
         <ul class="key row" data-draw="lm-cats-key" data-source="lm_cats goal_config"></ul>
         <div class="tbl short" role="region" tabindex="0" aria-labelledby="lm-table"><table data-source="lm_cats" data-row-key="category"><thead><tr>
-          <th data-field="category">Category</th><th data-field="planned">Planned</th><th data-field="actual">Spent</th><th data-field="vs_plan">vs plan</th><th data-field="avg12">Average</th><th data-field="vs_avg">vs avg</th><th data-field="suggest">Suggested plan</th>
+          <th data-field="category">Category</th><th data-field="planned">Planned</th><th data-field="actual">Spent</th><th data-field="vs_plan">vs plan</th><th data-field="avg12">Average</th><th data-field="vs_avg">vs average</th><th data-field="suggest">Suggested plan</th>
         </tr></thead><tbody data-draw="lm-cats"></tbody></table></div>
       </div>
       <div id="lm-t-items" hidden>
@@ -290,10 +290,11 @@
     <div class="card">
       <h2 id="ef-chart">{{ glyph('emergency-fund') }} Emergency fund coverage, month by month</h2>
         <p class="finding" data-draw="fd-ef" data-source="emergency_fund goals"></p>
+        <p class="note" data-draw="ef-since" data-source="emergency_fund"></p>
         <ul class="key row"><li><span class="key-mark fix" aria-hidden="true"></span>months of outgo the emergency savings cover</li><li><span class="key-mark wp" aria-hidden="true"></span>your target, when set</li><li><span class="key-mark" aria-hidden="true">↑</span>higher is safer</li></ul>
       <div class="chart" data-draw="ef-lines" data-source="emergency_fund goals"></div>
         <details class="datatable"><summary>Show the figures as a table</summary><div class="tbl short" role="region" tabindex="0" aria-label="Emergency fund coverage, figures"><table><thead><tr><th scope="col">Month</th><th scope="col">Emergency money</th><th scope="col">Outgo a month</th><th scope="col">Months covered</th></tr></thead><tbody data-draw="dt-ef" data-source="emergency_fund"></tbody></table></div></details>
-      <details class="how"><summary>How to read this</summary><p>Each month-end's emergency money (accounts marked Emergency on Settings → Accounts) divided by the average monthly living spend plus debt payments over the twelve budget months to then. The waypoint, with its dotted level, is emergency_months from Settings → Goals.</p></details>
+      <details class="how"><summary>How to read this</summary><p>Each month-end's emergency money (accounts marked Emergency on Settings → Accounts) divided by that month's outgo: living spend plus debt payments, averaged over the last 12 budget months to then (or over the months since the household's new normal, once six budget months after it are loaded and until twelve months have passed: the months the pace and the suggested plan use). The waypoint, with its dotted level, is emergency_months from Settings → Goals.</p></details>
     </div>
     <div class="card">
       <h2 id="dti-chart">Debt against income, month by month</h2>
@@ -1480,18 +1481,20 @@ dash.draw('ahead-rows', (tb) => { tb.replaceChildren(); const rows = ahead();
 // the fields each row carries (<p>_from, _months, _since, _switch*), and one wording (DS-WORD-3), as the check-in's _window.html says it
 HL.window = (r, p) => ({ from: r[p + '_from'], n: r[p + '_months'], since: r[p + '_since'], sw: r[p + '_switch'], swSince: r[p + '_switch_since'], swEvent: r[p + '_switch_event'] });
 HL.windowMonths = (w) => w.since ? `the ${w.n} budget month${w.n === 1 ? '' : 's'} since ${w.since} (${aheadMonth(w.from)}), the household's new normal` : `the last ${w.n} budget month${w.n === 1 ? '' : 's'}`;
-HL.windowSwitch = (w) => w.sw ? `Averages move to the new normal from ${aheadMonth(w.sw)}, six budget months after ${w.swSince} (${aheadMonth(w.swEvent)}).` : '';
+HL.windowSwitch = (w) => w.sw ? `From ${aheadMonth(w.sw)} averages move to the new normal: ${w.swSince} (${aheadMonth(w.swEvent)}).` : '';
 // said only when a new normal moves the window or is about to; the plain last twelve need no note
 HL.windowNote = (w, what) => w && (w.since || w.sw) ? [`${what} ${HL.windowMonths(w)}${w.since ? ', not the last twelve' : ''}.`, HL.windowSwitch(w)].filter(Boolean).join(' ') : '';
 dash.draw('ahead-head', (el) => { const r = ahead()[0], w = r && HL.window(r, 'pace');   // the header names its window
-  el.replaceChildren('Kept, at the pace'); if (w && w.n) el.append(document.createElement('br'), w.since ? `(since ${aheadMonth(w.from)})` : `(last ${w.n} month${w.n === 1 ? '' : 's'})`); });   // on its own line, so the column stays narrow on a phone
+  el.replaceChildren('Kept, at the pace'); if (w && w.n) el.append(document.createElement('br'), w.since ? `(since ${aheadMonth(w.from)})` : `(last ${w.n} budget month${w.n === 1 ? '' : 's'})`); });   // on its own line, so the column stays narrow on a phone
 dash.draw('ahead-since', (el) => { const r = ahead()[0]; el.replaceChildren(); if (!r) return;   // and, under the table, what the Net worth column leaves out or assumes
   const parts = [HL.windowNote(HL.window(r, 'pace'), 'The pace is the average net kept a month over'), r.net_worth == null ? 'Net worth needs month-end balances:' : r.growth_pct ? `Net worth includes an assumed ${r.growth_pct}% a year growth on assets.` : ''].filter(Boolean);
   el.append(parts.join(' ')); if (r.net_worth == null) el.append(' ', Object.assign(document.createElement('a'), { href: '/settings#accounts', textContent: 'add them on Settings → Accounts' }), '.'); });
 const lmWin = () => { const g = dash.data('plan_suggestions'), r = g.status === 'ok' ? g.data[0] : null; return r ? HL.window(r, 'avg') : null; };   // every row has the one window
 dash.draw('lm-since', (el) => { el.textContent = HL.windowNote(lmWin(), 'The averages and the suggested plan use'); });
-dash.draw('lm-avg-since', (el) => { const w = lmWin();   // the Average card has no suggested plan: its own, shorter line
-  el.textContent = w ? [w.since ? `Averages use ${HL.windowMonths(w)}.` : '', HL.windowSwitch(w)].filter(Boolean).join(' ') : ''; });
+dash.draw('lm-avg-since', (el) => { const w = lmWin();   // the Average card has no suggested plan: its own, shorter line, the window now first
+  el.textContent = (w && (w.since || w.sw) ? [`Averages use ${HL.windowMonths(w)}.`, HL.windowSwitch(w)].filter(Boolean).join(' ') : ''); });   // empty, the note takes no room (app.css)
+dash.draw('ef-since', (el) => { const g = dash.data('emergency_fund'), r = g.status === 'ok' ? g.data[g.data.length - 1] : null;   // the chart's latest outgo, said as the Emergency fund card says it
+  el.textContent = r ? HL.windowNote(HL.window(r, 'outgo'), 'The latest outgo is the average of') : ''; });
 dash.draw('ahead-facts', (el) => { el.replaceChildren(); const rows = ahead(); if (!rows.length) return; const r = rows.find((x) => x.h === 12) || rows[0];
   const add = (dt, dd) => { el.append(Object.assign(document.createElement('dt'), { textContent: dt }), Object.assign(document.createElement('dd'), { textContent: dd })); };
   add('Debt-free (mortgage excluded)', r.debt_free === r.m ? 'already' : r.debt_free ? aheadMonth(r.debt_free) : `no date yet: ${r.debt_free_open} ${r.debt_free_open === 1 ? 'debt has' : 'debts have'} no payoff date at the current payment`);

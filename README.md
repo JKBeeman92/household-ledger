@@ -629,7 +629,7 @@ figure is an estimate at the current pace, and "How it is worked out" lists each
 - **The pace** is the monthly net (income less living spend and debt payments), averaged over the last 12 budget months, this one
   included (or since the household's new normal: the averaging window in [Before and after a life event](#before-and-after-a-life-event));
   the last three months sit beside it, so a change of direction shows. The *Kept, at the pace* header names its window:
-  "(last 12 months)" or "(since Feb 2026)".
+  "(last 12 budget months)" or "(since Feb 2026)".
 - **Kept** is the pace × the months, plus the payments each debt frees from the month after its payoff estimate (listed on their own).
 - **Net worth** is today's (Net worth) plus what is kept, plus what the debt payments take off the balances (each debt paid down month
   by month at its payment and APR). There is no investment return unless the `assumed_growth_pct` rule sets a yearly % for asset
@@ -657,7 +657,7 @@ event against the event's own month and the months after it: 6 on each side by d
   category averages and suggested plan (its headline net still sets the month against the twelve before), the year in review and the
   review. The window is the last 12 budget months, the latest one included, so every figure counts the same months:
   - **Before the switch**, until six budget months *after* the event's month are loaded, the window stays the last 12, and each
-    figure says when it will move: "Averages move to the new normal from Aug 2026, six budget months after Elanor is born (Feb 2026)".
+    figure says when it will move: "From Aug 2026 averages move to the new normal: Elanor is born (Feb 2026)".
     A quarter right after a move or a birth is often full of one-off costs. A month not loaded does not count: it is still to come.
   - **From the switch**, the window is the event's own month and every loaded month after it: "the 7 budget months since Elanor is
     born (Feb 2026), the household's new normal". With two marked events, the latest that has switched starts the window.

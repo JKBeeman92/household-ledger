@@ -21,7 +21,7 @@ c.people, c.kinds, c.cap, c.next, c.acked #}
 {% elif not c.made %}<form method="post" action="/checkin/{{ month }}/steps/next/undo" class="inline-actions">{{ csrf_field(request) }}No changes this month. <button class="btn" type="submit" id="next-undo">Undo: no changes this month</button></form>{% endif %}
 {% if c.suggestions %}<details class="listcount" {% if not c.made %}open{% endif %}><summary>{{ c.suggestions|length }} from the Suggested plan</summary>
 {% from "_window.html" import window_months, window_switch %}{% set w = c.suggestions[0] %}{# every row has the one window #}
-<p class="muted">The average of {{ window_months(w, 'avg') }}, rounded up to the next ten, where it differs from this month's plan.{% if w.avg_switch %} {{ window_switch(w, 'avg') }}{% endif %} Adding one makes it a decision: next month's check-in compares the plan you set with it.</p>
+<p class="muted">The average of {{ window_months(w, 'avg') }}, rounded up to the next ten, where it differs from this month's plan. Adding one makes it a decision: next month's check-in compares the plan you set with it.{% if w.avg_switch %} {{ window_switch(w, 'avg') }}{% endif %}</p>
 <ul class="suggest-list" data-list="unbounded">{% for s in c.suggestions %}<li><form method="post" action="/checkin/{{ month }}/decisions" class="inline">{{ csrf_field(request) }}
   <input type="hidden" name="kind" value="plan_change"><input type="hidden" name="what" value="category:{{ s.category }}"><input type="hidden" name="amount" value="{{ s.suggest|plain }}">
   <input type="hidden" name="text" value="Plan {{ s.category }} at {{ s.suggest|money }}">

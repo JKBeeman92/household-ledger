@@ -209,6 +209,11 @@ table.edit [aria-invalid=true] { border-color: var(--danger); }
 .flowlist { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-1) var(--space-3); margin: var(--space-2) 0; }
 .flowlist dt, .flowlist dd { margin: 0; }
 table.edit .hint { font-size: var(--text-caption); color: var(--ink-muted); margin-top: var(--space-1); max-width: 22rem; white-space: normal; }
+/* the new-normal offer (issue 236): a full-width row under the edit row, its text held at the left of the visible box while the table scrolls sideways */
+.tablewrap:has(tr.offer) { container-type: inline-size; }
+table.edit tr.offer td { padding-top: 0; }
+table.edit tr.offer .hint { position: sticky; left: var(--space-3); margin-top: 0; max-width: min(40rem, calc(100cqi - 2 * var(--space-3))); }
+table.edit tr.offer td:has(.hint:empty) { padding: 0; border-bottom: 0; }   /* nothing to offer: no strip, the live region kept in place */
 /* Month-end balances (issue 143): the input keeps room for a six-figure balance at phone width; the explanation wraps under the name */
 table.balances-form .hint { font-size: var(--text-caption); margin-top: var(--space-1); white-space: normal; }
 table.balances-form input { width: 9.5rem; max-width: 100%; }
@@ -344,6 +349,7 @@ details[open]:not(#dash-root details) > summary::before { transform: translateY(
 .hl .page > .card:not(.tile) { margin-bottom: var(--space-4); }
 .hl .card h2 { font-size: var(--text-heading); font-weight: var(--weight-strong); margin: 0; }
 .hl .card .note { color: var(--ink-muted); font-size: var(--text-caption); margin: var(--space-1) 0 var(--space-2); }
+.hl .card .note[data-draw$="-since"]:empty { display: none; }   /* an averaging-window note with nothing to say (issue 236) takes no room */
 .hl .tile .k { color: var(--ink-muted); font-size: var(--text-caption); }
 .hl .tile .v { font-family: var(--font-display); font-size: var(--text-title); font-weight: var(--weight-heading); line-height: 1.15; margin: var(--space-1) 0; }
 .hl .tile .d { font-size: var(--text-caption); color: var(--ink-muted); }
