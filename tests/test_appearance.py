@@ -71,11 +71,23 @@ def test_settings_lists_the_names_the_data_has_and_saves_a_dimension(client, res
     with db.pool.connection() as conn:
         have = appearance.present(conn)
     assert have["category"] and "Housing" in have["category"]
-    for d in appearance.DIMENSIONS:   # each dimension's list is its own sub-tab, filterable when there is a list
+    for d in appearance.DIMENSIONS:   # each dimension's list is its own sub-tab, filterable when it is long enough to scan
         slug = d.replace("_", "-")
         assert f'id="sp-appearance-{slug}"' in html
         if have[d]:
-            assert f'id="appearance-{slug}-table" data-list="unbounded"' in html and f'data-filter-table="appearance-{slug}-table"' in html
+            assert f'id="appearance-{slug}-table" data-list="unbounded"' in html
+            assert (f'data-filter-table="appearance-{slug}-table"' in html) == (len(have[d]) > appearance.FILTER_FROM), d
+            if len(have[d]) > appearance.FILTER_FROM:
+                assert f"Filter the {len(have[d])} {appearance.LABELS[d][0].lower()}</label>" in html
+    # how colours and hiding work is said once, in plain words, above the sub-tabs; each tab has one short line of its own
+    assert html.count('id="appearance-how"') == 1 and html.index('id="appearance-how"') < html.index('data-subtabs="appearance"')
+    section = html[html.index('id="sp-appearance"'):html.index('<script src="/static/settings.js"')]
+    for word in ("palette slot", "rank", "rebuild", "palette order"):
+        assert word not in section, word
+    for d, (_, noun, chart) in appearance.LABELS.items():
+        assert f'<p class="muted">The colour of each {noun} on {chart}, and whether it is hidden there.</p>' in html
+    assert "Saves this tab only." in html
+    assert 'id="st-appearance-orphans"' not in html and 'id="sp-appearance-orphans"' not in html   # no leftovers, no tab
     r = client.post("/settings/appearance/save", data={"dimension": "category", "name": ["Housing", "Food"], "color": ["series-2", "#2f7f9a"], "hidden": ["Food"]})
     assert r.status_code == 303 and r.headers["location"] == "/settings#appearance/category"
     with db.pool.connection() as conn:
@@ -116,10 +128,12 @@ def test_orphans_are_listed_with_delete(client, reset_db):
         assert [o["name"] for o in appearance.page(conn)["orphans"]] == ["Old Mill"]
     html = client.get("/settings").text
     assert 'id="appearance-orphans-table" data-list="unbounded"' in html and "Delete the colour kept for the employer Old Mill" in html
+    assert 'id="st-appearance-orphans"' in html and "Not in the data <span class=\"count\">1</span>" in html
     r = client.post("/settings/appearance/delete", data={"dimension": "employer", "name": "Old Mill"})
     assert r.headers["location"] == "/settings#appearance/orphans"
     with db.pool.connection() as conn:
         assert [r["name"] for r in rows(conn)] == ["Housing"]
+    assert 'id="st-appearance-orphans"' not in client.get("/settings").text   # the last one deleted: the tab goes, the hash falls back
 
 
 def test_a_rename_keeps_colour_and_hidden(client, reset_db):
@@ -379,3 +393,33 @@ def test_hiding_changes_no_total_and_show_is_for_this_viewer_only(sample):
         assert snap["tables"] == plain["tables"]
     assert r["focused"] == "1 hidden, shown here · hide"
     assert "Housing" not in dict(r["other"]["charts"]["cat-stack"]["series"])
+
+
+# DS-CHART-5: what each chart coloured by a name states, drawn from the data, on the sample household (2026 has six months loaded)
+SAMPLE_FINDINGS = {
+    "fd-monthly": "Jan 2025 to Jun 2026: income covered outgo in all 18 budget months, and the household kept $30,425.",
+    "fd-employer": "Jan 2025 to Jun 2026: Hobbiton Mill paid $75,400 in paychecks.",
+    "fd-cat": "2026 (6 mo): Housing and Food took 53% of the $27,656 spent.",
+    "fd-slush": "2026 (6 mo): the catch-all envelopes took $3,985, the most Generosity with $2,280.",
+    "fd-earner": "2026 (6 mo): Rosie earned 66% of the $38,618 income, Sam 34%.",
+    "fd-payer": "2026 (6 mo): personal envelopes took 5% of the $27,656 spent: Rosie $697, Sam $637. The rest was shared.",
+}
+
+
+@browser
+def test_each_chart_states_its_finding_from_the_data_and_hiding_changes_none(sample):
+    set_table([])
+    s = harness(sample)["before"]
+    assert s["unreachable"] == []   # every scrolling table box: role=region, tabindex=0 and a name
+    for k, text in SAMPLE_FINDINGS.items():
+        assert s["findings"][k]["text"] == text, k
+        assert text in s["findings"][k]["label"], k   # a11y.js folds it into the chart's accessible name
+    # hiding is display only: a finding says what the data says, as the debts and net worth findings always have
+    set_table([{"dimension": "category", "name": "Housing", "hidden": True}, {"dimension": "person", "name": "Rosie", "hidden": True},
+               {"dimension": "employer", "name": "Hobbiton Mill", "hidden": True}])
+    h = harness(sample)["before"]
+    assert {k: v["text"] for k, v in h["findings"].items()} == {k: v["text"] for k, v in s["findings"].items()}
+    # a period that ends a year early: the latest year in it is the full one, and it says so without a month count
+    ly = harness(sample, params={"range": "ly"})["before"]["findings"]
+    assert ly["fd-cat"]["text"].startswith("2025: ") and ly["fd-monthly"]["text"].startswith("Jan 2025 to Dec 2025: ")
+    set_table([])

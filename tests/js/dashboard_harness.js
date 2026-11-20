@@ -43,18 +43,27 @@ function probe() {
   for (const el of document.querySelectorAll('.legend[data-draw]')) if (!el.closest('[hidden]')) out.legends[el.dataset.draw] = [...el.children].map((s) => [s.textContent, s.style.getPropertyValue('--sw').trim()])
   for (const tb of document.querySelectorAll('tbody[data-draw]')) if (!tb.closest('[hidden]')) out.tables[tb.dataset.draw] = tb.textContent.replace(/\s+/g, ' ').trim()
   out.tiles = [...document.querySelectorAll('.tile .v, .tile .d, [data-draw^="lede-"]')].map((e) => e.textContent.trim())
+  // each chart's one-line finding (DS-CHART-5) and the chart's accessible name, which a11y.js builds with it
+  out.findings = {}
+  for (const f of document.querySelectorAll('.finding[data-draw]')) if (!f.closest('[hidden]')) {
+    const svg = f.closest('.card').querySelector('.chart svg'); out.findings[f.dataset.draw] = { text: f.textContent, label: svg ? svg.getAttribute('aria-label') : null }
+  }
+  // every scrolling table box a keyboard can reach and a screen reader can name (DS-A11Y-1)
+  out.unreachable = [...document.querySelectorAll('.tbl')].filter((e) => e.getAttribute('role') !== 'region' || e.tabIndex !== 0 ||
+    !((e.getAttribute('aria-label') || '').trim() || ((e.getAttribute('aria-labelledby') || '').split(' ').filter(Boolean).every((i) => document.getElementById(i)) && e.getAttribute('aria-labelledby')))).map((e) => e.outerHTML.slice(0, 80))
   out.colors = dash.colors
   out.params = dash.params()
   return out
 }
 
 const snap = async (page) => {
-  const all = { charts: {}, legends: {}, tables: {}, tips: {}, tiles: null }
+  const all = { charts: {}, legends: {}, tables: {}, tips: {}, findings: {}, tiles: null }
   for (const t of TABS) {
     await page.click(`#tab-${t}`)
     await page.waitForTimeout(120)
     const p = await page.evaluate(probe)
-    for (const k of ['charts', 'legends', 'tables', 'tips']) Object.assign(all[k], p[k])
+    for (const k of ['charts', 'legends', 'tables', 'tips', 'findings']) Object.assign(all[k], p[k])
+    all.unreachable = p.unreachable
     all.tiles = all.tiles || p.tiles; all.colors = p.colors; all.params = p.params
   }
   return all
