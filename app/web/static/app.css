@@ -189,6 +189,7 @@ table.edit [aria-invalid=true] { border-color: var(--danger); }
 @media (max-width: 820px) { .subtabs [role=tab] { min-height: 44px; } }
 .subtabs [role=tab][aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .subtabs [role=tab]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.subtabs [role=tab] .unsaved { color: inherit; font-weight: var(--weight-strong); }   /* "· not saved" on the tab being edited, which is the selected one: its own colour, never muted (DS-COLOR-3) */
 .linkrow { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; }
 /* Motion on the other pages: panels and settings tabs rise in; nothing moves with reduced motion. */
 @keyframes app-in { from { opacity: 0; transform: translateY(4px); } }

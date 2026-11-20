@@ -171,12 +171,12 @@ async def map_confirm(request: Request, batch: str, background: BackgroundTasks,
 def map_discard(request: Request, batch: str, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         conn.execute("DELETE FROM upload_pending WHERE batch=%s", (batch,)); conn.commit()
-    flash(request, "Discarded the files waiting for a mapping.")
+    flash(request, "Discarded the files waiting for a source profile.")
     return RedirectResponse("/upload", status_code=303)
 
 
 # ---------------------------------------------------------------- a back catalogue through the saved profiles (#165)
-STATE_LABEL = {"ready": "Ready","unchanged": "Unchanged", "refused": "Not stored"}
+STATE_LABEL = {"ready": "Ready", "replaces": "Replaces", "unchanged": "Unchanged", "refused": "Not stored"}
 
 
 def _batch_plan(conn, batch: str) -> tuple[list[tuple[str, bytes]], list[dict]]:
@@ -209,15 +209,20 @@ _MONTH_RX = re.compile(r"(?<![\w-])\d{4}-(0[1-9]|1[0-2])(?![\w-])")   # a bare b
 def batch_page(request: Request, batch: str, user=Depends(auth.require_editor)):
     with db.pool.connection() as conn:
         files, plan = _batch_plan(conn, batch)
+        stored = stored_files(conn); conn.commit()
     if not files:
         flash(request, "Those files are no longer waiting (they are kept for a day). Upload them again.", "bad")
         return RedirectResponse("/upload", status_code=303)
+    # a ready file whose month and kind are already stored replaces that file: its own stamp, listed after the refused ones, so a
+    # wrongly guessed month is seen before the one confirmation (display only: the plan and what is stored are unchanged)
+    plan = [dict(e, replaces=e["state"] == "ready" and (e["kind"], e["month"]) in stored) for e in plan]
+    plan.sort(key=lambda e: 0 if e["state"] == "refused" else 1 if e["replaces"] else 2)   # stable: months stay in order within each
     # the page speaks months the household's way ("May 2026", DS-WORD-6); the dry run itself keeps ISO months, as the CLI prints them
     plan = [dict(e, **{k: _MONTH_RX.sub(lambda m: month_text(m.group(0)), e[k]) for k in ("how", "detail") if e.get(k)}) for e in plan]
     ready = [e for e in plan if e["state"] == "ready"]
     return render(request, "upload_batch.html", user, active="upload", batch=batch, plan=plan, state_label=STATE_LABEL, ready=ready,
                   months=sorted({e["month"] for e in ready}), profiles=sorted({e["profile"] for e in ready if e["profile"]}),
-                  named=sum(1 for e in ready if e.get("named")),
+                  named=sum(1 for e in ready if e.get("named")), replacing=[e for e in ready if e["replaces"]],
                   refused=[e for e in plan if e["state"] == "refused"], unchanged=[e for e in plan if e["state"] == "unchanged"])
 
 
@@ -312,6 +317,9 @@ def profile_save(request: Request, background: BackgroundTasks, body: str = Form
         running = build_running(conn)
     if n and not running:
         background.add_task(run_background)
+    if before and not changed:   # the button offers a re-read; say why none happened
+        flash(request, f"No change to the profile “{spec['name']}”: nothing to re-read.")
+        return RedirectResponse("/settings/sources", status_code=303)
     flash(request, f"Saved the profile “{spec['name']}”." + (f" Re-read {n} stored file{'s' if n != 1 else ''} with it; rebuilding." if n else ""))
     return RedirectResponse("/settings/sources", status_code=303)
 

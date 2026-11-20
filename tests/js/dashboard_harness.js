@@ -30,7 +30,9 @@ function probe() {
     const ahead = [...el.querySelectorAll('circle.ev-ahead')].map((m) => [key(m.__data__), m.__data__.kind ?? null, m.__data__.color ?? null])
     // the buttons over the markers (#140): what each says to the keyboard and a screen reader, and whether it can take focus
     const marks = [...el.querySelectorAll('.ev-mark')].map((b) => ({ label: b.getAttribute('aria-label'), focusable: b.tagName === 'BUTTON' && b.tabIndex === 0 && !b.disabled, ahead: !!b.closest('.ahead'), box: (({ left, right, height }) => [left, right, height])(b.getBoundingClientRect()) }))
-    out.charts[el.dataset.draw] = { series, bars, markers, ahead, marks, lines, note: note ? note.textContent : null }
+    // the note's name is its visible words (WCAG 2.5.3): no aria-label; what it hides is its title. heads: the Debts chart's group headings
+    const heads = [...el.querySelectorAll('svg > g > g > text[font-weight]')].map((t) => t.textContent)
+    out.charts[el.dataset.draw] = { series, bars, markers, ahead, marks, lines, heads, note: note ? note.textContent : null, noteLabel: note ? note.getAttribute('aria-label') : null, noteTitle: note ? note.title : null }
     // the tooltip over the first bar of each series: its swatch and its total
     const tips = {}
     for (const g of el.querySelectorAll('svg g[fill]')) {

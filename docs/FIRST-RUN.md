@@ -31,7 +31,7 @@ of `docker compose logs ledger` (check them for anything private first).
       Upload one month on **Close a month** (a `.zip` works too): the page returns at once, shows the build running, then a
       "Last upload" panel and a clean reconciliation. Upload a file of a few MB through the proxy too: a 413 from the proxy (not the
       app) means its body-size limit is below `MAX_UPLOAD_MB`.
-- [ ] **Another budget tool** (optional). Upload a transactions CSV and a budget CSV that are not named like exports (the internal format, or EveryDollar's): the mapping page
+- [ ] **Another budget tool** (optional). Upload a transactions CSV and a budget CSV that are not named like exports (the internal format, or EveryDollar's): the Set up a source profile page
       opens, and confirming it stores the month (README, "Other budget tools"). Then a `.zip` of two or more further months from
       the same tool opens the batch table (file, profile, kind, budget month, how it was found); check the months, confirm once, and
       one rebuild stores them all. `python -m app.admin import DIR --profile NAME --dry-run` prints the same table and stores nothing.

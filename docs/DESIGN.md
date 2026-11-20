@@ -51,7 +51,11 @@ reaching a waypoint, and a chart border.
 - **DS-WORD-3** The same thing has the same name on every page. *Budget month*, *check-in*, *close a month*, *review*,
   *rebuild* and *reconciled* are fixed terms. The act of having the model read a month back is **Write review** (a second
   time, **Write review again**), and the page that chooses the model is **Review provider**, everywhere: never "generate",
-  "provider settings" or "write one".
+  "provider settings" or "write one". How another budget tool's columns are read is its **source profile** (Settings → Sources),
+  set up on upload; **Item mapping** is only the rows that give each item a canonical name, a category and a flow (Settings →
+  Item mapping). Neither is called a "mapping" alone. The row of per-person figures that no rule gives one person is **Joint** (DS-WORD-7)
+  in its heading and in the words under it; a window cut at a life event is written *the N budget months since {label} ({Nov 2026}), the household's new
+  normal*, on the dashboard and in the check-in alike.
 - **DS-WORD-4** Sentences are short and say what happened and what to do next. An error names the cause and the remedy; it
   does not apologise. No exclamation marks.
 - **DS-WORD-5** Sentence case everywhere. Capitals with letter-spacing are for eyebrows and stamps only.

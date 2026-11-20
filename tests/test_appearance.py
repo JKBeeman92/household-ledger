@@ -388,6 +388,13 @@ def test_hiding_changes_no_total_and_show_is_for_this_viewer_only(sample):
     assert not [k for _, k, _ in s["charts"]["employer"]["markers"] if k == "job"] and not [k for _, k, _ in s["charts"]["monthly"]["markers"] if k == "job"]
     assert s["charts"]["monthly"]["note"] == "1 hidden · show"
     assert "Student Loan" not in dict(s["charts"]["debts"]["bars"]) and s["charts"]["debts"]["note"] == "1 hidden · show"
+    # the button's name is its visible words (WCAG 2.5.3, the 0.9.0 release review); what it hides, and for whom, is its title
+    assert all(c["noteLabel"] is None for c in s["charts"].values() if c["note"])
+    assert s["charts"]["cat-stack"]["noteTitle"] == "Hidden in Settings, Chart appearance: Housing. Show brings them back on this chart, for you only."
+    assert s["charts"]["employer"]["noteTitle"].startswith("Hidden in Settings, Chart appearance: Job (event kind).")
+    assert s["charts"]["debts"]["noteTitle"].startswith("Hidden in Settings, Chart appearance: Student Loan.")
+    # a debt group whose every debt is hidden leaves no empty heading; the others keep theirs
+    assert len(plain["charts"]["debts"]["heads"]) == len(s["charts"]["debts"]["heads"]) + 1, (plain["charts"]["debts"]["heads"], s["charts"]["debts"]["heads"])
     # "show" reveals that chart's hidden names for this viewer, remembered like the period filter; another viewer still has them hidden
     for snap in (r["after"], r["reloaded"]):
         assert dict(snap["charts"]["cat-stack"]["series"]) == dict(plain["charts"]["cat-stack"]["series"])
@@ -395,6 +402,7 @@ def test_hiding_changes_no_total_and_show_is_for_this_viewer_only(sample):
         assert "Generosity" not in dict(snap["charts"]["slush"]["series"])   # only the chart that was pressed
         assert snap["tables"] == plain["tables"]
     assert r["focused"] == "1 hidden, shown here · hide"
+    assert r["after"]["charts"]["cat-stack"]["noteTitle"] == "Hidden in Settings, Chart appearance: Housing. Shown on this chart for you only."
     assert "Housing" not in dict(r["other"]["charts"]["cat-stack"]["series"])
 
 

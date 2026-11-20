@@ -40,6 +40,8 @@ function lastmonth() {
     cats,
     avgSince: document.querySelector('[data-draw="lm-avg-since"]').textContent,
     detailSince: document.querySelector('#lm-t-cats [data-draw="lm-since"]').textContent,
+    aheadSince: document.querySelector('[data-draw="ahead-since"]').textContent,
+    avgKey: [...document.querySelector('#lm-avg-chart').closest('.card').querySelectorAll('.key li')].map((li) => li.textContent),
   }
 }
 

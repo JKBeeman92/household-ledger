@@ -31,6 +31,7 @@ var FMT = (function () {   // the household's locale and currency, as the server
     return e;
   }
   var flowHelp = {}; try { var fh = document.getElementById && document.getElementById("flow-help"); if (fh) flowHelp = JSON.parse(fh.textContent); } catch (e) {}
+  var hiddenKinds = []; try { var hk = document.getElementById && document.getElementById("hidden-kinds"); if (hk) hiddenKinds = JSON.parse(hk.textContent); } catch (e) {}   // event kinds hidden in Chart appearance
   var cats = {}; (function () { var dl = document.getElementById && document.getElementById("settings-categories"); if (dl) Array.prototype.forEach.call(dl.querySelectorAll("option"), function (o) { cats[o.value.toLowerCase()] = 1; }); })();
   function needRebuild(res) { var b = document.getElementById("rebuild-banner"); if (b && res.rebuild_needed) b.hidden = false; }
   function status(msg, bad) {
@@ -60,6 +61,7 @@ var FMT = (function () {   // the household's locale and currency, as the server
       if (kind === "goals" && f === "value" && isFinite(n)) { if (u.indexOf("share") === 0) return FMT.share(n); if (u.indexOf("usd") === 0) return FMT.money0(n); }
       if (kind === "accounts" && f === "escrow" && isFinite(n)) return FMT.money2(n);
       if (kind === "events" && f === "m" && /^\d{4}-\d{2}$/.test(String(v))) return FMT.month(String(v));
+      if (kind === "events" && f === "on_chart" && String(v) === "yes" && hiddenKinds.indexOf(String(row.kind || "")) >= 0) return "yes, hidden kind";   // as the grid macro says it
       return null;
     }
     function show(tr, row) {

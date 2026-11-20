@@ -2,13 +2,16 @@
 {% block title %}Check the months · {{ household.title }}{% endblock %}
 {% block content %}
 {# The dry run of a back catalogue from another budget tool (#165): one confirmation for the whole batch, then one rebuild. #}
-<p class="eyebrow">Month close</p>
+<p class="eyebrow">Close a month</p>
 <h1 class="page-title">Check the months before storing</h1>
 <section class="panel mt-4" id="batch-summary">
   <h2>{% if ready %}{{ ready|length }} file{{ '' if ready|length == 1 else 's' }} ready to store, {{ months|length }} budget month{{ '' if months|length == 1 else 's' }}{% else %}Nothing here can be stored yet{% endif %}</h2>
-  {% if ready %}<p class="measure">{{ months|first|month }} to {{ months|last|month }}{% if profiles %}, read with {{ profiles|join(', ') }}{% endif %}{% if named %}; {{ named }} file{{ ' is' if named == 1 else 's are' }} named like exports and read as {{ 'it is' if named == 1 else 'they are' }}{% endif %}.
-  {% if profiles %}Check the months found from the dates: they are guesses. {% endif %}Nothing is
-  stored until you confirm, once for the whole batch; then the ledger rebuilds once.</p>{% endif %}
+  {% if ready %}<p class="measure">{{ months|first|month }} to {{ months|last|month }}{% if profiles %}, read with {{ profiles|join(', ') }}{% endif %}.{% if named %} {{ named }} file{{ ' is' if named == 1 else 's are' }} named like exports and read as {{ 'it is' if named == 1 else 'they are' }}.{% endif %}
+  Nothing is stored until you confirm, once for the whole batch; then the figures rebuild once.</p>
+  {% if replacing %}<p class="measure" id="batch-replacing"><span class="status-chip warn">Replaces</span><strong>{{ replacing|length }} of these replace{{ 's' if replacing|length == 1 else '' }} a month you already have</strong>
+  ({{ replacing|map(attribute='month')|unique|map('month_short')|join(', ') }}): storing {{ 'it replaces' if replacing|length == 1 else 'them replaces' }} the file stored for that month. They are listed after any refused file.</p>{% endif %}
+  {% if profiles %}<p class="measure" id="batch-months">The months are guesses from the dates or the file names: check the Budget month column below. If a month is wrong,
+  discard these files, change the profile's month rule on <a href="/settings/sources">Settings → Sources</a>, and upload them again.</p>{% endif %}{% endif %}
   {% if refused %}<p class="measure"><strong>{{ refused|length }} file{{ '' if refused|length == 1 else 's' }} will not be stored</strong>, listed first with the reason. To store them,
   fix the files or the profile's month rule on <a href="/settings/sources">Settings → Sources</a>, and upload them again.</p>{% endif %}
   {% if unchanged %}<p class="muted measure">Already stored exactly as uploaded, and left alone: {{ unchanged|length }} file{{ '' if unchanged|length == 1 else 's' }}.</p>{% endif %}
@@ -28,7 +31,7 @@
   <div class="tablewrap" role="region" tabindex="0" aria-label="What would be stored, file by file"><table class="plain" id="batch-table" data-list="unbounded">
     <thead><tr><th scope="col">Result</th><th scope="col">File</th><th scope="col">Profile</th><th scope="col">Kind</th><th scope="col">Budget month</th><th scope="col">How it was found, or why not</th></tr></thead>
     <tbody>{% for e in plan %}<tr>
-      <td><span class="status-chip {{ {'ready': 'ok', 'refused': 'bad'}.get(e.state, '') }}">{{ state_label[e.state] }}</span></td>
+      {% set st = 'replaces' if e.replaces else e.state %}<td><span class="status-chip {{ {'ready': 'ok', 'replaces': 'warn', 'refused': 'bad'}.get(st, '') }}">{{ state_label[st] }}</span></td>
       <td class="mono nowrap">{{ e.name }}</td>
       <td>{{ e.profile or '—' }}</td>
       <td class="nowrap">{{ {'transactions': 'Transactions', 'budget_items': 'Budget'}.get(e.kind, '—') }}</td>

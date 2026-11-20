@@ -281,8 +281,8 @@ step, and always will be. `pipeline/filenames.py` recognises both.
 
 A file in the internal format, or EveryDollar's, needs no setup. Any other tool works too, as long as it exports the same
 pair each month: **a transactions CSV and a budget CSV**. Upload both on **Close a month**. Files not named like exports go to
-a mapping page that shows their first rows, guesses which column is which, which file is which and the budget month, and asks
-you to confirm. The confirmed mapping is saved as a *source profile* under a name you choose and is offered again automatically
+a **Set up a source profile** page that shows their first rows, guesses which column is which, which file is which and the budget month, and asks
+you to confirm. What you confirm is saved as a *source profile* under a name you choose and is offered again automatically
 for next month's files with the same columns. Profiles can be edited, exported and imported as JSON on **Settings → Sources**.
 
 | File | Required columns | Optional |
@@ -754,7 +754,8 @@ and optionally its kind and person). Each is a dotted marker on **Income against
   it through to the `events` dataset. It is a pipeline input like the rest of the event, so the dashboard shows a change after a rebuild.
 - **How the switches combine.** An event is drawn only when it is on the chart *and* its kind is not hidden in Chart appearance (or you
   pressed that chart's "show"). "show" reveals hidden kinds, never an event switched off the chart, and the "N hidden" note counts
-  hidden kinds only. No total, table or reconciliation changes either way.
+  hidden kinds only. No total, table or reconciliation changes either way. Settings → Life events marks an event of a hidden kind
+  "yes, hidden kind" in its On the chart column, and the list under the chart says "hidden kind": the same words on both pages.
 - **Coming up.** When the period reaches the last loaded month, the chart ends in a **Coming up** strip: the next 12 months of the
   `coming_up` dataset (payoffs, yearly bills, tax deadlines, planned purchases and life events dated later), drawn dotted because they
   have not happened, never as markers off the end of the axis. A life event in it follows the same switches and chips. The **Coming

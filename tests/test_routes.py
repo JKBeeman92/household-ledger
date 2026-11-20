@@ -73,7 +73,7 @@ def test_another_csv_goes_to_the_mapping_step_and_stores_nothing_yet(client, res
     # any other CSV may be another budget tool's export (#96): it waits for the mapping step instead of being refused
     r = client.post("/upload", files=[("files", ("notes.csv", b"a,b\n1,2\n", "text/csv"))])
     assert r.status_code == 303 and r.headers["location"].startswith("/upload/map/")
-    assert "Map your columns" in client.get(r.headers["location"]).text
+    assert "Set up a source profile" in client.get(r.headers["location"]).text
     assert client.get("/api/status").json()["months"] == 0
 
 
