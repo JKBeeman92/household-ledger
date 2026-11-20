@@ -129,6 +129,15 @@
       <details class="how"><summary>How to read this</summary><p>Net worth is every account's month-end balance (Settings → Accounts; entered at Close a month), assets less debts, leaving out accounts marked not in net worth. Its change since last month is split in two. <b>What you did</b> is the month's income less living spend: what was kept plus what was paid on debts, since paying a loan down is the household's own doing (and, once stated, pre-tax saving such as a 401(k)). <b>What happened to you</b> is the rest: investments and the home's estimate moving, interest charged, and money moving into or out of accounts this page does not track. An account's first month is shown on its own, so adding one is not read as progress. A debt with no balance entered is estimated, and the figure says so. One thing lands on the wrong side: money your budget counts as spent that goes into an account tracked here (a savings envelope paid into a savings account) shows under what happened, not what you did. <b>Excluding home</b> takes a home's typed estimate out, since it moves the total more than any month's decisions.</p></details>
       <dl class="dti" data-draw="lm-nw" data-source="net_worth balances"></dl>
     </div>
+    <div class="card" id="lm-people-card" hidden>
+      <h2 id="lm-people">By person</h2>
+      <ul class="key row"><li>what each person earned, and their part of the month's income</li><li>what each person's own envelopes spent</li><li>the change since last month</li></ul>
+      <p data-draw="lm-people-month" data-source="by_person budget_items"></p>
+      <details class="how"><summary>How to read this</summary><p><b>Earned</b>: the income each person brings in, by the earner rule. It is the Income by earner chart on the People tab, one month at a time.</p><p><b>Spent from own envelopes</b>: what the envelopes the payer rules give each person spent. It is the Spend by payer chart, so it shows whose envelope, not who paid.</p><p><b>Joint</b>: what no rule gives to one person, which is shared income and the shared envelopes.</p><p>Accounts sit under the person Settings → Accounts names, and decisions under the person they name. One that names no one, or someone the People rule no longer has, sits under Joint. A change that rounds to nothing reads no change. These are figures, not a fair-share reckoning. The card shows when the People rule names two or more people; the earner, payer and People rules are on <a href="/settings#rules">Settings → Pipeline rules</a>.</p></details>
+      <div class="tbl" role="region" tabindex="0" aria-labelledby="lm-people"><table><thead><tr><th scope="col">Person</th><th scope="col" class="num">Earned</th><th scope="col" class="num">Part of income</th><th scope="col" class="num">Earned, change</th><th scope="col" class="num">Spent from own envelopes</th><th scope="col" class="num">Spent, change</th></tr></thead><tbody data-draw="lm-people-rows" data-source="by_person"></tbody></table></div>
+      <details class="listcount mt-3" id="lm-people-list"><summary data-draw="lm-people-count" data-source="by_person balances decisions">Accounts and decisions</summary>
+        <dl class="dti long-labels" data-draw="lm-people-own" data-source="by_person balances decisions" data-list="unbounded"></dl></details>
+    </div>
     <div class="card" id="lm-decisions-card">
       <h2 id="lm-decisions">Decisions in force</h2>
       <ul class="key row"><li>the decisions in force in the latest month, and how each went</li><li>the share kept, over the last six months of checks</li></ul>
@@ -1210,6 +1219,42 @@ const nwCard = (el) => {
   else add('Over 12 months', '—', 'needs balances from a year before (Settings → Accounts → Balances history)', false);
 };
 dash.draw('lm-nw', nwCard);
+// by person (#156): each person's month beside the shared part, with their accounts and decisions; the card shows only when by_person
+// has rows (the People rule names two or more), so a one-person household never sees it. Figures only, never over or under.
+const bpMonth = () => { const g = dash.data('by_person'); if (g.status !== 'ok' || !g.data.length) return null;
+  const b = dash.data('budget_items'), last = b.status === 'ok' && b.data.length ? b.data.map((r) => r.m).sort().pop() : null;
+  return last && g.data.some((r) => r.m === last) ? last : g.data.map((r) => r.m).sort().pop(); };
+const bpRows = () => { const m = bpMonth(); return m ? dash.data('by_person').data.filter((r) => r.m === m) : []; };
+const bpLabel = (who) => who === 'Household' ? 'Joint' : who;
+// a change that rounds to nothing reads "no change", as at the check-in; joint income that is nothing at all is a dash, not $0 / 0%
+const bpCh = (v) => v == null ? '—' : Math.round(v) === 0 ? 'no change' : sgn(v);
+dash.draw('lm-people-month', (el) => { const m = bpMonth(), g = dash.data('by_person'); if (!m) return;
+  const prev = g.data.map((r) => r.m).filter((x) => x < m).sort().pop();
+  el.textContent = HL.fmtM(HL.parseM(m)) + (prev ? `, with the change since ${HL.fmtM(HL.parseM(prev))}.` : ', the first month built, so no change yet.'); });
+dash.draw('lm-people-rows', (tb) => { tb.replaceChildren(); const pct = dash.fmt.pct(0);
+  for (const r of bpRows()) { const tr = document.createElement('tr'), noInc = r.who === 'Household' && !r.earned && !r.earned_change;
+    [bpLabel(r.who), noInc ? '—' : HL.usd0(r.earned), noInc || r.earned_share == null ? '—' : pct(r.earned_share), noInc ? '—' : bpCh(r.earned_change), HL.usd0(r.spent), bpCh(r.spent_change)].forEach((c, i) => {
+      const td = document.createElement(i ? 'td' : 'th'); if (!i) td.scope = 'row'; else td.className = 'num'; td.textContent = c; tr.append(td); });
+    tb.append(tr); } });
+// accounts and decisions match a person ignoring case and spacing; one naming no one, or a name the People rule lacks, sits under Joint
+const bpKey = (n) => String(n || '').trim().split(/\s+/).join(' ').toLowerCase();
+const bpOwn = () => { const m = bpMonth(); if (!m) return [];
+  const bal = dash.data('balances'), dec = dash.data('decisions'), rows = bpRows();
+  const named = new Set(rows.filter((r) => r.who !== 'Household').map((r) => bpKey(r.who))), owner = (n) => named.has(bpKey(n)) ? bpKey(n) : null;
+  const accts = bal.status === 'ok' ? bal.data.filter((r) => r.m === m) : [], decs = dec.status === 'ok' ? dec.data.filter((r) => r.m === m && bpKey(r.person)) : [];
+  return rows.map((r) => { const me = r.who === 'Household' ? null : bpKey(r.who);
+    return { label: bpLabel(r.who), accounts: accts.filter((a) => owner(a.person) === me).map((a) => a.account).sort(), decisions: decs.filter((d) => owner(d.person) === me).map((d) => d.text) }; })
+    .filter((o) => o.accounts.length || o.decisions.length); };
+dash.onData(() => { const card = document.getElementById('lm-people-card'), list = document.getElementById('lm-people-list');
+  if (card) card.hidden = !bpRows().length; if (list) list.hidden = !bpOwn().length; });
+dash.draw('lm-people-count', (el) => { const own = bpOwn(), na = d3.sum(own, (o) => o.accounts.length), nd = d3.sum(own, (o) => o.decisions.length);
+  if (!own.length) return;
+  el.textContent = `${na} account${na === 1 ? '' : 's'} and ${nd} decision${nd === 1 ? '' : 's'}, by person`; HL.sizeOnce(el.closest('details'), na + nd <= 8); });
+dash.draw('lm-people-own', (el) => { el.replaceChildren();
+  for (const o of bpOwn()) { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = o.label;
+    if (o.accounts.length) { const d = document.createElement('div'); d.textContent = 'Accounts: ' + o.accounts.join(', '); dd.append(d); }
+    if (o.decisions.length) { const d = document.createElement('div'); d.className = 'muted'; d.textContent = 'Decisions in force: ' + o.decisions.join('; '); dd.append(d); }
+    el.append(dt, dd); } });
 // decisions (#155): those in force in the latest month, with the app's verdict and the household's, and the keep rate
 const decLatest = () => { const g = dash.data('decisions'); if (g.status !== 'ok' || !g.data.length) return null; const last = g.data.map((r) => r.m).sort().pop(); return g.data.filter((r) => r.m === last); };
 const DEC_WORDS = { kept: 'kept', partly: 'partly kept', dropped: 'not kept', pending: 'waiting for the month’s files', unknown: 'yours to say' };

@@ -116,6 +116,10 @@ def test_transactions_merchants_and_notes_are_never_served(loaded):
     err, rows = call(tok, "get_dataset", {"name": "coming_up"})
     assert not err and all(set(r) == {"m", "kind", "label", "amount", "source"} for r in rows)
     assert not any(a in json.dumps(rows) for a in accounts)
+    assert "by_person" in mcp_endpoint.DATASETS   # #156: each person's earned and own-envelope figures; their accounts stay on the page
+    err, rows = call(tok, "get_dataset", {"name": "by_person"})
+    assert not err and {r["who"] for r in rows} == {"Rosie", "Sam", "Household"} and not any(a in json.dumps(rows) for a in accounts)
+    assert all(set(r) == {"m", "who", "earned", "earned_share", "earned_change", "spent", "spent_change"} for r in rows)
     names = {r["name"] for r in sql("SELECT name FROM datasets")}
     for n in names & set(mcp_endpoint.DATASETS):
         err, rows = call(tok, "get_dataset", {"name": n})
